@@ -102,7 +102,12 @@ export async function POST(req: Request) {
     currentStage = "CONTEXT_PREPARATION";
     console.time(`[${traceId}] CONTEXT_TIME`);
     const financialContext = await getFinancialContext(user);
-    const systemPrompt = MASTER_PROMPT.replace("{USER_DATA}", financialContext);
+    const currentDate = new Date().toLocaleDateString('tr-TR', { 
+      year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' 
+    });
+    const systemPrompt = MASTER_PROMPT
+      .replace("{USER_DATA}", financialContext)
+      .replace("{CURRENT_DATE}", currentDate);
     console.timeEnd(`[${traceId}] CONTEXT_TIME`);
 
     console.log(`[${traceId}] [PROMPT_INFO] Context size: ${financialContext.length}, Prompt: ${systemPrompt.length}`);
@@ -134,7 +139,8 @@ export async function POST(req: Request) {
         // Direkt Gemini API kullanımı (Vercel SDK Atlatması)
         const model = genAI.getGenerativeModel({ 
           model: modelId,
-          systemInstruction: systemPrompt 
+          systemInstruction: systemPrompt,
+          tools: [{ googleSearchRetrieval: {} }]
         });
 
         // Geçmişi hazırla (son mesaj hariç)
