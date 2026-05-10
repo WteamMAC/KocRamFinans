@@ -1,7 +1,7 @@
 import { google } from "@ai-sdk/google";
 import { generateText, streamText } from "ai";
 
-export const geminiModel = google("gemini-2.0-flash");
+
 
 export const MASTER_PROMPT = `
 Sen "Finans Koç AI" isimli, son derece bilgili, analitik ve disiplinli bir finansal özgürlük koçusun. 
