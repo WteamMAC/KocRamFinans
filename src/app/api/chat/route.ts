@@ -13,11 +13,11 @@ const google = createGoogleGenerativeAI({
 });
 
 const FALLBACK_MODELS = [
-  "gemini-3.0-flash",           // 1. Tercih: En yeni, en dengeli
-  "gemini-3.0-flash-lite",      // 2. Tercih: Daha hızlı ve ekonomik
-  "gemini-2.0-flash",           // 3. Tercih: Bir önceki neslin en stabil olanı
-  "gemini-1.5-pro-latest",      // 4. Tercih: Zeka gerektiren görevlerde en güvenilir yedek
-  "gemini-1.5-flash-latest"     // 5. Tercih: Her durumda çalışan genel yedek
+  "gemini-3.1-flash-lite",      // Öncelikli çalışan model
+  "gemini-3.1-pro-preview",     // En yeni Pro model
+  "gemini-2.5-flash",           // Güçlü ve hızlı
+  "gemini-2.0-flash",           // Kararlı 2.0 sürümü
+  "gemini-flash-latest"         // Genel geçerli yedek
 ];
 
 // Global hata yakalayıcılar (Sadece debug için)
