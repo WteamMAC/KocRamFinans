@@ -97,14 +97,18 @@ export async function POST(req: Request) {
 
     // 5. AI Model Denemeleri
     currentStage = "AI_GENERATION";
-    for (const modelId of FALLBACK_MODELS) {
+    
+    // Kota aşımı durumunda (429) tüm modeller muhtemelen hata vereceği için 
+    // deneme sayısını azaltıyoruz ve 429'u yakalıyoruz.
+    const limitedModels = FALLBACK_MODELS.slice(0, 2); 
+
+    for (const modelId of limitedModels) {
       const modelStartTime = Date.now();
       try {
         console.log(`[AI_TRY] Trying model: ${modelId} (Elapsed: ${Date.now() - startTime}ms)`);
         
-        // Vercel 10s limiti için ilk modele maksimum süreyi veriyoruz (9 saniye)
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 9000);
+        const timeoutId = setTimeout(() => controller.abort(), 8000);
 
         const result = await streamText({
           model: google(modelId) as any,
@@ -121,16 +125,20 @@ export async function POST(req: Request) {
         return result.toDataStreamResponse();
       } catch (modelError: any) {
         const elapsed = Date.now() - startTime;
-        console.warn(`[AI_FAILED] Model ${modelId} failed after ${Date.now() - modelStartTime}ms. Error: ${modelError.message}`);
+        const isRateLimit = modelError.status === 429 || modelError.message?.includes("429");
         
-        // Eğer 10 saniye limitine çok yaklaştıysak (örn: 9sn geçtiyse) yeni model deneme, direkt hata dön
-        if (elapsed > 9000) {
-          console.error(`[CRITICAL_TIMEOUT] Vercel limit exceeded (9s+), stopping fallback.`);
-          throw new Error("Vercel zaman aşımı limitine yaklaşıldı.");
+        console.warn(`[AI_FAILED] Model ${modelId} failed. Error: ${modelError.message} (RateLimit: ${isRateLimit})`);
+
+        if (isRateLimit) {
+          throw new Error("AI Kota Sınırı Aşıldı (429). Lütfen 1 dakika sonra tekrar deneyin.");
         }
 
-        // Eğer bu son modelse hatayı dışarı fırlat
-        if (modelId === FALLBACK_MODELS[FALLBACK_MODELS.length - 1]) {
+        if (elapsed > 8500) {
+          console.error(`[CRITICAL_TIMEOUT] Vercel limit reached, stopping.`);
+          throw new Error("Vercel zaman aşımı limitine ulaşıldı.");
+        }
+
+        if (modelId === limitedModels[limitedModels.length - 1]) {
           throw modelError;
         }
         continue;
