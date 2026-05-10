@@ -140,7 +140,8 @@ export async function POST(req: Request) {
         const model = genAI.getGenerativeModel({ 
           model: modelId,
           systemInstruction: systemPrompt,
-          tools: [{ googleSearchRetrieval: {} }]
+          // @ts-ignore - SDK types use googleSearchRetrieval but API requires googleSearch
+          tools: [{ googleSearch: {} }]
         });
 
         // Geçmişi hazırla (son mesaj hariç)
