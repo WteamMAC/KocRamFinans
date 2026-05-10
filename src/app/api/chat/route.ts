@@ -4,13 +4,21 @@ import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 import { MASTER_PROMPT, getFinancialContext } from "@/lib/gemini";
 
-// Vercel zaman sınırı ayarı (Hobby: 10sn, Pro: 60sn+)
-export const maxDuration = 30;
+// Vercel zaman sınırı 1 dakikaya çıkarıldı
+export const maxDuration = 60;
 export const dynamic = "force-dynamic";
 
 const google = createGoogleGenerativeAI({
   apiKey: process.env.GEMINI_API_KEY,
 });
+
+// Denenecek model sırası (Hata durumunda sırayla bir sonrakine geçer)
+const FALLBACK_MODELS = [
+  "gemini-3.1-pro",
+  "gemini-3.1-flash",
+  "gemini-2.0-flash-exp",
+  "gemini-1.5-flash"
+];
 
 export async function POST(req: Request) {
   try {
@@ -39,19 +47,33 @@ export async function POST(req: Request) {
     const financialContext = await getFinancialContext(user);
     const systemPrompt = MASTER_PROMPT.replace("{USER_DATA}", financialContext);
 
-    const result = await streamText({
-      model: google("gemini-3.1-flash") as any, // 2026'nın en güncel ve hızlı modeli
-      messages: [
-        { role: "system", content: systemPrompt },
-        ...messages,
-      ],
-    });
+    // Modelleri sırayla dene
+    for (const modelId of FALLBACK_MODELS) {
+      try {
+        console.log(`Trying model: ${modelId}`);
+        const result = await streamText({
+          model: google(modelId) as any,
+          messages: [
+            { role: "system", content: systemPrompt },
+            ...messages,
+          ],
+        });
 
-    return result.toDataStreamResponse();
+        // Eğer buraya kadar geldiyse model başarılıdır
+        return result.toDataStreamResponse();
+      } catch (modelError) {
+        console.error(`Model ${modelId} failed, trying next...`);
+        // Eğer bu son modelse hatayı dışarı fırlat
+        if (modelId === FALLBACK_MODELS[FALLBACK_MODELS.length - 1]) {
+          throw modelError;
+        }
+        continue; // Bir sonraki modeli dene
+      }
+    }
   } catch (error: any) {
-    console.error("Chat API Error:", error);
+    console.error("FINAL_CHAT_ERROR:", error);
     return new Response(JSON.stringify({ 
-      error: "AI Yanıt Vermedi", 
+      error: "Tüm AI modelleri şu an meşgul", 
       details: error.message,
       code: error.status || 500 
     }), { 
