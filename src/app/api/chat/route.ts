@@ -1,5 +1,4 @@
-import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import { streamText } from "ai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 import { MASTER_PROMPT, getFinancialContext } from "@/lib/gemini";
@@ -8,9 +7,7 @@ import { MASTER_PROMPT, getFinancialContext } from "@/lib/gemini";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60; // Vercel Pro limit: 60 saniye
 
-const google = createGoogleGenerativeAI({
-  apiKey: process.env.GEMINI_API_KEY || "missing_api_key",
-});
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "missing_api_key");
 
 const FALLBACK_MODELS = [
   "gemini-3.1-flash-lite",      // Öncelikli çalışan model
@@ -134,24 +131,51 @@ export async function POST(req: Request) {
           controller.abort();
         }, Math.min(remainingTime - 1000, 30000)); // Her model için max 30sn
 
-        console.log(`[${traceId}] [STREAM_START] Calling streamText for ${modelId}...`);
+        // Direkt Gemini API kullanımı (Vercel SDK Atlatması)
+        const model = genAI.getGenerativeModel({ 
+          model: modelId,
+          systemInstruction: systemPrompt 
+        });
 
-        const result = await streamText({
-          model: google(modelId) as any,
-          messages: [
-            { role: "system", content: systemPrompt },
-            ...filteredMessages,
-          ],
-          abortSignal: controller.signal,
-          onFinish: (event) => {
-            console.log(`[${traceId}] [STREAM_FINISHED] Model: ${modelId}, Tokens: ${event.usage.totalTokens}`);
+        // Geçmişi hazırla (son mesaj hariç)
+        const history = filteredMessages.slice(0, -1).map(m => ({
+          role: m.role === 'user' ? 'user' : 'model',
+          parts: [{ text: m.content }]
+        }));
+
+        const chat = model.startChat({ history });
+        const lastMessage = filteredMessages[filteredMessages.length - 1].content;
+
+        const result = await chat.sendMessageStream(lastMessage);
+
+        clearTimeout(timeoutId);
+        console.log(`[${traceId}] [STREAM_SUCCESS] ${modelId} started in ${Date.now() - trialStartTime}ms. Returning direct ReadableStream.`);
+
+        const encoder = new TextEncoder();
+        const stream = new ReadableStream({
+          async start(controller) {
+            try {
+              for await (const chunk of result.stream) {
+                const chunkText = chunk.text();
+                if (chunkText) {
+                  controller.enqueue(encoder.encode(chunkText));
+                }
+              }
+              controller.close();
+            } catch (err) {
+              console.error(`[${traceId}] [STREAM_READ_ERROR]`, err);
+              controller.error(err);
+            }
           }
         });
 
-        clearTimeout(timeoutId);
-        console.log(`[${traceId}] [STREAM_SUCCESS] ${modelId} started in ${Date.now() - trialStartTime}ms. Returning Response.`);
-        
-        return result.toDataStreamResponse();
+        return new Response(stream, {
+          headers: {
+            "Content-Type": "text/plain; charset=utf-8",
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive"
+          }
+        });
       } catch (modelError: any) {
         const trialDuration = Date.now() - trialStartTime;
         const isRateLimit = modelError.status === 429 || modelError.message?.includes("429");

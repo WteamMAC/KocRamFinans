@@ -1,6 +1,6 @@
 "use client";
 
-import { useChat } from "ai/react";
+
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,29 +11,76 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 export function ChatAI() {
   const [isOpen, setIsOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { messages, input, handleInputChange, handleSubmit, isLoading, append } = useChat({
-    onError: (err) => {
-      console.error(">>> [DEBUG] AI_CHAT_ERROR_RAW:", err);
-      // Eğer hata mesajı HTML ise (Vercel 500 sayfası gibi), daha anlamlı bir mesaj göster
-      if (err.message.includes("<!DOCTYPE html>") || err.message.includes("<html")) {
-        console.error(">>> [DEBUG] DETECTED_VERCEL_500_HTML");
-        setError("Vercel Sunucu Hatası: Sunucu yanıt vermedi veya zaman aşımına uğradı. Lütfen internet bağlantınızı ve Vercel ayarlarınızı kontrol edin.");
-      } else {
-        try {
-          const parsed = JSON.parse(err.message);
-          console.log(">>> [DEBUG] PARSED_ERROR_JSON:", parsed);
-          setError(`${parsed.stage}: ${parsed.details} [ID: ${parsed.traceId || "N/A"}] (${parsed.elapsed}ms)`);
-        } catch {
-          console.error(">>> [DEBUG] ERROR_PARSE_FAILED", err.message);
-          setError(err.message || "Bilinmeyen bir hata oluştu");
+  const [messages, setMessages] = useState<{id: string, role: string, content: string}[]>([]);
+  const [input, setInput] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setInput(e.target.value);
+  };
+
+  const appendMessage = (role: string, content: string) => {
+    const newMsg = { id: Math.random().toString(36).substring(7), role, content };
+    setMessages((prev) => [...prev, newMsg]);
+    return newMsg;
+  };
+
+  const append = async (msg: { role: string, content: string }) => {
+    if (!msg.content.trim()) return;
+    
+    appendMessage("user", msg.content);
+    setIsLoading(true);
+    setError(null);
+
+    const currentMessages = [...messages, { id: Math.random().toString(), role: "user", content: msg.content }];
+    
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: currentMessages }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || "Sunucu hatası");
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error("Stream oluşturulamadı");
+
+      const decoder = new TextDecoder();
+      const botMsgId = Math.random().toString(36).substring(7);
+      
+      setMessages((prev) => [...prev, { id: botMsgId, role: "model", content: "" }]);
+
+      let done = false;
+      while (!done) {
+        const { value, done: doneReading } = await reader.read();
+        done = doneReading;
+        if (value) {
+          const chunkValue = decoder.decode(value, { stream: !done });
+          setMessages((prev) => prev.map(m => 
+            m.id === botMsgId ? { ...m, content: m.content + chunkValue } : m
+          ));
         }
       }
-    },
-    onResponse: (response) => {
-      console.log(">>> [DEBUG] AI_RESPONSE_RECEIVED", { status: response.status, ok: response.ok });
-      setError(null);
+    } catch (err: any) {
+      console.error(">>> [DEBUG] FETCH_ERROR:", err);
+      setError(err.message || "Bir hata oluştu");
+    } finally {
+      setIsLoading(false);
     }
-  });
+  };
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!input.trim()) return;
+    const msgContent = input;
+    setInput("");
+    append({ role: "user", content: msgContent });
+  };
+
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
