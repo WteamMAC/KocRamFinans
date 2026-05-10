@@ -72,7 +72,7 @@ export function ChatAI() {
       setError(err.message || "Bir hata oluştu");
     } finally {
       setIsLoading(false);
-      startCooldown(30); // Her mesaj sonrası 30s bekleme
+      startCooldown(15); // Her mesaj sonrası 30s bekleme
     }
   };
 
