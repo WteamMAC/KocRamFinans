@@ -6,113 +6,57 @@ import { MASTER_PROMPT, getFinancialContext } from "@/lib/gemini";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-// ─── API KEY ROTASYONU ──────────────────────────────────────────────────────
-// Env içindeki GEMINI_API_KEY, GEMINI_API_KEY_2, GEMINI_API_KEY_3... anahtarlarını toplar
+// API Key Rotasyonu
 const getApiKeys = () => {
   const keys = [];
   if (process.env.GEMINI_API_KEY) keys.push(process.env.GEMINI_API_KEY);
-  
-  // Ek anahtarları ara (GEMINI_API_KEY_2'den 10'a kadar)
   for (let i = 2; i <= 10; i++) {
     const key = process.env[`GEMINI_API_KEY_${i}`];
     if (key) keys.push(key);
   }
-  
   return keys.length > 0 ? keys : ["missing_api_key"];
 };
 
 const API_KEYS = getApiKeys();
 let currentKeyIndex = 0;
 
-// Sıradaki API anahtarını veren yardımcı fonksiyon
 const getNextGenAI = () => {
   const key = API_KEYS[currentKeyIndex];
   currentKeyIndex = (currentKeyIndex + 1) % API_KEYS.length;
-  console.log(`[ROTATION] Kullanılan Key Index: ${currentKeyIndex} (Toplam: ${API_KEYS.length})`);
   return new GoogleGenerativeAI(key);
 };
 
-// ─── MODELLER VE ARAÇLAR ─────────────────────────────────────────────────────
-
+// Sadece STABIL modeller
 const FALLBACK_MODELS = [
-  "gemini-3.1-flash-lite",
-  "gemini-2.5-flash",
-  "gemini-3-flash",
-  "gemini-flash-latest",
+  "gemini-1.5-flash",    // En hızlı
+  "gemini-1.5-flash-8b", // En ekonomik ve hızlı
+  "gemini-1.5-pro"       // En zeki (yedek)
 ];
 
-const MARKET_KEYWORDS = [
-  "dolar", "euro", "sterlin", "döviz", "kur", "altın", "gram altın", "çeyrek altın",
-  "borsa", "bist", "hisse", "endeks", "bitcoin", "btc", "kripto", "fiyat", "kaç tl"
-];
+const MARKET_KEYWORDS = ["dolar", "euro", "sterlin", "döviz", "altın", "borsa", "hisse", "kripto", "fiyat"];
+const DB_ACTION_KEYWORDS = ["ekle", "kaydet", "sil", "güncelle", "maaş", "gider"];
 
-const DB_ACTION_KEYWORDS = [
-  "ekle", "kaydet", "sil", "güncelle", "yeni gelir", "yeni gider", "borç", "maaş"
-];
+// Mesaj geçmişini Gemini kurallarına (User-Model-User) göre temizler
+function sanitizeHistory(messages: any[]) {
+  const sanitized = [];
+  let lastRole = null;
 
-const FUNCTION_DECLARATIONS = [
-  {
-    name: "addIncome",
-    description: "Yeni bir gelir kaynağı ekler.",
-    parameters: {
-      type: "object",
-      properties: {
-        type: { type: "string", description: "Gelir türü (Salary, Rent, Freelance, Other)" },
-        amount: { type: "number", description: "Miktar" },
-        description: { type: "string", description: "Açıklama" }
-      },
-      required: ["type", "amount"]
-    }
-  },
-  {
-    name: "addExpense",
-    description: "Yeni bir gider ekler.",
-    parameters: {
-      type: "object",
-      properties: {
-        type: { type: "string", description: "Gider türü (Rent, Bill, Groceries, Other)" },
-        amount: { type: "number", description: "Miktar" },
-        isRecurring: { type: "boolean", description: "Düzenli mi?" }
-      },
-      required: ["type", "amount"]
-    }
-  },
-  {
-    name: "addDebt",
-    description: "Yeni bir borç ekler.",
-    parameters: {
-      type: "object",
-      properties: {
-        type: { type: "string", description: "Borç türü" },
-        amount: { type: "number", description: "Miktar" }
-      },
-      required: ["type", "amount"]
-    }
-  },
-  {
-    name: "addInvestment",
-    description: "Yeni bir yatırım ekler.",
-    parameters: {
-      type: "object",
-      properties: {
-        type: { type: "string", description: "Tür" },
-        amount: { type: "number", description: "Değer" }
-      },
-      required: ["type", "amount"]
+  for (const msg of messages) {
+    const role = msg.role === "user" ? "user" : "model";
+    // Ardışık aynı roller Gemini'de yasaktır. 
+    // Eğer aynı rol gelirse, içeriği önceki mesajın sonuna ekle.
+    if (role === lastRole) {
+      sanitized[sanitized.length - 1].parts[0].text += "\n" + msg.content;
+    } else {
+      sanitized.push({
+        role: role,
+        parts: [{ text: msg.content || " " }]
+      });
+      lastRole = role;
     }
   }
-];
-
-type ToolMode = "none" | "search" | "db";
-
-function classifyMessage(message: string): ToolMode {
-  const lower = message.toLowerCase();
-  if (DB_ACTION_KEYWORDS.some(kw => lower.includes(kw))) return "db";
-  if (MARKET_KEYWORDS.some(kw => lower.includes(kw))) return "search";
-  return "none";
+  return sanitized;
 }
-
-// ─── ANA HANDLER ─────────────────────────────────────────────────────────────
 
 export async function POST(req: Request) {
   const startTime = Date.now();
@@ -125,16 +69,21 @@ export async function POST(req: Request) {
 
     const body = await req.json();
     const { messages } = body;
-    const lastMessage = messages[messages.length - 1].content;
-    const toolMode = classifyMessage(lastMessage);
+    if (!messages?.length) return new Response("Mesaj yok.", { status: 400 });
+
+    const lastMessageObj = messages[messages.length - 1];
+    const lastMessage = lastMessageObj.content;
+    const lowerMsg = lastMessage.toLowerCase();
+    
+    const isDbAction = DB_ACTION_KEYWORDS.some(kw => lowerMsg.includes(kw));
+    const isSearchAction = MARKET_KEYWORDS.some(kw => lowerMsg.includes(kw));
 
     currentStage = "DB";
     const user = await prisma.user.findUnique({
       where: { clerkUserId: userId },
       include: { incomes: true, expenses: true, debts: true, investments: true },
     });
-
-    if (!user) return new Response("User not found", { status: 404 });
+    if (!user) return new Response("Kullanıcı yok.", { status: 404 });
 
     currentStage = "CONTEXT";
     const financialContext = await getFinancialContext(user);
@@ -142,47 +91,56 @@ export async function POST(req: Request) {
       .replace("{USER_DATA}", financialContext)
       .replace("{CURRENT_DATE}", new Date().toLocaleDateString("tr-TR"));
 
-    // --- AI DENEME DÖNGÜSÜ (Key + Model Rotasyonu) ---
-    currentStage = "AI";
-    
-    // Her bir anahtar için modelleri tek tek dene
-    for (let keyTrial = 0; keyTrial < API_KEYS.length; keyTrial++) {
-      const genAI = getNextGenAI(); // Rotasyondaki sıradaki anahtarı al
+    // Geçmişi temizle (Son mesaj hariç)
+    const history = sanitizeHistory(messages.slice(0, -1));
 
-      for (let modelIndex = 0; modelIndex < FALLBACK_MODELS.length; modelIndex++) {
-        const modelId = FALLBACK_MODELS[modelIndex];
-        
-        console.log(`[${traceId}] [TRIAL] KeyTrial: ${keyTrial+1}, Model: ${modelId}, Tool: ${toolMode}`);
+    currentStage = "AI_TRIALS";
+    
+    for (let k = 0; k < API_KEYS.length; k++) {
+      const genAI = getNextGenAI();
+
+      for (let m = 0; m < FALLBACK_MODELS.length; m++) {
+        const modelId = FALLBACK_MODELS[m];
+        console.log(`[${traceId}] Deneme: Key ${currentKeyIndex}, Model ${modelId}`);
 
         try {
-          let tools: any[] | undefined;
-          if (toolMode === "db") tools = [{ functionDeclarations: FUNCTION_DECLARATIONS }];
-          else if (toolMode === "search") tools = [{ googleSearch: {} }];
-
-          const model = genAI.getGenerativeModel({
+          const modelConfig: any = {
             model: modelId,
             systemInstruction: systemPrompt,
-            ...(tools ? { tools: tools as any } : {}),
-          });
+          };
 
-          const chat = model.startChat({
-            history: messages.slice(0, -1).map((m: any) => ({
-              role: m.role === "user" ? "user" : "model",
-              parts: [{ text: m.content }]
-            }))
-          });
+          // Gemini kısıtı: googleSearch ve functionDeclarations çakışmaması için önceliklendirme
+          if (isDbAction) {
+            modelConfig.tools = [{
+              functionDeclarations: [
+                { name: "addIncome", description: "Gelir ekler", parameters: { type: "object", properties: { type: { type: "string" }, amount: { type: "number" }, description: { type: "string" } }, required: ["type", "amount"] } },
+                { name: "addExpense", description: "Gider ekler", parameters: { type: "object", properties: { type: { type: "string" }, amount: { type: "number" }, isRecurring: { type: "boolean" } }, required: ["type", "amount"] } },
+                { name: "addDebt", description: "Borç ekler", parameters: { type: "object", properties: { type: { type: "string" }, amount: { type: "number" } }, required: ["type", "amount"] } },
+                { name: "addInvestment", description: "Yatırım ekler", parameters: { type: "object", properties: { type: { type: "string" }, amount: { type: "number" } }, required: ["type", "amount"] } }
+              ]
+            }];
+          } else if (isSearchAction) {
+            modelConfig.tools = [{ googleSearch: {} }];
+          }
 
-          const result = await chat.sendMessageStream(lastMessage);
+          const model = genAI.getGenerativeModel(modelConfig);
+          const chat = model.startChat({ history });
+          
+          // API çağrısını timeout ile sarmala (15 saniye her model için)
+          const result = await Promise.race([
+            chat.sendMessageStream(lastMessage),
+            new Promise((_, reject) => setTimeout(() => reject(new Error("MODEL_TIMEOUT")), 15000))
+          ]) as any;
 
-          // Stream okuma ve Response döndürme
+          // Stream başlat
           const encoder = new TextEncoder();
           const stream = new ReadableStream({
             async start(controller) {
               try {
                 for await (const chunk of result.stream) {
-                  let chunkText = "";
-                  try { chunkText = chunk.text(); } catch {}
-                  if (chunkText) controller.enqueue(encoder.encode(chunkText));
+                  let text = "";
+                  try { text = chunk.text(); } catch {}
+                  if (text) controller.enqueue(encoder.encode(text));
                   
                   const calls = chunk.functionCalls?.();
                   if (calls) {
@@ -200,28 +158,25 @@ export async function POST(req: Request) {
           return new Response(stream, { headers: { "Content-Type": "text/plain; charset=utf-8" } });
 
         } catch (err: any) {
-          const is429 = err.status === 429 || err.message?.includes("429");
-          console.warn(`[${traceId}] [FAIL] Key Index: ${currentKeyIndex}, Model: ${modelId}, 429: ${is429}`);
+          // KRITIK: Hatayı detaylı logla!
+          console.error(`[${traceId}] [ERROR_DETAIL] Key:${currentKeyIndex} Model:${modelId}:`, {
+            name: err.name,
+            message: err.message,
+            status: err.status,
+            reason: err.reason // Gemini spesifik hatalar
+          });
 
-          if (is429) {
-            // Eğer bu anahtarda kota bittiyse, bu anahtarın diğer modellerini deneme, 
-            // hemen BİR SONRAKİ ANAHTARA geç.
-            break; // İçteki model döngüsünden çık, dıştaki key döngüsüne git
-          }
-          
-          // Diğer hatalarda aynı anahtarın sonraki modelini dene
-          continue;
+          const is429 = err.status === 429 || err.message?.includes("429");
+          if (is429) break; // Kota bittiyse sonraki anahtara geç
+          continue; // Diğer hatalarda sonraki modeli dene
         }
       }
     }
 
-    throw new Error("Tüm API anahtarları ve modeller denendi, sonuç alınamadı.");
+    throw new Error("Tüm denemeler başarısız. Lütfen 30 saniye bekleyin.");
 
   } catch (error: any) {
-    console.error(`[${traceId}] FINAL ERROR:`, error.message);
-    return new Response(JSON.stringify({ 
-      error: "Sistem şu an yoğun, lütfen 15 saniye sonra tekrar deneyin.",
-      details: error.message 
-    }), { status: 500 });
+    console.error(`[${traceId}] FINAL_ERROR:`, error.message);
+    return new Response(JSON.stringify({ error: error.message }), { status: 500 });
   }
 }
