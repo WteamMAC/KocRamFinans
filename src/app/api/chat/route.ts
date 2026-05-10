@@ -141,7 +141,66 @@ export async function POST(req: Request) {
           model: modelId,
           systemInstruction: systemPrompt,
           // @ts-ignore - SDK types use googleSearchRetrieval but API requires googleSearch
-          tools: [{ googleSearch: {} }]
+        tools: [
+          { googleSearch: {} },
+          {
+            functionDeclarations: [
+              {
+                name: "addIncome",
+                description: "Kullanıcının sistemine yeni bir gelir kaynağı (maaş, ek gelir vb.) ekler.",
+                parameters: {
+                  type: "object",
+                  properties: {
+                    type: { type: "string", description: "Gelir türü (örn: Salary, SpouseSalary, Rent, Freelance, Other)" },
+                    amount: { type: "number", description: "Gelir miktarı" },
+                    description: { type: "string", description: "Gelir hakkında kısa açıklama" }
+                  },
+                  required: ["type", "amount"]
+                }
+              },
+              {
+                name: "addExpense",
+                description: "Kullanıcının sistemine yeni bir gider (kira, fatura, market vb.) ekler.",
+                parameters: {
+                  type: "object",
+                  properties: {
+                    type: { type: "string", description: "Gider türü (örn: Rent, Bill, Groceries, Transport, Other)" },
+                    amount: { type: "number", description: "Gider miktarı" },
+                    isRecurring: { type: "boolean", description: "Düzenli bir gider mi? (örn: her ay ödenen kira/fatura ise true)" },
+                    description: { type: "string", description: "Gider hakkında kısa açıklama" }
+                  },
+                  required: ["type", "amount"]
+                }
+              },
+              {
+                name: "addDebt",
+                description: "Kullanıcının sistemine yeni bir borç veya kredi ekler.",
+                parameters: {
+                  type: "object",
+                  properties: {
+                    type: { type: "string", description: "Borç türü (örn: CreditCard, BankLoan, Personal, Other)" },
+                    amount: { type: "number", description: "Toplam borç miktarı" },
+                    description: { type: "string", description: "Borç hakkında kısa açıklama" }
+                  },
+                  required: ["type", "amount"]
+                }
+              },
+              {
+                name: "addInvestment",
+                description: "Kullanıcının sistemine yeni bir yatırım (altın, kripto, hisse vb.) ekler.",
+                parameters: {
+                  type: "object",
+                  properties: {
+                    type: { type: "string", description: "Yatırım türü (örn: Gold, Crypto, Stock, RealEstate, ForeignCurrency)" },
+                    amount: { type: "number", description: "Yatırımın toplam değeri" },
+                    description: { type: "string", description: "Yatırım hakkında kısa açıklama" }
+                  },
+                  required: ["type", "amount"]
+                }
+              }
+            ]
+          }
+        ]
         });
 
         // Geçmişi hazırla (son mesaj hariç)
@@ -163,9 +222,20 @@ export async function POST(req: Request) {
           async start(controller) {
             try {
               for await (const chunk of result.stream) {
-                const chunkText = chunk.text();
+                let chunkText = "";
+                try {
+                  chunkText = chunk.text();
+                } catch(e) { /* text() throws if there are only function calls */ }
+                
                 if (chunkText) {
                   controller.enqueue(encoder.encode(chunkText));
+                }
+
+                if (chunk.functionCalls && chunk.functionCalls().length > 0) {
+                  for (const call of chunk.functionCalls()) {
+                    const actionData = JSON.stringify({ name: call.name, args: call.args });
+                    controller.enqueue(encoder.encode(`\n\n__TOOL_CALL__:${actionData}__END_TOOL_CALL__\n`));
+                  }
                 }
               }
               controller.close();

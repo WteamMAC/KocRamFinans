@@ -71,6 +71,66 @@ export function ChatAI() {
     } finally {
       setIsLoading(false);
     }
+  const handleToolConfirm = async (name: string, args: any) => {
+    setIsLoading(true);
+    try {
+      const res = await fetch("/api/finance/action", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, args }),
+      });
+      if (!res.ok) throw new Error("İşlem başarısız oldu");
+      
+      append({ role: "user", content: `[SİSTEM BİLGİSİ]: ${name} işlemi kullanıcı tarafından onaylandı ve başarıyla veritabanına kaydedildi. Kullanıcıya işlemin tamamlandığını kısa bir mesajla bildir.` });
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const renderMessageContent = (content: string) => {
+    const toolCallRegex = /__TOOL_CALL__:(.*?)__END_TOOL_CALL__/g;
+    const parts = [];
+    let lastIndex = 0;
+    let match;
+
+    while ((match = toolCallRegex.exec(content)) !== null) {
+      if (match.index > lastIndex) {
+        parts.push(<span key={`text-${lastIndex}`}>{content.substring(lastIndex, match.index)}</span>);
+      }
+      
+      try {
+        const toolData = JSON.parse(match[1]);
+        parts.push(
+          <div key={`tool-${match.index}`} className="mt-2 p-3 bg-white border border-primary/20 rounded-lg shadow-sm">
+            <p className="text-[11px] font-bold text-primary mb-2 flex items-center gap-1">
+              <Sparkles className="w-3 h-3" /> İşlem Önerisi: {toolData.name}
+            </p>
+            <div className="text-[10px] bg-slate-50 p-2 rounded mb-3 text-slate-600 border">
+              {Object.entries(toolData.args).map(([k, v]) => (
+                <div key={k}><span className="font-semibold">{k}:</span> {String(v)}</div>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" onClick={() => handleToolConfirm(toolData.name, toolData.args)} className="w-full text-[10px] h-7 bg-primary text-white hover:bg-primary/90">
+                Onayla ve Kaydet
+              </Button>
+            </div>
+          </div>
+        );
+      } catch (e) {
+        parts.push(<span key={`err-${match.index}`} className="text-red-500 text-xs">[Geçersiz İşlem]</span>);
+      }
+
+      lastIndex = toolCallRegex.lastIndex;
+    }
+
+    if (lastIndex < content.length) {
+      parts.push(<span key={`text-${lastIndex}`}>{content.substring(lastIndex)}</span>);
+    }
+
+    return parts.length > 0 ? parts : content;
   };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -149,7 +209,7 @@ export function ChatAI() {
                         ? "bg-primary text-white rounded-tr-none" 
                         : "bg-slate-100 text-slate-800 rounded-tl-none"
                       }`}>
-                        {m.content}
+                        {renderMessageContent(m.content)}
                       </div>
                     </div>
                   </div>
