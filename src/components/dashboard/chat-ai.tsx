@@ -10,7 +10,11 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 export function ChatAI() {
   const [isOpen, setIsOpen] = useState(false);
-  const { messages, input, handleInputChange, handleSubmit, isLoading, append } = useChat();
+  const { messages, input, handleInputChange, handleSubmit, isLoading, append } = useChat({
+    onError: (error) => {
+      console.error("AI_CHAT_ERROR:", error);
+    }
+  });
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
