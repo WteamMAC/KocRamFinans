@@ -6,7 +6,7 @@ import { MASTER_PROMPT, getFinancialContext } from "@/lib/gemini";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-// API Key Rotasyonu
+// ─── API KEY ROTASYONU ──────────────────────────────────────────────────────
 const getApiKeys = () => {
   const keys = [];
   if (process.env.GEMINI_API_KEY) keys.push(process.env.GEMINI_API_KEY);
@@ -23,40 +23,38 @@ let currentKeyIndex = 0;
 const getNextGenAI = () => {
   const key = API_KEYS[currentKeyIndex];
   currentKeyIndex = (currentKeyIndex + 1) % API_KEYS.length;
+  console.log(`[ROTATION] Kullanılan Key Index: ${currentKeyIndex}`);
   return new GoogleGenerativeAI(key);
 };
 
-// Sadece STABIL modeller
+// ─── MODELLER (Sadece çalışan STABİL isimler) ───────────────────────────────
 const FALLBACK_MODELS = [
-  "gemini-1.5-flash",    // En hızlı
-  "gemini-1.5-flash-8b", // En ekonomik ve hızlı
-  "gemini-1.5-pro"       // En zeki (yedek)
+  "gemini-1.5-flash",       // 1. En hızlı ve güncel
+  "gemini-1.5-flash-8b",    // 2. Çok hızlı, hafif
+  "gemini-1.5-pro",         // 3. En zeki ama ağır
+  "gemini-flash-latest"     // 4. Yedek
 ];
 
-const MARKET_KEYWORDS = ["dolar", "euro", "sterlin", "döviz", "altın", "borsa", "hisse", "kripto", "fiyat"];
+const MARKET_KEYWORDS = ["dolar", "euro", "altın", "borsa", "hisse", "kripto", "fiyat"];
 const DB_ACTION_KEYWORDS = ["ekle", "kaydet", "sil", "güncelle", "maaş", "gider"];
 
-// Mesaj geçmişini Gemini kurallarına (User-Model-User) göre temizler
+// Gemini'nin katı History (User-Model-User) kuralı için temizleyici
 function sanitizeHistory(messages: any[]) {
   const sanitized = [];
   let lastRole = null;
-
   for (const msg of messages) {
     const role = msg.role === "user" ? "user" : "model";
-    // Ardışık aynı roller Gemini'de yasaktır. 
-    // Eğer aynı rol gelirse, içeriği önceki mesajın sonuna ekle.
     if (role === lastRole) {
       sanitized[sanitized.length - 1].parts[0].text += "\n" + msg.content;
     } else {
-      sanitized.push({
-        role: role,
-        parts: [{ text: msg.content || " " }]
-      });
+      sanitized.push({ role, parts: [{ text: msg.content || " " }] });
       lastRole = role;
     }
   }
   return sanitized;
 }
+
+// ─── ANA HANDLER ─────────────────────────────────────────────────────────────
 
 export async function POST(req: Request) {
   const startTime = Date.now();
@@ -69,10 +67,7 @@ export async function POST(req: Request) {
 
     const body = await req.json();
     const { messages } = body;
-    if (!messages?.length) return new Response("Mesaj yok.", { status: 400 });
-
-    const lastMessageObj = messages[messages.length - 1];
-    const lastMessage = lastMessageObj.content;
+    const lastMessage = messages[messages.length - 1].content;
     const lowerMsg = lastMessage.toLowerCase();
     
     const isDbAction = DB_ACTION_KEYWORDS.some(kw => lowerMsg.includes(kw));
@@ -83,7 +78,7 @@ export async function POST(req: Request) {
       where: { clerkUserId: userId },
       include: { incomes: true, expenses: true, debts: true, investments: true },
     });
-    if (!user) return new Response("Kullanıcı yok.", { status: 404 });
+    if (!user) return new Response("Kullanıcı bulunamadı.", { status: 404 });
 
     currentStage = "CONTEXT";
     const financialContext = await getFinancialContext(user);
@@ -91,17 +86,16 @@ export async function POST(req: Request) {
       .replace("{USER_DATA}", financialContext)
       .replace("{CURRENT_DATE}", new Date().toLocaleDateString("tr-TR"));
 
-    // Geçmişi temizle (Son mesaj hariç)
+    // Mesaj geçmişini temizle
     const history = sanitizeHistory(messages.slice(0, -1));
 
-    currentStage = "AI_TRIALS";
-    
+    currentStage = "AI";
     for (let k = 0; k < API_KEYS.length; k++) {
       const genAI = getNextGenAI();
 
       for (let m = 0; m < FALLBACK_MODELS.length; m++) {
         const modelId = FALLBACK_MODELS[m];
-        console.log(`[${traceId}] Deneme: Key ${currentKeyIndex}, Model ${modelId}`);
+        console.log(`[${traceId}] [TRIAL] Key:${currentKeyIndex} Model:${modelId}`);
 
         try {
           const modelConfig: any = {
@@ -109,7 +103,6 @@ export async function POST(req: Request) {
             systemInstruction: systemPrompt,
           };
 
-          // Gemini kısıtı: googleSearch ve functionDeclarations çakışmaması için önceliklendirme
           if (isDbAction) {
             modelConfig.tools = [{
               functionDeclarations: [
@@ -125,14 +118,8 @@ export async function POST(req: Request) {
 
           const model = genAI.getGenerativeModel(modelConfig);
           const chat = model.startChat({ history });
-          
-          // API çağrısını timeout ile sarmala (15 saniye her model için)
-          const result = await Promise.race([
-            chat.sendMessageStream(lastMessage),
-            new Promise((_, reject) => setTimeout(() => reject(new Error("MODEL_TIMEOUT")), 15000))
-          ]) as any;
+          const result = await chat.sendMessageStream(lastMessage);
 
-          // Stream başlat
           const encoder = new TextEncoder();
           const stream = new ReadableStream({
             async start(controller) {
@@ -158,25 +145,18 @@ export async function POST(req: Request) {
           return new Response(stream, { headers: { "Content-Type": "text/plain; charset=utf-8" } });
 
         } catch (err: any) {
-          // KRITIK: Hatayı detaylı logla!
-          console.error(`[${traceId}] [ERROR_DETAIL] Key:${currentKeyIndex} Model:${modelId}:`, {
-            name: err.name,
-            message: err.message,
-            status: err.status,
-            reason: err.reason // Gemini spesifik hatalar
-          });
-
+          console.error(`[${traceId}] [FAIL] Key:${currentKeyIndex} Model:${modelId}: ${err.message}`);
           const is429 = err.status === 429 || err.message?.includes("429");
-          if (is429) break; // Kota bittiyse sonraki anahtara geç
+          if (is429) break; // Kota bittiyse sonraki key'e geç
           continue; // Diğer hatalarda sonraki modeli dene
         }
       }
     }
 
-    throw new Error("Tüm denemeler başarısız. Lütfen 30 saniye bekleyin.");
+    throw new Error("Tüm API anahtarları tükendi.");
 
   } catch (error: any) {
-    console.error(`[${traceId}] FINAL_ERROR:`, error.message);
-    return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+    console.error(`[${traceId}] FINAL ERROR:`, error.message);
+    return new Response(JSON.stringify({ error: "Sistem yoğun, 15sn bekleyin.", details: error.message }), { status: 500 });
   }
 }
