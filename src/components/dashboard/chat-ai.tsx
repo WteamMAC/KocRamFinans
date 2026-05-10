@@ -71,6 +71,8 @@ export function ChatAI() {
     } finally {
       setIsLoading(false);
     }
+  };
+
   const handleToolConfirm = async (name: string, args: any) => {
     setIsLoading(true);
     try {
