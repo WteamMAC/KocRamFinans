@@ -32,8 +32,8 @@ export async function POST(req: Request) {
   const financialContext = await getFinancialContext(user);
   const systemPrompt = MASTER_PROMPT.replace("{USER_DATA}", financialContext);
 
-  const result = streamText({
-    model: google("gemini-1.5-flash"), // Veya gemini-2.0-flash-exp
+  const result = await streamText({
+    model: google("gemini-1.5-flash") as any, // Veya gemini-2.0-flash-exp
     messages: [
       { role: "system", content: systemPrompt },
       ...messages,

@@ -15,7 +15,7 @@ export function ChatAI() {
 
   useEffect(() => {
     if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      scrollRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages]);
 
@@ -49,7 +49,7 @@ export function ChatAI() {
           </CardHeader>
           
           <CardContent className="flex-1 p-4 overflow-hidden">
-            <ScrollArea className="h-full pr-4" viewportRef={scrollRef}>
+            <ScrollArea className="h-full pr-4">
               <div className="space-y-4">
                 {messages.length === 0 && (
                   <div className="text-center py-10 space-y-2">
@@ -93,6 +93,7 @@ export function ChatAI() {
                     </div>
                   </div>
                 )}
+                <div ref={scrollRef} />
               </div>
             </ScrollArea>
           </CardContent>
