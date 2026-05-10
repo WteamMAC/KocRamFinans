@@ -8,9 +8,12 @@ export const maxDuration = 60;
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "missing_api_key");
 
+// Fallback sırası: RPM limitine göre (yüksekten düşüğe)
+// Kaynak: Google AI Studio rate limit tablosu
 const FALLBACK_MODELS = [
-  "gemini-3.1-flash-lite",
-  "gemini-flash-latest",
+  "gemini-3.1-flash-lite",  // 1. Öncelik → 15 RPM (en yüksek!)
+  "gemini-2.5-flash",       // 2. Öncelik → 5 RPM
+  "gemini-flash-latest",    // 3. Öncelik → 5 RPM (alias)
 ];
 
 // ─── Anahtar Kelime Grupları ──────────────────────────────────────────────────
