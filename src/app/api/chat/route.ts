@@ -231,8 +231,9 @@ export async function POST(req: Request) {
                   controller.enqueue(encoder.encode(chunkText));
                 }
 
-                if (chunk.functionCalls && chunk.functionCalls().length > 0) {
-                  for (const call of chunk.functionCalls()) {
+                const calls = chunk.functionCalls ? chunk.functionCalls() : undefined;
+                if (calls && calls.length > 0) {
+                  for (const call of calls) {
                     const actionData = JSON.stringify({ name: call.name, args: call.args });
                     controller.enqueue(encoder.encode(`\n\n__TOOL_CALL__:${actionData}__END_TOOL_CALL__\n`));
                   }
