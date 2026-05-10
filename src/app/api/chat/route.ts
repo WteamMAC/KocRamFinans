@@ -12,13 +12,12 @@ const google = createGoogleGenerativeAI({
   apiKey: process.env.GEMINI_API_KEY || "missing_api_key",
 });
 
-// Vercel Pro 60s limitine göre optimize edilmiş model listesi
 const FALLBACK_MODELS = [
-  "gemini-1.5-flash",      // Standart ve en stabil
-  "gemini-1.5-flash-8b",   // Hızlı ve hafif
-  "gemini-2.0-flash-exp",  // Deneysel ama güçlü
-  "gemini-3.1-flash-lite", // Kullanıcının belirttiği model
-  "gemini-pro-latest",     // Zeki ama yavaş
+  "gemini-3.1-flash-lite",   // Sizin ortamınızda çalıştığı kesinleşen model
+  "gemini-1.5-flash-latest", // En stabil yedek
+  "gemini-1.5-pro-latest",   // Daha zeki yedek
+  "gemini-1.5-flash-8b-latest", // Çok hızlı yedek
+  "gemini-pro"               // Eski ama kararlı yedek
 ];
 
 // Global hata yakalayıcılar (Sadece debug için)
