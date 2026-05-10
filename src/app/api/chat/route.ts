@@ -13,11 +13,11 @@ const google = createGoogleGenerativeAI({
 });
 
 const FALLBACK_MODELS = [
-  "gemini-3.1-flash-lite",   // Sizin ortamınızda çalıştığı kesinleşen model
-  "gemini-1.5-flash-latest", // En stabil yedek
-  "gemini-1.5-pro-latest",   // Daha zeki yedek
-  "gemini-1.5-flash-8b-latest", // Çok hızlı yedek
-  "gemini-pro"               // Eski ama kararlı yedek
+  "gemini-3.0-flash",           // 1. Tercih: En yeni, en dengeli
+  "gemini-3.0-flash-lite",      // 2. Tercih: Daha hızlı ve ekonomik
+  "gemini-2.0-flash",           // 3. Tercih: Bir önceki neslin en stabil olanı
+  "gemini-1.5-pro-latest",      // 4. Tercih: Zeka gerektiren görevlerde en güvenilir yedek
+  "gemini-1.5-flash-latest"     // 5. Tercih: Her durumda çalışan genel yedek
 ];
 
 // Global hata yakalayıcılar (Sadece debug için)
@@ -34,9 +34,9 @@ if (typeof process !== 'undefined') {
 export async function POST(req: Request) {
   const startTime = Date.now();
   const traceId = Math.random().toString(36).substring(7);
-  
+
   console.log(`[${traceId}] >>> START CHAT_API (60s LIMIT MODE)`, { timestamp: new Date().toISOString() });
-  
+
   let currentStage = "INITIALIZATION";
 
   try {
@@ -45,7 +45,7 @@ export async function POST(req: Request) {
     console.time(`[${traceId}] AUTH_TIME`);
     const { userId } = await auth();
     console.timeEnd(`[${traceId}] AUTH_TIME`);
-    
+
     if (!userId) {
       console.error(`[${traceId}] [AUTH_CHECK_FAILED] Unauthorized access attempt`);
       return new Response("Yetkisiz erişim. Lütfen giriş yapın.", { status: 401 });
@@ -62,7 +62,7 @@ export async function POST(req: Request) {
       return new Response("Geçersiz JSON isteği.", { status: 400 });
     }
     console.timeEnd(`[${traceId}] PARSING_TIME`);
-    
+
     const { messages } = body;
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       console.error(`[${traceId}] [VALIDATION_FAILED] Invalid messages format or empty`, { messages });
@@ -72,8 +72,8 @@ export async function POST(req: Request) {
     // Mesaj içeriğini doğrula (boş mesajları temizle)
     const filteredMessages = messages.filter(m => m.content && typeof m.content === 'string' && m.content.trim().length > 0);
     if (filteredMessages.length === 0) {
-       console.error(`[${traceId}] [VALIDATION_FAILED] All messages are empty`);
-       return new Response("Geçersiz mesaj içeriği: Boş mesaj gönderilemez.", { status: 400 });
+      console.error(`[${traceId}] [VALIDATION_FAILED] All messages are empty`);
+      return new Response("Geçersiz mesaj içeriği: Boş mesaj gönderilemez.", { status: 400 });
     }
 
 
@@ -107,19 +107,19 @@ export async function POST(req: Request) {
     const financialContext = await getFinancialContext(user);
     const systemPrompt = MASTER_PROMPT.replace("{USER_DATA}", financialContext);
     console.timeEnd(`[${traceId}] CONTEXT_TIME`);
-    
+
     console.log(`[${traceId}] [PROMPT_INFO] Context size: ${financialContext.length}, Prompt: ${systemPrompt.length}`);
 
     // 5. AI Model Denemeleri
     currentStage = "AI_GENERATION";
     const GLOBAL_TIMEOUT = 58000; // 60s limitine yakın (58s)
-    
+
     for (let i = 0; i < FALLBACK_MODELS.length; i++) {
       const modelId = FALLBACK_MODELS[i];
       const elapsedTotal = Date.now() - startTime;
       const remainingTime = GLOBAL_TIMEOUT - elapsedTotal;
 
-      console.log(`[${traceId}] [AI_TRIAL_${i+1}] Model: ${modelId} | Elapsed: ${elapsedTotal}ms | Remaining: ${remainingTime}ms`);
+      console.log(`[${traceId}] [AI_TRIAL_${i + 1}] Model: ${modelId} | Elapsed: ${elapsedTotal}ms | Remaining: ${remainingTime}ms`);
 
       if (remainingTime < 3000) {
         console.error(`[${traceId}] [CRITICAL_TIMEOUT] Stopping trials, only ${remainingTime}ms left.`);
@@ -135,7 +135,7 @@ export async function POST(req: Request) {
         }, Math.min(remainingTime - 1000, 30000)); // Her model için max 30sn
 
         console.log(`[${traceId}] [STREAM_START] Calling streamText for ${modelId}...`);
-        
+
         const result = await streamText({
           model: google(modelId) as any,
           messages: [
@@ -150,9 +150,9 @@ export async function POST(req: Request) {
 
         clearTimeout(timeoutId);
         console.log(`[${traceId}] [STREAM_SUCCESS] ${modelId} started in ${Date.now() - trialStartTime}ms. Returning Response.`);
-        
+
         const aiStream = result.toAIStreamResponse();
-        
+
         return new Response(aiStream.body, {
           status: 200,
           headers: {
@@ -165,7 +165,7 @@ export async function POST(req: Request) {
         const trialDuration = Date.now() - trialStartTime;
         const isRateLimit = modelError.status === 429 || modelError.message?.includes("429");
         const isAbort = modelError.name === "AbortError";
-        
+
         console.error(`[${traceId}] [TRIAL_FAILED] ${modelId} | Duration: ${trialDuration}ms | Type: ${isAbort ? "TIMEOUT" : (isRateLimit ? "RATE_LIMIT" : "OTHER")}`, {
           message: modelError.message,
           status: modelError.status
@@ -183,20 +183,20 @@ export async function POST(req: Request) {
   } catch (error: any) {
     const finalElapsed = Date.now() - startTime;
     const isRateLimit = error.message?.includes("429") || error.status === 429;
-    
+
     console.error(`[${traceId}] [FINAL_ERROR] Stage: ${currentStage}, Total: ${finalElapsed}ms`, {
       message: error.message,
       status: error.status
     });
 
-    return new Response(JSON.stringify({ 
-      error: isRateLimit ? "Kota Sınırı Aşıldı (Google Gemini)" : "Bir hata oluştu", 
+    return new Response(JSON.stringify({
+      error: isRateLimit ? "Kota Sınırı Aşıldı (Google Gemini)" : "Bir hata oluştu",
       stage: currentStage,
       details: error.message,
       traceId,
       elapsed: finalElapsed,
-      code: isRateLimit ? 429 : (error.status || 500) 
-    }), { 
+      code: isRateLimit ? 429 : (error.status || 500)
+    }), {
       status: isRateLimit ? 429 : 500,
       headers: { "Content-Type": "application/json" }
     });
