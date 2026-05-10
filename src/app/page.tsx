@@ -1,9 +1,12 @@
-import { SignUpButton, SignInButton, SignedIn, SignedOut } from "@clerk/nextjs";
+import { SignUpButton, SignInButton } from "@clerk/nextjs";
+import { auth } from "@clerk/nextjs/server";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, BarChart3, Bot, ShieldCheck, Sparkles } from "lucide-react";
 import Link from "next/link";
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  const { userId } = await auth();
+
   return (
     <div className="flex flex-col min-h-screen">
       {/* Header */}
@@ -13,19 +16,20 @@ export default function LandingPage() {
           <span className="ml-2 text-xl font-bold bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">Finans Koç AI</span>
         </Link>
         <nav className="ml-auto flex gap-4 sm:gap-6 items-center">
-          <SignedOut>
-            <SignInButton mode="modal">
-              <Button variant="ghost" className="text-sm font-medium">Giriş Yap</Button>
-            </SignInButton>
-            <SignUpButton mode="modal">
-              <Button className="text-sm font-medium">Hemen Başla</Button>
-            </SignUpButton>
-          </SignedOut>
-          <SignedIn>
+          {!userId ? (
+            <>
+              <SignInButton mode="modal">
+                <Button variant="ghost" className="text-sm font-medium">Giriş Yap</Button>
+              </SignInButton>
+              <SignUpButton mode="modal">
+                <Button className="text-sm font-medium">Hemen Başla</Button>
+              </SignUpButton>
+            </>
+          ) : (
             <Link href="/dashboard">
               <Button className="text-sm font-medium">Panele Git</Button>
             </Link>
-          </SignedIn>
+          )}
         </nav>
       </header>
 
@@ -46,22 +50,21 @@ export default function LandingPage() {
                 Gelir, gider ve yatırımlarınızı Gemini AI ile analiz edin. Size özel finansal koçunuz her adımda yanınızda.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 min-w-[300px] justify-center mt-8">
-                <SignedOut>
+                {!userId ? (
                   <SignUpButton mode="modal">
                     <Button size="lg" className="text-lg px-8 py-6 h-auto rounded-full shadow-xl hover:shadow-primary/20 transition-all group">
                       Ücretsiz Kayıt Ol
                       <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
                     </Button>
                   </SignUpButton>
-                </SignedOut>
-                <SignedIn>
+                ) : (
                   <Link href="/dashboard">
                     <Button size="lg" className="text-lg px-8 py-6 h-auto rounded-full shadow-xl hover:shadow-primary/20 transition-all group">
                       Danışmanına Sor
                       <Bot className="ml-2 h-5 w-5 group-hover:scale-110 transition-transform" />
                     </Button>
                   </Link>
-                </SignedIn>
+                )}
               </div>
             </div>
           </div>
@@ -76,13 +79,12 @@ export default function LandingPage() {
                   <Bot className="h-10 w-10 text-primary" />
                 </div>
                 <h3 className="text-2xl font-bold">AI Finansal Koç</h3>
-                <p className="text-gray-500">Harcamalarınızı analiz eder ve "Bu ay telefon almalı mıyım?" gibi sorularınıza rasyonel cevaplar verir.</p>
+                <p className="text-gray-500">Harcamalarinizi analiz eder ve "Bu ay telefon almali miyim?" gibi sorulariniza rasyonel cevaplar verir.</p>
               </div>
               <div className="flex flex-col items-center space-y-4 text-center p-6 rounded-3xl hover:bg-slate-50 transition-colors">
                 <div className="p-4 bg-blue-100 rounded-2xl">
                   <BarChart3 className="h-10 w-10 text-blue-600" />
                 </div>
-                <h3 className="text-2xl font-bold">Portföy Yönetimi</h3>
                 <h3 className="text-2xl font-bold">Portföy Yönetimi</h3>
                 <p className="text-gray-500">Altın, kripto, döviz ve BIST yatırımlarınızı tek bir yerden takip edin ve yapay zeka ile optimize edin.</p>
               </div>
