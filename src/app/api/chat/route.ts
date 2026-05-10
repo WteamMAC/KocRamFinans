@@ -4,8 +4,7 @@ import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 import { MASTER_PROMPT, getFinancialContext } from "@/lib/gemini";
 
-// Vercel zaman sınırı 1 dakikaya çıkarıldı
-export const maxDuration = 60;
+
 export const dynamic = "force-dynamic";
 
 const google = createGoogleGenerativeAI({
