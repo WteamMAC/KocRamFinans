@@ -142,7 +142,7 @@ export async function POST(req: Request) {
           systemInstruction: systemPrompt,
           // @ts-ignore - SDK types use googleSearchRetrieval but API requires googleSearch
         tools: [
-          { googleSearch: {} },
+          { googleSearch: {} } as any,
           {
             functionDeclarations: [
               {
