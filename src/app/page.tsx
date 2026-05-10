@@ -79,7 +79,7 @@ export default async function LandingPage() {
                   <Bot className="h-10 w-10 text-primary" />
                 </div>
                 <h3 className="text-2xl font-bold">AI Finansal Koç</h3>
-                <p className="text-gray-500">Harcamalarinizi analiz eder ve "Bu ay telefon almali miyim?" gibi sorulariniza rasyonel cevaplar verir.</p>
+                <p className="text-gray-500">Harcamalarinizi analiz eder ve &quot;Bu ay telefon almali miyim?&quot; gibi sorulariniza rasyonel cevaplar verir.</p>
               </div>
               <div className="flex flex-col items-center space-y-4 text-center p-6 rounded-3xl hover:bg-slate-50 transition-colors">
                 <div className="p-4 bg-blue-100 rounded-2xl">
