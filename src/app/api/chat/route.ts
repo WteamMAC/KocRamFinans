@@ -14,10 +14,10 @@ const google = createGoogleGenerativeAI({
 
 // Denenecek model sırası (3.1 modellerine öncelik verilmiştir)
 const FALLBACK_MODELS = [
-  "gemini-3.1-pro",
-  "gemini-3.1-flash",
-  "gemini-1.5-pro-latest",
-  "gemini-1.5-flash-latest"
+  "gemini-3.1-pro-preview",
+  "gemini-3.1-flash-lite",
+  "gemini-pro-latest",
+  "gemini-flash-latest"
 ];
 
 export async function POST(req: Request) {
