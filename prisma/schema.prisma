@@ -1,0 +1,73 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+}
+
+model User {
+  id          String   @id @default(cuid())
+  clerkUserId String   @unique
+  familyCount Int      @default(1)
+  
+  incomes     Income[]
+  expenses    Expense[]
+  debts       Debt[]
+  investments Investment[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Income {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type        String   // "Salary", "SpouseSalary", "Rent", "Freelance", "Other"
+  amount      Float
+  description String?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Expense {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type        String   // "Rent", "Bill", "Groceries", "Transport", "Other"
+  amount      Float
+  dueDate     Int?     // Day of the month (1-31)
+  isRecurring Boolean  @default(true)
+  description String?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Debt {
+  id                    String   @id @default(cuid())
+  userId                String
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type                  String   // "CreditCard", "BankLoan", "Personal", "Other"
+  amount                Float
+  remainingInstallments Int?     // Number of months left
+  description           String?
+  
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+model Investment {
+  id               String   @id @default(cuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type             String   // "Gold", "Crypto", "Stock", "RealEstate", "ForeignCurrency"
+  amount           Float    // Quantity or initial value
+  currentValuation Float?   // Current market value
+  description      String?
+  
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
