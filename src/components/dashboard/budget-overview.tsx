@@ -40,7 +40,7 @@ export function BudgetOverview({ incomes, expenses }: BudgetOverviewProps) {
               if (active && payload && payload.length) {
                 return (
                   <div className="bg-white p-2 border rounded-lg shadow-sm">
-                    <p className="text-sm font-bold">{`${payload[0].value.toLocaleString()} ₺`}</p>
+                    <p className="text-sm font-bold">{`${payload[0]?.value?.toLocaleString() || 0} ₺`}</p>
                   </div>
                 );
               }

@@ -48,7 +48,7 @@ export function OnboardingForm() {
   const router = useRouter();
 
   const form = useForm<OnboardingValues>({
-    resolver: zodResolver(onboardingSchema),
+    resolver: zodResolver(onboardingSchema) as any,
     defaultValues: {
       familyCount: 1,
       incomes: [{ type: "Maaş", amount: 0 }],
@@ -141,7 +141,7 @@ export function OnboardingForm() {
                   <div key={field.id} className="flex gap-3 items-end group">
                     <div className="flex-1 space-y-2">
                       <Select 
-                        onValueChange={(val) => form.setValue(`incomes.${index}.type`, val)}
+                        onValueChange={(val) => form.setValue(`incomes.${index}.type`, val || "")}
                         defaultValue={field.type}
                       >
                         <SelectTrigger>

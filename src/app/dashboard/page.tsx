@@ -1,4 +1,7 @@
+export const dynamic = "force-dynamic";
+
 import { auth } from "@clerk/nextjs/server";
+import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,6 +11,7 @@ import { UpcomingPayments } from "@/components/dashboard/upcoming-payments";
 import { InvestmentSummary } from "@/components/dashboard/investment-summary";
 
 export default async function DashboardPage() {
+  await cookies();
   const { userId } = await auth();
 
   if (!userId) {
