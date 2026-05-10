@@ -10,9 +10,19 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 export function ChatAI() {
   const [isOpen, setIsOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { messages, input, handleInputChange, handleSubmit, isLoading, append } = useChat({
-    onError: (error) => {
-      console.error("AI_CHAT_ERROR:", error);
+    onError: (err) => {
+      console.error("AI_CHAT_ERROR:", err);
+      try {
+        const parsed = JSON.parse(err.message);
+        setError(`${parsed.stage}: ${parsed.details} (${parsed.elapsed}ms)`);
+      } catch {
+        setError(err.message || "Bilinmeyen bir hata oluştu");
+      }
+    },
+    onResponse: () => {
+      setError(null);
     }
   });
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -101,6 +111,13 @@ export function ChatAI() {
               </div>
             </ScrollArea>
           </CardContent>
+          
+          {error && (
+            <div className="px-4 py-2 mx-4 mb-2 bg-red-50 border border-red-100 rounded-lg text-[11px] text-red-600 flex items-center gap-2 animate-in fade-in slide-in-from-top-1">
+              <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
+              <span className="font-medium">Hata:</span> {error}
+            </div>
+          )}
 
           <CardFooter className="p-4 border-t">
             <form onSubmit={handleSubmit} className="flex w-full gap-2">
