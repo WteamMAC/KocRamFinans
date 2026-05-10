@@ -43,7 +43,8 @@ const FALLBACK_MODELS = [
 
 const MARKET_KEYWORDS = [
   "dolar", "euro", "sterlin", "döviz", "kur", "altın", "gram altın", "çeyrek altın",
-  "borsa", "bist", "hisse", "endeks", "bitcoin", "btc", "kripto", "fiyat", "kaç tl"
+  "borsa", "bist", "hisse", "endeks", "bitcoin", "btc", "kripto", "fiyat", "kaç tl",
+  "piyasa", "ekonomi", "faiz", "enflasyon", "güncel haber", "borsa istanbul"
 ];
 
 const DB_ACTION_KEYWORDS = [
@@ -157,7 +158,7 @@ export async function POST(req: Request) {
         try {
           let tools: any[] | undefined;
           if (toolMode === "db") tools = [{ functionDeclarations: FUNCTION_DECLARATIONS }];
-          else if (toolMode === "search") tools = [{ googleSearch: {} }];
+          else if (toolMode === "search") tools = [{ googleSearchRetrieval: {} }];
 
           const model = genAI.getGenerativeModel({
             model: modelId,
@@ -200,8 +201,9 @@ export async function POST(req: Request) {
           return new Response(stream, { headers: { "Content-Type": "text/plain; charset=utf-8" } });
 
         } catch (err: any) {
-          const is429 = err.status === 429 || err.message?.includes("429");
-          console.warn(`[${traceId}] [FAIL] Key Index: ${currentKeyIndex}, Model: ${modelId}, 429: ${is429}`);
+          const errorDetails = err.message || "Unknown error";
+          const is429 = err.status === 429 || errorDetails.includes("429");
+          console.warn(`[${traceId}] [FAIL] Key Index: ${currentKeyIndex}, Model: ${modelId}, Error: ${errorDetails}`);
 
           if (is429) {
             // Eğer bu anahtarda kota bittiyse, bu anahtarın diğer modellerini deneme, 
