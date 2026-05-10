@@ -10,7 +10,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 export function ChatAI() {
   const [isOpen, setIsOpen] = useState(false);
-  const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat();
+  const { messages, input, handleInputChange, handleSubmit, isLoading, append } = useChat();
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -39,7 +39,7 @@ export function ChatAI() {
               <div>
                 <CardTitle className="text-sm font-bold">Finans Koç AI</CardTitle>
                 <p className="text-[10px] opacity-80 flex items-center gap-1">
-                  <Sparkles className="w-2 h-2" /> Çevrimiçi - Gemini 1.5
+                  <Sparkles className="w-2 h-2" /> Çevrimiçi - Gemini 3.1
                 </p>
               </div>
             </div>
@@ -59,10 +59,10 @@ export function ChatAI() {
                     <p className="text-sm font-medium">Merhaba! Ben senin AI Finans Koçunum.</p>
                     <p className="text-xs text-slate-500">Bütçen, borçların veya yatırımların hakkında bana her şeyi sorabilirsin.</p>
                     <div className="flex flex-wrap gap-2 justify-center mt-4">
-                      <Button variant="outline" size="sm" className="text-[10px]" onClick={() => handleSubmit({ target: { value: "Bütçemi analiz eder misin?" } } as any)}>
+                      <Button variant="outline" size="sm" className="text-[10px]" onClick={() => append({ role: "user", content: "Bütçemi analiz eder misin?" })}>
                         Bütçemi analiz et
                       </Button>
-                      <Button variant="outline" size="sm" className="text-[10px]" onClick={() => handleSubmit({ target: { value: "Borçlarımı nasıl kapatırım?" } } as any)}>
+                      <Button variant="outline" size="sm" className="text-[10px]" onClick={() => append({ role: "user", content: "Borçlarımı nasıl kapatırım?" })}>
                         Borç kapatma stratejisi
                       </Button>
                     </div>
