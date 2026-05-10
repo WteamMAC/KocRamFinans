@@ -14,11 +14,23 @@ const google = createGoogleGenerativeAI({
 
 // Vercel Pro 60s limitine göre optimize edilmiş model listesi
 const FALLBACK_MODELS = [
-  "gemini-3.1-flash-lite", // En yeni ve hızlı
-  "gemini-flash-latest",   // Çok stabil ve hızlı
-  "gemini-pro-latest",     // Zeki ama yavaş (60s limitinde daha rahat çalışır)
-  "gemini-1.5-flash-8b",   // Hafif yedek
+  "gemini-1.5-flash",      // Standart ve en stabil
+  "gemini-1.5-flash-8b",   // Hızlı ve hafif
+  "gemini-2.0-flash-exp",  // Deneysel ama güçlü
+  "gemini-3.1-flash-lite", // Kullanıcının belirttiği model
+  "gemini-pro-latest",     // Zeki ama yavaş
 ];
+
+// Global hata yakalayıcılar (Sadece debug için)
+if (typeof process !== 'undefined') {
+  process.on('unhandledRejection', (reason, promise) => {
+    console.error('UNHANDLED_REJECTION:', reason);
+  });
+  process.on('uncaughtException', (err) => {
+    console.error('UNCAUGHT_EXCEPTION:', err);
+  });
+}
+
 
 export async function POST(req: Request) {
   const startTime = Date.now();
@@ -53,10 +65,18 @@ export async function POST(req: Request) {
     console.timeEnd(`[${traceId}] PARSING_TIME`);
     
     const { messages } = body;
-    if (!messages || !Array.isArray(messages)) {
-      console.error(`[${traceId}] [VALIDATION_FAILED] Invalid messages format`);
-      throw new Error("Geçersiz mesaj formatı: messages dizisi eksik.");
+    if (!messages || !Array.isArray(messages) || messages.length === 0) {
+      console.error(`[${traceId}] [VALIDATION_FAILED] Invalid messages format or empty`, { messages });
+      return new Response("Geçersiz mesaj formatı: messages dizisi eksik veya boş.", { status: 400 });
     }
+
+    // Mesaj içeriğini doğrula (boş mesajları temizle)
+    const filteredMessages = messages.filter(m => m.content && typeof m.content === 'string' && m.content.trim().length > 0);
+    if (filteredMessages.length === 0) {
+       console.error(`[${traceId}] [VALIDATION_FAILED] All messages are empty`);
+       return new Response("Geçersiz mesaj içeriği: Boş mesaj gönderilemez.", { status: 400 });
+    }
+
 
     // 3. Veritabanı Verisi Çekme
     currentStage = "DATABASE_FETCH";
@@ -121,15 +141,27 @@ export async function POST(req: Request) {
           model: google(modelId) as any,
           messages: [
             { role: "system", content: systemPrompt },
-            ...messages,
+            ...filteredMessages,
           ],
           abortSignal: controller.signal,
+          onFinish: (event) => {
+            console.log(`[${traceId}] [STREAM_FINISHED] Model: ${modelId}, Tokens: ${event.usage.totalTokens}`);
+          },
+          onError: (error) => {
+            console.error(`[${traceId}] [STREAM_ERROR] ${modelId}:`, error);
+          }
         });
 
         clearTimeout(timeoutId);
-        console.log(`[${traceId}] [STREAM_SUCCESS] ${modelId} started in ${Date.now() - trialStartTime}ms`);
+        console.log(`[${traceId}] [STREAM_SUCCESS] ${modelId} started in ${Date.now() - trialStartTime}ms. Returning Response.`);
         
-        return result.toDataStreamResponse();
+        const response = result.toDataStreamResponse();
+        
+        // Vercel/Node 24 uyumluluğu için ek başlıklar gerekebilir
+        response.headers.set('x-vercel-cache', 'MISS');
+        response.headers.set('x-trace-id', traceId);
+        
+        return response;
       } catch (modelError: any) {
         const trialDuration = Date.now() - trialStartTime;
         const isRateLimit = modelError.status === 429 || modelError.message?.includes("429");
