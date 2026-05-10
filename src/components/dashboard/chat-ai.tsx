@@ -22,7 +22,7 @@ export function ChatAI() {
         try {
           const parsed = JSON.parse(err.message);
           console.log(">>> [DEBUG] PARSED_ERROR_JSON:", parsed);
-          setError(`${parsed.stage}: ${parsed.details} (${parsed.elapsed}ms)`);
+          setError(`${parsed.stage}: ${parsed.details} [ID: ${parsed.traceId || "N/A"}] (${parsed.elapsed}ms)`);
         } catch {
           console.error(">>> [DEBUG] ERROR_PARSE_FAILED", err.message);
           setError(err.message || "Bilinmeyen bir hata oluştu");

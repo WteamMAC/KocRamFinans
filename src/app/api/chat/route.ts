@@ -6,63 +6,61 @@ import { MASTER_PROMPT, getFinancialContext } from "@/lib/gemini";
 
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 60; // Vercel Pro için 60sn, Hobby için max 10sn limitini zorlar
+export const maxDuration = 60; // Vercel Pro limit: 60 saniye
 
 const google = createGoogleGenerativeAI({
   apiKey: process.env.GEMINI_API_KEY || "missing_api_key",
 });
 
-// Vercel 10s limitine göre optimize edilmiş model listesi (Hız öncelikli)
+// Vercel Pro 60s limitine göre optimize edilmiş model listesi
 const FALLBACK_MODELS = [
-  "gemini-3.1-flash-lite", // En yeni ve hızlı (Doğrulandı)
-  "gemini-flash-latest",   // Çok stabil ve hızlı (Doğrulandı)
-  "gemini-pro-latest",    // Daha zeki ama biraz daha yavaş
-  "gemini-1.5-flash-8b",   // En hafif yedek
+  "gemini-3.1-flash-lite", // En yeni ve hızlı
+  "gemini-flash-latest",   // Çok stabil ve hızlı
+  "gemini-pro-latest",     // Zeki ama yavaş (60s limitinde daha rahat çalışır)
+  "gemini-1.5-flash-8b",   // Hafif yedek
 ];
 
 export async function POST(req: Request) {
   const startTime = Date.now();
-  console.log(">>> [DEBUG] CHAT_API_START", { timestamp: new Date().toISOString() });
+  const traceId = Math.random().toString(36).substring(7);
   
-  // Ortam değişkenleri kontrolü
-  console.log(">>> [DEBUG] ENV_CHECK", {
-    hasGeminiKey: !!process.env.GEMINI_API_KEY,
-    hasClerkKey: !!process.env.CLERK_SECRET_KEY,
-    hasDbUrl: !!process.env.DATABASE_URL,
-    nodeEnv: process.env.NODE_ENV
-  });
-
+  console.log(`[${traceId}] >>> START CHAT_API (60s LIMIT MODE)`, { timestamp: new Date().toISOString() });
+  
   let currentStage = "INITIALIZATION";
 
   try {
     // 1. Yetkilendirme Kontrolü
     currentStage = "AUTH_CHECK";
-    console.log(`>>> [DEBUG] STAGE: ${currentStage} starting...`);
+    console.time(`[${traceId}] AUTH_TIME`);
     const { userId } = await auth();
-    console.log(`>>> [DEBUG] STAGE: ${currentStage} completed`, { userId: userId ? "FOUND" : "NOT_FOUND" });
+    console.timeEnd(`[${traceId}] AUTH_TIME`);
+    
     if (!userId) {
-      console.error(`[${currentStage}] Unauthorized access attempt`);
+      console.error(`[${traceId}] [AUTH_CHECK_FAILED] Unauthorized access attempt`);
       return new Response("Yetkisiz erişim. Lütfen giriş yapın.", { status: 401 });
     }
 
     // 2. İstek Gövdesi Kontrolü
     currentStage = "REQUEST_PARSING";
+    console.time(`[${traceId}] PARSING_TIME`);
     let body;
     try {
       body = await req.json();
     } catch (e) {
-      console.error(`[${currentStage}] JSON parsing failed`);
+      console.error(`[${traceId}] [PARSING_FAILED] JSON parsing failed`, e);
       return new Response("Geçersiz JSON isteği.", { status: 400 });
     }
+    console.timeEnd(`[${traceId}] PARSING_TIME`);
     
     const { messages } = body;
     if (!messages || !Array.isArray(messages)) {
+      console.error(`[${traceId}] [VALIDATION_FAILED] Invalid messages format`);
       throw new Error("Geçersiz mesaj formatı: messages dizisi eksik.");
     }
 
-    // 3. Veritabanı Verisi Çekme (Timeout eklenmiş)
+    // 3. Veritabanı Verisi Çekme
     currentStage = "DATABASE_FETCH";
-    console.log(`>>> [DEBUG] STAGE: ${currentStage} starting...`);
+    console.time(`[${traceId}] DB_TIME`);
     const userPromise = prisma.user.findUnique({
       where: { clerkUserId: userId },
       include: {
@@ -73,51 +71,52 @@ export async function POST(req: Request) {
       },
     });
 
-    // Veritabanı sorgusuna 3 saniye limit koy
     const user = await Promise.race([
       userPromise,
-      new Promise((_, reject) => setTimeout(() => reject(new Error("Veritabanı yanıt vermedi (3s Timeout)")), 3000))
+      new Promise((_, reject) => setTimeout(() => reject(new Error("Veritabanı 10s limitini aştı")), 10000))
     ]) as any;
-    console.log(`>>> [DEBUG] STAGE: ${currentStage} completed`, { userFound: !!user });
+    console.timeEnd(`[${traceId}] DB_TIME`);
 
     if (!user) {
-      console.error(`[${currentStage}] User not found in DB: ${userId}`);
+      console.error(`[${traceId}] [USER_NOT_FOUND] User ID ${userId} not in database`);
       return new Response("Kullanıcı verileri bulunamadı.", { status: 404 });
     }
 
     // 4. Bağlam Hazırlama
     currentStage = "CONTEXT_PREPARATION";
-    console.log(`>>> [DEBUG] STAGE: ${currentStage} starting...`);
+    console.time(`[${traceId}] CONTEXT_TIME`);
     const financialContext = await getFinancialContext(user);
     const systemPrompt = MASTER_PROMPT.replace("{USER_DATA}", financialContext);
-    console.log(`>>> [DEBUG] STAGE: ${currentStage} completed`, { 
-      promptLength: systemPrompt.length,
-      contextLength: financialContext.length 
-    });
+    console.timeEnd(`[${traceId}] CONTEXT_TIME`);
+    
+    console.log(`[${traceId}] [PROMPT_INFO] Context size: ${financialContext.length}, Prompt: ${systemPrompt.length}`);
 
     // 5. AI Model Denemeleri
     currentStage = "AI_GENERATION";
+    const GLOBAL_TIMEOUT = 58000; // 60s limitine yakın (58s)
     
-    const GLOBAL_TIMEOUT = 9000; // 9 saniye global limit
-    const limitedModels = FALLBACK_MODELS; // Tüm modelleri deneyebiliriz ama süreye bakarak
+    for (let i = 0; i < FALLBACK_MODELS.length; i++) {
+      const modelId = FALLBACK_MODELS[i];
+      const elapsedTotal = Date.now() - startTime;
+      const remainingTime = GLOBAL_TIMEOUT - elapsedTotal;
 
-    for (const modelId of limitedModels) {
-      const elapsed = Date.now() - startTime;
-      const remainingTime = GLOBAL_TIMEOUT - elapsed;
+      console.log(`[${traceId}] [AI_TRIAL_${i+1}] Model: ${modelId} | Elapsed: ${elapsedTotal}ms | Remaining: ${remainingTime}ms`);
 
-      // Eğer 2 saniyeden az kaldıysa yeni model deneme, direkt hata ver
-      if (remainingTime < 2000) {
-        console.error(`[TIMEOUT_GUARD] Not enough time left for ${modelId} (${remainingTime}ms)`);
+      if (remainingTime < 3000) {
+        console.error(`[${traceId}] [CRITICAL_TIMEOUT] Stopping trials, only ${remainingTime}ms left.`);
         break;
       }
 
-      const modelStartTime = Date.now();
+      const trialStartTime = Date.now();
       try {
-        console.log(`[AI_TRY] Trying ${modelId} | Remaining: ${remainingTime}ms | Elapsed: ${elapsed}ms`);
-        
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), Math.min(remainingTime, 6000)); // Max 6sn per model
+        const timeoutId = setTimeout(() => {
+          console.warn(`[${traceId}] [MODEL_TIMEOUT] ${modelId} exceeded trial limit`);
+          controller.abort();
+        }, Math.min(remainingTime - 1000, 30000)); // Her model için max 30sn
 
+        console.log(`[${traceId}] [STREAM_START] Calling streamText for ${modelId}...`);
+        
         const result = await streamText({
           model: google(modelId) as any,
           messages: [
@@ -128,41 +127,43 @@ export async function POST(req: Request) {
         });
 
         clearTimeout(timeoutId);
-        console.log(`[AI_SUCCESS] ${modelId} responded in ${Date.now() - modelStartTime}ms`);
+        console.log(`[${traceId}] [STREAM_SUCCESS] ${modelId} started in ${Date.now() - trialStartTime}ms`);
         
         return result.toDataStreamResponse();
       } catch (modelError: any) {
+        const trialDuration = Date.now() - trialStartTime;
         const isRateLimit = modelError.status === 429 || modelError.message?.includes("429");
-        const isTimeout = modelError.name === "AbortError" || modelError.message?.includes("abort");
+        const isAbort = modelError.name === "AbortError";
         
-        console.warn(`[AI_FAILED] ${modelId} | Error: ${modelError.message} | RateLimit: ${isRateLimit} | Timeout: ${isTimeout}`);
+        console.error(`[${traceId}] [TRIAL_FAILED] ${modelId} | Duration: ${trialDuration}ms | Type: ${isAbort ? "TIMEOUT" : (isRateLimit ? "RATE_LIMIT" : "OTHER")}`, {
+          message: modelError.message,
+          status: modelError.status
+        });
 
-        if (isRateLimit) {
-          // Kota aşımı varsa diğer modelleri denemeye gerek olmayabilir (genelde hepsi aynı kotayı paylaşır)
-          // Ama yine de bir kez daha şans verelim (farklı bir model serisi ise)
-          continue; 
-        }
-
-        if (modelId === limitedModels[limitedModels.length - 1]) {
+        if (i === FALLBACK_MODELS.length - 1) {
           throw modelError;
         }
         continue;
       }
     }
 
-    throw new Error("Yanıt alınamadı. Lütfen tekrar deneyin veya kota sınırlarını kontrol edin.");
+    throw new Error("AI modelleri 60 saniye içinde yanıt vermedi.");
 
   } catch (error: any) {
-    const totalElapsed = Date.now() - startTime;
+    const finalElapsed = Date.now() - startTime;
     const isRateLimit = error.message?.includes("429") || error.status === 429;
     
-    console.error(`[FINAL_ERROR] Stage: ${currentStage}, Elapsed: ${totalElapsed}ms, Error:`, error);
+    console.error(`[${traceId}] [FINAL_ERROR] Stage: ${currentStage}, Total: ${finalElapsed}ms`, {
+      message: error.message,
+      status: error.status
+    });
 
     return new Response(JSON.stringify({ 
-      error: isRateLimit ? "Kota Sınırı Aşıldı" : "Bir hata oluştu", 
+      error: isRateLimit ? "Kota Sınırı Aşıldı (Google Gemini)" : "Bir hata oluştu", 
       stage: currentStage,
       details: error.message,
-      elapsed: totalElapsed,
+      traceId,
+      elapsed: finalElapsed,
       code: isRateLimit ? 429 : (error.status || 500) 
     }), { 
       status: isRateLimit ? 429 : 500,
