@@ -14,10 +14,10 @@ const google = createGoogleGenerativeAI({
 
 // Vercel 10s limitine göre optimize edilmiş model listesi (Hız öncelikli)
 const FALLBACK_MODELS = [
-  "gemini-2.0-flash",      // Çok hızlı
-  "gemini-3.1-flash-lite", // Hızlı ve yeni
-  "gemini-flash-latest",   // Stabil
-  "gemini-pro-latest"      // Son çare
+  "gemini-3.1-flash-lite", // En yeni ve hızlı (Doğrulandı)
+  "gemini-flash-latest",   // Çok stabil ve hızlı (Doğrulandı)
+  "gemini-pro-latest",    // Daha zeki ama biraz daha yavaş
+  "gemini-1.5-flash-8b",   // En hafif yedek
 ];
 
 export async function POST(req: Request) {
@@ -98,17 +98,25 @@ export async function POST(req: Request) {
     // 5. AI Model Denemeleri
     currentStage = "AI_GENERATION";
     
-    // Kota aşımı durumunda (429) tüm modeller muhtemelen hata vereceği için 
-    // deneme sayısını azaltıyoruz ve 429'u yakalıyoruz.
-    const limitedModels = FALLBACK_MODELS.slice(0, 2); 
+    const GLOBAL_TIMEOUT = 9000; // 9 saniye global limit
+    const limitedModels = FALLBACK_MODELS; // Tüm modelleri deneyebiliriz ama süreye bakarak
 
     for (const modelId of limitedModels) {
+      const elapsed = Date.now() - startTime;
+      const remainingTime = GLOBAL_TIMEOUT - elapsed;
+
+      // Eğer 2 saniyeden az kaldıysa yeni model deneme, direkt hata ver
+      if (remainingTime < 2000) {
+        console.error(`[TIMEOUT_GUARD] Not enough time left for ${modelId} (${remainingTime}ms)`);
+        break;
+      }
+
       const modelStartTime = Date.now();
       try {
-        console.log(`[AI_TRY] Trying model: ${modelId} (Elapsed: ${Date.now() - startTime}ms)`);
+        console.log(`[AI_TRY] Trying ${modelId} | Remaining: ${remainingTime}ms | Elapsed: ${elapsed}ms`);
         
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 8000);
+        const timeoutId = setTimeout(() => controller.abort(), Math.min(remainingTime, 6000)); // Max 6sn per model
 
         const result = await streamText({
           model: google(modelId) as any,
@@ -120,22 +128,19 @@ export async function POST(req: Request) {
         });
 
         clearTimeout(timeoutId);
-        console.log(`[AI_SUCCESS] Model ${modelId} responded in ${Date.now() - modelStartTime}ms`);
+        console.log(`[AI_SUCCESS] ${modelId} responded in ${Date.now() - modelStartTime}ms`);
         
         return result.toDataStreamResponse();
       } catch (modelError: any) {
-        const elapsed = Date.now() - startTime;
         const isRateLimit = modelError.status === 429 || modelError.message?.includes("429");
+        const isTimeout = modelError.name === "AbortError" || modelError.message?.includes("abort");
         
-        console.warn(`[AI_FAILED] Model ${modelId} failed. Error: ${modelError.message} (RateLimit: ${isRateLimit})`);
+        console.warn(`[AI_FAILED] ${modelId} | Error: ${modelError.message} | RateLimit: ${isRateLimit} | Timeout: ${isTimeout}`);
 
         if (isRateLimit) {
-          throw new Error("AI Kota Sınırı Aşıldı (429). Lütfen 1 dakika sonra tekrar deneyin.");
-        }
-
-        if (elapsed > 8500) {
-          console.error(`[CRITICAL_TIMEOUT] Vercel limit reached, stopping.`);
-          throw new Error("Vercel zaman aşımı limitine ulaşıldı.");
+          // Kota aşımı varsa diğer modelleri denemeye gerek olmayabilir (genelde hepsi aynı kotayı paylaşır)
+          // Ama yine de bir kez daha şans verelim (farklı bir model serisi ise)
+          continue; 
         }
 
         if (modelId === limitedModels[limitedModels.length - 1]) {
@@ -145,20 +150,22 @@ export async function POST(req: Request) {
       }
     }
 
-    throw new Error("Hiçbir model yanıt vermedi.");
+    throw new Error("Yanıt alınamadı. Lütfen tekrar deneyin veya kota sınırlarını kontrol edin.");
 
   } catch (error: any) {
     const totalElapsed = Date.now() - startTime;
+    const isRateLimit = error.message?.includes("429") || error.status === 429;
+    
     console.error(`[FINAL_ERROR] Stage: ${currentStage}, Elapsed: ${totalElapsed}ms, Error:`, error);
 
     return new Response(JSON.stringify({ 
-      error: "Bir hata oluştu", 
+      error: isRateLimit ? "Kota Sınırı Aşıldı" : "Bir hata oluştu", 
       stage: currentStage,
       details: error.message,
       elapsed: totalElapsed,
-      code: error.status || 500 
+      code: isRateLimit ? 429 : (error.status || 500) 
     }), { 
-      status: 500,
+      status: isRateLimit ? 429 : 500,
       headers: { "Content-Type": "application/json" }
     });
   }
