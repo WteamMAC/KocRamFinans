@@ -102,9 +102,9 @@ export async function POST(req: Request) {
       try {
         console.log(`[AI_TRY] Trying model: ${modelId} (Elapsed: ${Date.now() - startTime}ms)`);
         
-        // Vercel 10s limiti için her model denemesine bir limit koyuyoruz (5 saniye)
+        // Vercel 10s limiti için ilk modele maksimum süreyi veriyoruz (9 saniye)
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        const timeoutId = setTimeout(() => controller.abort(), 9000);
 
         const result = await streamText({
           model: google(modelId) as any,
