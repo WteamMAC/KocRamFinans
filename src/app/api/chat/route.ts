@@ -26,10 +26,13 @@ const getNextGenAI = () => {
 };
 
 // En hızlı modeller (Flash serisi)
+// En stabil ve güncel modeller
 const FALLBACK_MODELS = [
-  "gemini-1.5-flash",    // Hızlı ve zeki
-  "gemini-1.5-flash-8b", // Işık hızında (küçük model)
-  "gemini-flash-latest"  // Yedek alias
+  "gemini-2.0-flash",
+  "gemini-flash-latest",
+  "gemini-1.5-flash",
+  "gemini-1.5-flash-8b",
+  "gemini-3.1-flash-lite-preview"
 ];
 
 const MARKET_KEYWORDS = ["dolar", "euro", "döviz", "kur", "altın", "borsa", "hisse", "kripto", "fiyat", "kaç tl"];
@@ -51,7 +54,6 @@ function sanitizeHistory(messages: any[]) {
 }
 
 export async function POST(req: Request) {
-  const startTime = Date.now();
   const traceId = Math.random().toString(36).substring(7);
 
   try {
@@ -89,55 +91,71 @@ export async function POST(req: Request) {
       const genAI = getNextGenAI();
 
       for (let modelId of FALLBACK_MODELS) {
-        try {
-          const modelConfig: any = { model: modelId, systemInstruction: systemPrompt };
+        // İki aşamalı deneme: 1. Toollar ile, 2. (Eğer 429 alırsak) Toolsuz
+        const attempts = (isDbAction || isSearchAction) ? [true, false] : [false];
 
-          if (isDbAction) {
-            modelConfig.tools = [{
-              functionDeclarations: [
-                { name: "addIncome", description: "Gelir ekler", parameters: { type: "object", properties: { type: { type: "string" }, amount: { type: "number" }, description: { type: "string" } }, required: ["type", "amount"] } },
-                { name: "addExpense", description: "Gider ekler", parameters: { type: "object", properties: { type: { type: "string" }, amount: { type: "number" }, isRecurring: { type: "boolean" } }, required: ["type", "amount"] } },
-                { name: "addDebt", description: "Borç ekler", parameters: { type: "object", properties: { type: { type: "string" }, amount: { type: "number" } }, required: ["type", "amount"] } },
-                { name: "addInvestment", description: "Yatırım ekler", parameters: { type: "object", properties: { type: { type: "string" }, amount: { type: "number" } }, required: ["type", "amount"] } }
-              ]
-            }];
-          } else if (isSearchAction) {
-            modelConfig.tools = [{ googleSearch: {} }];
-          }
+        for (const useTools of attempts) {
+          try {
+            const modelConfig: any = { model: modelId, systemInstruction: systemPrompt };
 
-          const model = genAI.getGenerativeModel(modelConfig);
-          const chat = model.startChat({ history });
-          const result = await chat.sendMessageStream(lastMessage);
+            if (useTools) {
+              if (isDbAction) {
+                modelConfig.tools = [{
+                  functionDeclarations: [
+                    { name: "addIncome", description: "Gelir ekler", parameters: { type: "object", properties: { type: { type: "string" }, amount: { type: "number" }, description: { type: "string" } }, required: ["type", "amount"] } },
+                    { name: "addExpense", description: "Gider ekler", parameters: { type: "object", properties: { type: { type: "string" }, amount: { type: "number" }, isRecurring: { type: "boolean" } }, required: ["type", "amount"] } },
+                    { name: "addDebt", description: "Borç ekler", parameters: { type: "object", properties: { type: { type: "string" }, amount: { type: "number" } }, required: ["type", "amount"] } },
+                    { name: "addInvestment", description: "Yatırım ekler", parameters: { type: "object", properties: { type: { type: "string" }, amount: { type: "number" } }, required: ["type", "amount"] } }
+                  ]
+                }];
+              } else if (isSearchAction) {
+                modelConfig.tools = [{ googleSearch: {} }];
+              }
+            }
 
-          const encoder = new TextEncoder();
-          const stream = new ReadableStream({
-            async start(controller) {
-              try {
-                for await (const chunk of result.stream) {
-                  let text = "";
-                  try { text = chunk.text(); } catch {}
-                  if (text) controller.enqueue(encoder.encode(text));
-                  
-                  const calls = chunk.functionCalls?.();
-                  if (calls) {
-                    for (const call of calls) {
-                      const payload = JSON.stringify({ name: call.name, args: call.args });
-                      controller.enqueue(encoder.encode(`\n\n__TOOL_CALL__:${payload}__END_TOOL_CALL__\n`));
+            const model = genAI.getGenerativeModel(modelConfig);
+            const chat = model.startChat({ history });
+            const result = await chat.sendMessageStream(lastMessage);
+
+            const encoder = new TextEncoder();
+            const stream = new ReadableStream({
+              async start(controller) {
+                try {
+                  for await (const chunk of result.stream) {
+                    let text = "";
+                    try { text = chunk.text(); } catch {}
+                    if (text) controller.enqueue(encoder.encode(text));
+                    
+                    const calls = chunk.functionCalls?.();
+                    if (calls) {
+                      for (const call of calls) {
+                        const payload = JSON.stringify({ name: call.name, args: call.args });
+                        controller.enqueue(encoder.encode(`\n\n__TOOL_CALL__:${payload}__END_TOOL_CALL__\n`));
+                      }
                     }
                   }
-                }
-                controller.close();
-              } catch (e) { controller.error(e); }
+                  controller.close();
+                } catch (e) { controller.error(e); }
+              }
+            });
+
+            return new Response(stream, { headers: { "Content-Type": "text/plain; charset=utf-8" } });
+
+          } catch (err: any) {
+            const is429 = err.status === 429 || err.message?.includes("429");
+            console.warn(`[${traceId}] [FAIL] KeyIdx:${currentKeyIndex} Model:${modelId} Tools:${useTools}: ${err.message}`);
+            
+            if (is429 && useTools) {
+              // Tool kaynaklı kota hatası ise, toolsuz dene
+              continue; 
             }
-          });
-
-          return new Response(stream, { headers: { "Content-Type": "text/plain; charset=utf-8" } });
-
-        } catch (err: any) {
-          const is429 = err.status === 429 || err.message?.includes("429");
-          console.warn(`[${traceId}] [FAIL] Key:${currentKeyIndex} Model:${modelId}: ${err.message}`);
-          if (is429) break; // Kota bittiyse sonraki anahtara geç
-          continue;
+            if (is429) {
+              // Genel kota hatası ise bir sonraki anahtara geç (model loop'undan çık)
+              break; 
+            }
+            // Diğer hatalarda (404 vb) bir sonraki modeli dene
+            continue;
+          }
         }
       }
     }
