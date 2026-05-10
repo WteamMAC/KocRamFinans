@@ -6,7 +6,6 @@ import { MASTER_PROMPT, getFinancialContext } from "@/lib/gemini";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-// ─── API KEY ROTASYONU ──────────────────────────────────────────────────────
 const getApiKeys = () => {
   const keys = [];
   if (process.env.GEMINI_API_KEY) keys.push(process.env.GEMINI_API_KEY);
@@ -23,29 +22,26 @@ let currentKeyIndex = 0;
 const getNextGenAI = () => {
   const key = API_KEYS[currentKeyIndex];
   currentKeyIndex = (currentKeyIndex + 1) % API_KEYS.length;
-  console.log(`[ROTATION] Kullanılan Key Index: ${currentKeyIndex}`);
   return new GoogleGenerativeAI(key);
 };
 
-// ─── MODELLER (Sadece çalışan STABİL isimler) ───────────────────────────────
+// En hızlı modeller (Flash serisi)
 const FALLBACK_MODELS = [
-  "gemini-1.5-flash",       // 1. En hızlı ve güncel
-  "gemini-1.5-flash-8b",    // 2. Çok hızlı, hafif
-  "gemini-1.5-pro",         // 3. En zeki ama ağır
-  "gemini-flash-latest"     // 4. Yedek
+  "gemini-1.5-flash",    // Hızlı ve zeki
+  "gemini-1.5-flash-8b", // Işık hızında (küçük model)
+  "gemini-flash-latest"  // Yedek alias
 ];
 
-const MARKET_KEYWORDS = ["dolar", "euro", "altın", "borsa", "hisse", "kripto", "fiyat"];
-const DB_ACTION_KEYWORDS = ["ekle", "kaydet", "sil", "güncelle", "maaş", "gider"];
+const MARKET_KEYWORDS = ["dolar", "euro", "döviz", "kur", "altın", "borsa", "hisse", "kripto", "fiyat", "kaç tl"];
+const DB_ACTION_KEYWORDS = ["ekle", "kaydet", "sil", "güncelle", "maaş", "gelir", "gider", "borç", "yatırım"];
 
-// Gemini'nin katı History (User-Model-User) kuralı için temizleyici
 function sanitizeHistory(messages: any[]) {
   const sanitized = [];
   let lastRole = null;
   for (const msg of messages) {
     const role = msg.role === "user" ? "user" : "model";
     if (role === lastRole) {
-      sanitized[sanitized.length - 1].parts[0].text += "\n" + msg.content;
+      sanitized[sanitized.length - 1].parts[0].text += "\n" + (msg.content || " ");
     } else {
       sanitized.push({ role, parts: [{ text: msg.content || " " }] });
       lastRole = role;
@@ -54,12 +50,9 @@ function sanitizeHistory(messages: any[]) {
   return sanitized;
 }
 
-// ─── ANA HANDLER ─────────────────────────────────────────────────────────────
-
 export async function POST(req: Request) {
   const startTime = Date.now();
   const traceId = Math.random().toString(36).substring(7);
-  let currentStage = "INIT";
 
   try {
     const { userId } = await auth();
@@ -67,41 +60,37 @@ export async function POST(req: Request) {
 
     const body = await req.json();
     const { messages } = body;
-    const lastMessage = messages[messages.length - 1].content;
+    if (!messages?.length) return new Response("Mesaj yok.", { status: 400 });
+
+    const lastMessage = messages[messages.length - 1].content?.trim();
+    if (!lastMessage) return new Response("Boş mesaj.", { status: 400 });
+
     const lowerMsg = lastMessage.toLowerCase();
-    
     const isDbAction = DB_ACTION_KEYWORDS.some(kw => lowerMsg.includes(kw));
     const isSearchAction = MARKET_KEYWORDS.some(kw => lowerMsg.includes(kw));
 
-    currentStage = "DB";
+    // DB verisi çekme
     const user = await prisma.user.findUnique({
       where: { clerkUserId: userId },
       include: { incomes: true, expenses: true, debts: true, investments: true },
     });
     if (!user) return new Response("Kullanıcı bulunamadı.", { status: 404 });
 
-    currentStage = "CONTEXT";
+    // Bağlam ve Prompt hazırlama
     const financialContext = await getFinancialContext(user);
     const systemPrompt = MASTER_PROMPT
       .replace("{USER_DATA}", financialContext)
       .replace("{CURRENT_DATE}", new Date().toLocaleDateString("tr-TR"));
 
-    // Mesaj geçmişini temizle
     const history = sanitizeHistory(messages.slice(0, -1));
 
-    currentStage = "AI";
+    // Deneme döngüsü
     for (let k = 0; k < API_KEYS.length; k++) {
       const genAI = getNextGenAI();
 
-      for (let m = 0; m < FALLBACK_MODELS.length; m++) {
-        const modelId = FALLBACK_MODELS[m];
-        console.log(`[${traceId}] [TRIAL] Key:${currentKeyIndex} Model:${modelId}`);
-
+      for (let modelId of FALLBACK_MODELS) {
         try {
-          const modelConfig: any = {
-            model: modelId,
-            systemInstruction: systemPrompt,
-          };
+          const modelConfig: any = { model: modelId, systemInstruction: systemPrompt };
 
           if (isDbAction) {
             modelConfig.tools = [{
@@ -145,18 +134,18 @@ export async function POST(req: Request) {
           return new Response(stream, { headers: { "Content-Type": "text/plain; charset=utf-8" } });
 
         } catch (err: any) {
-          console.error(`[${traceId}] [FAIL] Key:${currentKeyIndex} Model:${modelId}: ${err.message}`);
           const is429 = err.status === 429 || err.message?.includes("429");
-          if (is429) break; // Kota bittiyse sonraki key'e geç
-          continue; // Diğer hatalarda sonraki modeli dene
+          console.warn(`[${traceId}] [FAIL] Key:${currentKeyIndex} Model:${modelId}: ${err.message}`);
+          if (is429) break; // Kota bittiyse sonraki anahtara geç
+          continue;
         }
       }
     }
 
-    throw new Error("Tüm API anahtarları tükendi.");
+    throw new Error("Sistem şu an yoğun, lütfen birazdan tekrar deneyin.");
 
   } catch (error: any) {
     console.error(`[${traceId}] FINAL ERROR:`, error.message);
-    return new Response(JSON.stringify({ error: "Sistem yoğun, 15sn bekleyin.", details: error.message }), { status: 500 });
+    return new Response(JSON.stringify({ error: error.message }), { status: 500 });
   }
 }

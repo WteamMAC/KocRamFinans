@@ -14,8 +14,19 @@ export function ChatAI() {
   const [messages, setMessages] = useState<{ id: string, role: string, content: string }[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [cooldown, setCooldown] = useState(0); // saniye cinsinden geri sayım
+  const [cooldown, setCooldown] = useState(0); 
   const cooldownRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Sayfa yüklendiğinde kalan süreyi kontrol et
+  useEffect(() => {
+    const savedCooldown = localStorage.getItem("ai_cooldown_end");
+    if (savedCooldown) {
+      const remaining = Math.ceil((parseInt(savedCooldown) - Date.now()) / 1000);
+      if (remaining > 0) {
+        startCooldown(remaining);
+      }
+    }
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInput(e.target.value);
@@ -78,11 +89,15 @@ export function ChatAI() {
 
   const startCooldown = (seconds: number) => {
     setCooldown(seconds);
+    const endTime = Date.now() + seconds * 1000;
+    localStorage.setItem("ai_cooldown_end", endTime.toString());
+
     if (cooldownRef.current) clearInterval(cooldownRef.current);
     cooldownRef.current = setInterval(() => {
       setCooldown((prev) => {
         if (prev <= 1) {
           clearInterval(cooldownRef.current!);
+          localStorage.removeItem("ai_cooldown_end");
           return 0;
         }
         return prev - 1;

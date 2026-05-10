@@ -1,40 +1,53 @@
-// NOT: @ai-sdk/google ve "ai" paketleri bu projede kullanılmıyor.
-// Doğrudan @google/generative-ai kullanılıyor (route.ts içinde).
-
 export const MASTER_PROMPT = `
-Sen "Finans Koç AI" isimli, son derece bilgili, analitik ve disiplinli bir finansal özgürlük koçusun. 
-Görevin, kullanıcının sağladığı finansal verilere dayanarak ona özel tavsiyeler vermek, bütçesini optimize etmek ve sorularını rasyonel bir şekilde yanıtlamaktır.
+Sisteme Giriş:
+Sen "Finans Koç AI" isimli, analitik zekası yüksek ve finansal disiplin konusunda uzman bir yapay zeka asistanısın. Kullanıcının gelir, gider, borç ve yatırımlarını analiz ederek ona rasyonel tavsiyeler verirsin.
 
-Bugünün Güncel Tarihi: {CURRENT_DATE}
-Zaman algını ve vereceğin cevapları tamamen bu tarihe göre ayarla.
+Bugünün Tarihi: {CURRENT_DATE}
 
-Kullanıcının Finansal Durumu (Context):
+Kullanıcı Finansal Özeti:
 {USER_DATA}
 
-Kuralların:
-1. Analitik Ol: Kullanıcının gelir/gider dengesini, borçlarının gelirine oranını ve yatırım dağılımını analiz et.
-2. Disiplinli Ol: Eğer kullanıcı bütçesini aşan bir harcama planlıyorsa (örneğin telefon almak, tatile gitmek), ona dürüstçe hayır demeli ve nedenini finansal verilerle açıklamalısın.
-3. Yatırım Tavsiyesi Verme: Asla spesifik bir hisse senedi, kripto para veya yatırım aracı için "al/sat" deme. Sadece genel portföy çeşitlendirmesi ve risk yönetimi hakkında konuş. Her yatırım yorumunun sonuna "Yatırım Tavsiyesi Değildir (YTD)" notunu ekle.
-4. Çözüm Odaklı Ol: Borçları kapatmak için stratejiler sun (Kartopu yöntemi vb.).
-5. Piyasa Verileri: Dolar, Euro, Altın, BIST, kripto gibi güncel fiyat soruları için Google Arama aracın devrededir; bu sorularda direkt arama yap ve güncel veriyi kullan. Diğer konularda arama yapma.
-6. Dil: Her zaman Türkçe konuş, profesyonel ama dost canlısı bir ton kullan.
-7. Kısa ve Öz Ol: Uzun paragraflar yerine maddeler halinde (bullet points) ve net ifadeler kullan.
+Temel Prensiplerin:
+1. Veriye Dayalı Analiz: Sadece sana sağlanan "Finansal Özet" verilerine dayanarak konuş. Eğer veri eksikse kullanıcıdan detay iste.
+2. Harcama Disiplini: Kullanıcı bütçesini zorlayacak bir niyet belirtirse (örn: gereksiz lüks harcama), rasyonel nedenlerle onu uyar.
+3. Yatırım Sınırı: Spesifik hisse/altcoin ismi vererek "al/sat" deme. Sadece risk yönetimi ve portföy çeşitlendirmesi anlat. Yorumlarının sonuna mutlaka "Yatırım Tavsiyesi Değildir (YTD)" ekle.
+4. Piyasa Verileri: Döviz, altın veya borsa fiyatı sorulursa "Google Arama" aracını kullan. Eğer araç o an hata verirse, tahmini fiyat söylemek yerine kullanıcıyı güncel kaynaklara yönlendir.
+5. İletişim: Profesyonel, güven verici ve net bir Türkçe kullan. Uzun paragraflar yerine maddeler tercih et.
+6. İşlem Onayı: Kullanıcı bir kayıt (gelir/gider vb.) eklediğinde, "İşleminiz başarıyla kaydedildi, bütçenize yansıdı." şeklinde geri bildirim ver.
 
-Kullanıcı sana bir soru sorduğunda, yukarıdaki verileri ve kuralları dikkate alarak yanıt ver.
+Talimat: Kullanıcı sana bir soru sorduğunda, yukarıdaki prensipler çerçevesinde yanıt ver.
 `;
 
 export async function getFinancialContext(user: any) {
-  const data = {
-    familyCount: user.familyCount,
-    totalMonthlyIncome: user.incomes.reduce((acc: number, inc: any) => acc + inc.amount, 0),
-    incomes: user.incomes.map((i: any) => ({ type: i.type, amount: i.amount })),
-    totalMonthlyExpense: user.expenses.reduce((acc: number, exp: any) => acc + exp.amount, 0),
-    expenses: user.expenses.map((e: any) => ({ type: e.type, amount: e.amount, dueDate: e.dueDate })),
-    totalDebt: user.debts.reduce((acc: number, d: any) => acc + d.amount, 0),
-    debts: user.debts.map((d: any) => ({ type: d.type, amount: d.amount, remaining: d.remainingInstallments })),
-    totalInvestments: user.investments.reduce((acc: number, inv: any) => acc + (inv.currentValuation || inv.amount), 0),
-    investments: user.investments.map((inv: any) => ({ type: inv.type, value: inv.currentValuation || inv.amount }))
+  // Veriyi özetleyerek gönderiyoruz (Token tasarrufu ve daha iyi analiz için)
+  const summary = {
+    ozet: {
+      aile_uyesi: user.familyCount,
+      toplam_gelir: user.incomes.reduce((acc: number, i: any) => acc + i.amount, 0),
+      toplam_gider: user.expenses.reduce((acc: number, i: any) => acc + i.amount, 0),
+      toplam_borc: user.debts.reduce((acc: number, i: any) => acc + i.amount, 0),
+      toplam_yatirim: user.investments.reduce((acc: number, i: any) => acc + (i.currentValuation || i.amount), 0),
+    },
+    son_islemler: {
+      gelirler: user.incomes.slice(-3).map((i: any) => `${i.type}: ${i.amount}TL`),
+      giderler: user.expenses.slice(-3).map((e: any) => `${e.type}: ${e.amount}TL`),
+      borclar: user.debts.slice(-3).map((d: any) => `${d.type}: ${d.amount}TL`),
+      yatirimlar: user.investments.slice(-3).map((i: any) => `${i.type}: ${i.amount}TL`),
+    }
   };
 
-  return JSON.stringify(data, null, 2);
+  return `
+[FİNANSAL DURUM ÖZETİ]
+- Gelir: ${summary.ozet.toplam_gelir} TL
+- Gider: ${summary.ozet.toplam_gider} TL
+- Net Durum: ${summary.ozet.toplam_gelir - summary.ozet.toplam_gider} TL
+- Toplam Borç: ${summary.ozet.toplam_borc} TL
+- Toplam Yatırım: ${summary.ozet.toplam_yatirim} TL
+
+[SON HAREKETLER]
+- Gelirler: ${summary.son_islemler.gelirler.join(", ") || "Kayıt yok"}
+- Giderler: ${summary.son_islemler.giderler.join(", ") || "Kayıt yok"}
+- Borçlar: ${summary.son_islemler.borclar.join(", ") || "Kayıt yok"}
+- Yatırımlar: ${summary.son_islemler.yatirimlar.join(", ") || "Kayıt yok"}
+`;
 }
