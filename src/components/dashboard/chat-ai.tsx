@@ -13,15 +13,24 @@ export function ChatAI() {
   const [error, setError] = useState<string | null>(null);
   const { messages, input, handleInputChange, handleSubmit, isLoading, append } = useChat({
     onError: (err) => {
-      console.error("AI_CHAT_ERROR:", err);
-      try {
-        const parsed = JSON.parse(err.message);
-        setError(`${parsed.stage}: ${parsed.details} (${parsed.elapsed}ms)`);
-      } catch {
-        setError(err.message || "Bilinmeyen bir hata oluştu");
+      console.error(">>> [DEBUG] AI_CHAT_ERROR_RAW:", err);
+      // Eğer hata mesajı HTML ise (Vercel 500 sayfası gibi), daha anlamlı bir mesaj göster
+      if (err.message.includes("<!DOCTYPE html>") || err.message.includes("<html")) {
+        console.error(">>> [DEBUG] DETECTED_VERCEL_500_HTML");
+        setError("Vercel Sunucu Hatası: Sunucu yanıt vermedi veya zaman aşımına uğradı. Lütfen internet bağlantınızı ve Vercel ayarlarınızı kontrol edin.");
+      } else {
+        try {
+          const parsed = JSON.parse(err.message);
+          console.log(">>> [DEBUG] PARSED_ERROR_JSON:", parsed);
+          setError(`${parsed.stage}: ${parsed.details} (${parsed.elapsed}ms)`);
+        } catch {
+          console.error(">>> [DEBUG] ERROR_PARSE_FAILED", err.message);
+          setError(err.message || "Bilinmeyen bir hata oluştu");
+        }
       }
     },
-    onResponse: () => {
+    onResponse: (response) => {
+      console.log(">>> [DEBUG] AI_RESPONSE_RECEIVED", { status: response.status, ok: response.ok });
       setError(null);
     }
   });
