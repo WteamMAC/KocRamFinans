@@ -1,6 +1,7 @@
 "use client";
 
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Cell } from "recharts";
+import { useEffect, useState } from "react";
 
 interface BudgetOverviewProps {
   incomes: any[];
@@ -8,6 +9,12 @@ interface BudgetOverviewProps {
 }
 
 export function BudgetOverview({ incomes, expenses }: BudgetOverviewProps) {
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   const totalIncome = incomes.reduce((acc, inc) => acc + inc.amount, 0);
   const totalExpense = expenses.reduce((acc, exp) => acc + exp.amount, 0);
 
@@ -16,9 +23,13 @@ export function BudgetOverview({ incomes, expenses }: BudgetOverviewProps) {
     { name: "Gider", total: totalExpense, color: "#ef4444" },
   ];
 
+  if (!isMounted) {
+    return <div className="h-[300px] w-full bg-slate-50/50 animate-pulse rounded-xl" />;
+  }
+
   return (
-    <div className="h-[300px] w-full">
-      <ResponsiveContainer width="100%" height="100%">
+    <div className="h-[300px] w-full min-h-[300px]">
+      <ResponsiveContainer width="100%" height="100%" minHeight={300}>
         <BarChart data={data}>
           <XAxis
             dataKey="name"

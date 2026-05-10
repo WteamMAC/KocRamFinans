@@ -1,6 +1,7 @@
 "use client";
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
+import { useEffect, useState } from "react";
 
 interface InvestmentSummaryProps {
   investments: any[];
@@ -9,6 +10,12 @@ interface InvestmentSummaryProps {
 const COLORS = ["#10b981", "#3b82f6", "#f59e0b", "#8b5cf6", "#ec4899", "#64748b"];
 
 export function InvestmentSummary({ investments }: InvestmentSummaryProps) {
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   const data = investments.map((inv) => ({
     name: inv.type,
     value: inv.currentValuation || inv.amount,
@@ -18,9 +25,13 @@ export function InvestmentSummary({ investments }: InvestmentSummaryProps) {
     return <p className="text-sm text-slate-500 text-center py-8">Henüz yatırım girişi yapılmamış.</p>;
   }
 
+  if (!isMounted) {
+    return <div className="h-[300px] w-full bg-slate-50/50 animate-pulse rounded-xl" />;
+  }
+
   return (
-    <div className="h-[300px] w-full">
-      <ResponsiveContainer width="100%" height="100%">
+    <div className="h-[300px] w-full min-h-[300px]">
+      <ResponsiveContainer width="100%" height="100%" minHeight={300}>
         <PieChart>
           <Pie
             data={data}
