@@ -11,7 +11,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 export function ChatAI() {
   const [isOpen, setIsOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [messages, setMessages] = useState<{id: string, role: string, content: string}[]>([]);
+  const [messages, setMessages] = useState<{ id: string, role: string, content: string }[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -27,13 +27,13 @@ export function ChatAI() {
 
   const append = async (msg: { role: string, content: string }) => {
     if (!msg.content.trim()) return;
-    
+
     appendMessage("user", msg.content);
     setIsLoading(true);
     setError(null);
 
     const currentMessages = [...messages, { id: Math.random().toString(), role: "user", content: msg.content }];
-    
+
     try {
       const response = await fetch("/api/chat", {
         method: "POST",
@@ -51,7 +51,7 @@ export function ChatAI() {
 
       const decoder = new TextDecoder();
       const botMsgId = Math.random().toString(36).substring(7);
-      
+
       setMessages((prev) => [...prev, { id: botMsgId, role: "model", content: "" }]);
 
       let done = false;
@@ -60,7 +60,7 @@ export function ChatAI() {
         done = doneReading;
         if (value) {
           const chunkValue = decoder.decode(value, { stream: !done });
-          setMessages((prev) => prev.map(m => 
+          setMessages((prev) => prev.map(m =>
             m.id === botMsgId ? { ...m, content: m.content + chunkValue } : m
           ));
         }
@@ -82,7 +82,7 @@ export function ChatAI() {
         body: JSON.stringify({ name, args }),
       });
       if (!res.ok) throw new Error("İşlem başarısız oldu");
-      
+
       append({ role: "user", content: `[SİSTEM BİLGİSİ]: ${name} işlemi kullanıcı tarafından onaylandı ve başarıyla veritabanına kaydedildi. Kullanıcıya işlemin tamamlandığını kısa bir mesajla bildir.` });
     } catch (e: any) {
       setError(e.message);
@@ -101,7 +101,7 @@ export function ChatAI() {
       if (match.index > lastIndex) {
         parts.push(<span key={`text-${lastIndex}`}>{content.substring(lastIndex, match.index)}</span>);
       }
-      
+
       try {
         const toolData = JSON.parse(match[1]);
         parts.push(
@@ -179,7 +179,7 @@ export function ChatAI() {
               <X className="h-4 w-4" />
             </Button>
           </CardHeader>
-          
+
           <CardContent className="flex-1 p-4 overflow-hidden">
             <ScrollArea className="h-full pr-4">
               <div className="space-y-4">
@@ -206,11 +206,10 @@ export function ChatAI() {
                       <div className={`h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0 ${m.role === "user" ? "bg-slate-100" : "bg-primary/10"}`}>
                         {m.role === "user" ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4 text-primary" />}
                       </div>
-                      <div className={`p-3 rounded-2xl text-sm ${
-                        m.role === "user" 
-                        ? "bg-primary text-white rounded-tr-none" 
+                      <div className={`p-3 rounded-2xl text-sm ${m.role === "user"
+                        ? "bg-primary text-white rounded-tr-none"
                         : "bg-slate-100 text-slate-800 rounded-tl-none"
-                      }`}>
+                        }`}>
                         {renderMessageContent(m.content)}
                       </div>
                     </div>
@@ -229,7 +228,7 @@ export function ChatAI() {
               </div>
             </ScrollArea>
           </CardContent>
-          
+
           {error && (
             <div className="px-4 py-2 mx-4 mb-2 bg-red-50 border border-red-100 rounded-lg text-[11px] text-red-600 flex items-center gap-2 animate-in fade-in slide-in-from-top-1">
               <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />

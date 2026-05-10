@@ -3,226 +3,214 @@ import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 import { MASTER_PROMPT, getFinancialContext } from "@/lib/gemini";
 
-
 export const dynamic = "force-dynamic";
-export const maxDuration = 60; // Vercel Pro limit: 60 saniye
+export const maxDuration = 60;
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "missing_api_key");
 
 const FALLBACK_MODELS = [
-  "gemini-3.1-flash-lite",      // Öncelikli çalışan model
-  "gemini-3.1-pro-preview",     // En yeni Pro model
-  "gemini-2.5-flash",           // Güçlü ve hızlı
-  "gemini-2.0-flash",           // Kararlı 2.0 sürümü
-  "gemini-flash-latest"         // Genel geçerli yedek
+  "gemini-3.1-flash-lite",
+  "gemini-flash-latest",
 ];
 
-// Global hata yakalayıcılar (Sadece debug için)
-if (typeof process !== 'undefined') {
-  process.on('unhandledRejection', (reason, promise) => {
-    console.error('UNHANDLED_REJECTION:', reason);
-  });
-  process.on('uncaughtException', (err) => {
-    console.error('UNCAUGHT_EXCEPTION:', err);
-  });
+// ─── Anahtar Kelime Grupları ──────────────────────────────────────────────────
+
+// Piyasa/internet araması gereken sorgular
+const MARKET_KEYWORDS = [
+  "dolar", "euro", "sterlin", "döviz", "kur",
+  "altın", "gram altın", "çeyrek altın",
+  "borsa", "bist", "hisse", "endeks",
+  "bitcoin", "btc", "ethereum", "kripto",
+  "faiz", "enflasyon", "tüfe",
+  "fiyat", "kaç tl", "ne kadar",
+];
+
+// Veritabanı işlemi gereken komutlar
+const DB_ACTION_KEYWORDS = [
+  "ekle", "kaydet", "sil", "güncelle", "düzenle",
+  "yeni gelir", "yeni gider", "yeni borç", "yeni yatırım",
+  "maaş ekle", "gider ekle", "borç ekle", "yatırım ekle",
+];
+
+// Araç/Function bildirimleri
+const FUNCTION_DECLARATIONS = [
+  {
+    name: "addIncome",
+    description: "Kullanıcının sistemine yeni bir gelir kaynağı ekler.",
+    parameters: {
+      type: "object",
+      properties: {
+        type: { type: "string", description: "Gelir türü (Salary, SpouseSalary, Rent, Freelance, Other)" },
+        amount: { type: "number", description: "Gelir miktarı" },
+        description: { type: "string", description: "Kısa açıklama" },
+      },
+      required: ["type", "amount"],
+    },
+  },
+  {
+    name: "addExpense",
+    description: "Kullanıcının sistemine yeni bir gider ekler.",
+    parameters: {
+      type: "object",
+      properties: {
+        type: { type: "string", description: "Gider türü (Rent, Bill, Groceries, Transport, Other)" },
+        amount: { type: "number", description: "Gider miktarı" },
+        isRecurring: { type: "boolean", description: "Düzenli gider mi?" },
+        description: { type: "string", description: "Kısa açıklama" },
+      },
+      required: ["type", "amount"],
+    },
+  },
+  {
+    name: "addDebt",
+    description: "Kullanıcının sistemine yeni bir borç ekler.",
+    parameters: {
+      type: "object",
+      properties: {
+        type: { type: "string", description: "Borç türü (CreditCard, BankLoan, Personal, Other)" },
+        amount: { type: "number", description: "Borç miktarı" },
+        description: { type: "string", description: "Kısa açıklama" },
+      },
+      required: ["type", "amount"],
+    },
+  },
+  {
+    name: "addInvestment",
+    description: "Kullanıcının sistemine yeni bir yatırım ekler.",
+    parameters: {
+      type: "object",
+      properties: {
+        type: { type: "string", description: "Yatırım türü (Gold, Crypto, Stock, RealEstate, ForeignCurrency)" },
+        amount: { type: "number", description: "Yatırım değeri" },
+        description: { type: "string", description: "Kısa açıklama" },
+      },
+      required: ["type", "amount"],
+    },
+  },
+];
+
+// ─── Mesaj Sınıflandırıcı ────────────────────────────────────────────────────
+
+type ToolMode = "none" | "search" | "db";
+
+function classifyMessage(message: string): ToolMode {
+  const lower = message.toLowerCase();
+
+  // DB işlemi mi? (Önce kontrol et — önceliklidir)
+  if (DB_ACTION_KEYWORDS.some((kw) => lower.includes(kw))) {
+    return "db";
+  }
+
+  // Piyasa/internet araması mı?
+  if (MARKET_KEYWORDS.some((kw) => lower.includes(kw))) {
+    return "search";
+  }
+
+  // Sıradan sohbet
+  return "none";
 }
 
+// ─── POST Handler ─────────────────────────────────────────────────────────────
 
 export async function POST(req: Request) {
   const startTime = Date.now();
   const traceId = Math.random().toString(36).substring(7);
+  let currentStage = "INIT";
 
-  console.log(`[${traceId}] >>> START CHAT_API (60s LIMIT MODE)`, { timestamp: new Date().toISOString() });
-
-  let currentStage = "INITIALIZATION";
+  console.log(`\n[${traceId}] ═══ CHAT REQUEST ═══ ${new Date().toISOString()}`);
 
   try {
-    // 1. Yetkilendirme Kontrolü
-    currentStage = "AUTH_CHECK";
-    console.time(`[${traceId}] AUTH_TIME`);
+    // 1. Auth
+    currentStage = "AUTH";
     const { userId } = await auth();
-    console.timeEnd(`[${traceId}] AUTH_TIME`);
+    if (!userId) return new Response("Yetkisiz erişim.", { status: 401 });
 
-    if (!userId) {
-      console.error(`[${traceId}] [AUTH_CHECK_FAILED] Unauthorized access attempt`);
-      return new Response("Yetkisiz erişim. Lütfen giriş yapın.", { status: 401 });
-    }
-
-    // 2. İstek Gövdesi Kontrolü
-    currentStage = "REQUEST_PARSING";
-    console.time(`[${traceId}] PARSING_TIME`);
-    let body;
-    try {
-      body = await req.json();
-    } catch (e) {
-      console.error(`[${traceId}] [PARSING_FAILED] JSON parsing failed`, e);
-      return new Response("Geçersiz JSON isteği.", { status: 400 });
-    }
-    console.timeEnd(`[${traceId}] PARSING_TIME`);
+    // 2. Parse
+    currentStage = "PARSE";
+    const body = await req.json().catch(() => null);
+    if (!body) return new Response("Geçersiz JSON.", { status: 400 });
 
     const { messages } = body;
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
-      console.error(`[${traceId}] [VALIDATION_FAILED] Invalid messages format or empty`, { messages });
-      return new Response("Geçersiz mesaj formatı: messages dizisi eksik veya boş.", { status: 400 });
+      return new Response("Mesaj dizisi boş.", { status: 400 });
     }
 
-    // Mesaj içeriğini doğrula (boş mesajları temizle)
-    const filteredMessages = messages.filter(m => m.content && typeof m.content === 'string' && m.content.trim().length > 0);
+    const filteredMessages = messages.filter(
+      (m: any) => m?.content && typeof m.content === "string" && m.content.trim()
+    );
     if (filteredMessages.length === 0) {
-      console.error(`[${traceId}] [VALIDATION_FAILED] All messages are empty`);
-      return new Response("Geçersiz mesaj içeriği: Boş mesaj gönderilemez.", { status: 400 });
+      return new Response("Mesaj içeriği boş.", { status: 400 });
     }
 
-    const lastMessage = filteredMessages[filteredMessages.length - 1].content;
+    const lastMessage: string = filteredMessages[filteredMessages.length - 1].content;
 
-    // 3. Veritabanı Verisi Çekme
-    currentStage = "DATABASE_FETCH";
-    console.time(`[${traceId}] DB_TIME`);
-    const userPromise = prisma.user.findUnique({
-      where: { clerkUserId: userId },
-      include: {
-        incomes: true,
-        expenses: true,
-        debts: true,
-        investments: true,
-      },
-    });
+    // 3. Akıllı araç sınıflandırması
+    const toolMode = classifyMessage(lastMessage);
+    console.log(`[${traceId}] Son mesaj: "${lastMessage.substring(0, 80)}"`);
+    console.log(`[${traceId}] Araç modu: ${toolMode.toUpperCase()} (db→functionCall, search→googleSearch, none→araçsız)`);
 
+    // 4. DB Fetch
+    currentStage = "DB";
     const user = await Promise.race([
-      userPromise,
-      new Promise((_, reject) => setTimeout(() => reject(new Error("Veritabanı 10s limitini aştı")), 10000))
+      prisma.user.findUnique({
+        where: { clerkUserId: userId },
+        include: { incomes: true, expenses: true, debts: true, investments: true },
+      }),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("DB timeout")), 10000)
+      ),
     ]) as any;
-    console.timeEnd(`[${traceId}] DB_TIME`);
 
-    if (!user) {
-      console.error(`[${traceId}] [USER_NOT_FOUND] User ID ${userId} not in database`);
-      return new Response("Kullanıcı verileri bulunamadı.", { status: 404 });
-    }
+    if (!user) return new Response("Kullanıcı bulunamadı.", { status: 404 });
 
-    // 4. Bağlam Hazırlama
-    currentStage = "CONTEXT_PREPARATION";
-    console.time(`[${traceId}] CONTEXT_TIME`);
+    // 5. Prompt hazırla
+    currentStage = "CONTEXT";
     const financialContext = await getFinancialContext(user);
-    const currentDate = new Date().toLocaleDateString('tr-TR', {
-      year: 'numeric', month: 'long', day: 'numeric', weekday: 'long'
+    const currentDate = new Date().toLocaleDateString("tr-TR", {
+      year: "numeric", month: "long", day: "numeric", weekday: "long",
     });
     const systemPrompt = MASTER_PROMPT
       .replace("{USER_DATA}", financialContext)
       .replace("{CURRENT_DATE}", currentDate);
-    console.timeEnd(`[${traceId}] CONTEXT_TIME`);
 
-    console.log(`[${traceId}] [PROMPT_INFO] Context size: ${financialContext.length}, Prompt: ${systemPrompt.length}`);
-
-    // 5. AI Model Denemeleri
-    currentStage = "AI_GENERATION";
-    const GLOBAL_TIMEOUT = 58000; // 60s limitine yakın (58s)
+    // 6. Fallback döngüsü
+    currentStage = "AI";
+    const GLOBAL_TIMEOUT = 55000;
 
     for (let i = 0; i < FALLBACK_MODELS.length; i++) {
       const modelId = FALLBACK_MODELS[i];
-      const elapsedTotal = Date.now() - startTime;
-      const remainingTime = GLOBAL_TIMEOUT - elapsedTotal;
+      const remaining = GLOBAL_TIMEOUT - (Date.now() - startTime);
+      if (remaining < 3000) break;
 
-      console.log(`[${traceId}] [AI_TRIAL_${i + 1}] Model: ${modelId} | Elapsed: ${elapsedTotal}ms | Remaining: ${remainingTime}ms`);
+      console.log(`[${traceId}] Deneme ${i + 1}: ${modelId} | Kalan: ${remaining}ms`);
 
-      if (remainingTime < 3000) {
-        console.error(`[${traceId}] [CRITICAL_TIMEOUT] Stopping trials, only ${remainingTime}ms left.`);
-        break;
-      }
-
-      const trialStartTime = Date.now();
       try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => {
-          console.warn(`[${traceId}] [MODEL_TIMEOUT] ${modelId} exceeded trial limit`);
-          controller.abort();
-        }, Math.min(remainingTime - 1000, 30000)); // Her model için max 30sn
+        // Araç yapılandırması
+        // NOT: googleSearch ve functionDeclarations Gemini'de aynı anda kullanılamaz
+        let tools: any[] | undefined;
 
-        // Direkt Gemini API kullanımı (Vercel SDK Atlatması)
-        // Gemini API googleSearch ve functionDeclarations'ı aynı anda kabul etmediği için ayrıştırıyoruz.
-        const DB_ACTION_KEYWORDS = ["ekle", "kaydet", "sil", "güncelle", "yeni gelir", "yeni gider", "borç", "kredi", "yatırım", "maaş"];
-        const isDbAction = DB_ACTION_KEYWORDS.some(kw => lastMessage.toLowerCase().includes(kw));
-
-        const tools: any[] = [];
-        if (isDbAction) {
-          tools.push({
-            functionDeclarations: [
-              {
-                name: "addIncome",
-                description: "Kullanıcının sistemine yeni bir gelir kaynağı (maaş, ek gelir vb.) ekler.",
-                parameters: {
-                  type: "object",
-                  properties: {
-                    type: { type: "string", description: "Gelir türü (örn: Salary, SpouseSalary, Rent, Freelance, Other)" },
-                    amount: { type: "number", description: "Gelir miktarı" },
-                    description: { type: "string", description: "Gelir hakkında kısa açıklama" }
-                  },
-                  required: ["type", "amount"]
-                }
-              },
-              {
-                name: "addExpense",
-                description: "Kullanıcının sistemine yeni bir gider (kira, fatura, market vb.) ekler.",
-                parameters: {
-                  type: "object",
-                  properties: {
-                    type: { type: "string", description: "Gider türü (örn: Rent, Bill, Groceries, Transport, Other)" },
-                    amount: { type: "number", description: "Gider miktarı" },
-                    isRecurring: { type: "boolean", description: "Düzenli bir gider mi? (örn: her ay ödenen kira/fatura ise true)" },
-                    description: { type: "string", description: "Gider hakkında kısa açıklama" }
-                  },
-                  required: ["type", "amount"]
-                }
-              },
-              {
-                name: "addDebt",
-                description: "Kullanıcının sistemine yeni bir borç veya kredi ekler.",
-                parameters: {
-                  type: "object",
-                  properties: {
-                    type: { type: "string", description: "Borç türü (örn: CreditCard, BankLoan, Personal, Other)" },
-                    amount: { type: "number", description: "Toplam borç miktarı" },
-                    description: { type: "string", description: "Borç hakkında kısa açıklama" }
-                  },
-                  required: ["type", "amount"]
-                }
-              },
-              {
-                name: "addInvestment",
-                description: "Kullanıcının sistemine yeni bir yatırım (altın, kripto, hisse vb.) ekler.",
-                parameters: {
-                  type: "object",
-                  properties: {
-                    type: { type: "string", description: "Yatırım türü (örn: Gold, Crypto, Stock, RealEstate, ForeignCurrency)" },
-                    amount: { type: "number", description: "Yatırımın toplam değeri" },
-                    description: { type: "string", description: "Yatırım hakkında kısa açıklama" }
-                  },
-                  required: ["type", "amount"]
-                }
-              }
-            ]
-          });
-        } else {
-          tools.push({ googleSearch: {} });
+        if (toolMode === "db") {
+          tools = [{ functionDeclarations: FUNCTION_DECLARATIONS }];
+        } else if (toolMode === "search") {
+          tools = [{ googleSearch: {} }];
         }
+        // toolMode === "none" → tools = undefined → en hızlı mod
 
         const model = genAI.getGenerativeModel({
           model: modelId,
           systemInstruction: systemPrompt,
-          tools: tools as any
+          ...(tools ? { tools: tools as any } : {}),
         });
 
-        // Geçmişi hazırla (son mesaj hariç)
-        const history = filteredMessages.slice(0, -1).map(m => ({
-          role: m.role === 'user' ? 'user' : 'model',
-          parts: [{ text: m.content }]
+        const history = filteredMessages.slice(0, -1).map((m: any) => ({
+          role: m.role === "user" ? "user" : "model",
+          parts: [{ text: m.content }],
         }));
 
         const chat = model.startChat({ history });
-
         const result = await chat.sendMessageStream(lastMessage);
 
-        clearTimeout(timeoutId);
-        console.log(`[${traceId}] [STREAM_SUCCESS] ${modelId} started in ${Date.now() - trialStartTime}ms. Returning direct ReadableStream.`);
+        console.log(`[${traceId}] Stream başladı — model: ${modelId}, araç: ${toolMode}`);
 
         const encoder = new TextEncoder();
         const stream = new ReadableStream({
@@ -230,75 +218,82 @@ export async function POST(req: Request) {
             try {
               for await (const chunk of result.stream) {
                 let chunkText = "";
-                try {
-                  chunkText = chunk.text();
-                } catch (e) { /* text() throws if there are only function calls */ }
+                try { chunkText = chunk.text(); } catch { /* function call chunk */ }
 
                 if (chunkText) {
                   controller.enqueue(encoder.encode(chunkText));
                 }
 
-                const calls = chunk.functionCalls ? chunk.functionCalls() : undefined;
-                if (calls && calls.length > 0) {
+                const calls = chunk.functionCalls?.();
+                if (calls?.length) {
                   for (const call of calls) {
-                    const actionData = JSON.stringify({ name: call.name, args: call.args });
-                    controller.enqueue(encoder.encode(`\n\n__TOOL_CALL__:${actionData}__END_TOOL_CALL__\n`));
+                    console.log(`[${traceId}] Function call: ${call.name}`, call.args);
+                    const payload = JSON.stringify({ name: call.name, args: call.args });
+                    controller.enqueue(
+                      encoder.encode(`\n\n__TOOL_CALL__:${payload}__END_TOOL_CALL__\n`)
+                    );
                   }
                 }
               }
+              console.log(`[${traceId}] Stream tamamlandı. Toplam: ${Date.now() - startTime}ms`);
               controller.close();
-            } catch (err) {
-              console.error(`[${traceId}] [STREAM_READ_ERROR]`, err);
+            } catch (err: any) {
+              console.error(`[${traceId}] Stream hatası:`, err.message);
               controller.error(err);
             }
-          }
+          },
         });
 
         return new Response(stream, {
           headers: {
             "Content-Type": "text/plain; charset=utf-8",
             "Cache-Control": "no-cache",
-            "Connection": "keep-alive"
-          }
-        });
-      } catch (modelError: any) {
-        const trialDuration = Date.now() - trialStartTime;
-        const isRateLimit = modelError.status === 429 || modelError.message?.includes("429");
-        const isAbort = modelError.name === "AbortError";
-
-        console.error(`[${traceId}] [TRIAL_FAILED] ${modelId} | Duration: ${trialDuration}ms | Type: ${isAbort ? "TIMEOUT" : (isRateLimit ? "RATE_LIMIT" : "OTHER")}`, {
-          message: modelError.message,
-          status: modelError.status
+          },
         });
 
-        if (i === FALLBACK_MODELS.length - 1) {
-          throw modelError;
+      } catch (err: any) {
+        const is429 = err.status === 429 || err.message?.includes("429");
+        console.error(`[${traceId}] Model ${modelId} başarısız:`, {
+          status: err.status,
+          message: err.message?.substring(0, 200),
+          toolMode,
+          is429,
+        });
+
+        if (is429 && i < FALLBACK_MODELS.length - 1) {
+          // Rate limit → kısa bekle, sonraki modeli dene
+          await new Promise((r) => setTimeout(r, 500));
+          continue;
         }
+
+        if (i === FALLBACK_MODELS.length - 1) throw err;
         continue;
       }
     }
 
-    throw new Error("AI modelleri 60 saniye içinde yanıt vermedi.");
+    throw new Error("Tüm modeller başarısız oldu.");
 
   } catch (error: any) {
-    const finalElapsed = Date.now() - startTime;
-    const isRateLimit = error.message?.includes("429") || error.status === 429;
+    const is429 = error.message?.includes("429") || error.status === 429;
+    const elapsed = Date.now() - startTime;
 
-    console.error(`[${traceId}] [FINAL_ERROR] Stage: ${currentStage}, Total: ${finalElapsed}ms`, {
-      message: error.message,
-      status: error.status
-    });
+    console.error(`[${traceId}] HATA | Stage: ${currentStage} | ${elapsed}ms |`, error.message);
 
-    return new Response(JSON.stringify({
-      error: isRateLimit ? "Kota Sınırı Aşıldı (Google Gemini)" : "Bir hata oluştu",
-      stage: currentStage,
-      details: error.message,
-      traceId,
-      elapsed: finalElapsed,
-      code: isRateLimit ? 429 : (error.status || 500)
-    }), {
-      status: isRateLimit ? 429 : 500,
-      headers: { "Content-Type": "application/json" }
-    });
+    return new Response(
+      JSON.stringify({
+        error: is429
+          ? "Anlık istek limiti aşıldı. 30 saniye bekleyip tekrar deneyin."
+          : "Bir hata oluştu.",
+        stage: currentStage,
+        details: error.message,
+        traceId,
+        elapsed,
+        code: is429 ? 429 : (error.status ?? 500),
+      }),
+      {
+        status: is429 ? 429 : (error.status ?? 500),
+        headers: { "Content-Type": "application/json" },
+      }
+    );
   }
 }
