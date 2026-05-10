@@ -150,17 +150,8 @@ export async function POST(req: Request) {
 
         clearTimeout(timeoutId);
         console.log(`[${traceId}] [STREAM_SUCCESS] ${modelId} started in ${Date.now() - trialStartTime}ms. Returning Response.`);
-
-        const aiStream = result.toAIStreamResponse();
-
-        return new Response(aiStream.body, {
-          status: 200,
-          headers: {
-            "Content-Type": "text/plain; charset=utf-8",
-            "x-vercel-cache": "MISS",
-            "x-trace-id": traceId,
-          },
-        });
+        
+        return result.toDataStreamResponse();
       } catch (modelError: any) {
         const trialDuration = Date.now() - trialStartTime;
         const isRateLimit = modelError.status === 429 || modelError.message?.includes("429");
