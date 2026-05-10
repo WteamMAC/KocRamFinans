@@ -73,6 +73,7 @@ export async function POST(req: Request) {
       return new Response("Geçersiz mesaj içeriği: Boş mesaj gönderilemez.", { status: 400 });
     }
 
+    const lastMessage = filteredMessages[filteredMessages.length - 1].content;
 
     // 3. Veritabanı Verisi Çekme
     currentStage = "DATABASE_FETCH";
@@ -102,8 +103,8 @@ export async function POST(req: Request) {
     currentStage = "CONTEXT_PREPARATION";
     console.time(`[${traceId}] CONTEXT_TIME`);
     const financialContext = await getFinancialContext(user);
-    const currentDate = new Date().toLocaleDateString('tr-TR', { 
-      year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' 
+    const currentDate = new Date().toLocaleDateString('tr-TR', {
+      year: 'numeric', month: 'long', day: 'numeric', weekday: 'long'
     });
     const systemPrompt = MASTER_PROMPT
       .replace("{USER_DATA}", financialContext)
@@ -137,13 +138,13 @@ export async function POST(req: Request) {
         }, Math.min(remainingTime - 1000, 30000)); // Her model için max 30sn
 
         // Direkt Gemini API kullanımı (Vercel SDK Atlatması)
-        const model = genAI.getGenerativeModel({ 
-          model: modelId,
-          systemInstruction: systemPrompt,
-          // @ts-ignore - SDK types use googleSearchRetrieval but API requires googleSearch
-        tools: [
-          { googleSearch: {} } as any,
-          {
+        // Gemini API googleSearch ve functionDeclarations'ı aynı anda kabul etmediği için ayrıştırıyoruz.
+        const DB_ACTION_KEYWORDS = ["ekle", "kaydet", "sil", "güncelle", "yeni gelir", "yeni gider", "borç", "kredi", "yatırım", "maaş"];
+        const isDbAction = DB_ACTION_KEYWORDS.some(kw => lastMessage.toLowerCase().includes(kw));
+
+        const tools: any[] = [];
+        if (isDbAction) {
+          tools.push({
             functionDeclarations: [
               {
                 name: "addIncome",
@@ -199,8 +200,15 @@ export async function POST(req: Request) {
                 }
               }
             ]
-          }
-        ]
+          });
+        } else {
+          tools.push({ googleSearch: {} });
+        }
+
+        const model = genAI.getGenerativeModel({
+          model: modelId,
+          systemInstruction: systemPrompt,
+          tools: tools as any
         });
 
         // Geçmişi hazırla (son mesaj hariç)
@@ -210,7 +218,6 @@ export async function POST(req: Request) {
         }));
 
         const chat = model.startChat({ history });
-        const lastMessage = filteredMessages[filteredMessages.length - 1].content;
 
         const result = await chat.sendMessageStream(lastMessage);
 
@@ -225,8 +232,8 @@ export async function POST(req: Request) {
                 let chunkText = "";
                 try {
                   chunkText = chunk.text();
-                } catch(e) { /* text() throws if there are only function calls */ }
-                
+                } catch (e) { /* text() throws if there are only function calls */ }
+
                 if (chunkText) {
                   controller.enqueue(encoder.encode(chunkText));
                 }
