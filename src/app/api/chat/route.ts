@@ -146,22 +146,22 @@ export async function POST(req: Request) {
           abortSignal: controller.signal,
           onFinish: (event) => {
             console.log(`[${traceId}] [STREAM_FINISHED] Model: ${modelId}, Tokens: ${event.usage.totalTokens}`);
-          },
-          onError: (error) => {
-            console.error(`[${traceId}] [STREAM_ERROR] ${modelId}:`, error);
           }
         });
 
         clearTimeout(timeoutId);
         console.log(`[${traceId}] [STREAM_SUCCESS] ${modelId} started in ${Date.now() - trialStartTime}ms. Returning Response.`);
         
-        const response = result.toDataStreamResponse();
+        const aiStream = result.toAIStreamResponse();
         
-        // Vercel/Node 24 uyumluluğu için ek başlıklar gerekebilir
-        response.headers.set('x-vercel-cache', 'MISS');
-        response.headers.set('x-trace-id', traceId);
-        
-        return response;
+        return new Response(aiStream.body, {
+          status: 200,
+          headers: {
+            "Content-Type": "text/plain; charset=utf-8",
+            "x-vercel-cache": "MISS",
+            "x-trace-id": traceId,
+          },
+        });
       } catch (modelError: any) {
         const trialDuration = Date.now() - trialStartTime;
         const isRateLimit = modelError.status === 429 || modelError.message?.includes("429");
