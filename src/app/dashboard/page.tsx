@@ -9,6 +9,7 @@ import { ArrowDownRight, ArrowUpRight, Banknote, Calendar, PieChart, Wallet } fr
 import { BudgetOverview } from "@/components/dashboard/budget-overview";
 import { UpcomingPayments } from "@/components/dashboard/upcoming-payments";
 import { InvestmentSummary } from "@/components/dashboard/investment-summary";
+import { ChatAI } from "@/components/dashboard/chat-ai";
 
 export default async function DashboardPage() {
   await cookies();
@@ -123,6 +124,8 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+      {/* Floating AI Chat */}
+      <ChatAI />
     </div>
   );
 }
