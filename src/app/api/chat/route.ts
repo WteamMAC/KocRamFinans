@@ -212,12 +212,15 @@ export async function POST(req: Request) {
           }
 
           // Diğer hatalarda aynı anahtarın sonraki modelini dene
+          // @ts-ignore
+          global.lastAiError = errorDetails;
           continue;
         }
       }
     }
 
-    throw new Error("Tüm API anahtarları ve modeller denendi, sonuç alınamadı.");
+    throw new Error("Tüm modeller denendi. Son hata: " + (global as any).lastAiError);
+
 
   } catch (error: any) {
     console.error(`[${traceId}] FINAL ERROR:`, error.message);
