@@ -14,6 +14,8 @@ export function ChatAI() {
   const [messages, setMessages] = useState<{ id: string, role: string, content: string }[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [cooldown, setCooldown] = useState(0); // saniye cinsinden geri sayım
+  const cooldownRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInput(e.target.value);
@@ -70,7 +72,22 @@ export function ChatAI() {
       setError(err.message || "Bir hata oluştu");
     } finally {
       setIsLoading(false);
+      startCooldown(30); // Her mesaj sonrası 30s bekleme
     }
+  };
+
+  const startCooldown = (seconds: number) => {
+    setCooldown(seconds);
+    if (cooldownRef.current) clearInterval(cooldownRef.current);
+    cooldownRef.current = setInterval(() => {
+      setCooldown((prev) => {
+        if (prev <= 1) {
+          clearInterval(cooldownRef.current!);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
   };
 
   const handleToolConfirm = async (name: string, args: any) => {
@@ -238,13 +255,22 @@ export function ChatAI() {
 
           <CardFooter className="p-4 border-t">
             <form onSubmit={handleSubmit} className="flex w-full gap-2">
-              <Input
-                value={input}
-                onChange={handleInputChange}
-                placeholder="Mesajınızı yazın..."
-                className="bg-slate-50 border-none focus-visible:ring-1 focus-visible:ring-primary"
-              />
-              <Button type="submit" size="icon" disabled={isLoading || !input} className="shadow-lg">
+              <div className="flex-1 relative">
+                <Input
+                  value={input}
+                  onChange={handleInputChange}
+                  placeholder={cooldown > 0 ? `${cooldown}s sonra yazabilirsiniz...` : "Mesajınızı yazın..."}
+                  disabled={cooldown > 0 || isLoading}
+                  className="bg-slate-50 border-none focus-visible:ring-1 focus-visible:ring-primary w-full pr-10 disabled:opacity-60 disabled:cursor-not-allowed"
+                />
+                {cooldown > 0 && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                    <div className="w-4 h-4 rounded-full border-2 border-primary/40 border-t-primary animate-spin" />
+                    <span className="text-[10px] font-bold text-primary">{cooldown}s</span>
+                  </div>
+                )}
+              </div>
+              <Button type="submit" size="icon" disabled={isLoading || !input || cooldown > 0} className="shadow-lg">
                 <Send className="h-4 w-4" />
               </Button>
             </form>
