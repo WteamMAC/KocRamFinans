@@ -12,12 +12,12 @@ const google = createGoogleGenerativeAI({
   apiKey: process.env.GEMINI_API_KEY,
 });
 
-// Denenecek model sırası (Daha stabil ve garanti isimler)
+// Denenecek model sırası (3.1 modellerine öncelik verilmiştir)
 const FALLBACK_MODELS = [
+  "gemini-3.1-pro",
+  "gemini-3.1-flash",
   "gemini-1.5-pro-latest",
-  "gemini-1.5-flash-latest",
-  "gemini-2.0-flash-exp",
-  "gemini-1.5-flash"
+  "gemini-1.5-flash-latest"
 ];
 
 export async function POST(req: Request) {
