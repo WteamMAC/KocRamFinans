@@ -1,65 +1,106 @@
-import Image from "next/image";
+import { SignUpButton, SignInButton, SignedIn, SignedOut } from "@clerk/nextjs";
+import { Button } from "@/components/ui/button";
+import { ArrowRight, BarChart3, Bot, ShieldCheck, Sparkles } from "lucide-react";
+import Link from "next/link";
 
-export default function Home() {
+export default function LandingPage() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+    <div className="flex flex-col min-h-screen">
+      {/* Header */}
+      <header className="px-4 lg:px-6 h-16 flex items-center border-b bg-white/50 backdrop-blur-md sticky top-0 z-50">
+        <Link className="flex items-center justify-center" href="#">
+          <Bot className="h-8 w-8 text-primary" />
+          <span className="ml-2 text-xl font-bold bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">Finans Koç AI</span>
+        </Link>
+        <nav className="ml-auto flex gap-4 sm:gap-6 items-center">
+          <SignedOut>
+            <SignInButton mode="modal">
+              <Button variant="ghost" className="text-sm font-medium">Giriş Yap</Button>
+            </SignInButton>
+            <SignUpButton mode="modal">
+              <Button className="text-sm font-medium">Hemen Başla</Button>
+            </SignUpButton>
+          </SignedOut>
+          <SignedIn>
+            <Link href="/dashboard">
+              <Button className="text-sm font-medium">Panele Git</Button>
+            </Link>
+          </SignedIn>
+        </nav>
+      </header>
+
+      <main className="flex-1">
+        {/* Hero Section */}
+        <section className="w-full py-12 md:py-24 lg:py-32 xl:py-48 bg-gradient-to-b from-white to-slate-50 relative overflow-hidden">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-[radial-gradient(circle_at_center,_var(--tw-gradient-from)_0%,_transparent_100%)] from-blue-50/50 to-transparent opacity-70"></div>
+          <div className="container px-4 md:px-6 relative mx-auto">
+            <div className="flex flex-col items-center space-y-4 text-center">
+              <div className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-primary/10 text-primary mb-4 animate-bounce">
+                <Sparkles className="mr-1 h-3 w-3" />
+                Yapay Zeka Destekli Finansal Özgürlük
+              </div>
+              <h1 className="text-4xl font-extrabold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl max-w-3xl">
+                Paranızı <span className="text-primary">Akıllıca</span> Yönetin, Geleceğinizi İnşa Edin
+              </h1>
+              <p className="mx-auto max-w-[700px] text-gray-500 md:text-xl dark:text-gray-400">
+                Gelir, gider ve yatırımlarınızı Gemini AI ile analiz edin. Size özel finansal koçunuz her adımda yanınızda.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 min-w-[300px] justify-center mt-8">
+                <SignedOut>
+                  <SignUpButton mode="modal">
+                    <Button size="lg" className="text-lg px-8 py-6 h-auto rounded-full shadow-xl hover:shadow-primary/20 transition-all group">
+                      Ücretsiz Kayıt Ol
+                      <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                    </Button>
+                  </SignUpButton>
+                </SignedOut>
+                <SignedIn>
+                  <Link href="/dashboard">
+                    <Button size="lg" className="text-lg px-8 py-6 h-auto rounded-full shadow-xl hover:shadow-primary/20 transition-all group">
+                      Danışmanına Sor
+                      <Bot className="ml-2 h-5 w-5 group-hover:scale-110 transition-transform" />
+                    </Button>
+                  </Link>
+                </SignedIn>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Features Section */}
+        <section className="w-full py-12 md:py-24 lg:py-32 bg-white">
+          <div className="container px-4 md:px-6 mx-auto">
+            <div className="grid gap-12 lg:grid-cols-3">
+              <div className="flex flex-col items-center space-y-4 text-center p-6 rounded-3xl hover:bg-slate-50 transition-colors">
+                <div className="p-4 bg-primary/10 rounded-2xl">
+                  <Bot className="h-10 w-10 text-primary" />
+                </div>
+                <h3 className="text-2xl font-bold">AI Finansal Koç</h3>
+                <p className="text-gray-500">Harcamalarınızı analiz eder ve "Bu ay telefon almalı mıyım?" gibi sorularınıza rasyonel cevaplar verir.</p>
+              </div>
+              <div className="flex flex-col items-center space-y-4 text-center p-6 rounded-3xl hover:bg-slate-50 transition-colors">
+                <div className="p-4 bg-blue-100 rounded-2xl">
+                  <BarChart3 className="h-10 w-10 text-blue-600" />
+                </div>
+                <h3 className="text-2xl font-bold">Portföy Yönetimi</h3>
+                <h3 className="text-2xl font-bold">Portföy Yönetimi</h3>
+                <p className="text-gray-500">Altın, kripto, döviz ve BIST yatırımlarınızı tek bir yerden takip edin ve yapay zeka ile optimize edin.</p>
+              </div>
+              <div className="flex flex-col items-center space-y-4 text-center p-6 rounded-3xl hover:bg-slate-50 transition-colors">
+                <div className="p-4 bg-green-100 rounded-2xl">
+                  <ShieldCheck className="h-10 w-10 text-green-600" />
+                </div>
+                <h3 className="text-2xl font-bold">Borç Ödeme Planı</h3>
+                <p className="text-gray-500">Kart borçlarınızı ve kredilerinizi en hızlı şekilde kapatmanız için size özel ödeme stratejileri sunar.</p>
+              </div>
+            </div>
+          </div>
+        </section>
       </main>
+
+      <footer className="py-6 w-full shrink-0 items-center px-4 md:px-6 border-t bg-slate-50">
+        <p className="text-xs text-center text-gray-500">© 2026 Finans Koç AI. Tüm hakları saklıdır.</p>
+      </footer>
     </div>
   );
 }
