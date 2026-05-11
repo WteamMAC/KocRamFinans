@@ -1,4 +1,15 @@
-import yahooFinance from 'yahoo-finance2';
+import YahooFinanceClass from 'yahoo-finance2';
+
+// Next.js/Turbopack ortamında kütüphanenin doğru başlatılması için instance oluşturuyoruz
+const yahooFinance = (function() {
+  try {
+    // Eğer YahooFinanceClass bir constructor ise yeni bir instance oluştur
+    return new (YahooFinanceClass as any)();
+  } catch (e) {
+    // Eğer zaten bir instance ise veya farklı bir yapıdaysa doğrudan döndür
+    return YahooFinanceClass;
+  }
+})();
 
 /**
  * Fiyat Servisi - Yahoo Finance API Entegrasyonu
