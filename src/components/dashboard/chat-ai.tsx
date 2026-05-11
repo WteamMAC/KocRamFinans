@@ -53,8 +53,14 @@ export function ChatAI() {
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || "Sunucu hatası");
+        let errorData;
+        try {
+          const text = await response.text();
+          errorData = JSON.parse(text);
+        } catch {
+          errorData = { error: "Sunucu hatası" };
+        }
+        throw new Error(errorData.error || errorData.details || "Sunucu hatası");
       }
 
       const reader = response.body?.getReader();

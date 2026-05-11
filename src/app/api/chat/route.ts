@@ -122,6 +122,7 @@ export async function POST(req: Request) {
   const startTime = Date.now();
   const traceId = Math.random().toString(36).substring(7);
   let currentStage = "INIT";
+  let lastRateLimitReason = "";
 
   try {
     const { userId } = await auth();
@@ -203,16 +204,24 @@ export async function POST(req: Request) {
 
           return new Response(stream, { headers: { "Content-Type": "text/plain; charset=utf-8" } });
 
-        } catch (err: any) {
-          const errorDetails = err.message || "Unknown error";
-          const is429 = err.status === 429 || errorDetails.includes("429");
-          console.warn(`[${traceId}] [FAIL] Key Index: ${currentKeyIndex}, Model: ${modelId}, Error: ${errorDetails}`);
+          } catch (err: any) {
+            const errorDetails = err.message || "Unknown error";
+            const is429 = err.status === 429 || errorDetails.includes("429");
+            console.warn(`[${traceId}] [FAIL] Key Index: ${currentKeyIndex}, Model: ${modelId}, Error: ${errorDetails}`);
 
-          if (is429) {
-            // Eğer bu anahtarda kota bittiyse, bu anahtarın diğer modellerini deneme, 
-            // hemen BİR SONRAKİ ANAHTARA geç.
-            break; // İçteki model döngüsünden çık, dıştaki key döngüsüne git
-          }
+            if (is429) {
+              // Teşhis Et
+              if (errorDetails.includes("RPM")) lastRateLimitReason = "Dakikalık İstek Sınırı (RPM)";
+              else if (errorDetails.includes("TPM")) lastRateLimitReason = "Dakikalık Token Sınırı (TPM)";
+              else if (errorDetails.includes("RPD")) lastRateLimitReason = "Günlük İstek Sınırı (RPD)";
+              else lastRateLimitReason = "Genel Kota Sınırı (429)";
+
+              console.warn(`[${traceId}] [429 DETECTED] Reason: ${lastRateLimitReason}`);
+
+              // Eğer bu anahtarda kota bittiyse, bu anahtarın diğer modellerini deneme, 
+              // hemen BİR SONRAKİ ANAHTARA geç.
+              break; // İçteki model döngüsünden çık, dıştaki key döngüsüne git
+            }
 
           // Diğer hatalarda aynı anahtarın sonraki modelini dene
           // @ts-ignore
@@ -226,9 +235,12 @@ export async function POST(req: Request) {
 
 
   } catch (error: any) {
-    console.error(`[${traceId}] FINAL ERROR:`, error.message);
+    const message = lastRateLimitReason 
+      ? `Gemini API kotası aşıldı: ${lastRateLimitReason}. Lütfen biraz bekleyin.` 
+      : "Sistem şu an yoğun, lütfen 15 saniye sonra tekrar deneyin.";
+
     return new Response(JSON.stringify({
-      error: "Sistem şu an yoğun, lütfen 15 saniye sonra tekrar deneyin.",
+      error: message,
       details: error.message
     }), { status: 500 });
   }
