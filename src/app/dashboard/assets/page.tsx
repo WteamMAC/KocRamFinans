@@ -117,7 +117,7 @@ export default async function AssetsPage() {
         </Card>
       </div>
 
-      <AssetList assets={metrics.assets} />
+      <AssetList assets={metrics.assets} allInvestments={user.investments} />
     </div>
   );
 }

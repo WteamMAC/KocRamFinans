@@ -100,7 +100,9 @@ export function calculatePortfolioMetrics(investments: any[], livePrices: Map<st
   let totalCost = 0;
   let totalCurrentValue = 0;
 
-  const detailedAssets = (investments || []).map(inv => {
+  const activeInvestments = (investments || []).filter(inv => !inv.status || inv.status === "OPEN");
+
+  const detailedAssets = activeInvestments.map(inv => {
     const live = inv.symbol ? livePrices.get(inv.symbol) : null;
     
     const currentPrice = (live && live.price > 0) 
