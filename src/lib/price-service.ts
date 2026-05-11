@@ -1,7 +1,10 @@
-import yahooFinance from 'yahoo-finance2';
+import YahooFinance from 'yahoo-finance2';
+
+// Yahoo Finance nesnesini oluşturuyoruz (V3+ kesin çözüm)
+const yf = new YahooFinance();
 
 /**
- * Fiyat Servisi - yahoo-finance2 kullanılarak güçlendirildi
+ * Fiyat Servisi - Yahoo Finance API Entegrasyonu
  */
 
 interface PriceResult {
@@ -16,54 +19,53 @@ export async function getLivePrices(symbols: string[]): Promise<Map<string, Pric
   
   if (symbols.length === 0) return results;
 
+  console.log("Fetching prices for:", symbols);
+
   try {
-    // Yahoo Finance'den verileri çek
-    const quotes = await yahooFinance.quote(symbols);
-    
-    // Gelen veri tekil veya dizi olabilir, diziye çevirip işleyelim
+    const quotes = await yf.quote(symbols);
     const quotesArray = Array.isArray(quotes) ? quotes : [quotes];
+
+    console.log(`Received ${quotesArray.length} quotes from Yahoo`);
 
     quotesArray.forEach((quote: any) => {
       if (quote && quote.symbol) {
+        const currentPrice = quote.regularMarketPrice || quote.postMarketPrice || quote.preMarketPrice || 0;
+        
         results.set(quote.symbol, {
           symbol: quote.symbol,
-          price: quote.regularMarketPrice || 0,
+          price: currentPrice,
           changePercent: quote.regularMarketChangePercent
         });
       }
     });
 
-    // Bulunamayan sembolleri 0 ile doldur
     symbols.forEach(s => {
       if (!results.has(s)) {
         results.set(s, { symbol: s, price: 0, error: "Veri bulunamadı" });
       }
     });
 
-  } catch (error) {
-    console.error("Yahoo Finance Library Error:", error);
+  } catch (error: any) {
+    console.error("CRITICAL: Yahoo Finance Quote Error:", error.message);
     symbols.forEach(s => results.set(s, { symbol: s, price: 0, error: "Bağlantı hatası" }));
   }
 
   return results;
 }
 
-/**
- * Sembol arama fonksiyonu - yahoo-finance2.search() kullanır
- */
 export async function searchSymbols(query: string, category: string) {
   if (!query || query.length < 2) return [];
 
+  console.log(`Searching for: "${query}" in category: ${category}`);
+
   try {
-    const searchResults = await yahooFinance.search(query, {
+    const searchResults = await yf.search(query, {
       newsCount: 0,
-      quotesCount: 10
+      quotesCount: 15
     });
 
-    // quotes dizisinin varlığını kontrol et
     const quotes = (searchResults && (searchResults as any).quotes) ? (searchResults as any).quotes : [];
-
-    // Kategoriye göre filtreleme
+    
     let filteredQuotes = quotes;
     
     if (category === "BIST") {
@@ -74,19 +76,19 @@ export async function searchSymbols(query: string, category: string) {
       );
     } else if (category === "NASDAQ") {
       filteredQuotes = quotes.filter((q: any) => 
-        q.quoteType === "EQUITY" && 
+        (q.quoteType === "EQUITY" || q.quoteType === "ETF") && 
         (q.symbol && !q.symbol.endsWith(".IS"))
       );
     } else if (category === "KRİPTO") {
       filteredQuotes = quotes.filter((q: any) => 
         q.quoteType === "CRYPTOCURRENCY" || 
-        (q.symbol && q.symbol.includes("-USD"))
+        (q.symbol && (q.symbol.includes("-USD") || q.symbol.includes("-BTC")))
       );
     }
 
     return filteredQuotes.slice(0, 5);
-  } catch (error) {
-    console.error("Search API Error:", error);
+  } catch (error: any) {
+    console.error("CRITICAL: Search API Error:", error.message);
     return [];
   }
 }
@@ -101,7 +103,6 @@ export function calculatePortfolioMetrics(investments: any[], livePrices: Map<st
   const detailedAssets = (investments || []).map(inv => {
     const live = inv.symbol ? livePrices.get(inv.symbol) : null;
     
-    // Eğer canlı fiyat 0 gelirse (hata durumu), alış fiyatını baz al
     const currentPrice = (live && live.price > 0) 
       ? live.price 
       : (inv.purchasePrice || (inv.amount / (inv.quantity || 1)));
