@@ -96,7 +96,15 @@ export function InvestmentSummary({ investments }: InvestmentSummaryProps) {
             verticalAlign="bottom" 
             height={40}
             iconType="circle"
-            formatter={(value) => <span className="text-xs font-bold text-[#434750] px-2">{value}</span>}
+            formatter={(value, entry: any) => {
+              const item = data.find(d => d.name === value);
+              const percent = item ? ((item.value / totalValue) * 100).toFixed(1) : 0;
+              return (
+                <span className="text-xs font-bold text-[#434750] px-2">
+                  {value} <span className="text-[10px] opacity-60 ml-1">%{percent}</span>
+                </span>
+              );
+            }}
           />
         </PieChart>
       </ResponsiveContainer>

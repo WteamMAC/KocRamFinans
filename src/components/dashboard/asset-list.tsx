@@ -336,6 +336,11 @@ export function AssetList({ assets, allInvestments }: AssetListProps) {
             ) : (
               Object.values(groupedAssets).map((group: any) => {
                 const totalValue = group.totalQuantity * (group.currentPrice || 0);
+                const totalPortfolioValue = Object.values(groupedAssets).reduce((sum: number, g: any) => {
+                  return sum + (g.totalQuantity * (g.currentPrice || 0));
+                }, 0);
+                const portfolioRatio = totalPortfolioValue > 0 ? (totalValue / totalPortfolioValue) * 100 : 0;
+                
                 const profit = totalValue - group.totalCost;
                 const profitPercent = group.totalCost > 0 ? (profit / group.totalCost) * 100 : 0;
                 const isExpanded = expandedSymbol === group.symbol;
@@ -362,6 +367,9 @@ export function AssetList({ assets, allInvestments }: AssetListProps) {
                             </div>
                             <p className="text-[#434750] text-sm font-medium mt-1">
                               {group.totalQuantity.toLocaleString("tr-TR")} Adet
+                              <span className="ml-2 text-[10px] font-bold text-[#747781] bg-[#faf9f6] border border-[#c4c6d2]/10 px-2 py-0.5 rounded-md uppercase tracking-tighter">
+                                Portföy Payı: %{portfolioRatio.toFixed(1)}
+                              </span>
                             </p>
                           </div>
                         </div>
