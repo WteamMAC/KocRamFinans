@@ -207,20 +207,23 @@ export async function POST(req: Request) {
           } catch (err: any) {
             const errorDetails = err.message || "Unknown error";
             const is429 = err.status === 429 || errorDetails.includes("429");
+            const isAuthError = errorDetails.includes("API key expired") || errorDetails.includes("API_KEY_INVALID") || err.status === 400;
             console.warn(`[${traceId}] [FAIL] Key Index: ${currentKeyIndex}, Model: ${modelId}, Error: ${errorDetails}`);
 
-            if (is429) {
+            if (is429 || isAuthError) {
               // Teşhis Et
               if (errorDetails.includes("RPM")) lastRateLimitReason = "Dakikalık İstek Sınırı (RPM)";
               else if (errorDetails.includes("TPM")) lastRateLimitReason = "Dakikalık Token Sınırı (TPM)";
               else if (errorDetails.includes("RPD")) lastRateLimitReason = "Günlük İstek Sınırı (RPD)";
+              else if (errorDetails.includes("expired")) lastRateLimitReason = "API Anahtarının Süresi Dolmuş (Expired)";
+              else if (errorDetails.includes("API_KEY_INVALID")) lastRateLimitReason = "Geçersiz API Anahtarı (Invalid)";
+              else if (isAuthError) lastRateLimitReason = "API Anahtarı Hatası (400/Auth)";
               else lastRateLimitReason = "Genel Kota Sınırı (429)";
 
-              console.warn(`[${traceId}] [429 DETECTED] Reason: ${lastRateLimitReason}`);
+              console.warn(`[${traceId}] [DIAGNOSIS] Reason: ${lastRateLimitReason}`);
 
-              // Eğer bu anahtarda kota bittiyse, bu anahtarın diğer modellerini deneme, 
-              // hemen BİR SONRAKİ ANAHTARA geç.
-              break; // İçteki model döngüsünden çık, dıştaki key döngüsüne git
+              // Eğer bu anahtarda kota veya auth sorunu varsa, bir sonraki anahtara geç
+              break; 
             }
 
           // Diğer hatalarda aynı anahtarın sonraki modelini dene
@@ -236,12 +239,13 @@ export async function POST(req: Request) {
 
   } catch (error: any) {
     const message = lastRateLimitReason 
-      ? `Gemini API kotası aşıldı: ${lastRateLimitReason}. Lütfen biraz bekleyin.` 
+      ? `Sorun Tespit Edildi: ${lastRateLimitReason}.` 
       : "Sistem şu an yoğun, lütfen 15 saniye sonra tekrar deneyin.";
 
+    console.error(`[${traceId}] FINAL ERROR:`, error.message);
     return new Response(JSON.stringify({
       error: message,
       details: error.message
-    }), { status: 500 });
+    }), { status: 500, headers: { "Content-Type": "application/json" } });
   }
 }
