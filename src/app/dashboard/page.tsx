@@ -37,7 +37,7 @@ export default async function DashboardPage() {
 
   // Benzersiz sembolleri topla
   const symbols = Array.from(new Set(
-    user.investments
+    (user.investments as any[])
       .map(inv => inv.symbol)
       .filter((s): s is string => !!s)
   ));

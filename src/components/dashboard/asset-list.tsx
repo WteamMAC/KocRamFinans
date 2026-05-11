@@ -18,7 +18,7 @@ export function AssetList({ assets }: AssetListProps) {
   const [loading, setLoading] = useState(false);
 
   const [formData, setFormData] = useState({
-    type: "BIST",
+    type: "BIST" as string,
     symbol: "",
     quantity: 0,
     purchasePrice: 0,
@@ -63,7 +63,7 @@ export function AssetList({ assets }: AssetListProps) {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
               <div className="space-y-2">
                 <Label>Tür</Label>
-                <Select value={formData.type} onValueChange={(v) => setFormData({...formData, type: v})}>
+                <Select value={formData.type} onValueChange={(v: any) => setFormData(prev => ({ ...prev, type: String(v) }))}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
