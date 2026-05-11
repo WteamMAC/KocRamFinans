@@ -1,6 +1,7 @@
+import yahooFinance from 'yahoo-finance2';
+
 /**
- * Fiyat Servisi
- * BIST, NASDAQ ve Kripto fiyatlarını Yahoo Finance üzerinden çeker.
+ * Fiyat Servisi - yahoo-finance2 kullanılarak güçlendirildi
  */
 
 interface PriceResult {
@@ -10,34 +11,31 @@ interface PriceResult {
   error?: string;
 }
 
+// Yahoo Finance ayarlarını yapalım (Hata loglarını azaltmak için)
+yahooFinance.setGlobalConfig({
+  queue: { concurrency: 5 },
+  validation: { logErrors: false }
+});
+
 export async function getLivePrices(symbols: string[]): Promise<Map<string, PriceResult>> {
   const results = new Map<string, PriceResult>();
   
   if (symbols.length === 0) return results;
 
   try {
-    // Yahoo Finance Query URL - query2 daha güncel sonuçlar verebilir
-    const url = `https://query2.finance.yahoo.com/v7/finance/quote?symbols=${symbols.join(",")}`;
-    
-    const response = await fetch(url, {
-      cache: 'no-store' // Fiyatların anlık gelmesi için cache'i kapatıyoruz
-    });
-
-    if (!response.ok) {
-      throw new Error("Fiyat çekme hatası");
-    }
-
-    const data = await response.json();
-    const quotes = data.quoteResponse?.result || [];
+    // yahoo-finance2.quote() metodu çoklu sembolü tek seferde çeker
+    // Hatalı sembol olsa bile diğerlerini çekmeye devam eder
+    const quotes = await yahooFinance.quote(symbols, { return: 'array' });
 
     quotes.forEach((quote: any) => {
       results.set(quote.symbol, {
         symbol: quote.symbol,
-        price: quote.regularMarketPrice,
+        price: quote.regularMarketPrice || 0,
         changePercent: quote.regularMarketChangePercent
       });
     });
 
+    // Bulunamayan semboller için kontrol
     symbols.forEach(s => {
       if (!results.has(s)) {
         results.set(s, { symbol: s, price: 0, error: "Veri bulunamadı" });
@@ -45,48 +43,50 @@ export async function getLivePrices(symbols: string[]): Promise<Map<string, Pric
     });
 
   } catch (error) {
-    console.error("Price Service Error:", error);
-    symbols.forEach(s => results.set(s, { symbol: s, price: 0, error: "Sistem hatası" }));
+    console.error("Yahoo Finance Library Error:", error);
+    // Hata durumunda boş dönmek yerine mevcut sembolleri 0 fiyatla doldur
+    symbols.forEach(s => results.set(s, { symbol: s, price: 0, error: "Bağlantı hatası" }));
   }
 
   return results;
 }
 
 /**
- * Sembol arama fonksiyonu - Kategoriye göre filtreleme yapar
+ * Sembol arama fonksiyonu - yahoo-finance2.search() kullanır
  */
 export async function searchSymbols(query: string, category: string) {
   if (query.length < 2) return [];
 
   try {
-    // Arama için query2 kullanıyoruz
-    const url = `https://query2.finance.yahoo.com/v1/finance/search?q=${query}`;
-    const response = await fetch(url);
-    const data = await response.json();
-    let results = data.quotes || [];
+    const searchResults = await yahooFinance.search(query, {
+      newsCount: 0,
+      quotesCount: 10
+    });
 
-    // Kategoriye göre filtreleme mantığı
+    let quotes = searchResults.quotes || [];
+
+    // Kategoriye göre filtreleme
     if (category === "BIST") {
-      results = results.filter((q: any) => 
+      quotes = quotes.filter((q: any) => 
         q.symbol.endsWith(".IS") || 
         q.exchange === "IST" || 
         q.exchDisp === "Istanbul"
       );
     } else if (category === "NASDAQ") {
-      results = results.filter((q: any) => 
+      quotes = quotes.filter((q: any) => 
         q.quoteType === "EQUITY" && 
         !q.symbol.endsWith(".IS")
       );
     } else if (category === "KRİPTO") {
-      results = results.filter((q: any) => 
+      quotes = quotes.filter((q: any) => 
         q.quoteType === "CRYPTOCURRENCY" || 
         q.symbol.includes("-USD")
       );
     }
 
-    return results.slice(0, 5); // En alakalı 5 sonucu dön
+    return quotes.slice(0, 5);
   } catch (error) {
-    console.error("Search Error:", error);
+    console.error("Search API Error:", error);
     return [];
   }
 }
@@ -100,9 +100,14 @@ export function calculatePortfolioMetrics(investments: any[], livePrices: Map<st
 
   const detailedAssets = investments.map(inv => {
     const live = inv.symbol ? livePrices.get(inv.symbol) : null;
-    const currentPrice = live?.price || inv.purchasePrice || (inv.amount / (inv.quantity || 1));
+    
+    // Eğer canlı fiyat 0 gelirse (hata durumu), alış fiyatını veya maliyetini baz al
+    const currentPrice = (live && live.price > 0) 
+      ? live.price 
+      : (inv.purchasePrice || (inv.amount / (inv.quantity || 1)));
+      
     const currentValue = (inv.quantity || 1) * currentPrice;
-    const cost = inv.amount; // Toplam maliyet
+    const cost = inv.amount; 
     
     totalCost += cost;
     totalCurrentValue += currentValue;
