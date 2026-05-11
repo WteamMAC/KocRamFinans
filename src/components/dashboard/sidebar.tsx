@@ -39,9 +39,10 @@ const routes = [
 interface SidebarProps {
   isCollapsed: boolean;
   onToggle: () => void;
+  hideToggle?: boolean;
 }
 
-export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
+export function Sidebar({ isCollapsed, onToggle, hideToggle }: SidebarProps) {
   const pathname = usePathname();
 
   return (
@@ -50,14 +51,16 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
       isCollapsed ? "w-20" : "w-72"
     )}>
       {/* Toggle Button */}
-      <Button
-        onClick={onToggle}
-        variant="ghost"
-        size="icon"
-        className="absolute -right-3 top-10 h-6 w-6 rounded-full border border-[#c4c6d2]/30 bg-white shadow-sm z-50 hover:bg-[#faf9f6]"
-      >
-        {isCollapsed ? <ChevronRight className="h-4 w-4 text-[#001b44]" /> : <ChevronLeft className="h-4 w-4 text-[#001b44]" />}
-      </Button>
+      {!hideToggle && (
+        <Button
+          onClick={onToggle}
+          variant="ghost"
+          size="icon"
+          className="absolute -right-3 top-10 h-6 w-6 rounded-full border border-[#c4c6d2]/30 bg-white shadow-sm z-50 hover:bg-[#faf9f6]"
+        >
+          {isCollapsed ? <ChevronRight className="h-4 w-4 text-[#001b44]" /> : <ChevronLeft className="h-4 w-4 text-[#001b44]" />}
+        </Button>
+      )}
 
       <div className="px-3 py-2 flex-1 overflow-hidden">
         <Link href="/dashboard" className={cn(
