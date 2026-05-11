@@ -1,6 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 
 export async function POST(req: Request) {
   try {
@@ -59,11 +60,25 @@ export async function POST(req: Request) {
         break;
 
       case "addInvestment":
+        // Tip standardizasyonu
+        let standardizedType = args.type || "BIST";
+        const upperType = standardizedType.toUpperCase();
+        if (upperType.includes("KRİPTO") || upperType.includes("CRYPTO") || upperType.includes("BITCOIN")) standardizedType = "CRYPTO";
+        else if (upperType.includes("GOLD") || upperType.includes("ALTIN") || upperType.includes("GÜMÜŞ")) standardizedType = "GOLD";
+        else if (upperType.includes("NASDAQ") || upperType.includes("ABD") || upperType.includes("USA")) standardizedType = "NASDAQ";
+        else standardizedType = "BIST";
+
+        const quantity = parseFloat(args.quantity) || 1;
+        const purchasePrice = parseFloat(args.purchasePrice) || parseFloat(args.amount) || 0;
+
         await prisma.investment.create({
           data: {
             userId: user.id,
-            type: args.type || "Other",
-            amount: parseFloat(args.amount) || 0,
+            type: standardizedType,
+            symbol: args.symbol?.toUpperCase() || null,
+            quantity: quantity,
+            purchasePrice: purchasePrice,
+            amount: quantity * purchasePrice,
             description: args.description || "Yapay Zeka tarafından eklendi",
           }
         });
@@ -72,6 +87,9 @@ export async function POST(req: Request) {
       default:
         return NextResponse.json({ error: "Geçersiz işlem adı" }, { status: 400 });
     }
+
+    revalidatePath("/dashboard");
+    revalidatePath("/dashboard/assets");
 
     return NextResponse.json({ success: true, message: "İşlem başarıyla tamamlandı." });
 

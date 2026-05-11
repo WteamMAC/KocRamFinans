@@ -92,14 +92,17 @@ const FUNCTION_DECLARATIONS = [
   },
   {
     name: "addInvestment",
-    description: "Yeni bir yatırım ekler.",
+    description: "Yeni bir yatırım (hisse, kripto, altın vb.) ekler.",
     parameters: {
       type: "object",
       properties: {
-        type: { type: "string", description: "Tür" },
-        amount: { type: "number", description: "Değer" }
+        type: { type: "string", description: "Yatırım türü (BIST, NASDAQ, CRYPTO, GOLD)" },
+        symbol: { type: "string", description: "Sembol (Örn: THYAO, BTC, AAPL, XAU)" },
+        quantity: { type: "number", description: "Adet/Miktar" },
+        purchasePrice: { type: "number", description: "Birim Alış Fiyatı" },
+        description: { type: "string", description: "Not" }
       },
-      required: ["type", "amount"]
+      required: ["type", "quantity", "purchasePrice"]
     }
   }
 ];
