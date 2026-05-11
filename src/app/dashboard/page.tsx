@@ -28,17 +28,18 @@ export default async function DashboardPage() {
   }
 
   const user = await prisma.user.findUnique({
-    where: { clerkUserId: userId },
+    where: { clerkUserId: userId as string },
     include: {
       incomes: true,
       expenses: true,
       debts: true,
       investments: true,
     },
-  });
+  }) as any;
 
   if (!user) {
     redirect("/onboarding");
+    return null;
   }
 
   // Benzersiz sembolleri topla
@@ -54,9 +55,9 @@ export default async function DashboardPage() {
   // Portföy metriklerini hesapla
   const portfolioMetrics = calculatePortfolioMetrics(user.investments, livePrices);
 
-  const totalIncome = user.incomes.reduce((acc, inc) => acc + inc.amount, 0);
-  const totalExpense = user.expenses.reduce((acc, exp) => acc + exp.amount, 0);
-  const totalDebt = user.debts.reduce((acc, debt) => acc + debt.amount, 0);
+  const totalIncome = (user.incomes as any[]).reduce((acc: number, inc: any) => acc + inc.amount, 0);
+  const totalExpense = (user.expenses as any[]).reduce((acc: number, exp: any) => acc + exp.amount, 0);
+  const totalDebt = (user.debts as any[]).reduce((acc: number, debt: any) => acc + debt.amount, 0);
   const totalInvestment = portfolioMetrics.totalCurrentValue;
   const totalProfit = portfolioMetrics.totalProfit;
   const profitPercent = portfolioMetrics.profitPercent;

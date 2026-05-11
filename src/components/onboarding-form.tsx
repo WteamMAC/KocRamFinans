@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm, useFieldArray, Controller } from "react-hook-form";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -249,17 +249,23 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
               {investmentFields.map((field, index) => (
                 <div key={field.id} className="grid grid-cols-2 gap-3 items-end p-4 border rounded-lg relative">
                   <div className="space-y-2">
-                    <Select onValueChange={(v) => form.setValue(`investments.${index}.type`, v)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Yatırım Türü" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="BIST">BIST (Hisse)</SelectItem>
-                        <SelectItem value="NASDAQ">NASDAQ (Hisse)</SelectItem>
-                        <SelectItem value="CRYPTO">Kripto Para</SelectItem>
-                        <SelectItem value="GOLD">Altın/Emtia</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Controller
+                      name={`investments.${index}.type` as any}
+                      control={form.control}
+                      render={({ field }) => (
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Yatırım Türü" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="BIST">BIST (Hisse)</SelectItem>
+                            <SelectItem value="NASDAQ">NASDAQ (Hisse)</SelectItem>
+                            <SelectItem value="CRYPTO">Kripto Para</SelectItem>
+                            <SelectItem value="GOLD">Altın/Emtia</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Input type="number" placeholder="Güncel Değer (₺)" {...form.register(`investments.${index}.amount`, { valueAsNumber: true })} />

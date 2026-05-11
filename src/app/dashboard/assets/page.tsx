@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { getLivePrices, calculatePortfolioMetrics } from "@/lib/price-service";
 import { AssetList } from "@/components/dashboard/asset-list";
+import { InvestmentSummary } from "@/components/dashboard/investment-summary";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp, Wallet, Banknote, ArrowUpRight } from "lucide-react";
 
@@ -14,19 +15,20 @@ export default async function AssetsPage() {
   }
 
   const user = await prisma.user.findUnique({
-    where: { clerkUserId: userId },
+    where: { clerkUserId: userId as string },
     include: {
       investments: true,
     },
-  });
+  }) as any;
 
   if (!user) {
     redirect("/onboarding");
+    return null;
   }
 
   // Benzersiz sembolleri topla
   const symbols = Array.from(new Set(
-    user.investments
+    (user.investments as any[])
       .map(inv => inv.symbol)
       .filter((s): s is string => !!s)
   ));

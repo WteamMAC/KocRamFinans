@@ -8,40 +8,42 @@ export default async function SettingsPage() {
 
   if (!userId) {
     redirect("/");
+    return null;
   }
 
   const user = await prisma.user.findUnique({
-    where: { clerkUserId: userId },
+    where: { clerkUserId: userId as string },
     include: {
       incomes: true,
       expenses: true,
       debts: true,
       investments: true,
     },
-  });
+  }) as any;
 
   if (!user) {
     redirect("/onboarding");
+    return null;
   }
 
   // Prisma verisini OnboardingForm'un beklediği formata dönüştür
   const initialData = {
     familyCount: user.familyCount,
-    incomes: user.incomes.map(i => ({ type: i.type, amount: i.amount, description: i.description || undefined })),
-    expenses: user.expenses.map(e => ({ 
+    incomes: user.incomes.map((i: any) => ({ type: i.type, amount: i.amount, description: i.description || undefined })),
+    expenses: user.expenses.map((e: any) => ({ 
       type: e.type, 
       amount: e.amount, 
       dueDate: e.dueDate || undefined, 
       isRecurring: e.isRecurring,
       description: e.description || undefined 
     })),
-    debts: user.debts.map(d => ({ 
+    debts: user.debts.map((d: any) => ({ 
       type: d.type, 
       amount: d.amount, 
       remainingInstallments: d.remainingInstallments || undefined,
       description: d.description || undefined 
     })),
-    investments: user.investments.map(inv => ({ 
+    investments: user.investments.map((inv: any) => ({ 
       type: inv.type, 
       amount: inv.amount, 
       currentValuation: inv.currentValuation || undefined,
