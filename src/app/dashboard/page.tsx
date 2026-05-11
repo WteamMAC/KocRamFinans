@@ -11,6 +11,7 @@ import { UpcomingPayments } from "@/components/dashboard/upcoming-payments";
 import { InvestmentSummary } from "@/components/dashboard/investment-summary";
 import { ChatAI } from "@/components/dashboard/chat-ai";
 import { cn } from "@/lib/utils";
+import { getLivePrices, calculatePortfolioMetrics } from "@/lib/price-service";
 
 export default async function DashboardPage() {
   await cookies();
@@ -34,10 +35,25 @@ export default async function DashboardPage() {
     redirect("/onboarding");
   }
 
+  // Benzersiz sembolleri topla
+  const symbols = Array.from(new Set(
+    user.investments
+      .map(inv => inv.symbol)
+      .filter((s): s is string => !!s)
+  ));
+
+  // Canlı fiyatları çek
+  const livePrices = await getLivePrices(symbols);
+  
+  // Portföy metriklerini hesapla
+  const portfolioMetrics = calculatePortfolioMetrics(user.investments, livePrices);
+
   const totalIncome = user.incomes.reduce((acc, inc) => acc + inc.amount, 0);
   const totalExpense = user.expenses.reduce((acc, exp) => acc + exp.amount, 0);
   const totalDebt = user.debts.reduce((acc, debt) => acc + debt.amount, 0);
-  const totalInvestment = user.investments.reduce((acc, inv) => acc + (inv.currentValuation || inv.amount), 0);
+  const totalInvestment = portfolioMetrics.totalCurrentValue;
+  const totalProfit = portfolioMetrics.totalProfit;
+  const profitPercent = portfolioMetrics.profitPercent;
   
   const netWorth = totalInvestment + (totalIncome - totalExpense) - totalDebt;
   const savingsRate = totalIncome > 0 ? ((totalIncome - totalExpense) / totalIncome) * 100 : 0;
@@ -117,12 +133,20 @@ export default async function DashboardPage() {
             <PieChart className="h-12 w-12 text-amber-500" />
           </div>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Yatırım Değeri</CardTitle>
+            <CardTitle className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Portföy Kar/Zarar</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-slate-900">{totalInvestment.toLocaleString('tr-TR')} ₺</div>
-            <div className="flex items-center gap-1 mt-2 text-[10px] font-medium text-amber-600">
-              Portföy Büyüklüğü
+            <div className={cn(
+              "text-2xl font-bold",
+              totalProfit >= 0 ? "text-emerald-600" : "text-rose-600"
+            )}>
+              {totalProfit.toLocaleString('tr-TR')} ₺
+            </div>
+            <div className={cn(
+              "flex items-center gap-1 mt-2 text-[10px] font-medium",
+              totalProfit >= 0 ? "text-emerald-500" : "text-rose-500"
+            )}>
+              %{profitPercent.toFixed(2)} Getiri
             </div>
           </CardContent>
         </Card>

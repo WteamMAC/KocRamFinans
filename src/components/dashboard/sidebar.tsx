@@ -7,6 +7,7 @@ import {
   LayoutDashboard, 
   Settings, 
   Wallet, 
+  TrendingUp,
   ChevronLeft,
   ChevronRight
 } from "lucide-react";
@@ -19,6 +20,12 @@ const routes = [
     icon: LayoutDashboard,
     href: "/dashboard",
     color: "text-sky-500",
+  },
+  {
+    label: "Varlıklarım",
+    icon: TrendingUp,
+    href: "/dashboard/assets",
+    color: "text-emerald-500",
   },
   {
     label: "Bilgileri Düzenle",
