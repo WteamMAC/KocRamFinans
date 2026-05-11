@@ -10,6 +10,7 @@ import { BudgetOverview } from "@/components/dashboard/budget-overview";
 import { UpcomingPayments } from "@/components/dashboard/upcoming-payments";
 import { InvestmentSummary } from "@/components/dashboard/investment-summary";
 import { ChatAI } from "@/components/dashboard/chat-ai";
+import { cn } from "@/lib/utils";
 
 export default async function DashboardPage() {
   await cookies();

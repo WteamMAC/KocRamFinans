@@ -48,9 +48,10 @@ export function InvestmentSummary({ investments }: InvestmentSummaryProps) {
             paddingAngle={8}
             dataKey="value"
             stroke="none"
+            cornerRadius={4}
           >
             {data.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} cornerRadius={4} />
+              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
             ))}
           </Pie>
           <Tooltip 
