@@ -52,7 +52,8 @@ const onboardingSchema = z.object({
   investments: z.array(z.object({
     type: z.string().min(1, "Tür seçiniz"),
     symbol: z.string().min(1, "Varlık sembolü seçiniz"),
-    amount: z.coerce.number().min(1, "Güncel değer giriniz"),
+    quantity: z.coerce.number().min(0.00001, "Miktar giriniz"),
+    purchasePrice: z.coerce.number().min(0.00001, "Alış fiyatı giriniz"),
     currentValuation: z.coerce.number().optional(),
     description: z.string().optional(),
   })),
@@ -79,7 +80,7 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
       debts: [],
       investments: [],
     },
-    mode: "onChange", // Hataları anlık göstermek için
+    mode: "onChange",
   });
 
   const { fields: incomeFields, append: appendIncome, remove: removeIncome } = useFieldArray({
@@ -104,7 +105,7 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
 
   const handleSearch = async (index: number, query: string, type: string) => {
     setSearchQueries(prev => ({ ...prev, [index]: query }));
-    form.setValue(`investments.${index}.symbol`, query); // Schema validation için
+    form.setValue(`investments.${index}.symbol`, query);
     
     if (query.length >= 2) {
       const results = await searchSymbolsAction(query, type);
@@ -124,7 +125,7 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
         return { ...inv, symbol: sym.toUpperCase() };
       });
 
-      await completeOnboarding({ ...data, investments: cleanedInvestments });
+      await completeOnboarding({ ...data, investments: cleanedInvestments } as any);
       router.push("/dashboard");
     } catch (error: any) {
       if (error.message === "NEXT_REDIRECT") return;
@@ -134,7 +135,6 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
     }
   };
 
-  // Adım doğrulama kontrolü
   const canContinue = async () => {
     let fieldsToValidate: any[] = [];
     if (step === 1) fieldsToValidate = ["familyCount", "incomes"];
@@ -155,7 +155,7 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
 
   return (
     <Card className={cn(
-      "w-full max-w-3xl mx-auto border-[#c4c6d2]/20 shadow-2xl bg-white rounded-[32px] overflow-hidden",
+      "w-full max-w-4xl mx-auto border-[#c4c6d2]/20 shadow-2xl bg-white rounded-[32px] overflow-hidden",
       isSettings ? "mt-4" : "animate-in fade-in zoom-in-95 duration-700"
     )}>
       <CardHeader className="text-center pt-10 pb-6 bg-[#faf9f6]/50 border-b border-[#c4c6d2]/10">
@@ -195,10 +195,7 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
           {step === 4 && "Varlık Portföyü"}
         </CardTitle>
         <CardDescription className="text-[#434750] mt-2 font-medium">
-          {step === 1 && "Yıldız (*) ile işaretli alanlar zorunludur."}
-          {step === 2 && "Aylık ödemelerinizi eksiksiz girmeniz finansal sağlık skorunuz için kritiktir."}
-          {step === 3 && "Banka ve şahıs borçlarınızı buraya ekleyin."}
-          {step === 4 && "Varlıklarınızın sembollerini seçerek güncel fiyat takibini başlatın."}
+          {step === 4 ? "Elinizdeki varlıkların adet ve alış fiyatlarını girerek maliyet takibini başlatın." : "Yıldız (*) ile işaretli alanlar zorunludur."}
         </CardDescription>
       </CardHeader>
 
@@ -274,9 +271,6 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
                         <Trash2 className="w-5 h-5" />
                       </Button>
                     </div>
-                    {form.formState.errors.incomes?.[index]?.amount && (
-                      <p className="text-[10px] font-bold text-rose-500 px-1">{form.formState.errors.incomes[index].amount?.message}</p>
-                    )}
                   </div>
                 ))}
               </div>
@@ -295,16 +289,8 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
               </div>
               
               <div className="grid gap-4">
-                {expenseFields.length === 0 && (
-                   <div className="text-center py-10 bg-[#faf9f6] rounded-3xl border-2 border-dashed border-[#c4c6d2]/30">
-                      <p className="text-sm font-bold text-[#747781] opacity-60">Henüz gider eklenmedi.</p>
-                   </div>
-                )}
                 {expenseFields.map((field, index) => (
-                  <div key={field.id} className={cn(
-                    "p-6 bg-[#faf9f6] border border-[#c4c6d2]/20 rounded-[24px] relative group hover:shadow-md transition-all",
-                    form.formState.errors.expenses?.[index] && "border-rose-200 bg-rose-50/10"
-                  )}>
+                  <div key={field.id} className="p-6 bg-[#faf9f6] border border-[#c4c6d2]/20 rounded-[24px] relative group hover:shadow-md transition-all">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2 col-span-2 md:col-span-1">
                         <Label className="text-[9px] font-bold text-[#747781] uppercase px-1">Açıklama <span className="text-rose-500">*</span></Label>
@@ -323,14 +309,6 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
                         <Label className="text-xs font-bold text-[#001b44]">Düzenli Ödeme</Label>
                       </div>
                     </div>
-                    {form.formState.errors.expenses?.[index] && (
-                      <div className="mt-3 p-2 bg-rose-100/50 rounded-lg">
-                        <p className="text-[9px] font-bold text-rose-600 flex items-center gap-1">
-                           <AlertCircle className="h-3 w-3" /> 
-                           Lütfen kırmızı işaretli alanları kontrol edin.
-                        </p>
-                      </div>
-                    )}
                     <Button type="button" variant="ghost" size="icon" className="absolute top-4 right-4 hover:bg-rose-50 text-rose-500" onClick={() => removeExpense(index)}>
                       <Trash2 className="w-4 h-4" />
                     </Button>
@@ -383,7 +361,7 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
                 <Label className="text-[10px] font-bold text-[#747781] uppercase tracking-widest">
                    Yatırım Portföyü <span className="text-rose-500">*</span>
                 </Label>
-                <Button type="button" variant="ghost" size="sm" onClick={() => appendInvestment({ type: "BIST", symbol: "", amount: 0 })} className="text-[#001b44] font-bold">
+                <Button type="button" variant="ghost" size="sm" onClick={() => appendInvestment({ type: "BIST", symbol: "", quantity: 0, purchasePrice: 0 })} className="text-[#001b44] font-bold">
                   <Plus className="w-4 h-4 mr-1" /> Ekle
                 </Button>
               </div>
@@ -391,7 +369,7 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
               <div className="grid gap-6">
                 {investmentFields.map((field, index) => (
                   <div key={field.id} className="p-8 bg-[#faf9f6] border border-[#c4c6d2]/20 rounded-[32px] relative group hover:shadow-lg transition-all">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-2">
                         <Label className="text-[9px] font-bold text-[#747781] uppercase px-1">Varlık Türü</Label>
                         <Controller
@@ -460,17 +438,36 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
                       </div>
 
                       <div className="space-y-2">
-                        <Label className="text-[9px] font-bold text-[#747781] uppercase px-1">Tahmini Değer (₺) <span className="text-rose-500">*</span></Label>
+                        <Label className="text-[9px] font-bold text-[#747781] uppercase px-1">Adet / Miktar <span className="text-rose-500">*</span></Label>
                         <Input 
                           type="number" 
-                          {...form.register(`investments.${index}.amount`, { valueAsNumber: true })} 
-                          className={cn(
-                            "bg-white border-[#c4c6d2]/20 h-12 rounded-xl",
-                            form.formState.errors.investments?.[index]?.amount && "border-rose-300"
-                          )}
+                          step="any"
+                          {...form.register(`investments.${index}.quantity`, { valueAsNumber: true })} 
+                          className="bg-white border-[#c4c6d2]/20 h-12 rounded-xl"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-[9px] font-bold text-[#747781] uppercase px-1">Birim Alış Fiyatı (₺) <span className="text-rose-500">*</span></Label>
+                        <Input 
+                          type="number" 
+                          step="any"
+                          {...form.register(`investments.${index}.purchasePrice`, { valueAsNumber: true })} 
+                          className="bg-white border-[#c4c6d2]/20 h-12 rounded-xl"
                         />
                       </div>
                     </div>
+                    
+                    {/* Özet Bilgi */}
+                    {form.watch(`investments.${index}.quantity`) > 0 && form.watch(`investments.${index}.purchasePrice`) > 0 && (
+                       <div className="mt-4 p-4 bg-[#001b44]/5 rounded-2xl flex items-center justify-between border border-[#001b44]/10">
+                          <span className="text-[10px] font-bold text-[#001b44] uppercase tracking-wider">Toplam Yatırım Tutarı:</span>
+                          <span className="text-lg font-bold text-[#001b44]">
+                             {(form.watch(`investments.${index}.quantity`) * form.watch(`investments.${index}.purchasePrice`)).toLocaleString('tr-TR')} ₺
+                          </span>
+                       </div>
+                    )}
+
                     <Button type="button" variant="ghost" size="icon" className="absolute top-4 right-4 hover:bg-rose-50 text-rose-500" onClick={() => removeInvestment(index)}>
                       <Trash2 className="w-5 h-5" />
                     </Button>

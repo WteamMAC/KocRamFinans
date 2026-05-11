@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Bot, Send, X, MessageCircle, Sparkles, User, BarChart3 } from "lucide-react";
+import { Bot, Send, X, MessageCircle, Sparkles, User, BarChart3, AlertCircle } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 export function ChatAI() {
@@ -216,6 +216,15 @@ export function ChatAI() {
           </CardHeader>
 
           <CardContent className="flex-1 p-0 overflow-hidden bg-[#faf9f6]/30">
+            {error && (
+              <div className="mx-6 mt-4 p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
+                <AlertCircle className="h-4 w-4 text-rose-500" />
+                <p className="text-[11px] font-bold text-rose-600 flex-1">{error}</p>
+                <Button variant="ghost" size="icon" onClick={() => setError(null)} className="h-6 w-6 rounded-full hover:bg-rose-100">
+                  <X className="h-3 w-3 text-rose-500" />
+                </Button>
+              </div>
+            )}
             <ScrollArea className="h-full">
               <div className="p-6 space-y-6">
                 {messages.length === 0 && (

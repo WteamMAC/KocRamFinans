@@ -10,7 +10,14 @@ export async function completeOnboarding(formData: {
   incomes: { type: string; amount: number; description?: string }[];
   expenses: { type: string; amount: number; dueDate?: number; isRecurring: boolean; description?: string }[];
   debts: { type: string; amount: number; remainingInstallments?: number; description?: string }[];
-  investments: { type: string; symbol?: string; amount: number; currentValuation?: number; description?: string }[];
+  investments: { 
+    type: string; 
+    symbol?: string; 
+    quantity: number; 
+    purchasePrice: number; 
+    currentValuation?: number; 
+    description?: string 
+  }[];
 }) {
   const { userId } = await auth();
 
@@ -46,7 +53,11 @@ export async function completeOnboarding(formData: {
       data: formData.debts.map((debt) => ({ ...debt, userId: user.id })),
     }),
     prisma.investment.createMany({
-      data: formData.investments.map((inv) => ({ ...inv, userId: user.id })),
+      data: formData.investments.map((inv) => ({ 
+        ...inv, 
+        userId: user.id,
+        amount: inv.quantity * inv.purchasePrice
+      })),
     }),
   ]);
 
