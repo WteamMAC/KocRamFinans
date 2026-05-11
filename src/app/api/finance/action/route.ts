@@ -75,12 +75,12 @@ export async function POST(req: Request) {
           data: {
             userId: user.id,
             type: standardizedType,
-            symbol: args.symbol?.toUpperCase() || null,
+            symbol: args.symbol ? args.symbol.toUpperCase() : null,
             quantity: quantity,
             purchasePrice: purchasePrice,
             amount: quantity * purchasePrice,
             description: args.description || "Yapay Zeka tarafından eklendi",
-          }
+          } as any
         });
         break;
 
