@@ -5,7 +5,8 @@ import { getLivePrices, calculatePortfolioMetrics } from "@/lib/price-service";
 import { AssetList } from "@/components/dashboard/asset-list";
 import { InvestmentSummary } from "@/components/dashboard/investment-summary";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingUp, Wallet, Banknote, ArrowUpRight } from "lucide-react";
+import { TrendingUp, Wallet, Banknote, ArrowUpRight, BarChart3, Sparkles } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export default async function AssetsPage() {
   const { userId } = await auth();
@@ -29,17 +30,13 @@ export default async function AssetsPage() {
   let metrics = { totalCurrentValue: 0, totalCost: 0, totalProfit: 0, profitPercent: 0, assets: [] as any[] };
   
   try {
-    // Benzersiz sembolleri topla
     const symbols = Array.from(new Set(
       (user.investments as any[])
         .map(inv => inv.symbol)
         .filter((s): s is string => !!s)
     ));
 
-    // Canlı fiyatları çek
     const livePrices = await getLivePrices(symbols);
-    
-    // Portföy metriklerini hesapla
     metrics = calculatePortfolioMetrics(user.investments, livePrices);
   } catch (error) {
     console.error("Assets Page Data Fetch Error:", error);
@@ -47,71 +44,85 @@ export default async function AssetsPage() {
   }
 
   return (
-    <div className="flex-1 space-y-8 p-8 pt-6 bg-[#f8fafc] min-h-screen">
-      <div className="flex items-center justify-between">
+    <div className="flex-1 space-y-10 p-8 pt-10 bg-[#faf9f6] min-h-screen">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
+          <div className="flex items-center gap-2 mb-1">
+             <BarChart3 className="h-5 w-5 text-[#fed65b] fill-[#fed65b]" />
+             <span className="text-[10px] font-bold text-[#735c00] uppercase tracking-[0.2em]">Varlık Yönetimi</span>
+          </div>
+          <h2 className="text-4xl font-heading font-bold text-[#001b44] tracking-tight">
             Varlık Portföyüm
           </h2>
-          <p className="text-slate-500 text-sm mt-1">BIST, NASDAQ ve Kripto varlıklarınızı buradan yönetin.</p>
+          <p className="text-[#434750] mt-1 font-medium opacity-80">BIST, NASDAQ ve Kripto varlıklarınızı profesyonelce yönetin.</p>
         </div>
       </div>
 
+      {/* Stats Grid */}
       <div className="grid gap-6 md:grid-cols-3">
-        <Card className="border-none shadow-sm bg-white">
+        <Card className="relative overflow-hidden bg-white border-[#c4c6d2]/20 shadow-sm hover:shadow-xl transition-all duration-300 group rounded-[24px]">
+          <div className="absolute -right-4 -top-4 p-8 bg-[#001b44]/5 rounded-full group-hover:scale-110 transition-transform"></div>
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Toplam Portföy Değeri</CardTitle>
+            <CardTitle className="text-[10px] font-bold text-[#747781] uppercase tracking-widest">Toplam Portföy Değeri</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-slate-900">{metrics.totalCurrentValue.toLocaleString('tr-TR')} ₺</div>
-            <div className="flex items-center gap-1 mt-1 text-[10px] font-medium text-slate-400">
-              Maliyet: {metrics.totalCost.toLocaleString('tr-TR')} ₺
+            <div className="text-3xl font-heading font-bold text-[#001b44]">{metrics.totalCurrentValue.toLocaleString('tr-TR')} ₺</div>
+            <div className="mt-3 text-[10px] font-bold text-[#434750] opacity-60 flex items-center gap-2">
+               Maliyet: {metrics.totalCost.toLocaleString('tr-TR')} ₺
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-sm bg-white">
+        <Card className="relative overflow-hidden bg-white border-[#c4c6d2]/20 shadow-sm hover:shadow-xl transition-all duration-300 group rounded-[24px]">
+          <div className="absolute -right-4 -top-4 p-8 bg-emerald-50 rounded-full group-hover:scale-110 transition-transform"></div>
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Toplam Kar / Zarar</CardTitle>
+            <CardTitle className="text-[10px] font-bold text-[#747781] uppercase tracking-widest">Toplam Kar / Zarar</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold ${metrics.totalProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+            <div className={cn(
+              "text-3xl font-heading font-bold",
+              metrics.totalProfit >= 0 ? "text-emerald-600" : "text-rose-600"
+            )}>
               {metrics.totalProfit.toLocaleString('tr-TR')} ₺
             </div>
-            <div className={`flex items-center gap-1 mt-1 text-[10px] font-medium ${metrics.totalProfit >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+            <div className={cn(
+              "mt-3 text-[10px] font-bold flex items-center gap-1",
+              metrics.totalProfit >= 0 ? "text-emerald-500" : "text-rose-500"
+            )}>
               %{metrics.profitPercent.toFixed(2)} Toplam Getiri
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-sm bg-white">
+        <Card className="relative overflow-hidden bg-[#001b44] border-none shadow-xl hover:shadow-2xl transition-all duration-300 group rounded-[24px]">
+          <div className="absolute -right-4 -top-4 p-8 bg-white/10 rounded-full group-hover:scale-110 transition-transform"></div>
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-semibold text-slate-500 uppercase tracking-wider">En Değerli Varlık</CardTitle>
+            <CardTitle className="text-[10px] font-bold text-white/60 uppercase tracking-widest">En Değerli Varlık</CardTitle>
           </CardHeader>
           <CardContent>
             {metrics.assets.length > 0 ? (
               <>
-                <div className="text-2xl font-bold text-slate-900">
+                <div className="text-3xl font-heading font-bold text-[#fed65b]">
                   {metrics.assets.sort((a, b) => b.currentValue - a.currentValue)[0].symbol?.split('.')[0] || "---"}
                 </div>
-                <div className="text-[10px] font-medium text-slate-400 mt-1">
-                  Portföyün en büyük payı
+                <div className="mt-3 text-[10px] font-bold text-white/60 uppercase tracking-widest">
+                  Portföyün Amiral Gemisi
                 </div>
               </>
             ) : (
-              <div className="text-2xl font-bold text-slate-300">---</div>
+              <div className="text-3xl font-bold text-white/20">---</div>
             )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Grafiğe canlı verileri gönderiyoruz */}
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card className="border-none shadow-sm bg-white">
-          <CardHeader>
-            <CardTitle className="text-sm font-semibold text-slate-500">Varlık Dağılımı (Anlık Değer)</CardTitle>
+      <div className="grid gap-8 md:grid-cols-1">
+        <Card className="bg-white border-[#c4c6d2]/20 shadow-lg rounded-[32px] overflow-hidden">
+          <CardHeader className="bg-[#faf9f6]/50 border-b border-[#c4c6d2]/10 py-6 px-8">
+            <CardTitle className="text-xl font-heading font-bold text-[#001b44]">Varlık Dağılımı (Anlık Değer)</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-8">
             <InvestmentSummary investments={metrics.assets} />
           </CardContent>
         </Card>
