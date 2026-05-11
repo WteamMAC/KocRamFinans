@@ -38,8 +38,8 @@ export default function SlidingAuth() {
           <div className="min-h-full flex flex-col items-center justify-center p-8 md:p-12">
             <div className="lg:hidden mb-8 text-center">
               <Link href="/" className="flex items-center gap-2 justify-center">
-                <img src="/mascot.png" alt="Logo" className="h-10 w-10 object-contain" />
-                <span className="text-2xl font-heading font-bold text-[#8c5000]">Koç Ram Finans</span>
+                <img src="/mascot.png" alt="Logo" className="h-14 w-14 object-contain" />
+                <span className="text-3xl font-heading font-bold text-[#8c5000]">Koç Ram Finans</span>
               </Link>
             </div>
 
@@ -145,10 +145,10 @@ export default function SlidingAuth() {
               className="mb-10"
             >
               <div className="relative">
-                <div className="absolute inset-0 bg-white/10 rounded-full blur-2xl transform scale-110"></div>
+                <div className="absolute inset-0 bg-white/10 rounded-full blur-2xl transform scale-125"></div>
                 <img 
                   alt="Koç Ram Finans Mascot" 
-                  className="w-[420px] h-[420px] mx-auto object-contain drop-shadow-[0_30px_60px_rgba(0,0,0,0.4)] bg-white rounded-full p-4 border-[12px] border-white/20 relative z-10" 
+                  className="w-[440px] h-[440px] mx-auto object-contain drop-shadow-[0_30px_60px_rgba(0,0,0,0.4)] bg-white rounded-full p-2 border-[12px] border-white/20 relative z-10 scale-125" 
                   src="/mascot.png" 
                 />
               </div>

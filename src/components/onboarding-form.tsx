@@ -202,7 +202,7 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
           </div>
         )}
         <div className="flex items-center justify-center gap-3 mb-2">
-           <img src="/mascot.png" alt="Logo" className="h-8 w-8 object-contain" />
+           <img src="/mascot.png" alt="Logo" className="h-12 w-12 object-contain" />
            <span className="text-[10px] font-bold text-[#735c00] uppercase tracking-[0.2em]">Sovereign Intelligence</span>
         </div>
         <CardTitle className="text-4xl font-heading font-bold text-[#001b44] tracking-tight">

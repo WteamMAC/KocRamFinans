@@ -36,7 +36,7 @@ export default async function LandingPage() {
         <div className="flex justify-between items-center max-w-[1200px] mx-auto px-6 md:px-8 py-4">
           <Link className="flex items-center gap-2 group" href="/">
             <div className="p-1 group-hover:scale-110 transition-transform">
-              <img src="/mascot.png" alt="Logo" className="h-10 w-10 object-contain" />
+              <img src="/mascot.png" alt="Logo" className="h-14 w-14 object-contain" />
             </div>
             <span className="text-2xl font-heading font-bold text-[#8c5000] tracking-tight">Koç Ram Finans</span>
           </Link>
@@ -301,7 +301,7 @@ export default async function LandingPage() {
             <div className="flex flex-col items-center md:items-start gap-6 mb-8 md:mb-0">
               <Link className="flex items-center gap-2 group" href="/">
                 <div className="p-1 group-hover:scale-110 transition-transform">
-                  <img src="/mascot.png" alt="Logo" className="h-10 w-10 object-contain brightness-0 invert" />
+                  <img src="/mascot.png" alt="Logo" className="h-16 w-16 object-contain brightness-0 invert" />
                 </div>
                 <span className="text-3xl font-heading font-bold text-white tracking-tight">Koç Ram Finans</span>
               </Link>

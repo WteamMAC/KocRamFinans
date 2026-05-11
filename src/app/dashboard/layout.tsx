@@ -27,7 +27,7 @@ export default function DashboardLayout({
       {/* Mobile Header */}
       <div className="md:hidden flex items-center justify-between px-4 py-4 bg-white border-b border-[#dbc2b0]/30 sticky top-0 z-[100] shadow-ambient-low">
         <Link className="flex items-center gap-2" href="/dashboard">
-          <img src="/mascot.png" alt="Logo" className="h-9 w-9 object-contain" />
+          <img src="/mascot.png" alt="Logo" className="h-12 w-12 object-contain" />
           <span className="text-xl font-heading font-bold text-[#8c5000]">Koç Ram Finans</span>
         </Link>
         <Button 
