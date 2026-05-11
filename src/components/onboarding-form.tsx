@@ -43,13 +43,13 @@ const onboardingSchema = z.object({
 
 type OnboardingValues = z.infer<typeof onboardingSchema>;
 
-export function OnboardingForm() {
+export function OnboardingForm({ initialData, isSettings = false }: { initialData?: OnboardingValues, isSettings?: boolean }) {
   const [step, setStep] = useState(1);
   const router = useRouter();
 
   const form = useForm<OnboardingValues>({
     resolver: zodResolver(onboardingSchema) as any,
-    defaultValues: {
+    defaultValues: initialData || {
       familyCount: 1,
       incomes: [{ type: "Maaş", amount: 0 }],
       expenses: [],
@@ -81,8 +81,11 @@ export function OnboardingForm() {
   async function onSubmit(data: OnboardingValues) {
     try {
       await completeOnboarding(data);
+      if (isSettings) {
+        router.push("/dashboard");
+      }
     } catch (error) {
-      console.error("Onboarding hatası:", error);
+      console.error("Güncelleme hatası:", error);
     }
   }
 
@@ -90,31 +93,33 @@ export function OnboardingForm() {
   const prevStep = () => setStep((s) => Math.max(s - 1, 1));
 
   return (
-    <Card className="w-full max-w-2xl mx-auto border-none shadow-2xl bg-white/80 backdrop-blur-md">
+    <Card className={`w-full max-w-2xl mx-auto border-none shadow-2xl bg-white/80 backdrop-blur-md ${isSettings ? "mt-4" : ""}`}>
       <CardHeader className="text-center">
-        <div className="flex justify-center mb-4">
-          <div className="flex items-center gap-2">
-            {[1, 2, 3, 4].map((i) => (
-              <div
-                key={i}
-                className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                  step >= i ? "bg-primary scale-125" : "bg-muted"
-                }`}
-              />
-            ))}
+        {!isSettings && (
+          <div className="flex justify-center mb-4">
+            <div className="flex items-center gap-2">
+              {[1, 2, 3, 4].map((i) => (
+                <div
+                  key={i}
+                  className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                    step >= i ? "bg-primary scale-125" : "bg-muted"
+                  }`}
+                />
+              ))}
+            </div>
           </div>
-        </div>
+        )}
         <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
-          {step === 1 && "Gelir ve Aile Bilgileri"}
-          {step === 2 && "Giderler ve Faturalar"}
-          {step === 3 && "Borçlar ve Taksitler"}
-          {step === 4 && "Yatırım Portföyü"}
+          {step === 1 && (isSettings ? "Gelir ve Aile Bilgilerini Düzenle" : "Gelir ve Aile Bilgileri")}
+          {step === 2 && (isSettings ? "Giderleri Düzenle" : "Giderler ve Faturalar")}
+          {step === 3 && (isSettings ? "Borçları Düzenle" : "Borçlar ve Taksitler")}
+          {step === 4 && (isSettings ? "Yatırımları Düzenle" : "Yatırım Portföyü")}
         </CardTitle>
         <CardDescription>
-          {step === 1 && "Finansal yolculuğumuza başlamak için temel bilgilerinizi girelim."}
-          {step === 2 && "Aylık düzenli harcamalarınızı ve fatura tarihlerinizi belirtin."}
-          {step === 3 && "Mevcut borçlarınızı ve varsa taksit sayılarını ekleyin."}
-          {step === 4 && "Varlıklarınızı ve yatırımlarınızı detaylandırın."}
+          {step === 1 && "Mevcut gelir ve aile kişi sayısı bilgilerinizi buradan güncelleyebilirsiniz."}
+          {step === 2 && "Aylık düzenli harcamalarınızı ve fatura tarihlerinizi güncelleyin."}
+          {step === 3 && "Borç durumunuzu ve kalan taksitlerinizi revize edin."}
+          {step === 4 && "Varlıklarınızın güncel değerlerini girin."}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -273,7 +278,7 @@ export function OnboardingForm() {
           </Button>
         ) : (
           <Button type="button" onClick={form.handleSubmit(onSubmit)} className="bg-gradient-to-r from-primary to-blue-600">
-            Kurulumu Tamamla
+            {isSettings ? "Değişiklikleri Kaydet" : "Kurulumu Tamamla"}
           </Button>
         )}
       </CardFooter>
