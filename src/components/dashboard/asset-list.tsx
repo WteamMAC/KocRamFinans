@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Trash2, Plus, TrendingDown, TrendingUp, RefreshCw, Search } from "lucide-react";
 import { addAsset, deleteAsset } from "@/app/actions/assets";
-import { searchSymbols } from "@/lib/price-service";
+import { searchSymbolsAction } from "@/app/actions/market";
 import { useEffect } from "react";
 
 interface AssetListProps {
@@ -33,7 +33,7 @@ export function AssetList({ assets }: AssetListProps) {
     const delayDebounceFn = setTimeout(async () => {
       // Eğer kullanıcı henüz listeden seçim yapmadıysa (parantez yoksa) ara
       if (formData.symbol.length >= 2 && !formData.symbol.includes("(")) {
-        const results = await searchSymbols(formData.symbol, formData.type);
+        const results = await searchSymbolsAction(formData.symbol, formData.type);
         setSearchResults(results);
         setShowSearch(true);
       } else {
