@@ -11,6 +11,11 @@ model User {
   clerkUserId String   @unique
   familyCount Int      @default(1)
   
+  maritalStatus String?
+  marriageDate  DateTime?
+  hasChildren   Boolean   @default(false)
+  children      Child[]
+
   incomes     Income[]
   expenses    Expense[]
   debts       Debt[]
@@ -18,6 +23,16 @@ model User {
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model Child {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  birthDate DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Income {

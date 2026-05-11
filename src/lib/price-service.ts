@@ -1,7 +1,4 @@
-import YahooFinance from 'yahoo-finance2';
-
-// Yahoo Finance nesnesini oluşturuyoruz (V3+ kesin çözüm)
-const yf = new YahooFinance();
+import yahooFinance from 'yahoo-finance2';
 
 /**
  * Fiyat Servisi - Yahoo Finance API Entegrasyonu
@@ -22,7 +19,7 @@ export async function getLivePrices(symbols: string[]): Promise<Map<string, Pric
   console.log("Fetching prices for:", symbols);
 
   try {
-    const quotes = await yf.quote(symbols);
+    const quotes = await yahooFinance.quote(symbols);
     const quotesArray = Array.isArray(quotes) ? quotes : [quotes];
 
     console.log(`Received ${quotesArray.length} quotes from Yahoo`);
@@ -59,7 +56,7 @@ export async function searchSymbols(query: string, category: string) {
   console.log(`Searching for: "${query}" in category: ${category}`);
 
   try {
-    const searchResults = await yf.search(query, {
+    const searchResults = await yahooFinance.search(query, {
       newsCount: 0,
       quotesCount: 15
     });

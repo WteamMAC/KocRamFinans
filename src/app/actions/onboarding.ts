@@ -7,6 +7,10 @@ import { redirect } from "next/navigation";
 
 export async function completeOnboarding(formData: {
   familyCount: number;
+  maritalStatus?: string;
+  marriageDate?: string;
+  hasChildren?: boolean;
+  children?: { birthDate: string }[];
   incomes: { type: string; amount: number; description?: string }[];
   expenses: { type: string; amount: number; dueDate?: number; isRecurring: boolean; description?: string }[];
   debts: { type: string; amount: number; remainingInstallments?: number; description?: string }[];
@@ -28,20 +32,28 @@ export async function completeOnboarding(formData: {
   // 1. Kullanıcıyı oluştur veya güncelle
   const user = await prisma.user.upsert({
     where: { clerkUserId: userId },
-    update: { familyCount: formData.familyCount },
+    update: { 
+      familyCount: formData.familyCount,
+      maritalStatus: formData.maritalStatus,
+      marriageDate: formData.marriageDate ? new Date(formData.marriageDate) : null,
+      hasChildren: formData.hasChildren || false,
+    },
     create: { 
       clerkUserId: userId,
-      familyCount: formData.familyCount 
+      familyCount: formData.familyCount,
+      maritalStatus: formData.maritalStatus,
+      marriageDate: formData.marriageDate ? new Date(formData.marriageDate) : null,
+      hasChildren: formData.hasChildren || false,
     },
   });
 
-  // 2. Mevcut verileri temizle (opsiyonel, yeniden dolduruyorsa)
-  // Not: Transaction kullanarak yapmak daha güvenlidir.
+  // 2. Mevcut verileri temizle ve yeniden oluştur
   await prisma.$transaction([
     prisma.income.deleteMany({ where: { userId: user.id } }),
     prisma.expense.deleteMany({ where: { userId: user.id } }),
     prisma.debt.deleteMany({ where: { userId: user.id } }),
     prisma.investment.deleteMany({ where: { userId: user.id } }),
+    prisma.child.deleteMany({ where: { userId: user.id } }),
 
     prisma.income.createMany({
       data: formData.incomes.map((inc) => ({ ...inc, userId: user.id })),
@@ -57,6 +69,12 @@ export async function completeOnboarding(formData: {
         ...inv, 
         userId: user.id,
         amount: inv.quantity * inv.purchasePrice
+      })),
+    }),
+    prisma.child.createMany({
+      data: (formData.children || []).map((child) => ({
+        userId: user.id,
+        birthDate: new Date(child.birthDate),
       })),
     }),
   ]);

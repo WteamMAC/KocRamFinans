@@ -25,12 +25,21 @@ import {
   Search,
   ArrowUpRight,
   BarChart3,
-  AlertCircle
+  AlertCircle,
+  Heart,
+  Baby,
+  Calendar
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const onboardingSchema = z.object({
   familyCount: z.coerce.number().min(1, "En az 1 kişi olmalıdır."),
+  maritalStatus: z.string().min(1, "Medeni durum seçiniz"),
+  marriageDate: z.string().optional(),
+  hasChildren: z.boolean().default(false),
+  children: z.array(z.object({
+    birthDate: z.string().min(1, "Doğum tarihi giriniz"),
+  })),
   incomes: z.array(z.object({
     type: z.string().min(1, "Tür seçiniz"),
     amount: z.coerce.number().min(1, "Miktar giriniz"),
@@ -39,7 +48,7 @@ const onboardingSchema = z.object({
   expenses: z.array(z.object({
     type: z.string().min(1, "Gider türü/adı giriniz"),
     amount: z.coerce.number().min(1, "Miktar giriniz"),
-    dueDate: z.coerce.number().min(1, "1-31 arası gün giriniz").max(31, "1-31 arası gün giriniz"),
+    dueDate: z.coerce.number().min(1, "1-31 arası gün giriniz").max(31, "1-31 arası gün giriniz").optional(),
     isRecurring: z.boolean().default(true),
     description: z.string().optional(),
   })),
@@ -75,6 +84,9 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
     resolver: zodResolver(onboardingSchema) as any,
     defaultValues: initialData || {
       familyCount: 1,
+      maritalStatus: "Bekar",
+      hasChildren: false,
+      children: [],
       incomes: [{ type: "Maaş", amount: 0 }],
       expenses: [],
       debts: [],
@@ -101,6 +113,11 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
   const { fields: investmentFields, append: appendInvestment, remove: removeInvestment } = useFieldArray({
     control: form.control,
     name: "investments",
+  });
+
+  const { fields: childrenFields, append: appendChild, remove: removeChild } = useFieldArray({
+    control: form.control,
+    name: "children",
   });
 
   const handleSearch = async (index: number, query: string, type: string) => {
@@ -222,6 +239,99 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
                   <p className="text-[10px] font-bold text-rose-500 px-1 flex items-center gap-1">
                     <AlertCircle className="h-3 w-3" /> {form.formState.errors.familyCount.message}
                   </p>
+                )}
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-3">
+                  <Label className="text-[10px] font-bold text-[#747781] uppercase tracking-widest px-1">
+                     Medeni Durum <span className="text-rose-500">*</span>
+                  </Label>
+                  <Controller
+                    name="maritalStatus"
+                    control={form.control}
+                    render={({ field }) => (
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <SelectTrigger className="bg-[#faf9f6] border-[#c4c6d2]/30 h-12 rounded-xl">
+                          <SelectValue placeholder="Seçiniz" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl">
+                          <SelectItem value="Bekar">Bekar</SelectItem>
+                          <SelectItem value="Evli">Evli</SelectItem>
+                          <SelectItem value="Boşanmış">Boşanmış</SelectItem>
+                          <SelectItem value="Dul">Dul</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                </div>
+
+                {form.watch("maritalStatus") === "Evli" && (
+                  <div className="space-y-3 animate-in fade-in slide-in-from-left-2 duration-300">
+                    <Label className="text-[10px] font-bold text-[#747781] uppercase tracking-widest px-1">
+                       Evlilik Tarihi
+                    </Label>
+                    <div className="relative">
+                      <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-[#434750] opacity-50" />
+                      <Input 
+                        type="date" 
+                        {...form.register("marriageDate")} 
+                        className="pl-12 bg-[#faf9f6] border-[#c4c6d2]/30 h-12 rounded-xl focus:ring-[#001b44]"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 p-4 bg-[#faf9f6] border border-[#c4c6d2]/20 rounded-2xl">
+                  <input 
+                    type="checkbox" 
+                    id="hasChildren"
+                    {...form.register("hasChildren")} 
+                    className="w-5 h-5 rounded border-[#c4c6d2] text-[#001b44] focus:ring-[#001b44]" 
+                  />
+                  <Label htmlFor="hasChildren" className="text-sm font-bold text-[#001b44] cursor-pointer flex items-center gap-2">
+                    <Baby className="h-4 w-4" /> Çocuk Var mı?
+                  </Label>
+                </div>
+
+                {form.watch("hasChildren") && (
+                  <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                    <div className="flex justify-between items-center px-1">
+                      <Label className="text-[10px] font-bold text-[#747781] uppercase tracking-widest">
+                         Çocukların Doğum Tarihleri
+                      </Label>
+                      <Button type="button" variant="ghost" size="sm" onClick={() => appendChild({ birthDate: "" })} className="text-[#001b44] font-bold">
+                        <Plus className="w-4 h-4 mr-1" /> Çocuk Ekle
+                      </Button>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {childrenFields.map((field, index) => (
+                        <div key={field.id} className="relative group">
+                          <Input 
+                            type="date" 
+                            {...form.register(`children.${index}.birthDate`)} 
+                            className="bg-[#faf9f6] border-[#c4c6d2]/30 h-12 rounded-xl pr-12"
+                          />
+                          <Button 
+                            type="button" 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={() => removeChild(index)}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 text-rose-500 hover:bg-rose-50 rounded-lg"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                    {childrenFields.length === 0 && (
+                      <p className="text-center py-4 text-[11px] text-[#747781] italic bg-[#faf9f6]/50 rounded-xl border border-dashed border-[#c4c6d2]/30">
+                        Lütfen en az bir çocuk doğum tarihi ekleyin veya seçeneği kapatın.
+                      </p>
+                    )}
+                  </div>
                 )}
               </div>
               

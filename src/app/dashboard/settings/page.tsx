@@ -18,6 +18,7 @@ export default async function SettingsPage() {
       expenses: true,
       debts: true,
       investments: true,
+      children: true,
     },
   }) as any;
 
@@ -29,6 +30,10 @@ export default async function SettingsPage() {
   // Prisma verisini OnboardingForm'un beklediği formata dönüştür
   const initialData = {
     familyCount: user.familyCount,
+    maritalStatus: user.maritalStatus || "Bekar",
+    marriageDate: user.marriageDate ? user.marriageDate.toISOString().split("T")[0] : undefined,
+    hasChildren: user.hasChildren,
+    children: user.children.map((c: any) => ({ birthDate: c.birthDate.toISOString().split("T")[0] })),
     incomes: user.incomes.map((i: any) => ({ type: i.type, amount: i.amount, description: i.description || undefined })),
     expenses: user.expenses.map((e: any) => ({ 
       type: e.type, 
@@ -45,7 +50,9 @@ export default async function SettingsPage() {
     })),
     investments: user.investments.map((inv: any) => ({ 
       type: inv.type, 
-      amount: inv.amount, 
+      symbol: inv.symbol || "",
+      quantity: inv.quantity,
+      purchasePrice: inv.purchasePrice || 0,
       currentValuation: inv.currentValuation || undefined,
       description: inv.description || undefined 
     })),
