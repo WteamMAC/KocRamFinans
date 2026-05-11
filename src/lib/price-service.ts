@@ -16,12 +16,11 @@ export async function getLivePrices(symbols: string[]): Promise<Map<string, Pric
   if (symbols.length === 0) return results;
 
   try {
-    // Yahoo Finance Query URL
-    // Örn: https://query1.finance.yahoo.com/v7/finance/quote?symbols=AAPL,BTC-USD,THYAO.IS
-    const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbols.join(",")}`;
+    // Yahoo Finance Query URL - query2 daha güncel sonuçlar verebilir
+    const url = `https://query2.finance.yahoo.com/v7/finance/quote?symbols=${symbols.join(",")}`;
     
     const response = await fetch(url, {
-      next: { revalidate: 300 } // 5 dakika önbellekle
+      cache: 'no-store' // Fiyatların anlık gelmesi için cache'i kapatıyoruz
     });
 
     if (!response.ok) {
@@ -39,7 +38,6 @@ export async function getLivePrices(symbols: string[]): Promise<Map<string, Pric
       });
     });
 
-    // Bulunamayan semboller için hata dön
     symbols.forEach(s => {
       if (!results.has(s)) {
         results.set(s, { symbol: s, price: 0, error: "Veri bulunamadı" });
@@ -52,6 +50,45 @@ export async function getLivePrices(symbols: string[]): Promise<Map<string, Pric
   }
 
   return results;
+}
+
+/**
+ * Sembol arama fonksiyonu - Kategoriye göre filtreleme yapar
+ */
+export async function searchSymbols(query: string, category: string) {
+  if (query.length < 2) return [];
+
+  try {
+    // Arama için query2 kullanıyoruz
+    const url = `https://query2.finance.yahoo.com/v1/finance/search?q=${query}`;
+    const response = await fetch(url);
+    const data = await response.json();
+    let results = data.quotes || [];
+
+    // Kategoriye göre filtreleme mantığı
+    if (category === "BIST") {
+      results = results.filter((q: any) => 
+        q.symbol.endsWith(".IS") || 
+        q.exchange === "IST" || 
+        q.exchDisp === "Istanbul"
+      );
+    } else if (category === "NASDAQ") {
+      results = results.filter((q: any) => 
+        q.quoteType === "EQUITY" && 
+        !q.symbol.endsWith(".IS")
+      );
+    } else if (category === "KRİPTO") {
+      results = results.filter((q: any) => 
+        q.quoteType === "CRYPTOCURRENCY" || 
+        q.symbol.includes("-USD")
+      );
+    }
+
+    return results.slice(0, 5); // En alakalı 5 sonucu dön
+  } catch (error) {
+    console.error("Search Error:", error);
+    return [];
+  }
 }
 
 /**
