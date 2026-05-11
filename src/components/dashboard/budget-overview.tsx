@@ -24,7 +24,7 @@ export function BudgetOverview({ incomes, expenses }: BudgetOverviewProps) {
   ];
 
   if (!isMounted) {
-    return <div className="h-[300px] w-full bg-slate-50/50 animate-pulse rounded-xl" />;
+    return <div className="h-[300px] w-full bg-[#faf9f6] animate-pulse rounded-3xl" />;
   }
 
   return (
@@ -33,38 +33,40 @@ export function BudgetOverview({ incomes, expenses }: BudgetOverviewProps) {
         <BarChart data={data}>
           <defs>
             <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
-              <stop offset="95%" stopColor="#10b981" stopOpacity={0.1}/>
+              <stop offset="5%" stopColor="#001b44" stopOpacity={1}/>
+              <stop offset="95%" stopColor="#001b44" stopOpacity={0.6}/>
             </linearGradient>
             <linearGradient id="colorExpense" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#ef4444" stopOpacity={0.8}/>
-              <stop offset="95%" stopColor="#ef4444" stopOpacity={0.1}/>
+              <stop offset="5%" stopColor="#fed65b" stopOpacity={1}/>
+              <stop offset="95%" stopColor="#fed65b" stopOpacity={0.6}/>
             </linearGradient>
           </defs>
           <XAxis
             dataKey="name"
-            stroke="#94a3b8"
-            fontSize={12}
+            stroke="#747781"
+            fontSize={11}
+            fontWeight={600}
             tickLine={false}
             axisLine={false}
             dy={10}
           />
           <YAxis
-            stroke="#94a3b8"
-            fontSize={12}
+            stroke="#747781"
+            fontSize={11}
+            fontWeight={600}
             tickLine={false}
             axisLine={false}
             tickFormatter={(value) => `${value}₺`}
           />
           <Tooltip 
-            cursor={{ fill: '#f8fafc' }}
+            cursor={{ fill: '#f4f3f1', radius: 12 }}
             content={({ active, payload }) => {
               if (active && payload && payload.length) {
                 const item = payload[0].payload;
                 return (
-                  <div className="bg-white/90 backdrop-blur-md p-3 border border-slate-100 rounded-xl shadow-xl">
-                    <p className="text-xs font-medium text-slate-500 mb-1">{item.name}</p>
-                    <p className="text-lg font-bold text-slate-900">
+                  <div className="bg-white/95 backdrop-blur-md p-4 border border-[#c4c6d2]/30 rounded-2xl shadow-2xl">
+                    <p className="text-[10px] font-bold text-[#747781] uppercase tracking-widest mb-1">{item.name}</p>
+                    <p className="text-xl font-heading font-bold text-[#001b44]">
                       {payload[0]?.value?.toLocaleString('tr-TR')} ₺
                     </p>
                   </div>
@@ -73,7 +75,7 @@ export function BudgetOverview({ incomes, expenses }: BudgetOverviewProps) {
               return null;
             }}
           />
-          <Bar dataKey="total" radius={[8, 8, 0, 0]} barSize={60}>
+          <Bar dataKey="total" radius={[12, 12, 0, 0]} barSize={80}>
             {data.map((entry, index) => (
               <Cell key={`cell-${index}`} fill={entry.gradient} />
             ))}

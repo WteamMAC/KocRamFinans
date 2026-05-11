@@ -1,107 +1,168 @@
 import { SignUpButton, SignInButton } from "@clerk/nextjs";
 import { auth } from "@clerk/nextjs/server";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, BarChart3, Bot, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowRight, BarChart3, Bot, ShieldCheck, Sparkles, TrendingUp, Shield, Headphones } from "lucide-react";
 import Link from "next/link";
 
 export default async function LandingPage() {
   const { userId } = await auth();
 
   return (
-    <div className="flex flex-col min-h-screen">
-      {/* Header */}
-      <header className="px-4 lg:px-6 h-16 flex items-center border-b bg-white/50 backdrop-blur-md sticky top-0 z-50">
-        <Link className="flex items-center justify-center" href="#">
-          <Bot className="h-8 w-8 text-primary" />
-          <span className="ml-2 text-xl font-bold bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">Finans Koç AI</span>
-        </Link>
-        <nav className="ml-auto flex gap-4 sm:gap-6 items-center">
-          {!userId ? (
-            <>
-              <SignInButton mode="modal">
-                <Button variant="ghost" className="text-sm font-medium">Giriş Yap</Button>
-              </SignInButton>
-              <SignUpButton mode="modal">
-                <Button className="text-sm font-medium">Hemen Başla</Button>
-              </SignUpButton>
-            </>
-          ) : (
-            <Link href="/dashboard">
-              <Button className="text-sm font-medium">Panele Git</Button>
-            </Link>
-          )}
-        </nav>
+    <div className="flex flex-col min-h-screen bg-[#faf9f6] text-[#1a1c1a] font-sans antialiased">
+      {/* TopAppBar */}
+      <header className="bg-[#faf9f6]/80 backdrop-blur-md sticky top-0 z-50 border-b border-[#c4c6d2]/30">
+        <div className="flex justify-between items-center max-w-[1280px] mx-auto px-4 md:px-16 py-4">
+          <Link className="flex items-center gap-2" href="/">
+            <BarChart3 className="h-8 w-8 text-[#fed65b] fill-[#fed65b]" />
+            <span className="text-2xl font-heading font-bold text-[#001b44]">Koç Ai</span>
+          </Link>
+          <nav className="hidden md:flex items-center gap-8">
+            <a className="text-[#434750] hover:text-[#001b44] transition-colors text-sm font-medium" href="#features">Özellikler</a>
+            <a className="text-[#434750] hover:text-[#001b44] transition-colors text-sm font-medium" href="#solutions">Çözümler</a>
+            <a className="text-[#434750] hover:text-[#001b44] transition-colors text-sm font-medium" href="#about">Hakkımızda</a>
+          </nav>
+          <div className="flex items-center gap-4">
+            {!userId ? (
+              <>
+                <SignInButton mode="modal">
+                  <button className="hidden md:block text-[#434750] hover:text-[#001b44] transition-colors text-sm font-semibold">
+                    Giriş Yap
+                  </button>
+                </SignInButton>
+                <SignUpButton mode="modal">
+                  <button className="bg-[#001b44] text-white hover:bg-[#002f6c] rounded-full transition-all px-6 py-2.5 text-sm font-semibold">
+                    Hemen Başla
+                  </button>
+                </SignUpButton>
+              </>
+            ) : (
+              <Link href="/dashboard">
+                <button className="bg-[#001b44] text-white hover:bg-[#002f6c] rounded-full transition-all px-6 py-2.5 text-sm font-semibold">
+                  Panele Git
+                </button>
+              </Link>
+            )}
+          </div>
+        </div>
       </header>
 
-      <main className="flex-1">
+      <main>
         {/* Hero Section */}
-        <section className="w-full py-12 md:py-24 lg:py-32 xl:py-48 bg-gradient-to-b from-white to-slate-50 relative overflow-hidden">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-[radial-gradient(circle_at_center,_var(--tw-gradient-from)_0%,_transparent_100%)] from-blue-50/50 to-transparent opacity-70"></div>
-          <div className="container px-4 md:px-6 relative mx-auto">
-            <div className="flex flex-col items-center space-y-4 text-center">
-              <div className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-primary/10 text-primary mb-4 animate-bounce">
-                <Sparkles className="mr-1 h-3 w-3" />
-                Yapay Zeka Destekli Finansal Özgürlük
-              </div>
-              <h1 className="text-4xl font-extrabold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl max-w-3xl">
-                Paranızı <span className="text-primary">Akıllıca</span> Yönetin, Geleceğinizi İnşa Edin
-              </h1>
-              <p className="mx-auto max-w-[700px] text-gray-500 md:text-xl dark:text-gray-400">
-                Gelir, gider ve yatırımlarınızı Gemini AI ile analiz edin. Size özel finansal koçunuz her adımda yanınızda.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 min-w-[300px] justify-center mt-8">
-                {!userId ? (
-                  <SignUpButton mode="modal">
-                    <Button size="lg" className="text-lg px-8 py-6 h-auto rounded-full shadow-xl hover:shadow-primary/20 transition-all group">
-                      Ücretsiz Kayıt Ol
-                      <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                    </Button>
-                  </SignUpButton>
-                ) : (
-                  <Link href="/dashboard">
-                    <Button size="lg" className="text-lg px-8 py-6 h-auto rounded-full shadow-xl hover:shadow-primary/20 transition-all group">
-                      Danışmanına Sor
-                      <Bot className="ml-2 h-5 w-5 group-hover:scale-110 transition-transform" />
-                    </Button>
-                  </Link>
-                )}
-              </div>
+        <section className="pt-24 pb-20 px-4 md:px-16 text-center max-w-[1280px] mx-auto flex flex-col items-center">
+          {/* Social Proof Badge */}
+          <div className="flex items-center justify-center gap-3 bg-[#f4f3f1] border border-[#c4c6d2]/30 rounded-full py-1.5 px-4 mb-8">
+            <div className="flex -space-x-2">
+              <div className="w-8 h-8 rounded-full border-2 border-[#f4f3f1] bg-slate-200"></div>
+              <div className="w-8 h-8 rounded-full border-2 border-[#f4f3f1] bg-slate-300"></div>
+              <div className="w-8 h-8 rounded-full border-2 border-[#f4f3f1] bg-slate-400"></div>
+            </div>
+            <div className="flex items-center gap-1 text-[#fed65b]">
+              {[...Array(5)].map((_, i) => (
+                <Sparkles key={i} className="h-3 w-3 fill-current" />
+              ))}
+            </div>
+            <span className="text-[10px] uppercase tracking-wider font-bold text-[#434750]">4.5+ Puan / 10.000+ Kullanıcı</span>
+          </div>
+
+          {/* Headline & Sub */}
+          <h1 className="font-heading text-4xl md:text-7xl text-[#001b44] max-w-4xl mx-auto mb-6 leading-[1.1] tracking-tight">
+            Finansal Geleceğinizi Yapay Zeka ile Şekillendirin
+          </h1>
+          <p className="text-lg md:text-xl text-[#434750] max-w-2xl mx-auto mb-10 leading-relaxed">
+            Koç Ai ile veriye dayalı, güvenli ve akıllı yatırım kararları alın. Geleceğinizi bugünden planlayın.
+          </p>
+
+          {/* CTA */}
+          {!userId ? (
+            <SignUpButton mode="modal">
+              <button className="bg-[#001b44] text-white rounded-full px-8 py-4 flex items-center justify-center gap-2 hover:bg-[#001b44]/90 transition-all shadow-lg text-lg font-semibold">
+                Hemen Başlayın
+                <ArrowRight className="h-5 w-5" />
+              </button>
+            </SignUpButton>
+          ) : (
+            <Link href="/dashboard">
+              <button className="bg-[#001b44] text-white rounded-full px-8 py-4 flex items-center justify-center gap-2 hover:bg-[#001b44]/90 transition-all shadow-lg text-lg font-semibold">
+                Panele Git
+                <ArrowRight className="h-5 w-5" />
+              </button>
+            </Link>
+          )}
+
+          {/* Device Mockup placeholder */}
+          <div className="mt-20 relative w-full max-w-4xl mx-auto">
+            <div className="absolute inset-0 bg-[#fed65b]/10 blur-[100px] rounded-full w-3/4 h-3/4 left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 -z-10"></div>
+            <div className="bg-white p-4 rounded-[40px] shadow-2xl border-4 border-white overflow-hidden aspect-[16/9] flex items-center justify-center">
+               <div className="w-full h-full bg-slate-100 rounded-[32px] flex flex-col p-8 items-center justify-center text-[#001b44]/20">
+                  <Bot className="h-24 w-24 mb-4" />
+                  <p className="font-heading text-2xl font-bold italic">Koç Ai Dashboard Mockup</p>
+               </div>
             </div>
           </div>
         </section>
 
-        {/* Features Section */}
-        <section className="w-full py-12 md:py-24 lg:py-32 bg-white">
-          <div className="container px-4 md:px-6 mx-auto">
-            <div className="grid gap-12 lg:grid-cols-3">
-              <div className="flex flex-col items-center space-y-4 text-center p-6 rounded-3xl hover:bg-slate-50 transition-colors">
-                <div className="p-4 bg-primary/10 rounded-2xl">
-                  <Bot className="h-10 w-10 text-primary" />
-                </div>
-                <h3 className="text-2xl font-bold">AI Finansal Koç</h3>
-                <p className="text-gray-500">Harcamalarinizi analiz eder ve &quot;Bu ay telefon almali miyim?&quot; gibi sorulariniza rasyonel cevaplar verir.</p>
+        {/* Feature Grid */}
+        <section id="features" className="py-24 px-4 md:px-16 max-w-[1280px] mx-auto bg-[#f4f3f1] rounded-[40px]">
+          <div className="text-center mb-16">
+            <h2 className="font-heading text-4xl text-[#001b44] mb-4">Neden Koç Ai?</h2>
+            <p className="text-[#434750] text-lg max-w-2xl mx-auto">Güçlü algoritmalar ve Koç Topluluğu güvencesiyle finansal kararlarınızı optimize edin.</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="bg-white rounded-[24px] p-8 shadow-sm border border-[#c4c6d2]/20 hover:shadow-md transition-shadow relative overflow-hidden group">
+              <div className="w-14 h-14 bg-[#002f6c] text-white rounded-xl flex items-center justify-center mb-6">
+                <TrendingUp className="h-7 w-7" />
               </div>
-              <div className="flex flex-col items-center space-y-4 text-center p-6 rounded-3xl hover:bg-slate-50 transition-colors">
-                <div className="p-4 bg-blue-100 rounded-2xl">
-                  <BarChart3 className="h-10 w-10 text-blue-600" />
-                </div>
-                <h3 className="text-2xl font-bold">Portföy Yönetimi</h3>
-                <p className="text-gray-500">Altın, kripto, döviz ve BIST yatırımlarınızı tek bir yerden takip edin ve yapay zeka ile optimize edin.</p>
-              </div>
-              <div className="flex flex-col items-center space-y-4 text-center p-6 rounded-3xl hover:bg-slate-50 transition-colors">
-                <div className="p-4 bg-green-100 rounded-2xl">
-                  <ShieldCheck className="h-10 w-10 text-green-600" />
-                </div>
-                <h3 className="text-2xl font-bold">Borç Ödeme Planı</h3>
-                <p className="text-gray-500">Kart borçlarınızı ve kredilerinizi en hızlı şekilde kapatmanız için size özel ödeme stratejileri sunar.</p>
-              </div>
+              <h3 className="font-heading text-2xl text-[#001b44] mb-3">Akıllı Analiz</h3>
+              <p className="text-[#434750] leading-relaxed">
+                Makine öğrenimi modellerimiz, piyasa trendlerini gerçek zamanlı olarak analiz eder ve size en uygun yatırım stratejilerini sunar.
+              </p>
             </div>
+            <div className="bg-white rounded-[24px] p-8 shadow-sm border border-[#c4c6d2]/20 hover:shadow-md transition-shadow relative overflow-hidden group">
+              <div className="w-14 h-14 bg-[#fed65b] text-[#745c00] rounded-xl flex items-center justify-center mb-6">
+                <Shield className="h-7 w-7" />
+              </div>
+              <h3 className="font-heading text-2xl text-[#001b44] mb-3">Güvenli Altyapı</h3>
+              <p className="text-[#434750] leading-relaxed">
+                Verileriniz ve varlıklarınız, bankacılık standartlarında şifreleme ve gelişmiş güvenlik protokolleri ile korunur.
+              </p>
+            </div>
+            <div className="bg-white rounded-[24px] p-8 shadow-sm border border-[#c4c6d2]/20 hover:shadow-md transition-shadow relative overflow-hidden group">
+              <div className="w-14 h-14 bg-[#e3e2e0] text-[#1a1c1a] rounded-xl flex items-center justify-center mb-6">
+                <Headphones className="h-7 w-7" />
+              </div>
+              <h3 className="font-heading text-2xl text-[#001b44] mb-3">7/24 Destek</h3>
+              <p className="text-[#434750] leading-relaxed">
+                Uzman finansal danışmanlarımız ve yapay zeka asistanımız, ihtiyaç duyduğunuz her an yanınızda.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* Trust Section */}
+        <section className="py-24 px-4 md:px-16 text-center">
+          <p className="text-xs font-bold text-[#747781] uppercase tracking-[0.2em] mb-6">Güvenin Adresi</p>
+          <h2 className="font-heading text-4xl text-[#001b44] mb-10">Bir Koç Topluluğu Kuruluşudur</h2>
+          <div className="flex items-center justify-center gap-12 opacity-40 grayscale hover:grayscale-0 hover:opacity-100 transition-all duration-500">
+             <BarChart3 className="h-16 w-16" />
           </div>
         </section>
       </main>
 
-      <footer className="py-6 w-full shrink-0 items-center px-4 md:px-6 border-t bg-slate-50">
-        <p className="text-xs text-center text-gray-500">© 2026 Finans Koç AI. Tüm hakları saklıdır.</p>
+      <footer className="bg-white border-t border-[#c4c6d2]/50 mt-auto">
+        <div className="max-w-[1280px] mx-auto px-4 md:px-16 py-12 flex flex-col md:flex-row justify-between items-center gap-8">
+          <div className="flex items-center gap-2 font-heading font-bold text-[#001b44]">
+            <BarChart3 className="h-6 w-6 text-[#fed65b] fill-[#fed65b]" />
+            <span>Koç Ai</span>
+          </div>
+          <nav className="flex flex-wrap justify-center gap-8 text-sm text-[#434750]">
+            <a className="hover:text-[#001b44] underline decoration-[#c4c6d2] underline-offset-4" href="#">Gizlilik</a>
+            <a className="hover:text-[#001b44] underline decoration-[#c4c6d2] underline-offset-4" href="#">Koşullar</a>
+            <a className="hover:text-[#001b44] underline decoration-[#c4c6d2] underline-offset-4" href="#">KVKK</a>
+          </nav>
+          <p className="text-sm text-[#434750]">
+            © 2026 Koç Ai. Koç Topluluğu Kuruluşudur.
+          </p>
+        </div>
       </footer>
     </div>
   );

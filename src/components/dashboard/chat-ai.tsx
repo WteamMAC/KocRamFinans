@@ -1,11 +1,10 @@
 "use client";
 
-
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Bot, Send, X, MessageCircle, Sparkles, User } from "lucide-react";
+import { Bot, Send, X, MessageCircle, Sparkles, User, BarChart3 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 export function ChatAI() {
@@ -17,7 +16,6 @@ export function ChatAI() {
   const [cooldown, setCooldown] = useState(0); 
   const cooldownRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Sayfa yüklendiğinde kalan süreyi kontrol et
   useEffect(() => {
     const savedCooldown = localStorage.getItem("ai_cooldown_end");
     if (savedCooldown) {
@@ -83,7 +81,7 @@ export function ChatAI() {
       setError(err.message || "Bir hata oluştu");
     } finally {
       setIsLoading(false);
-      startCooldown(15); // Her mesaj sonrası 30s bekleme
+      startCooldown(15); 
     }
   };
 
@@ -137,17 +135,20 @@ export function ChatAI() {
       try {
         const toolData = JSON.parse(match[1]);
         parts.push(
-          <div key={`tool-${match.index}`} className="mt-2 p-3 bg-white border border-primary/20 rounded-lg shadow-sm">
-            <p className="text-[11px] font-bold text-primary mb-2 flex items-center gap-1">
-              <Sparkles className="w-3 h-3" /> İşlem Önerisi: {toolData.name}
+          <div key={`tool-${match.index}`} className="mt-4 p-4 bg-white border border-[#fed65b]/30 rounded-2xl shadow-lg animate-in zoom-in-95">
+            <p className="text-xs font-bold text-[#001b44] mb-3 flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-[#fed65b] fill-[#fed65b]" /> {toolData.name === "addInvestment" ? "Yatırım Önerisi" : "İşlem Önerisi"}
             </p>
-            <div className="text-[10px] bg-slate-50 p-2 rounded mb-3 text-slate-600 border">
+            <div className="text-[11px] bg-[#faf9f6] p-3 rounded-xl mb-4 text-[#434750] border border-[#c4c6d2]/10">
               {Object.entries(toolData.args).map(([k, v]) => (
-                <div key={k}><span className="font-semibold">{k}:</span> {String(v)}</div>
+                <div key={k} className="flex justify-between py-1 border-b border-[#c4c6d2]/5 last:border-0">
+                  <span className="font-bold opacity-60 uppercase tracking-tighter">{k}:</span> 
+                  <span className="font-bold">{String(v)}</span>
+                </div>
               ))}
             </div>
             <div className="flex gap-2">
-              <Button size="sm" onClick={() => handleToolConfirm(toolData.name, toolData.args)} className="w-full text-[10px] h-7 bg-primary text-white hover:bg-primary/90">
+              <Button size="sm" onClick={() => handleToolConfirm(toolData.name, toolData.args)} className="w-full text-xs h-9 bg-[#001b44] text-white hover:bg-[#002f6c] rounded-full shadow-md">
                 Onayla ve Kaydet
               </Button>
             </div>
@@ -181,66 +182,76 @@ export function ChatAI() {
     if (scrollRef.current) {
       scrollRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  }, [messages]);
+  }, [messages, isLoading]);
 
   return (
-    <div className="fixed bottom-6 right-6 z-50">
+    <div className="fixed bottom-8 right-8 z-50">
       {!isOpen ? (
         <Button
           onClick={() => setIsOpen(true)}
           size="icon"
-          className="h-14 w-14 rounded-full shadow-2xl bg-gradient-to-tr from-primary to-blue-600 hover:scale-110 transition-transform animate-pulse"
+          className="h-16 w-16 rounded-full shadow-[0_20px_50px_rgba(0,27,68,0.3)] bg-[#001b44] hover:bg-[#002f6c] hover:scale-110 transition-all duration-300 relative group"
         >
-          <MessageCircle className="h-7 w-7" />
+          <BarChart3 className="h-8 w-8 text-[#fed65b] fill-[#fed65b] group-hover:rotate-12 transition-transform" />
+          <div className="absolute -top-1 -right-1 w-5 h-5 bg-[#ba1a1a] border-2 border-white rounded-full animate-bounce"></div>
         </Button>
       ) : (
-        <Card className="w-[400px] h-[600px] shadow-2xl flex flex-col border-none bg-white/95 backdrop-blur-xl animate-in slide-in-from-bottom-10 duration-300">
-          <CardHeader className="p-4 border-b bg-gradient-to-r from-primary to-blue-600 text-white rounded-t-xl flex flex-row items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="p-1.5 bg-white/20 rounded-lg">
-                <Bot className="h-5 w-5" />
+        <Card className="w-[420px] h-[650px] shadow-[0_30px_60px_rgba(0,0,0,0.2)] flex flex-col border-none bg-white rounded-[32px] overflow-hidden animate-in slide-in-from-bottom-12 duration-500">
+          <CardHeader className="p-6 border-b border-[#c4c6d2]/20 bg-[#001b44] text-white flex flex-row items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="p-2.5 bg-white/10 rounded-[14px]">
+                <BarChart3 className="h-6 w-6 text-[#fed65b] fill-[#fed65b]" />
               </div>
               <div>
-                <CardTitle className="text-sm font-bold">Finans Koç AI</CardTitle>
-                <p className="text-[10px] opacity-80 flex items-center gap-1">
-                  <Sparkles className="w-2 h-2" /> Çevrimiçi - Gemini 3.1
+                <CardTitle className="text-lg font-heading font-bold">Koç Ai</CardTitle>
+                <p className="text-[10px] uppercase tracking-widest font-bold text-white/60 flex items-center gap-1.5 mt-0.5">
+                  <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></div>
+                  Aktif Danışman
                 </p>
               </div>
             </div>
-            <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)} className="text-white hover:bg-white/10 h-8 w-8">
-              <X className="h-4 w-4" />
+            <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)} className="text-white hover:bg-white/10 h-10 w-10 rounded-full">
+              <X className="h-5 w-5" />
             </Button>
           </CardHeader>
 
-          <CardContent className="flex-1 p-4 overflow-hidden">
-            <ScrollArea className="h-full pr-4">
-              <div className="space-y-4">
+          <CardContent className="flex-1 p-0 overflow-hidden bg-[#faf9f6]/30">
+            <ScrollArea className="h-full">
+              <div className="p-6 space-y-6">
                 {messages.length === 0 && (
-                  <div className="text-center py-10 space-y-2">
-                    <div className="bg-primary/10 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <Bot className="w-6 h-6 text-primary" />
+                  <div className="text-center py-12 px-4 space-y-4">
+                    <div className="bg-[#001b44]/5 w-20 h-20 rounded-[24px] flex items-center justify-center mx-auto mb-6 rotate-3">
+                      <Bot className="w-10 h-10 text-[#001b44]" />
                     </div>
-                    <p className="text-sm font-medium">Merhaba! Ben senin AI Finans Koçunum.</p>
-                    <p className="text-xs text-slate-500">Bütçen, borçların veya yatırımların hakkında bana her şeyi sorabilirsin.</p>
-                    <div className="flex flex-wrap gap-2 justify-center mt-4">
-                      <Button variant="outline" size="sm" className="text-[10px]" onClick={() => append({ role: "user", content: "Bütçemi analiz eder misin?" })}>
-                        Bütçemi analiz et
+                    <h3 className="font-heading font-bold text-xl text-[#001b44]">Merhaba! Ben Koç Ai.</h3>
+                    <p className="text-sm text-[#434750] leading-relaxed">
+                      Finansal hedeflerine ulaşman için buradayım. Harcamalarını analiz edebilir, yatırım tavsiyeleri verebilir veya bütçe planı yapabilirim.
+                    </p>
+                    <div className="flex flex-col gap-2 mt-8">
+                      <Button variant="outline" className="justify-start h-auto py-3 px-4 rounded-xl border-[#c4c6d2]/30 hover:bg-white hover:border-[#fed65b] transition-all group" onClick={() => append({ role: "user", content: "Bütçemi analiz edebilir misin?" })}>
+                        <div className="p-1.5 bg-[#f4f3f1] rounded-lg mr-3 group-hover:bg-[#fed65b]/20">
+                           <BarChart3 className="w-4 h-4 text-[#001b44]" />
+                        </div>
+                        <span className="text-xs font-bold text-[#434750]">Bütçe Analizi İste</span>
                       </Button>
-                      <Button variant="outline" size="sm" className="text-[10px]" onClick={() => append({ role: "user", content: "Borçlarımı nasıl kapatırım?" })}>
-                        Borç kapatma stratejisi
+                      <Button variant="outline" className="justify-start h-auto py-3 px-4 rounded-xl border-[#c4c6d2]/30 hover:bg-white hover:border-[#fed65b] transition-all group" onClick={() => append({ role: "user", content: "Bu ayki yatırımlarımı nasıl optimize edebilirim?" })}>
+                        <div className="p-1.5 bg-[#f4f3f1] rounded-lg mr-3 group-hover:bg-[#fed65b]/20">
+                           <Sparkles className="w-4 h-4 text-[#001b44]" />
+                        </div>
+                        <span className="text-xs font-bold text-[#434750]">Yatırım Optimizasyonu</span>
                       </Button>
                     </div>
                   </div>
                 )}
                 {messages.map((m) => (
                   <div key={m.id} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
-                    <div className={`flex gap-2 max-w-[85%] ${m.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
-                      <div className={`h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0 ${m.role === "user" ? "bg-slate-100" : "bg-primary/10"}`}>
-                        {m.role === "user" ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4 text-primary" />}
+                    <div className={`flex gap-3 max-w-[90%] ${m.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
+                      <div className={`h-8 w-8 rounded-xl flex items-center justify-center flex-shrink-0 mt-1 ${m.role === "user" ? "bg-[#fed65b]/20" : "bg-[#001b44]/10"}`}>
+                        {m.role === "user" ? <User className="h-4 w-4 text-[#735c00]" /> : <BarChart3 className="h-4 w-4 text-[#001b44]" />}
                       </div>
-                      <div className={`p-3 rounded-2xl text-sm ${m.role === "user"
-                        ? "bg-primary text-white rounded-tr-none"
-                        : "bg-slate-100 text-slate-800 rounded-tl-none"
+                      <div className={`p-4 rounded-[20px] text-sm leading-relaxed shadow-sm ${m.role === "user"
+                        ? "bg-[#001b44] text-white rounded-tr-none font-medium"
+                        : "bg-white text-[#1a1c1a] border border-[#c4c6d2]/10 rounded-tl-none shadow-[0_4px_20px_rgba(0,0,0,0.03)]"
                         }`}>
                         {renderMessageContent(m.content)}
                       </div>
@@ -249,10 +260,10 @@ export function ChatAI() {
                 ))}
                 {isLoading && (
                   <div className="flex justify-start">
-                    <div className="bg-slate-100 p-3 rounded-2xl rounded-tl-none animate-pulse flex items-center gap-2">
-                      <div className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" />
-                      <div className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce [animation-delay:0.2s]" />
-                      <div className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce [animation-delay:0.4s]" />
+                    <div className="bg-white p-4 rounded-[20px] rounded-tl-none border border-[#c4c6d2]/10 shadow-sm flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 bg-[#001b44]/40 rounded-full animate-bounce" />
+                      <div className="w-1.5 h-1.5 bg-[#001b44]/40 rounded-full animate-bounce [animation-delay:0.2s]" />
+                      <div className="w-1.5 h-1.5 bg-[#001b44]/40 rounded-full animate-bounce [animation-delay:0.4s]" />
                     </div>
                   </div>
                 )}
@@ -261,32 +272,24 @@ export function ChatAI() {
             </ScrollArea>
           </CardContent>
 
-          {error && (
-            <div className="px-4 py-2 mx-4 mb-2 bg-red-50 border border-red-100 rounded-lg text-[11px] text-red-600 flex items-center gap-2 animate-in fade-in slide-in-from-top-1">
-              <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
-              <span className="font-medium">Hata:</span> {error}
-            </div>
-          )}
-
-          <CardFooter className="p-4 border-t">
-            <form onSubmit={handleSubmit} className="flex w-full gap-2">
+          <CardFooter className="p-6 border-t border-[#c4c6d2]/20 bg-white">
+            <form onSubmit={handleSubmit} className="flex w-full gap-3">
               <div className="flex-1 relative">
                 <Input
                   value={input}
                   onChange={handleInputChange}
-                  placeholder={cooldown > 0 ? `${cooldown}s sonra yazabilirsiniz...` : "Mesajınızı yazın..."}
+                  placeholder={cooldown > 0 ? `${cooldown}s Bekleyin...` : "Sorunuzu buraya yazın..."}
                   disabled={cooldown > 0 || isLoading}
-                  className="bg-slate-50 border-none focus-visible:ring-1 focus-visible:ring-primary w-full pr-10 disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="bg-[#faf9f6] border-[#c4c6d2]/30 focus-visible:ring-[#001b44] h-12 rounded-2xl w-full pr-12 text-sm font-medium placeholder:text-[#747781]/50"
                 />
                 {cooldown > 0 && (
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                    <div className="w-4 h-4 rounded-full border-2 border-primary/40 border-t-primary animate-spin" />
-                    <span className="text-[10px] font-bold text-primary">{cooldown}s</span>
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                    <span className="text-[10px] font-bold text-[#001b44]">{cooldown}s</span>
                   </div>
                 )}
               </div>
-              <Button type="submit" size="icon" disabled={isLoading || !input || cooldown > 0} className="shadow-lg">
-                <Send className="h-4 w-4" />
+              <Button type="submit" size="icon" disabled={isLoading || !input || cooldown > 0} className="h-12 w-12 rounded-2xl bg-[#001b44] hover:bg-[#002f6c] shadow-lg transition-all group">
+                <Send className="h-5 w-5 text-[#fed65b] group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
               </Button>
             </form>
           </CardFooter>
