@@ -38,7 +38,7 @@ export default function SlidingAuth() {
           <div className="min-h-full flex flex-col items-center justify-center p-8 md:p-12">
             <div className="lg:hidden mb-8 text-center">
               <Link href="/" className="flex items-center gap-2 justify-center">
-                <BarChart3 className="h-8 w-8 text-[#8c5000] fill-[#8c5000]" />
+                <img src="/mascot.png" alt="Logo" className="h-10 w-10 object-contain" />
                 <span className="text-2xl font-heading font-bold text-[#8c5000]">Koç Ram Finans</span>
               </Link>
             </div>
@@ -149,7 +149,7 @@ export default function SlidingAuth() {
                 <img 
                   alt="Koç Ram Finans Mascot" 
                   className="w-[420px] h-[420px] mx-auto object-contain drop-shadow-[0_30px_60px_rgba(0,0,0,0.4)] bg-white rounded-full p-4 border-[12px] border-white/20 relative z-10" 
-                  src="https://lh3.googleusercontent.com/aida/ADBb0uii6ONYZ2VjCJ7Apc7e45lcMInjiFwwgPNuvJrgDZ_84hIkEoK9mIaLGXoWKEBg_Nz_7sQCF22UsVxuBMxDA-HWrUx6X21amjFZJ5TtQ4BucAnynbAZONheLmxUMXWyRXwqjn4jrEZNnJQpNZPc1l_SeGx4EqVG78rW3Xg_BVwU9A4ZqiEW6CYsO9v23tMJVjA8zj2AkBPxnip515vMVVfbxorMIIuhYaIXh67MMm2HByysQWipBKTuBHQxsBC7OZ4tiECjAH4Tshc" 
+                  src="/mascot.png" 
                 />
               </div>
             </motion.div>

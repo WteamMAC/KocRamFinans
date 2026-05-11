@@ -67,7 +67,7 @@ export function Sidebar({ isCollapsed, onToggle, hideToggle }: SidebarProps) {
           "flex items-center mb-10 transition-all duration-300",
           isCollapsed ? "justify-center" : "px-4"
         )}>
-          <BarChart3 className="h-8 w-8 text-[#efe440] fill-[#efe440] flex-shrink-0" />
+          <img src="/mascot.png" alt="Logo" className="h-10 w-10 object-contain" />
           {!isCollapsed && (
             <h1 className="text-xl font-heading font-bold text-[#8c5000] ml-3 truncate">
               Koç Ram Finans

@@ -35,8 +35,8 @@ export default async function LandingPage() {
       <header className="bg-white/90 backdrop-blur-md sticky top-0 z-50 border-b border-[#dbc2b0]/30 shadow-ambient-low transition-all duration-300">
         <div className="flex justify-between items-center max-w-[1200px] mx-auto px-6 md:px-8 py-4">
           <Link className="flex items-center gap-2 group" href="/">
-            <div className="p-2 bg-[#8c5000]/5 rounded-lg group-hover:scale-110 transition-transform">
-              <BarChart3 className="h-7 w-7 text-[#8c5000] fill-[#8c5000]" />
+            <div className="p-1 group-hover:scale-110 transition-transform">
+              <img src="/mascot.png" alt="Logo" className="h-10 w-10 object-contain" />
             </div>
             <span className="text-2xl font-heading font-bold text-[#8c5000] tracking-tight">Koç Ram Finans</span>
           </Link>
@@ -101,7 +101,7 @@ export default async function LandingPage() {
                 <img 
                   alt="Koç Ram Finans mascot" 
                   className="w-full h-auto object-contain drop-shadow-2xl" 
-                  src="https://lh3.googleusercontent.com/aida/ADBb0uii6ONYZ2VjCJ7Apc7e45lcMInjiFwwgPNuvJrgDZ_84hIkEoK9mIaLGXoWKEBg_Nz_7sQCF22UsVxuBMxDA-HWrUx6X21amjFZJ5TtQ4BucAnynbAZONheLmxUMXWyRXwqjn4jrEZNnJQpNZPc1l_SeGx4EqVG78rW3Xg_BVwU9A4ZqiEW6CYsO9v23tMJVjA8zj2AkBPxnip515vMVVfbxorMIIuhYaIXh67MMm2HByysQWipBKTuBHQxsBC7OZ4tiECjAH4Tshc" 
+                  src="/mascot.png" 
                 />
                 {/* Floating Badge */}
                 <div className="absolute -bottom-8 -left-8 bg-white p-5 rounded-2xl shadow-ambient-high flex items-center gap-4 border border-[#dbc2b0]/20 animate-bounce [animation-duration:3s]">
@@ -300,8 +300,8 @@ export default async function LandingPage() {
           <div className="flex flex-col md:flex-row justify-between items-center gap-12">
             <div className="flex flex-col items-center md:items-start gap-6 mb-8 md:mb-0">
               <Link className="flex items-center gap-2 group" href="/">
-                <div className="p-2 bg-white/10 rounded-lg group-hover:scale-110 transition-transform">
-                  <BarChart3 className="h-7 w-7 text-white fill-white" />
+                <div className="p-1 group-hover:scale-110 transition-transform">
+                  <img src="/mascot.png" alt="Logo" className="h-10 w-10 object-contain brightness-0 invert" />
                 </div>
                 <span className="text-3xl font-heading font-bold text-white tracking-tight">Koç Ram Finans</span>
               </Link>
