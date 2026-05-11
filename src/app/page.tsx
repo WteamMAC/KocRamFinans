@@ -18,7 +18,7 @@ import {
   Users,
   Handshake,
   BrainCircuit,
-  MessagesSquare,
+  MessageSquare,
   ArrowUpRight,
   TrendingDown,
   Clock
@@ -104,10 +104,13 @@ export default async function LandingPage() {
             <div className="md:col-span-5 relative mt-12 md:mt-0 flex justify-center animate-in fade-in zoom-in-95 duration-1000">
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-[#ffdcbf] blur-[120px] opacity-40 rounded-full -z-10"></div>
               <div className="relative w-full max-w-[440px] aspect-square rounded-[40px] bg-white shadow-ambient-high flex items-center justify-center p-12 border-t-8 border-[#8c5000]">
-                <img 
+                <Image 
                   alt="Koç Ram Finans mascot" 
                   className="w-full h-auto object-contain drop-shadow-2xl" 
                   src="https://lh3.googleusercontent.com/aida/ADBb0uii6ONYZ2VjCJ7Apc7e45lcMInjiFwwgPNuvJrgDZ_84hIkEoK9mIaLGXoWKEBg_Nz_7sQCF22UsVxuBMxDA-HWrUx6X21amjFZJ5TtQ4BucAnynbAZONheLmxUMXWyRXwqjn4jrEZNnJQpNZPc1l_SeGx4EqVG78rW3Xg_BVwU9A4ZqiEW6CYsO9v23tMJVjA8zj2AkBPxnip515vMVVfbxorMIIuhYaIXh67MMm2HByysQWipBKTuBHQxsBC7OZ4tiECjAH4Tshc" 
+                  width={440}
+                  height={440}
+                  priority
                 />
                 {/* Floating Badge */}
                 <div className="absolute -bottom-8 -left-8 bg-white p-5 rounded-2xl shadow-ambient-high flex items-center gap-4 border border-[#dbc2b0]/20 animate-bounce [animation-duration:3s]">
@@ -245,7 +248,7 @@ export default async function LandingPage() {
                   
                   <div className="flex gap-6 group">
                     <div className="flex-shrink-0 bg-[#8c5000] text-white w-12 h-12 rounded-xl flex items-center justify-center shadow-ambient-medium group-hover:scale-110 transition-transform">
-                      <MessagesSquare className="h-6 w-6" />
+                      <MessageSquare className="h-6 w-6" />
                     </div>
                     <div>
                       <h4 className="font-bold text-[#191c1d] text-xl mb-2">Sürekli Destek</h4>

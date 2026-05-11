@@ -6,15 +6,16 @@ import { searchSymbols as searchSymbolsLib } from "@/lib/price-service";
  * İstemci tarafı (Client Component) için güvenli arama aksiyonu.
  * Bu fonksiyon her zaman sunucuda çalışır.
  */
-export async function searchSymbolsAction(query: string, category: string) {
+export async function searchSymbolsAction(query: string) {
   try {
-    const results = await searchSymbolsLib(query, category);
+    const results = await searchSymbolsLib(query);
     // Veriyi tarayıcıya göndermeden önce sadeleştiriyoruz (Sadece gerekli alanlar)
     return results.map((q: any) => ({
       symbol: q.symbol,
       shortname: q.shortname || q.longname || q.symbol,
       exchange: q.exchange,
-      quoteType: q.quoteType
+      quoteType: q.quoteType,
+      category: q.category
     }));
   } catch (error) {
     console.error("Market Action Error:", error);

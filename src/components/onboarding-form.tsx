@@ -120,12 +120,12 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
     name: "children",
   });
 
-  const handleSearch = async (index: number, query: string, type: string) => {
+  const handleSearch = async (index: number, query: string) => {
     setSearchQueries(prev => ({ ...prev, [index]: query }));
     form.setValue(`investments.${index}.symbol`, query);
     
     if (query.length >= 2) {
-      const results = await searchSymbolsAction(query, type);
+      const results = await searchSymbolsAction(query);
       setSearchResults(prev => ({ ...prev, [index]: results }));
       setShowSearch(prev => ({ ...prev, [index]: true }));
     } else {
@@ -480,33 +480,6 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
                 {investmentFields.map((field, index) => (
                   <div key={field.id} className="p-8 bg-[#faf9f6] border border-[#c4c6d2]/20 rounded-[32px] relative group hover:shadow-lg transition-all">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <Label className="text-[9px] font-bold text-[#747781] uppercase px-1">Varlık Türü</Label>
-                        <Controller
-                          name={`investments.${index}.type` as any}
-                          control={form.control}
-                          render={({ field: selectField }) => (
-                            <Select 
-                              onValueChange={(val) => {
-                                selectField.onChange(val);
-                                form.setValue(`investments.${index}.symbol`, "");
-                                setSearchQueries(p => ({ ...p, [index]: "" }));
-                              }} 
-                              defaultValue={selectField.value}
-                            >
-                              <SelectTrigger className="bg-white border-[#c4c6d2]/20 h-12 rounded-xl">
-                                <SelectValue placeholder="Tür Seç" />
-                              </SelectTrigger>
-                              <SelectContent className="rounded-xl">
-                                <SelectItem value="BIST">BIST (Hisse)</SelectItem>
-                                <SelectItem value="NASDAQ">NASDAQ (Hisse)</SelectItem>
-                                <SelectItem value="CRYPTO">Kripto Para</SelectItem>
-                                <SelectItem value="GOLD">Altın/Emtia</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          )}
-                        />
-                      </div>
 
                       <div className="space-y-2 relative" ref={el => { inputRefs.current[index] = el; }}>
                         <Label className="text-[9px] font-bold text-[#747781] uppercase px-1">Sembol / İçerik <span className="text-rose-500">*</span></Label>
@@ -515,7 +488,7 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
                           <Input 
                             placeholder="Örn: THYAO, BTC" 
                             value={searchQueries[index] || form.getValues(`investments.${index}.symbol`) || ""}
-                            onChange={(e) => handleSearch(index, e.target.value, form.getValues(`investments.${index}.type`))}
+                            onChange={(e) => handleSearch(index, e.target.value)}
                             className={cn(
                               "pl-12 bg-white border-[#c4c6d2]/20 h-12 rounded-xl",
                               form.formState.errors.investments?.[index]?.symbol && "border-rose-300"
@@ -532,12 +505,16 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
                                  onClick={() => {
                                    const sym = `${result.symbol} (${result.shortname || result.symbol})`;
                                    form.setValue(`investments.${index}.symbol`, sym);
+                                   form.setValue(`investments.${index}.type`, result.category || "BIST");
                                    setSearchQueries(p => ({ ...p, [index]: sym }));
                                    setShowSearch(p => ({ ...p, [index]: false }));
                                  }}
                                >
                                  <div className="flex flex-col">
-                                   <span className="font-bold text-[#001b44]">{result.symbol}</span>
+                                   <div className="flex items-center gap-2">
+                                     <span className="font-bold text-[#001b44]">{result.symbol}</span>
+                                     <span className="text-[7px] font-bold px-1.5 py-0.5 rounded-full bg-[#faf9f6] text-[#747781] uppercase">{result.category}</span>
+                                   </div>
                                    <span className="text-[9px] text-[#434750] opacity-60">{result.shortname || result.longname}</span>
                                  </div>
                                  <ArrowUpRight className="h-3 w-3 text-[#fed65b] opacity-0 group-hover:opacity-100 transition-all" />
