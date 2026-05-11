@@ -37,94 +37,134 @@ export default async function DashboardPage() {
   const totalExpense = user.expenses.reduce((acc, exp) => acc + exp.amount, 0);
   const totalDebt = user.debts.reduce((acc, debt) => acc + debt.amount, 0);
   const totalInvestment = user.investments.reduce((acc, inv) => acc + (inv.currentValuation || inv.amount), 0);
+  
   const netWorth = totalInvestment + (totalIncome - totalExpense) - totalDebt;
+  const savingsRate = totalIncome > 0 ? ((totalIncome - totalExpense) / totalIncome) * 100 : 0;
+  const debtToIncome = totalIncome > 0 ? (totalDebt / (totalIncome * 12)) * 100 : 0; // Yıllık gelire oran
 
   return (
-    <div className="flex-1 space-y-8 p-8 pt-6 bg-slate-50/50 min-h-screen">
+    <div className="flex-1 space-y-8 p-8 pt-6 bg-[#f8fafc] min-h-screen">
       <div className="flex items-center justify-between space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
-          Finansal Özet
-        </h2>
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
+            Finansal Panoramik
+          </h2>
+          <p className="text-slate-500 text-sm mt-1">Hoş geldiniz! Finansal sağlığınızın anlık özeti burada.</p>
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="hidden md:flex flex-col items-end">
+            <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">Tasarruf Oranı</span>
+            <span className={cn(
+              "text-lg font-bold",
+              savingsRate > 20 ? "text-emerald-500" : "text-amber-500"
+            )}>
+              %{savingsRate.toFixed(1)}
+            </span>
+          </div>
+        </div>
       </div>
       
-      {/* Üst Özet Kartları */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="shadow-sm border-none bg-white">
+      {/* Üst Özet Kartları - Premium Design */}
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <Card className="relative overflow-hidden border-none shadow-sm hover:shadow-md transition-shadow group">
+          <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:scale-110 transition-transform">
+            <Wallet className="h-12 w-12 text-primary" />
+          </div>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-500">Net Varlık</CardTitle>
-            <Wallet className="h-4 w-4 text-primary" />
+            <CardTitle className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Net Varlık</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-slate-900">{netWorth.toLocaleString('tr-TR')} ₺</div>
-            <p className="text-xs text-muted-foreground mt-1">Yatırım + Nakit - Borçlar</p>
+            <div className="flex items-center gap-1 mt-2">
+              <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600">Yatırım Odaklı</span>
+            </div>
           </CardContent>
         </Card>
-        <Card className="shadow-sm border-none bg-white">
+
+        <Card className="relative overflow-hidden border-none shadow-sm hover:shadow-md transition-shadow group">
+          <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:scale-110 transition-transform">
+            <ArrowUpRight className="h-12 w-12 text-emerald-500" />
+          </div>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-500">Aylık Gelir</CardTitle>
-            <ArrowUpRight className="h-4 w-4 text-green-500" />
+            <CardTitle className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Aylık Nakit Akışı</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-slate-900">{totalIncome.toLocaleString('tr-TR')} ₺</div>
-            <p className="text-xs text-green-600 mt-1">Bu ay beklenen toplam</p>
+            <div className="text-2xl font-bold text-slate-900">{(totalIncome - totalExpense).toLocaleString('tr-TR')} ₺</div>
+            <div className="flex items-center gap-1 mt-2 text-[10px] font-medium text-emerald-600">
+              Gelir: {totalIncome.toLocaleString('tr-TR')} ₺
+            </div>
           </CardContent>
         </Card>
-        <Card className="shadow-sm border-none bg-white">
+
+        <Card className="relative overflow-hidden border-none shadow-sm hover:shadow-md transition-shadow group">
+          <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:scale-110 transition-transform">
+            <Banknote className="h-12 w-12 text-rose-500" />
+          </div>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-500">Aylık Gider</CardTitle>
-            <ArrowDownRight className="h-4 w-4 text-red-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-slate-900">{totalExpense.toLocaleString('tr-TR')} ₺</div>
-            <p className="text-xs text-red-600 mt-1">Sabit ve planlı harcamalar</p>
-          </CardContent>
-        </Card>
-        <Card className="shadow-sm border-none bg-white">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-500">Toplam Borç</CardTitle>
-            <Banknote className="h-4 w-4 text-orange-500" />
+            <CardTitle className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Toplam Borç</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-slate-900">{totalDebt.toLocaleString('tr-TR')} ₺</div>
-            <p className="text-xs text-orange-600 mt-1">Kredi ve kart borçları</p>
+            <div className="flex items-center gap-1 mt-2 text-[10px] font-medium text-rose-600">
+              Yıllık Gelire Oran: %{debtToIncome.toFixed(1)}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="relative overflow-hidden border-none shadow-sm hover:shadow-md transition-shadow group">
+          <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:scale-110 transition-transform">
+            <PieChart className="h-12 w-12 text-amber-500" />
+          </div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Yatırım Değeri</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-slate-900">{totalInvestment.toLocaleString('tr-TR')} ₺</div>
+            <div className="flex items-center gap-1 mt-2 text-[10px] font-medium text-amber-600">
+              Portföy Büyüklüğü
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="col-span-4 shadow-sm border-none bg-white">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <PieChart className="w-5 h-5 text-primary" /> Bütçe Analizi
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
+        <Card className="col-span-4 border-none shadow-sm bg-white overflow-hidden">
+          <CardHeader className="border-b border-slate-50 bg-slate-50/30">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <PieChart className="w-5 h-5 text-primary" /> Bütçe Dengesi
             </CardTitle>
           </CardHeader>
-          <CardContent className="pl-2">
+          <CardContent className="p-6">
             <BudgetOverview incomes={user.incomes} expenses={user.expenses} />
           </CardContent>
         </Card>
-        <Card className="col-span-3 shadow-sm border-none bg-white">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-primary" /> Yaklaşan Ödemeler
+        
+        <Card className="col-span-3 border-none shadow-sm bg-white overflow-hidden">
+          <CardHeader className="border-b border-slate-50 bg-slate-50/30">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-primary" /> Ödeme Takvimi
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-6">
             <UpcomingPayments expenses={user.expenses} />
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-1">
-        <Card className="shadow-sm border-none bg-white">
-          <CardHeader>
-            <CardTitle>Yatırım Dağılımı</CardTitle>
+      <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-1">
+        <Card className="border-none shadow-sm bg-white overflow-hidden">
+          <CardHeader className="border-b border-slate-50 bg-slate-50/30">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg">Varlık Dağılımı ve Portföy</CardTitle>
+              <div className="text-xs font-medium text-slate-400">Canlı Veri (Simüle)</div>
+            </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-6">
             <InvestmentSummary investments={user.investments} />
           </CardContent>
         </Card>
       </div>
-      {/* Floating AI Chat */}
+
       <ChatAI />
     </div>
   );

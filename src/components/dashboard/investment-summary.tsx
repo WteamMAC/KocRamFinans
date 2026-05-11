@@ -7,13 +7,12 @@ interface InvestmentSummaryProps {
   investments: any[];
 }
 
-const COLORS = ["#10b981", "#3b82f6", "#f59e0b", "#8b5cf6", "#ec4899", "#64748b"];
+const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899", "#06b6d4"];
 
 export function InvestmentSummary({ investments }: InvestmentSummaryProps) {
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsMounted(true);
   }, []);
 
@@ -22,8 +21,10 @@ export function InvestmentSummary({ investments }: InvestmentSummaryProps) {
     value: inv.currentValuation || inv.amount,
   }));
 
+  const totalValue = data.reduce((acc, curr) => acc + curr.value, 0);
+
   if (data.length === 0) {
-    return <p className="text-sm text-slate-500 text-center py-8">Henüz yatırım girişi yapılmamış.</p>;
+    return <p className="text-sm text-slate-500 text-center py-8 font-medium">Henüz yatırım girişi yapılmamış.</p>;
   }
 
   if (!isMounted) {
@@ -31,35 +32,48 @@ export function InvestmentSummary({ investments }: InvestmentSummaryProps) {
   }
 
   return (
-    <div className="h-[300px] w-full min-h-[300px]">
-      <ResponsiveContainer width="100%" height="100%" minHeight={300}>
+    <div className="h-[300px] w-full min-h-[300px] relative">
+      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none pb-8">
+        <span className="text-xs font-medium text-slate-500">Toplam Değer</span>
+        <span className="text-xl font-bold text-slate-900">{totalValue.toLocaleString('tr-TR')} ₺</span>
+      </div>
+      <ResponsiveContainer width="100%" height="100%">
         <PieChart>
           <Pie
             data={data}
             cx="50%"
             cy="50%"
-            innerRadius={60}
-            outerRadius={80}
-            paddingAngle={5}
+            innerRadius={70}
+            outerRadius={90}
+            paddingAngle={8}
             dataKey="value"
+            stroke="none"
           >
             {data.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} cornerRadius={4} />
             ))}
           </Pie>
           <Tooltip 
             content={({ active, payload }) => {
               if (active && payload && payload.length) {
                 return (
-                  <div className="bg-white p-2 border rounded-lg shadow-sm">
-                    <p className="text-sm font-bold">{`${payload[0]?.name}: ${payload[0]?.value?.toLocaleString() || 0} ₺`}</p>
+                  <div className="bg-white/90 backdrop-blur-md p-3 border border-slate-100 rounded-xl shadow-xl">
+                    <p className="text-xs font-medium text-slate-500 mb-1">{payload[0]?.name}</p>
+                    <p className="text-sm font-bold text-slate-900">
+                      {payload[0]?.value?.toLocaleString('tr-TR')} ₺
+                    </p>
                   </div>
                 );
               }
               return null;
             }}
           />
-          <Legend verticalAlign="bottom" height={36}/>
+          <Legend 
+            verticalAlign="bottom" 
+            height={36}
+            iconType="circle"
+            formatter={(value) => <span className="text-xs font-medium text-slate-600">{value}</span>}
+          />
         </PieChart>
       </ResponsiveContainer>
     </div>
