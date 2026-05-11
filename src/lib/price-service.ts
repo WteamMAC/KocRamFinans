@@ -50,10 +50,10 @@ export async function getLivePrices(symbols: string[]): Promise<Map<string, Pric
   return results;
 }
 
-export async function searchSymbols(query: string) {
+export async function searchSymbols(query: string, category: string) {
   if (!query || query.length < 2) return [];
 
-  console.log(`Global searching for: "${query}"`);
+  console.log(`Searching for: "${query}" in category: ${category}`);
 
   try {
     const searchResults = await yahooFinance.search(query, {
@@ -63,25 +63,27 @@ export async function searchSymbols(query: string) {
 
     const quotes = (searchResults && (searchResults as any).quotes) ? (searchResults as any).quotes : [];
     
-    return quotes.map((q: any) => {
-      let category = "BIST";
-      
-      if (q.quoteType === "CRYPTOCURRENCY" || (q.symbol && (q.symbol.includes("-USD") || q.symbol.includes("-BTC")))) {
-        category = "CRYPTO";
-      } else if (q.exchange === "IST" || (q.symbol && q.symbol.endsWith(".IS"))) {
-        category = "BIST";
-      } else if (["NMS", "NYQ", "NGM", "PCX"].includes(q.exchange) || q.quoteType === "EQUITY") {
-        category = "NASDAQ";
-      } else if (q.quoteType === "ETF" || q.typeDisp === "etf") {
-        category = "NASDAQ";
-      }
+    let filteredQuotes = quotes;
+    
+    if (category === "BIST") {
+      filteredQuotes = quotes.filter((q: any) => 
+        (q.symbol && q.symbol.endsWith(".IS")) || 
+        q.exchange === "IST" || 
+        q.exchDisp === "Istanbul"
+      );
+    } else if (category === "NASDAQ") {
+      filteredQuotes = quotes.filter((q: any) => 
+        (q.quoteType === "EQUITY" || q.quoteType === "ETF") && 
+        (q.symbol && !q.symbol.endsWith(".IS"))
+      );
+    } else if (category === "CRYPTO" || category === "KRİPTO") {
+      filteredQuotes = quotes.filter((q: any) => 
+        q.quoteType === "CRYPTOCURRENCY" || 
+        (q.symbol && (q.symbol.includes("-USD") || q.symbol.includes("-BTC")))
+      );
+    }
 
-      return {
-        ...q,
-        category,
-        shortname: q.shortname || q.longname || q.symbol
-      };
-    }).slice(0, 8);
+    return filteredQuotes.slice(0, 5);
   } catch (error: any) {
     console.error("CRITICAL: Search API Error:", error.message);
     return [];

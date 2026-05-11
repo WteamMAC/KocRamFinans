@@ -98,7 +98,7 @@ export function AssetList({ assets, allInvestments }: AssetListProps) {
   useEffect(() => {
     const delayDebounceFn = setTimeout(async () => {
       if (searchQuery.length >= 2) {
-        const results = await searchSymbolsAction(searchQuery);
+        const results = await searchSymbolsAction(searchQuery, formData.type);
         setSearchResults(results);
         setShowSearch(true);
       } else {
@@ -107,7 +107,7 @@ export function AssetList({ assets, allInvestments }: AssetListProps) {
       }
     }, 300);
     return () => clearTimeout(delayDebounceFn);
-  }, [searchQuery]);
+  }, [searchQuery, formData.type]);
 
   const handleNumberChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value === "" ? 0 : parseFloat(value) }));
@@ -198,6 +198,20 @@ export function AssetList({ assets, allInvestments }: AssetListProps) {
       {isAdding && (
         <Card className="p-8 bg-white border-[#dbc2b0]/30 shadow-ambient-high rounded-[32px] animate-in fade-in slide-in-from-top-4 duration-500">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="space-y-3">
+              <Label className="text-[10px] font-bold text-[#554336] uppercase tracking-widest px-1">Varlık Türü</Label>
+              <Select value={formData.type} onValueChange={(v) => setFormData((p) => ({ ...p, type: String(v), symbol: "" }))}>
+                <SelectTrigger className="bg-[#f8f9fa] border-[#dbc2b0]/30 h-12 rounded-xl focus:ring-[#8c5000]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl border-[#dbc2b0]/30">
+                  <SelectItem value="BIST">BIST (Hisse)</SelectItem>
+                  <SelectItem value="NASDAQ">NASDAQ (Hisse)</SelectItem>
+                  <SelectItem value="CRYPTO">Kripto Para</SelectItem>
+                  <SelectItem value="GOLD">Altın/Emtia</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
             <div className="space-y-3 relative" ref={inputRef}>
               <Label className="text-[10px] font-bold text-[#554336] uppercase tracking-widest px-1">Sembol Arama</Label>
@@ -223,20 +237,13 @@ export function AssetList({ assets, allInvestments }: AssetListProps) {
                       onMouseDown={(e) => {
                         e.preventDefault();
                         const sym = `${result.symbol} (${result.shortname || result.symbol})`;
-                        setFormData((prev) => ({ 
-                          ...prev, 
-                          symbol: sym,
-                          type: result.category || "BIST"
-                        }));
+                        setFormData((prev) => ({ ...prev, symbol: sym }));
                         setSearchQuery(sym);
                         setShowSearch(false);
                       }}
                     >
                       <div className="flex flex-col">
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-[#8c5000] group-hover:text-[#666000] transition-colors">{result.symbol}</span>
-                          <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-[#f8f9fa] text-[#554336] uppercase">{result.category}</span>
-                        </div>
+                        <span className="font-bold text-[#8c5000] group-hover:text-[#666000] transition-colors">{result.symbol}</span>
                         <span className="text-[10px] text-[#554336] opacity-60 truncate max-w-[200px]">{result.shortname || result.longname}</span>
                       </div>
                       <ArrowUpRight className="h-4 w-4 text-[#efe440] opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0" />
