@@ -12,10 +12,16 @@ import { InvestmentSummary } from "@/components/dashboard/investment-summary";
 import { ChatAI } from "@/components/dashboard/chat-ai";
 import { cn } from "@/lib/utils";
 import { getLivePrices, calculatePortfolioMetrics } from "@/lib/price-service";
+import { fixCategories } from "@/app/actions/assets";
 
 export default async function DashboardPage() {
   await cookies();
   const { userId } = await auth();
+  
+  // Veritabanındaki tutarsız kategorileri otomatik düzelt
+  if (userId) {
+    await fixCategories();
+  }
 
   if (!userId) {
     redirect("/");
@@ -185,7 +191,7 @@ export default async function DashboardPage() {
             </div>
           </CardHeader>
           <CardContent className="p-6">
-            <InvestmentSummary investments={user.investments} />
+            <InvestmentSummary investments={portfolioMetrics.assets} />
           </CardContent>
         </Card>
       </div>

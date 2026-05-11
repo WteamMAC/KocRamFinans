@@ -103,8 +103,8 @@ export function AssetList({ assets }: AssetListProps) {
                   <SelectContent>
                     <SelectItem value="BIST">BIST (Hisse)</SelectItem>
                     <SelectItem value="NASDAQ">NASDAQ (Hisse)</SelectItem>
-                    <SelectItem value="KRİPTO">Kripto Para</SelectItem>
-                    <SelectItem value="Gold">Altın/Emtia</SelectItem>
+                    <SelectItem value="CRYPTO">Kripto Para</SelectItem>
+                    <SelectItem value="GOLD">Altın/Emtia</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

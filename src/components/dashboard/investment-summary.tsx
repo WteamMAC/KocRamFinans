@@ -16,10 +16,31 @@ export function InvestmentSummary({ investments }: InvestmentSummaryProps) {
     setIsMounted(true);
   }, []);
 
-  const data = investments.map((inv) => ({
-    name: inv.type,
-    value: inv.currentValuation || inv.amount,
-  }));
+  const categoryLabels: Record<string, string> = {
+    BIST: "BIST (Hisse)",
+    NASDAQ: "NASDAQ (Hisse)",
+    CRYPTO: "Kripto Para",
+    GOLD: "Altın/Emtia",
+  };
+
+  // Verileri kategoriye göre gruplayıp toplam değerleri hesaplayalım
+  const groupedData = investments.reduce((acc: any, inv: any) => {
+    const type = inv.type || "Diğer";
+    const value = inv.currentValue || inv.amount || 0;
+    
+    if (!acc[type]) {
+      acc[type] = 0;
+    }
+    acc[type] += value;
+    return acc;
+  }, {});
+
+  const data = Object.entries(groupedData)
+    .map(([name, value]) => ({ 
+      name: categoryLabels[name] || name, 
+      value: value as number 
+    }))
+    .sort((a, b) => b.value - a.value);
 
   const totalValue = data.reduce((acc, curr) => acc + curr.value, 0);
 

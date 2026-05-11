@@ -249,10 +249,20 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
               {investmentFields.map((field, index) => (
                 <div key={field.id} className="grid grid-cols-2 gap-3 items-end p-4 border rounded-lg relative">
                   <div className="space-y-2">
-                    <Input placeholder="Yatırım Türü" {...form.register(`investments.${index}.type`)} />
+                    <Select onValueChange={(v) => form.setValue(`investments.${index}.type`, v)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Yatırım Türü" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="BIST">BIST (Hisse)</SelectItem>
+                        <SelectItem value="NASDAQ">NASDAQ (Hisse)</SelectItem>
+                        <SelectItem value="CRYPTO">Kripto Para</SelectItem>
+                        <SelectItem value="GOLD">Altın/Emtia</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
-                    <Input type="number" placeholder="Güncel Değer" {...form.register(`investments.${index}.amount`)} />
+                    <Input type="number" placeholder="Güncel Değer (₺)" {...form.register(`investments.${index}.amount`, { valueAsNumber: true })} />
                   </div>
                   <Button type="button" variant="ghost" size="icon" className="absolute -top-2 -right-2" onClick={() => removeInvestment(index)}>
                     <Trash2 className="w-4 h-4 text-destructive" />

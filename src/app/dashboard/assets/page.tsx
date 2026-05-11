@@ -96,6 +96,18 @@ export default async function AssetsPage() {
         </Card>
       </div>
 
+      {/* Grafiğe canlı verileri gönderiyoruz */}
+      <div className="grid gap-6 md:grid-cols-2">
+        <Card className="border-none shadow-sm bg-white">
+          <CardHeader>
+            <CardTitle className="text-sm font-semibold text-slate-500">Varlık Dağılımı (Anlık Değer)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <InvestmentSummary investments={metrics.assets} />
+          </CardContent>
+        </Card>
+      </div>
+
       <AssetList assets={metrics.assets} />
     </div>
   );
