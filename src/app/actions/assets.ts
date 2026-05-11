@@ -40,8 +40,11 @@ export async function addAsset(data: {
 
     // Tip standardizasyonu
     let standardizedType = data.type;
-    if (data.type === "KRİPTO" || data.type === "Kripto") standardizedType = "CRYPTO";
-    if (data.type === "Gold" || data.type === "Altın") standardizedType = "GOLD";
+    const upperType = String(data.type).toUpperCase();
+    if (upperType.includes("KRİPTO") || upperType.includes("CRYPTO") || upperType.includes("BITCOIN")) standardizedType = "CRYPTO";
+    else if (upperType.includes("GOLD") || upperType.includes("ALTIN") || upperType.includes("GÜMÜŞ") || upperType.includes("EMTİA")) standardizedType = "GOLD";
+    else if (upperType.includes("NASDAQ") || upperType.includes("ABD") || upperType.includes("USA")) standardizedType = "NASDAQ";
+    else standardizedType = "BIST";
 
     const quantity = Number(data.quantity);
     if (isNaN(quantity) || quantity <= 0) throw new Error("Geçersiz miktar.");

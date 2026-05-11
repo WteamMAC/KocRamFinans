@@ -1,4 +1,15 @@
-import yahooFinance from 'yahoo-finance2';
+import YahooFinanceClass from 'yahoo-finance2';
+
+// Next.js/Turbopack ortamında kütüphanenin doğru başlatılması için instance oluşturuyoruz
+const yahooFinance = (function() {
+  try {
+    // Eğer YahooFinanceClass bir constructor ise yeni bir instance oluştur
+    return new (YahooFinanceClass as any)();
+  } catch (e) {
+    // Eğer zaten bir instance ise veya farklı bir yapıdaysa doğrudan döndür
+    return YahooFinanceClass;
+  }
+})();
 
 /**
  * Fiyat Servisi - Yahoo Finance API Entegrasyonu
@@ -28,7 +39,7 @@ export async function getLivePrices(symbols: string[]): Promise<Map<string, Pric
       if (quote && quote.symbol) {
         const currentPrice = quote.regularMarketPrice || quote.postMarketPrice || quote.preMarketPrice || 0;
         
-        results.set(quote.symbol, {
+        results.set(quote.symbol.toUpperCase(), {
           symbol: quote.symbol,
           price: currentPrice,
           changePercent: quote.regularMarketChangePercent
@@ -37,14 +48,14 @@ export async function getLivePrices(symbols: string[]): Promise<Map<string, Pric
     });
 
     symbols.forEach(s => {
-      if (!results.has(s)) {
-        results.set(s, { symbol: s, price: 0, error: "Veri bulunamadı" });
+      if (!results.has(s.toUpperCase())) {
+        results.set(s.toUpperCase(), { symbol: s, price: 0, error: "Veri bulunamadı" });
       }
     });
 
   } catch (error: any) {
     console.error("CRITICAL: Yahoo Finance Quote Error:", error.message);
-    symbols.forEach(s => results.set(s, { symbol: s, price: 0, error: "Bağlantı hatası" }));
+    symbols.forEach(s => results.set(s.toUpperCase(), { symbol: s, price: 0, error: "Bağlantı hatası" }));
   }
 
   return results;
@@ -53,7 +64,7 @@ export async function getLivePrices(symbols: string[]): Promise<Map<string, Pric
 export async function searchSymbols(query: string, category: string) {
   if (!query || query.length < 2) return [];
 
-  console.log(`Searching for: "${query}" in category: ${category}`);
+  console.log(`Searching for: "${query}" (Preferred Category: ${category})`);
 
   try {
     const searchResults = await yahooFinance.search(query, {
@@ -63,27 +74,34 @@ export async function searchSymbols(query: string, category: string) {
 
     const quotes = (searchResults && (searchResults as any).quotes) ? (searchResults as any).quotes : [];
     
-    let filteredQuotes = quotes;
-    
-    if (category === "BIST") {
-      filteredQuotes = quotes.filter((q: any) => 
-        (q.symbol && q.symbol.endsWith(".IS")) || 
-        q.exchange === "IST" || 
-        q.exchDisp === "Istanbul"
-      );
-    } else if (category === "NASDAQ") {
-      filteredQuotes = quotes.filter((q: any) => 
-        (q.quoteType === "EQUITY" || q.quoteType === "ETF") && 
-        (q.symbol && !q.symbol.endsWith(".IS"))
-      );
-    } else if (category === "CRYPTO" || category === "KRİPTO") {
-      filteredQuotes = quotes.filter((q: any) => 
-        q.quoteType === "CRYPTOCURRENCY" || 
-        (q.symbol && (q.symbol.includes("-USD") || q.symbol.includes("-BTC")))
-      );
-    }
+    // Her sonuç için en uygun kategoriyi belirle
+    const processedQuotes = quotes.map((q: any) => {
+      let suggestedCategory = "BIST";
+      
+      if (q.quoteType === "CRYPTOCURRENCY" || (q.symbol && (q.symbol.includes("-USD") || q.symbol.includes("-BTC") || q.symbol.includes("USDT")))) {
+        suggestedCategory = "CRYPTO";
+      } else if (q.exchange === "IST" || (q.symbol && q.symbol.endsWith(".IS"))) {
+        suggestedCategory = "BIST";
+      } else if (q.quoteType === "EQUITY" || q.quoteType === "ETF") {
+        suggestedCategory = "NASDAQ"; // Genel hisse/ETF
+      } else if (q.quoteType === "COMMODITY" || q.quoteType === "FUTURE") {
+        suggestedCategory = "GOLD";
+      }
 
-    return filteredQuotes.slice(0, 5);
+      return {
+        ...q,
+        suggestedCategory
+      };
+    });
+
+    // Seçili kategoriye göre sıralama yap (Seçili olanlar en üstte)
+    const sortedQuotes = processedQuotes.sort((a: any, b: any) => {
+      if (a.suggestedCategory === category && b.suggestedCategory !== category) return -1;
+      if (a.suggestedCategory !== category && b.suggestedCategory === category) return 1;
+      return 0;
+    });
+
+    return sortedQuotes.slice(0, 8);
   } catch (error: any) {
     console.error("CRITICAL: Search API Error:", error.message);
     return [];
