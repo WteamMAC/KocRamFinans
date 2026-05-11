@@ -18,10 +18,6 @@ export default async function DashboardPage() {
   await cookies();
   const { userId } = await auth();
   
-  // Veritabanındaki tutarsız kategorileri otomatik düzelt
-  if (userId) {
-    await fixCategories();
-  }
 
   if (!userId) {
     redirect("/");

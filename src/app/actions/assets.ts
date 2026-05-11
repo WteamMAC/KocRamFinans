@@ -164,9 +164,6 @@ export async function fixCategories() {
       where: { userId: user.id, OR: [{ type: "Gold" }, { type: "Altın" }] },
       data: { type: "GOLD" } as any
     });
-
-    revalidatePath("/dashboard");
-    revalidatePath("/dashboard/assets");
   } catch (error) {
     console.error("Fix Categories Error:", error);
   }
