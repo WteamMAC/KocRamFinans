@@ -144,13 +144,15 @@ export default function SlidingAuth() {
               transition={{ repeat: Infinity, duration: 8, ease: "easeInOut" }}
               className="mb-10"
             >
-              <div className="relative">
-                <div className="absolute inset-0 bg-white/10 rounded-full blur-2xl transform scale-125"></div>
-                <img 
-                  alt="Koç Ram Finans Mascot" 
-                  className="w-[440px] h-[440px] mx-auto object-contain drop-shadow-[0_30px_60px_rgba(0,0,0,0.4)] bg-white rounded-full p-2 border-[12px] border-white/20 relative z-10 scale-125" 
-                  src="/mascot.png" 
-                />
+              <div className="relative w-[360px] h-[360px] mx-auto">
+                <div className="absolute inset-0 bg-white/10 rounded-full blur-2xl transform scale-110"></div>
+                <div className="w-full h-full bg-white rounded-full border-[12px] border-white/20 shadow-[0_30px_60px_rgba(0,0,0,0.4)] relative z-10 flex items-center justify-center">
+                  <img 
+                    alt="Koç Ram Finans Mascot" 
+                    className="w-full h-full object-contain drop-shadow-xl transform scale-[1.8]" 
+                    src="/mascot.png" 
+                  />
+                </div>
               </div>
             </motion.div>
             
