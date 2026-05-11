@@ -15,7 +15,7 @@ export async function addAsset(data: {
   if (!userId) throw new Error("Unauthorized");
 
   const user = await prisma.user.findUnique({
-    where: { clerkUserId: userId },
+    where: { clerkUserId: userId as string },
   });
 
   if (!user) throw new Error("User not found");
@@ -29,12 +29,12 @@ export async function addAsset(data: {
     data: {
       userId: user.id,
       type: standardizedType,
-      symbol: data.symbol?.toUpperCase(),
+      symbol: data.symbol ? data.symbol.toUpperCase() : null,
       quantity: data.quantity,
       purchasePrice: data.purchasePrice,
       amount: data.quantity * data.purchasePrice,
-      description: data.description,
-    },
+      description: data.description || null,
+    } as any,
   });
 
   revalidatePath("/dashboard");
@@ -50,7 +50,7 @@ export async function fixCategories() {
     if (!userId) return;
 
     const user = await prisma.user.findUnique({
-      where: { clerkUserId: userId },
+      where: { clerkUserId: userId as string },
     });
 
     if (!user) return;
@@ -81,7 +81,7 @@ export async function deleteAsset(id: string) {
   const investment = await prisma.investment.findUnique({
     where: { id },
     include: { user: true }
-  });
+  }) as any;
 
   if (!investment || investment.user.clerkUserId !== userId) {
     throw new Error("Unauthorized or not found");

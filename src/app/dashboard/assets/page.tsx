@@ -26,7 +26,7 @@ export default async function AssetsPage() {
     return null;
   }
 
-  let metrics = { totalCurrentValue: 0, totalCost: 0, totalProfit: 0, profitPercent: 0, assets: [] };
+  let metrics = { totalCurrentValue: 0, totalCost: 0, totalProfit: 0, profitPercent: 0, assets: [] as any[] };
   
   try {
     // Benzersiz sembolleri topla

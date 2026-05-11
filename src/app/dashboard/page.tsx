@@ -42,7 +42,7 @@ export default async function DashboardPage() {
     return null;
   }
 
-  let portfolioMetrics = { totalCurrentValue: 0, totalProfit: 0, profitPercent: 0, assets: [] };
+  let portfolioMetrics = { totalCurrentValue: 0, totalProfit: 0, profitPercent: 0, assets: [] as any[] };
   let livePrices = new Map();
 
   try {
