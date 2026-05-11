@@ -10,7 +10,7 @@ export async function completeOnboarding(formData: {
   incomes: { type: string; amount: number; description?: string }[];
   expenses: { type: string; amount: number; dueDate?: number; isRecurring: boolean; description?: string }[];
   debts: { type: string; amount: number; remainingInstallments?: number; description?: string }[];
-  investments: { type: string; amount: number; currentValuation?: number; description?: string }[];
+  investments: { type: string; symbol?: string; amount: number; currentValuation?: number; description?: string }[];
 }) {
   const { userId } = await auth();
 
