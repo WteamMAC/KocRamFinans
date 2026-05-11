@@ -35,10 +35,12 @@ const getNextGenAI = () => {
 // ─── MODELLER VE ARAÇLAR ─────────────────────────────────────────────────────
 
 const FALLBACK_MODELS = [
-  "gemini-3.1-flash-lite",
-  "gemini-2.5-flash",
-  "gemini-3-flash",
-  "gemini-flash-latest",
+  "gemini-3.1-flash",       // En güncel ve yetenekli Flash
+  "gemini-2.5-flash",       // Stabil orta segment
+  "gemini-1.5-flash",       // Klasik güvenilir model
+  "gemini-3.1-flash-lite",  // Daha düşük gecikme, yüksek hız
+  "gemini-1.5-flash-8b",    // En yüksek hız limiti (429'dan kaçış noktası)
+  "gemini-flash-latest"     // Genel yönlendirme
 ];
 
 const MARKET_KEYWORDS = [
@@ -204,27 +206,27 @@ export async function POST(req: Request) {
 
           return new Response(stream, { headers: { "Content-Type": "text/plain; charset=utf-8" } });
 
-          } catch (err: any) {
-            const errorDetails = err.message || "Unknown error";
-            const is429 = err.status === 429 || errorDetails.includes("429");
-            const isAuthError = errorDetails.includes("API key expired") || errorDetails.includes("API_KEY_INVALID") || err.status === 400;
-            console.warn(`[${traceId}] [FAIL] Key Index: ${currentKeyIndex}, Model: ${modelId}, Error: ${errorDetails}`);
+        } catch (err: any) {
+          const errorDetails = err.message || "Unknown error";
+          const is429 = err.status === 429 || errorDetails.includes("429");
+          const isAuthError = errorDetails.includes("API key expired") || errorDetails.includes("API_KEY_INVALID") || err.status === 400;
+          console.warn(`[${traceId}] [FAIL] Key Index: ${currentKeyIndex}, Model: ${modelId}, Error: ${errorDetails}`);
 
-            if (is429 || isAuthError) {
-              // Teşhis Et
-              if (errorDetails.includes("RPM")) lastRateLimitReason = "Dakikalık İstek Sınırı (RPM)";
-              else if (errorDetails.includes("TPM")) lastRateLimitReason = "Dakikalık Token Sınırı (TPM)";
-              else if (errorDetails.includes("RPD")) lastRateLimitReason = "Günlük İstek Sınırı (RPD)";
-              else if (errorDetails.includes("expired")) lastRateLimitReason = "API Anahtarının Süresi Dolmuş (Expired)";
-              else if (errorDetails.includes("API_KEY_INVALID")) lastRateLimitReason = "Geçersiz API Anahtarı (Invalid)";
-              else if (isAuthError) lastRateLimitReason = "API Anahtarı Hatası (400/Auth)";
-              else lastRateLimitReason = "Genel Kota Sınırı (429)";
+          if (is429 || isAuthError) {
+            // Teşhis Et
+            if (errorDetails.includes("RPM")) lastRateLimitReason = "Dakikalık İstek Sınırı (RPM)";
+            else if (errorDetails.includes("TPM")) lastRateLimitReason = "Dakikalık Token Sınırı (TPM)";
+            else if (errorDetails.includes("RPD")) lastRateLimitReason = "Günlük İstek Sınırı (RPD)";
+            else if (errorDetails.includes("expired")) lastRateLimitReason = "API Anahtarının Süresi Dolmuş (Expired)";
+            else if (errorDetails.includes("API_KEY_INVALID")) lastRateLimitReason = "Geçersiz API Anahtarı (Invalid)";
+            else if (isAuthError) lastRateLimitReason = "API Anahtarı Hatası (400/Auth)";
+            else lastRateLimitReason = "Genel Kota Sınırı (429)";
 
-              console.warn(`[${traceId}] [DIAGNOSIS] Reason: ${lastRateLimitReason}`);
+            console.warn(`[${traceId}] [DIAGNOSIS] Reason: ${lastRateLimitReason}`);
 
-              // Eğer bu anahtarda kota veya auth sorunu varsa, bir sonraki anahtara geç
-              break; 
-            }
+            // Eğer bu anahtarda kota veya auth sorunu varsa, bir sonraki anahtara geç
+            break;
+          }
 
           // Diğer hatalarda aynı anahtarın sonraki modelini dene
           // @ts-ignore
@@ -238,8 +240,8 @@ export async function POST(req: Request) {
 
 
   } catch (error: any) {
-    const message = lastRateLimitReason 
-      ? `Sorun Tespit Edildi: ${lastRateLimitReason}.` 
+    const message = lastRateLimitReason
+      ? `Sorun Tespit Edildi: ${lastRateLimitReason}.`
       : "Sistem şu an yoğun, lütfen 15 saniye sonra tekrar deneyin.";
 
     console.error(`[${traceId}] FINAL ERROR:`, error.message);
