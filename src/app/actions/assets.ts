@@ -26,10 +26,14 @@ export async function addAsset(data: {
 
   // Eğer güncel fiyat seçildiyse Yahoo'dan çek
   if (data.useCurrentPrice && data.symbol) {
-    const prices = await getLivePrices([data.symbol]);
-    const livePrice = prices.get(data.symbol.toUpperCase());
-    if (livePrice && livePrice.price) {
-      finalPrice = livePrice.price;
+    try {
+      const prices = await getLivePrices([data.symbol]);
+      const livePrice = prices.get(data.symbol.toUpperCase());
+      if (livePrice && livePrice.price) {
+        finalPrice = livePrice.price;
+      }
+    } catch (err) {
+      console.error("Live price fetch error:", err);
     }
   }
 
@@ -49,7 +53,7 @@ export async function addAsset(data: {
       description: data.description || null,
       status: "OPEN",
       transactionType: "BUY",
-    } as any,
+    },
   });
 
   revalidatePath("/dashboard");
@@ -62,20 +66,24 @@ export async function sellAsset(id: string) {
 
   const investment = await prisma.investment.findUnique({
     where: { id },
-    include: { user: true }
-  }) as any;
+    include: { user: true },
+  });
 
   if (!investment || investment.user.clerkUserId !== userId) {
     throw new Error("Unauthorized or not found");
   }
 
   // Güncel fiyatı çek
-  let sellPrice = investment.purchasePrice;
+  let sellPrice = investment.purchasePrice || 0;
   if (investment.symbol) {
-    const prices = await getLivePrices([investment.symbol]);
-    const livePrice = prices.get(investment.symbol.toUpperCase());
-    if (livePrice && livePrice.price) {
-      sellPrice = livePrice.price;
+    try {
+      const prices = await getLivePrices([investment.symbol]);
+      const livePrice = prices.get(investment.symbol.toUpperCase());
+      if (livePrice && livePrice.price) {
+        sellPrice = livePrice.price;
+      }
+    } catch (err) {
+      console.error("Live price fetch error for sell:", err);
     }
   }
 
@@ -86,7 +94,28 @@ export async function sellAsset(id: string) {
       transactionType: "SELL",
       soldPrice: sellPrice,
       soldAt: new Date(),
-    } as any,
+    },
+  });
+
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/assets");
+}
+
+export async function deleteAsset(id: string) {
+  const { userId } = await auth();
+  if (!userId) throw new Error("Unauthorized");
+
+  const investment = await prisma.investment.findUnique({
+    where: { id },
+    include: { user: true },
+  });
+
+  if (!investment || investment.user.clerkUserId !== userId) {
+    throw new Error("Unauthorized or not found");
+  }
+
+  await prisma.investment.delete({
+    where: { id },
   });
 
   revalidatePath("/dashboard");
@@ -106,12 +135,12 @@ export async function fixCategories() {
 
     await prisma.investment.updateMany({
       where: { userId: user.id, OR: [{ type: "KRİPTO" }, { type: "Kripto" }] },
-      data: { type: "CRYPTO" }
+      data: { type: "CRYPTO" },
     });
 
     await prisma.investment.updateMany({
       where: { userId: user.id, OR: [{ type: "Gold" }, { type: "Altın" }] },
-      data: { type: "GOLD" }
+      data: { type: "GOLD" },
     });
 
     revalidatePath("/dashboard");
@@ -119,25 +148,4 @@ export async function fixCategories() {
   } catch (error) {
     console.error("Fix Categories Error:", error);
   }
-}
-
-export async function deleteAsset(id: string) {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
-
-  const investment = await prisma.investment.findUnique({
-    where: { id },
-    include: { user: true }
-  }) as any;
-
-  if (!investment || investment.user.clerkUserId !== userId) {
-    throw new Error("Unauthorized or not found");
-  }
-
-  await prisma.investment.delete({
-    where: { id },
-  });
-
-  revalidatePath("/dashboard");
-  revalidatePath("/dashboard/assets");
 }

@@ -79,7 +79,7 @@ export async function searchSymbols(query: string, category: string) {
         (q.quoteType === "EQUITY" || q.quoteType === "ETF") && 
         (q.symbol && !q.symbol.endsWith(".IS"))
       );
-    } else if (category === "KRİPTO") {
+    } else if (category === "CRYPTO" || category === "KRİPTO") {
       filteredQuotes = quotes.filter((q: any) => 
         q.quoteType === "CRYPTOCURRENCY" || 
         (q.symbol && (q.symbol.includes("-USD") || q.symbol.includes("-BTC")))

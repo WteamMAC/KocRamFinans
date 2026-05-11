@@ -80,7 +80,9 @@ export async function POST(req: Request) {
             purchasePrice: purchasePrice,
             amount: quantity * purchasePrice,
             description: args.description || "Yapay Zeka tarafından eklendi",
-          } as any
+            status: "OPEN",
+            transactionType: "BUY",
+          }
         });
         break;
 
