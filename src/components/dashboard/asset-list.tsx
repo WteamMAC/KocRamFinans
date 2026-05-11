@@ -237,13 +237,26 @@ export function AssetList({ assets, allInvestments }: AssetListProps) {
                       onMouseDown={(e) => {
                         e.preventDefault();
                         const sym = `${result.symbol} (${result.shortname || result.symbol})`;
-                        setFormData((prev) => ({ ...prev, symbol: sym }));
+                        // Otomatik kategori eşleme
+                        setFormData((prev) => ({ 
+                          ...prev, 
+                          symbol: sym,
+                          type: result.suggestedCategory || prev.type
+                        }));
                         setSearchQuery(sym);
                         setShowSearch(false);
                       }}
                     >
                       <div className="flex flex-col">
-                        <span className="font-bold text-[#8c5000] group-hover:text-[#666000] transition-colors">{result.symbol}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-[#8c5000] group-hover:text-[#666000] transition-colors">{result.symbol}</span>
+                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-[#f0f0f0] text-[#554336] opacity-70">
+                            {result.suggestedCategory === "CRYPTO" ? "Kripto" : 
+                             result.suggestedCategory === "BIST" ? "BIST" :
+                             result.suggestedCategory === "NASDAQ" ? "NASDAQ" :
+                             result.suggestedCategory === "GOLD" ? "Altın/Emtia" : "Varlık"}
+                          </span>
+                        </div>
                         <span className="text-[10px] text-[#554336] opacity-60 truncate max-w-[200px]">{result.shortname || result.longname}</span>
                       </div>
                       <ArrowUpRight className="h-4 w-4 text-[#efe440] opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0" />

@@ -14,7 +14,8 @@ export async function searchSymbolsAction(query: string, category: string) {
       symbol: q.symbol,
       shortname: q.shortname || q.longname || q.symbol,
       exchange: q.exchange,
-      quoteType: q.quoteType
+      quoteType: q.quoteType,
+      suggestedCategory: q.suggestedCategory
     }));
   } catch (error) {
     console.error("Market Action Error:", error);
