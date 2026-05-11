@@ -26,18 +26,25 @@ export default async function AssetsPage() {
     return null;
   }
 
-  // Benzersiz sembolleri topla
-  const symbols = Array.from(new Set(
-    (user.investments as any[])
-      .map(inv => inv.symbol)
-      .filter((s): s is string => !!s)
-  ));
-
-  // Canlı fiyatları çek
-  const livePrices = await getLivePrices(symbols);
+  let metrics = { totalCurrentValue: 0, totalCost: 0, totalProfit: 0, profitPercent: 0, assets: [] };
   
-  // Portföy metriklerini hesapla
-  const metrics = calculatePortfolioMetrics(user.investments, livePrices);
+  try {
+    // Benzersiz sembolleri topla
+    const symbols = Array.from(new Set(
+      (user.investments as any[])
+        .map(inv => inv.symbol)
+        .filter((s): s is string => !!s)
+    ));
+
+    // Canlı fiyatları çek
+    const livePrices = await getLivePrices(symbols);
+    
+    // Portföy metriklerini hesapla
+    metrics = calculatePortfolioMetrics(user.investments, livePrices);
+  } catch (error) {
+    console.error("Assets Page Data Fetch Error:", error);
+    metrics = calculatePortfolioMetrics(user.investments, new Map());
+  }
 
   return (
     <div className="flex-1 space-y-8 p-8 pt-6 bg-[#f8fafc] min-h-screen">

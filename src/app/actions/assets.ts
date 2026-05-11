@@ -45,29 +45,33 @@ export async function addAsset(data: {
  * Mevcut veritabanındaki tutarsız kategorileri düzeltir.
  */
 export async function fixCategories() {
-  const { userId } = await auth();
-  if (!userId) return;
+  try {
+    const { userId } = await auth();
+    if (!userId) return;
 
-  const user = await prisma.user.findUnique({
-    where: { clerkUserId: userId },
-  });
+    const user = await prisma.user.findUnique({
+      where: { clerkUserId: userId },
+    });
 
-  if (!user) return;
+    if (!user) return;
 
-  // Hatalı KRİPTO kayıtlarını düzelt
-  await prisma.investment.updateMany({
-    where: { userId: user.id, OR: [{ type: "KRİPTO" }, { type: "Kripto" }] },
-    data: { type: "CRYPTO" }
-  });
+    // Hatalı KRİPTO kayıtlarını düzelt
+    await prisma.investment.updateMany({
+      where: { userId: user.id, OR: [{ type: "KRİPTO" }, { type: "Kripto" }] },
+      data: { type: "CRYPTO" }
+    });
 
-  // Hatalı Gold/Altın kayıtlarını düzelt
-  await prisma.investment.updateMany({
-    where: { userId: user.id, OR: [{ type: "Gold" }, { type: "Altın" }] },
-    data: { type: "GOLD" }
-  });
+    // Hatalı Gold/Altın kayıtlarını düzelt
+    await prisma.investment.updateMany({
+      where: { userId: user.id, OR: [{ type: "Gold" }, { type: "Altın" }] },
+      data: { type: "GOLD" }
+    });
 
-  revalidatePath("/dashboard");
-  revalidatePath("/dashboard/assets");
+    revalidatePath("/dashboard");
+    revalidatePath("/dashboard/assets");
+  } catch (error) {
+    console.error("Fix Categories Error:", error);
+  }
 }
 
 export async function deleteAsset(id: string) {

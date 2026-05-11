@@ -42,18 +42,27 @@ export default async function DashboardPage() {
     return null;
   }
 
-  // Benzersiz sembolleri topla
-  const symbols = Array.from(new Set(
-    (user.investments as any[])
-      .map(inv => inv.symbol)
-      .filter((s): s is string => !!s)
-  ));
+  let portfolioMetrics = { totalCurrentValue: 0, totalProfit: 0, profitPercent: 0, assets: [] };
+  let livePrices = new Map();
 
-  // Canlı fiyatları çek
-  const livePrices = await getLivePrices(symbols);
-  
-  // Portföy metriklerini hesapla
-  const portfolioMetrics = calculatePortfolioMetrics(user.investments, livePrices);
+  try {
+    // Benzersiz sembolleri topla
+    const symbols = Array.from(new Set(
+      (user.investments as any[])
+        .map(inv => inv.symbol)
+        .filter((s): s is string => !!s)
+    ));
+
+    // Canlı fiyatları çek
+    livePrices = await getLivePrices(symbols);
+    
+    // Portföy metriklerini hesapla
+    portfolioMetrics = calculatePortfolioMetrics(user.investments, livePrices);
+  } catch (error) {
+    console.error("Dashboard Data Fetch Error:", error);
+    // Hata durumunda boş metriklerle devam et
+    portfolioMetrics = calculatePortfolioMetrics(user.investments, new Map());
+  }
 
   const totalIncome = (user.incomes as any[]).reduce((acc: number, inc: any) => acc + inc.amount, 0);
   const totalExpense = (user.expenses as any[]).reduce((acc: number, exp: any) => acc + exp.amount, 0);
@@ -64,7 +73,7 @@ export default async function DashboardPage() {
   
   const netWorth = totalInvestment + (totalIncome - totalExpense) - totalDebt;
   const savingsRate = totalIncome > 0 ? ((totalIncome - totalExpense) / totalIncome) * 100 : 0;
-  const debtToIncome = totalIncome > 0 ? (totalDebt / (totalIncome * 12)) * 100 : 0; // Yıllık gelire oran
+  const debtToIncome = totalIncome > 0 ? (totalDebt / (totalIncome * 12)) * 100 : 0;
 
   return (
     <div className="flex-1 space-y-8 p-8 pt-6 bg-[#f8fafc] min-h-screen">
