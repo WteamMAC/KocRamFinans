@@ -1,22 +1,23 @@
 import type { Metadata } from "next";
-import { Inter, Plus_Jakarta_Sans } from "next/font/google";
+import { Montserrat, Work_Sans } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
 import { trTR } from "@clerk/localizations";
 
-const inter = Inter({
-  variable: "--font-inter",
+const montserrat = Montserrat({
+  variable: "--font-montserrat",
   subsets: ["latin"],
+  weight: ["400", "600", "700"],
 });
 
-const plusJakartaSans = Plus_Jakarta_Sans({
-  variable: "--font-plus-jakarta-sans",
+const workSans = Work_Sans({
+  variable: "--font-work-sans",
   subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-  title: "Koç Ai - Sovereign Intelligence",
-  description: "Yapay zeka destekli profesyonel finans asistanınız",
+  title: "Koç Ram Finans - Geleceğinizi Güvence Altına Alın",
+  description: "Dostane ve profesyonel finansal koçluk asistanınız",
 };
 
 export default function RootLayout({
@@ -35,30 +36,30 @@ export default function RootLayout({
           shimmer: true,
         },
         variables: {
-          colorPrimary: "#001b44",
-          colorText: "#1a1c1a",
+          colorPrimary: "#8c5000",
+          colorText: "#191c1d",
           colorBackground: "#ffffff",
-          colorInputBackground: "#faf9f6",
-          colorInputText: "#1a1c1a",
-          borderRadius: "1.25rem",
-          fontFamily: "var(--font-plus-jakarta-sans), var(--font-inter), sans-serif",
+          colorInputBackground: "#f8f9fa",
+          colorInputText: "#191c1d",
+          borderRadius: "0.5rem",
+          fontFamily: "var(--font-work-sans), var(--font-montserrat), sans-serif",
         },
         elements: {
-          card: "shadow-2xl border border-[#c4c6d2]/20",
-          headerTitle: "text-[#001b44] font-bold text-2xl tracking-tight",
-          headerSubtitle: "text-[#434750] font-medium",
-          socialButtonsBlockButton: "border-[#c4c6d2]/30 hover:bg-[#faf9f6] transition-all",
-          formButtonPrimary: "bg-[#001b44] hover:bg-[#002f6c] transition-all shadow-lg shadow-[#001b44]/10",
-          footerActionLink: "text-[#735c00] hover:text-[#001b44] font-bold",
-          identityPreviewText: "text-[#001b44] font-bold",
-          formFieldInput: "border-[#c4c6d2]/30 focus:border-[#fed65b] focus:ring-[#fed65b]/20 transition-all",
-          formFieldLabel: "text-[10px] font-bold text-[#747781] uppercase tracking-widest",
+          card: "shadow-ambient-high border border-[#dbc2b0]/20 rounded-2xl",
+          headerTitle: "text-[#8c5000] font-bold text-2xl tracking-tight font-heading",
+          headerSubtitle: "text-[#554336] font-medium",
+          socialButtonsBlockButton: "border-[#dbc2b0]/30 hover:bg-[#f8f9fa] transition-all",
+          formButtonPrimary: "bg-[#8c5000] hover:bg-[#f18d02] transition-all shadow-ambient-medium",
+          footerActionLink: "text-[#8c5000] hover:text-[#f18d02] font-bold",
+          identityPreviewText: "text-[#8c5000] font-bold",
+          formFieldInput: "border-[#dbc2b0]/30 focus:border-[#f18d02] focus:ring-[#f18d02]/20 transition-all rounded-lg",
+          formFieldLabel: "text-[12px] font-bold text-[#554336] uppercase tracking-widest mb-1",
         }
       }}
     >
       <html
         lang="tr"
-        className={`${inter.variable} ${plusJakartaSans.variable} h-full antialiased`}
+        className={`${montserrat.variable} ${workSans.variable} h-full antialiased`}
       >
         <body className="min-h-full flex flex-col font-sans">{children}</body>
       </html>

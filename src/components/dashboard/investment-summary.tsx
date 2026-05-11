@@ -7,7 +7,7 @@ interface InvestmentSummaryProps {
   investments: any[];
 }
 
-const COLORS = ["#001b44", "#fed65b", "#735c00", "#1c1c1c", "#ba1a1a", "#434750"];
+const COLORS = ["#8c5000", "#666000", "#36684d", "#efe440", "#ba1a1a", "#554336"];
 
 export function InvestmentSummary({ investments }: InvestmentSummaryProps) {
   const [isMounted, setIsMounted] = useState(false);
@@ -44,18 +44,18 @@ export function InvestmentSummary({ investments }: InvestmentSummaryProps) {
   const totalValue = data.reduce((acc, curr) => acc + curr.value, 0);
 
   if (data.length === 0) {
-    return <p className="text-sm text-[#434750] text-center py-12 font-medium opacity-60">Henüz yatırım girişi yapılmamış.</p>;
+    return <p className="text-sm text-[#554336] text-center py-12 font-medium opacity-60">Henüz yatırım girişi yapılmamış.</p>;
   }
 
   if (!isMounted) {
-    return <div className="h-[300px] w-full bg-[#faf9f6] animate-pulse rounded-[24px]" />;
+    return <div className="h-[300px] w-full bg-[#f8f9fa] animate-pulse rounded-[24px]" />;
   }
 
   return (
     <div className="h-[350px] w-full min-h-[350px] relative flex flex-col items-center">
       <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none pb-12">
-        <span className="text-[10px] font-bold text-[#747781] uppercase tracking-widest mb-1">Toplam Portföy</span>
-        <span className="text-2xl font-heading font-bold text-[#001b44]">{totalValue.toLocaleString('tr-TR')} ₺</span>
+        <span className="text-[10px] font-bold text-[#554336] uppercase tracking-widest mb-1">Toplam Portföy</span>
+        <span className="text-2xl font-heading font-bold text-[#8c5000]">{totalValue.toLocaleString('tr-TR')} ₺</span>
       </div>
       <ResponsiveContainer width="100%" height="100%">
         <PieChart>
@@ -78,12 +78,12 @@ export function InvestmentSummary({ investments }: InvestmentSummaryProps) {
             content={({ active, payload }) => {
               if (active && payload && payload.length) {
                 return (
-                  <div className="bg-white/95 backdrop-blur-md p-4 border border-[#c4c6d2]/30 rounded-2xl shadow-2xl">
-                    <p className="text-[10px] font-bold text-[#747781] uppercase tracking-widest mb-1">{payload[0]?.name}</p>
-                    <p className="text-lg font-heading font-bold text-[#001b44]">
+                  <div className="bg-white/95 backdrop-blur-md p-4 border border-[#dbc2b0]/30 rounded-2xl shadow-ambient-high">
+                    <p className="text-[10px] font-bold text-[#554336] uppercase tracking-widest mb-1">{payload[0]?.name}</p>
+                    <p className="text-lg font-heading font-bold text-[#8c5000]">
                       {payload[0]?.value?.toLocaleString('tr-TR')} ₺
                     </p>
-                    <p className="text-[10px] font-bold text-emerald-600 mt-1">
+                    <p className="text-[10px] font-bold text-[#36684d] mt-1">
                       Pay: %{((Number(payload[0]?.value) / totalValue) * 100).toFixed(1)}
                     </p>
                   </div>
@@ -100,7 +100,7 @@ export function InvestmentSummary({ investments }: InvestmentSummaryProps) {
               const item = data.find(d => d.name === value);
               const percent = item ? ((item.value / totalValue) * 100).toFixed(1) : 0;
               return (
-                <span className="text-xs font-bold text-[#434750] px-2">
+                <span className="text-xs font-bold text-[#554336] px-2">
                   {value} <span className="text-[10px] opacity-60 ml-1">%{percent}</span>
                 </span>
               );

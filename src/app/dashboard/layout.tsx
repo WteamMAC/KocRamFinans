@@ -23,18 +23,18 @@ export default function DashboardLayout({
   }, [pathname]);
 
   return (
-    <div className="h-full relative flex flex-col md:flex-row bg-[#faf9f6]">
+    <div className="h-full relative flex flex-col md:flex-row bg-[#f8f9fa]">
       {/* Mobile Header */}
-      <div className="md:hidden flex items-center justify-between px-4 py-4 bg-white border-b border-[#c4c6d2]/30 sticky top-0 z-[100]">
+      <div className="md:hidden flex items-center justify-between px-4 py-4 bg-white border-b border-[#dbc2b0]/30 sticky top-0 z-[100] shadow-ambient-low">
         <Link className="flex items-center gap-2" href="/dashboard">
-          <BarChart3 className="h-7 w-7 text-[#fed65b] fill-[#fed65b]" />
-          <span className="text-xl font-heading font-bold text-[#001b44]">Koç Ai</span>
+          <BarChart3 className="h-7 w-7 text-[#efe440] fill-[#efe440]" />
+          <span className="text-xl font-heading font-bold text-[#8c5000]">Koç Ram Finans</span>
         </Link>
         <Button 
           variant="ghost" 
           size="icon" 
           onClick={() => setIsMobileOpen(true)}
-          className="text-[#001b44]"
+          className="text-[#8c5000]"
         >
           <Menu className="h-6 w-6" />
         </Button>
@@ -42,7 +42,7 @@ export default function DashboardLayout({
 
       {/* Desktop Sidebar */}
       <div className={cn(
-        "hidden md:flex h-full md:flex-col md:fixed md:inset-y-0 z-[80] bg-white transition-all duration-300 ease-in-out shadow-sm",
+        "hidden md:flex h-full md:flex-col md:fixed md:inset-y-0 z-[80] bg-white transition-all duration-300 ease-in-out shadow-ambient-low",
         isCollapsed ? "md:w-20" : "md:w-72"
       )}>
         <Sidebar isCollapsed={isCollapsed} onToggle={() => setIsCollapsed(!isCollapsed)} />
@@ -58,12 +58,12 @@ export default function DashboardLayout({
 
       {/* Mobile Sidebar Content */}
       <div className={cn(
-        "fixed inset-y-0 left-0 z-[120] w-72 bg-white md:hidden transition-transform duration-300 ease-in-out transform shadow-2xl",
+        "fixed inset-y-0 left-0 z-[120] w-72 bg-white md:hidden transition-transform duration-300 ease-in-out transform shadow-ambient-high",
         isMobileOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="absolute right-4 top-4">
           <Button variant="ghost" size="icon" onClick={() => setIsMobileOpen(false)}>
-            <X className="h-6 w-6 text-[#001b44]" />
+            <X className="h-6 w-6 text-[#8c5000]" />
           </Button>
         </div>
         <Sidebar isCollapsed={false} onToggle={() => setIsMobileOpen(false)} hideToggle />

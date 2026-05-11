@@ -20,19 +20,19 @@ const routes = [
     label: "Finansal Özet",
     icon: LayoutDashboard,
     href: "/dashboard",
-    color: "text-[#001b44]",
+    color: "text-[#8c5000]",
   },
   {
     label: "Varlıklarım",
     icon: TrendingUp,
     href: "/dashboard/assets",
-    color: "text-[#735c00]",
+    color: "text-[#666000]",
   },
   {
     label: "Bilgileri Düzenle",
     icon: Settings,
     href: "/dashboard/settings",
-    color: "text-[#434750]",
+    color: "text-[#554336]",
   },
 ];
 
@@ -47,7 +47,7 @@ export function Sidebar({ isCollapsed, onToggle, hideToggle }: SidebarProps) {
 
   return (
     <div className={cn(
-      "relative space-y-4 py-4 flex flex-col h-full bg-white border-r border-[#c4c6d2]/30 transition-all duration-300 shadow-sm",
+      "relative space-y-4 py-4 flex flex-col h-full bg-white border-r border-[#dbc2b0]/30 transition-all duration-300 shadow-ambient-low",
       isCollapsed ? "w-20" : "w-72"
     )}>
       {/* Toggle Button */}
@@ -56,9 +56,9 @@ export function Sidebar({ isCollapsed, onToggle, hideToggle }: SidebarProps) {
           onClick={onToggle}
           variant="ghost"
           size="icon"
-          className="absolute -right-3 top-10 h-6 w-6 rounded-full border border-[#c4c6d2]/30 bg-white shadow-sm z-50 hover:bg-[#faf9f6]"
+          className="absolute -right-3 top-10 h-6 w-6 rounded-full border border-[#dbc2b0]/30 bg-white shadow-ambient-low z-50 hover:bg-[#f8f9fa]"
         >
-          {isCollapsed ? <ChevronRight className="h-4 w-4 text-[#001b44]" /> : <ChevronLeft className="h-4 w-4 text-[#001b44]" />}
+          {isCollapsed ? <ChevronRight className="h-4 w-4 text-[#8c5000]" /> : <ChevronLeft className="h-4 w-4 text-[#8c5000]" />}
         </Button>
       )}
 
@@ -67,10 +67,10 @@ export function Sidebar({ isCollapsed, onToggle, hideToggle }: SidebarProps) {
           "flex items-center mb-10 transition-all duration-300",
           isCollapsed ? "justify-center" : "px-4"
         )}>
-          <BarChart3 className="h-8 w-8 text-[#fed65b] fill-[#fed65b] flex-shrink-0" />
+          <BarChart3 className="h-8 w-8 text-[#efe440] fill-[#efe440] flex-shrink-0" />
           {!isCollapsed && (
-            <h1 className="text-xl font-heading font-bold text-[#001b44] ml-3 truncate">
-              Koç Ai
+            <h1 className="text-xl font-heading font-bold text-[#8c5000] ml-3 truncate">
+              Koç Ram Finans
             </h1>
           )}
         </Link>
@@ -83,8 +83,8 @@ export function Sidebar({ isCollapsed, onToggle, hideToggle }: SidebarProps) {
               className={cn(
                 "text-sm group flex p-3 w-full justify-start font-medium cursor-pointer rounded-xl transition-all duration-200",
                 pathname === route.href 
-                  ? "bg-[#f4f3f1] text-[#001b44] shadow-sm" 
-                  : "text-[#434750] hover:bg-[#faf9f6] hover:text-[#001b44]",
+                  ? "bg-[#f3f4f5] text-[#8c5000] shadow-ambient-low" 
+                  : "text-[#554336] hover:bg-[#f8f9fa] hover:text-[#8c5000]",
                 isCollapsed && "justify-center"
               )}
             >
@@ -101,21 +101,21 @@ export function Sidebar({ isCollapsed, onToggle, hideToggle }: SidebarProps) {
       </div>
 
       <div className={cn(
-        "px-3 py-6 border-t border-[#c4c6d2]/20 flex items-center transition-all duration-300",
-        isCollapsed ? "justify-center" : "justify-between px-6 bg-[#faf9f6]/30"
+        "px-3 py-6 border-t border-[#dbc2b0]/20 flex items-center transition-all duration-300",
+        isCollapsed ? "justify-center" : "justify-between px-6 bg-[#f8f9fa]/30"
       )}>
         <div className="flex items-center gap-3 overflow-hidden">
           <UserButton 
             appearance={{
               elements: {
-                userButtonAvatarBox: "h-9 w-9 ring-2 ring-[#fed65b]/20"
+                userButtonAvatarBox: "h-9 w-9 ring-2 ring-[#efe440]/20"
               }
             }}
           />
           {!isCollapsed && (
             <div className="flex flex-col truncate">
-              <p className="text-sm font-semibold text-[#1a1c1a] truncate">Hesabım</p>
-              <p className="text-[10px] uppercase tracking-wider font-bold text-[#434750] truncate opacity-60">Yönetim</p>
+              <p className="text-sm font-semibold text-[#191c1d] truncate">Hesabım</p>
+              <p className="text-[10px] uppercase tracking-wider font-bold text-[#554336] truncate opacity-60">Yönetim</p>
             </div>
           )}
         </div>

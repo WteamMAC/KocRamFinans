@@ -44,40 +44,40 @@ export default async function AssetsPage() {
   }
 
   return (
-    <div className="flex-1 space-y-10 p-8 pt-10 bg-[#faf9f6] min-h-screen">
+    <div className="flex-1 space-y-10 p-8 pt-10 bg-[#f8f9fa] min-h-screen">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <div className="flex items-center gap-2 mb-1">
-             <BarChart3 className="h-5 w-5 text-[#fed65b] fill-[#fed65b]" />
-             <span className="text-[10px] font-bold text-[#735c00] uppercase tracking-[0.2em]">Varlık Yönetimi</span>
+             <BarChart3 className="h-5 w-5 text-[#efe440] fill-[#efe440]" />
+             <span className="text-[10px] font-bold text-[#666000] uppercase tracking-[0.2em]">Varlık Yönetimi</span>
           </div>
-          <h2 className="text-4xl font-heading font-bold text-[#001b44] tracking-tight">
+          <h2 className="text-4xl font-heading font-bold text-[#8c5000] tracking-tight">
             Varlık Portföyüm
           </h2>
-          <p className="text-[#434750] mt-1 font-medium opacity-80">BIST, NASDAQ ve Kripto varlıklarınızı profesyonelce yönetin.</p>
+          <p className="text-[#554336] mt-1 font-medium opacity-80">BIST, NASDAQ ve Kripto varlıklarınızı profesyonelce yönetin.</p>
         </div>
       </div>
 
       {/* Stats Grid */}
       <div className="grid gap-6 md:grid-cols-3">
-        <Card className="relative overflow-hidden bg-white border-[#c4c6d2]/20 shadow-sm hover:shadow-xl transition-all duration-300 group rounded-[24px]">
-          <div className="absolute -right-4 -top-4 p-8 bg-[#001b44]/5 rounded-full group-hover:scale-110 transition-transform"></div>
+        <Card className="relative overflow-hidden bg-white border-[#dbc2b0]/20 shadow-ambient-medium hover:shadow-ambient-high transition-all duration-300 group rounded-[24px]">
+          <div className="absolute -right-4 -top-4 p-8 bg-[#8c5000]/5 rounded-full group-hover:scale-110 transition-transform"></div>
           <CardHeader className="pb-2">
-            <CardTitle className="text-[10px] font-bold text-[#747781] uppercase tracking-widest">Toplam Portföy Değeri</CardTitle>
+            <CardTitle className="text-[10px] font-bold text-[#554336] uppercase tracking-widest">Toplam Portföy Değeri</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-heading font-bold text-[#001b44]">{metrics.totalCurrentValue.toLocaleString('tr-TR')} ₺</div>
-            <div className="mt-3 text-[10px] font-bold text-[#434750] opacity-60 flex items-center gap-2">
+            <div className="text-3xl font-heading font-bold text-[#8c5000]">{metrics.totalCurrentValue.toLocaleString('tr-TR')} ₺</div>
+            <div className="mt-3 text-[10px] font-bold text-[#554336] opacity-60 flex items-center gap-2">
                Maliyet: {metrics.totalCost.toLocaleString('tr-TR')} ₺
             </div>
           </CardContent>
         </Card>
 
-        <Card className="relative overflow-hidden bg-white border-[#c4c6d2]/20 shadow-sm hover:shadow-xl transition-all duration-300 group rounded-[24px]">
+        <Card className="relative overflow-hidden bg-white border-[#dbc2b0]/20 shadow-ambient-medium hover:shadow-ambient-high transition-all duration-300 group rounded-[24px]">
           <div className="absolute -right-4 -top-4 p-8 bg-emerald-50 rounded-full group-hover:scale-110 transition-transform"></div>
           <CardHeader className="pb-2">
-            <CardTitle className="text-[10px] font-bold text-[#747781] uppercase tracking-widest">Toplam Kar / Zarar</CardTitle>
+            <CardTitle className="text-[10px] font-bold text-[#554336] uppercase tracking-widest">Toplam Kar / Zarar</CardTitle>
           </CardHeader>
           <CardContent>
             <div className={cn(
@@ -95,7 +95,7 @@ export default async function AssetsPage() {
           </CardContent>
         </Card>
 
-        <Card className="relative overflow-hidden bg-[#001b44] border-none shadow-xl hover:shadow-2xl transition-all duration-300 group rounded-[24px]">
+        <Card className="relative overflow-hidden bg-[#8c5000] border-none shadow-ambient-high hover:shadow-ambient-high transition-all duration-300 group rounded-[24px]">
           <div className="absolute -right-4 -top-4 p-8 bg-white/10 rounded-full group-hover:scale-110 transition-transform"></div>
           <CardHeader className="pb-2">
             <CardTitle className="text-[10px] font-bold text-white/60 uppercase tracking-widest">En Değerli Varlık</CardTitle>
@@ -103,7 +103,7 @@ export default async function AssetsPage() {
           <CardContent>
             {metrics.assets.length > 0 ? (
               <>
-                <div className="text-3xl font-heading font-bold text-[#fed65b]">
+                <div className="text-3xl font-heading font-bold text-[#efe440]">
                   {metrics.assets.sort((a, b) => b.currentValue - a.currentValue)[0].symbol?.split('.')[0] || "---"}
                 </div>
                 <div className="mt-3 text-[10px] font-bold text-white/60 uppercase tracking-widest">
@@ -118,9 +118,9 @@ export default async function AssetsPage() {
       </div>
 
       <div className="grid gap-8 md:grid-cols-1">
-        <Card className="bg-white border-[#c4c6d2]/20 shadow-lg rounded-[32px] overflow-hidden">
-          <CardHeader className="bg-[#faf9f6]/50 border-b border-[#c4c6d2]/10 py-6 px-8">
-            <CardTitle className="text-xl font-heading font-bold text-[#001b44]">Varlık Dağılımı (Anlık Değer)</CardTitle>
+        <Card className="bg-white border-[#dbc2b0]/20 shadow-ambient-medium rounded-[32px] overflow-hidden">
+          <CardHeader className="bg-[#f8f9fa]/50 border-b border-[#dbc2b0]/10 py-6 px-8">
+            <CardTitle className="text-xl font-heading font-bold text-[#8c5000]">Varlık Dağılımı (Anlık Değer)</CardTitle>
           </CardHeader>
           <CardContent className="p-8">
             <InvestmentSummary investments={metrics.assets} />

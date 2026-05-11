@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+
+<html class="light" lang="tr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Koç Ram Finans</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&amp;family=Work+Sans:wght@400;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .shadow-ambient-low {
+            box-shadow: 0 0 0 1px rgba(84, 94, 118, 0.1); /* Subtle Navy tint border */
+        }
+        .shadow-ambient-medium {
+            box-shadow: 0 4px 15px rgba(84, 94, 118, 0.08); /* Interactive cards */
+        }
+        .shadow-ambient-high {
+            box-shadow: 0 10px 30px rgba(84, 94, 118, 0.12); /* Modals/Prompts */
+        }
+    </style>
+<script id="tailwind-config">tailwind.config = {darkMode: "class", theme: {extend: {colors: {"outline-variant": "#dbc2b0", "on-surface-variant": "#554336", "secondary-container": "#efe440", "tertiary-container": "#7cb191", "on-error": "#ffffff", secondary: "#666000", "on-tertiary-fixed-variant": "#1c5036", "surface-dim": "#d9dadb", "on-tertiary": "#ffffff", "secondary-fixed": "#f2e743", "primary-fixed": "#ffdcbf", "tertiary-fixed": "#b8efcc", tertiary: "#36684d", "secondary-fixed-dim": "#d5ca24", "tertiary-fixed-dim": "#9dd3b1", "inverse-surface": "#2e3132", outline: "#887364", "surface-container-lowest": "#ffffff", "on-primary-container": "#5a3100", "on-secondary": "#ffffff", "on-tertiary-fixed": "#002111", "surface-variant": "#e1e3e4", "on-secondary-fixed": "#1e1c00", "on-secondary-fixed-variant": "#4d4800", "primary-container": "#f18d02", "surface-container-highest": "#e1e3e4", "surface-tint": "#8c5000", surface: "#f8f9fa", "primary-fixed-dim": "#ffb874", "surface-bright": "#f8f9fa", primary: "#8c5000", "surface-container-low": "#f3f4f5", "on-surface": "#191c1d", "on-tertiary-container": "#0d442b", error: "#ba1a1a", "on-error-container": "#93000a", "inverse-on-surface": "#f0f1f2", "on-secondary-container": "#6a6500", "on-primary": "#ffffff", "surface-container": "#edeeef", background: "#f8f9fa", "on-background": "#191c1d", "on-primary-fixed": "#2d1600", "on-primary-fixed-variant": "#6a3b00", "inverse-primary": "#ffb874", "error-container": "#ffdad6", "surface-container-high": "#e7e8e9"}, borderRadius: {DEFAULT: "0.25rem", lg: "0.5rem", xl: "0.75rem", full: "9999px"}, spacing: {gutter: "24px", "margin-mobile": "16px", "margin-desktop": "64px", unit: "8px", "container-max": "1200px"}, fontFamily: {"headline-md": ["Montserrat"], "label-md": ["Work Sans"], "headline-lg-mobile": ["Montserrat"], "body-md": ["Work Sans"], "headline-xl": ["Montserrat"], "body-lg": ["Work Sans"], "headline-lg": ["Montserrat"]}, fontSize: {"headline-md": ["24px", {lineHeight: "32px", fontWeight: "600"}], "label-md": ["14px", {lineHeight: "20px", fontWeight: "600"}], "headline-lg-mobile": ["28px", {lineHeight: "36px", fontWeight: "700"}], "body-md": ["16px", {lineHeight: "24px", fontWeight: "400"}], "headline-xl": ["48px", {lineHeight: "56px", letterSpacing: "-0.02em", fontWeight: "700"}], "body-lg": ["18px", {lineHeight: "28px", fontWeight: "400"}], "headline-lg": ["32px", {lineHeight: "40px", letterSpacing: "-0.01em", fontWeight: "700"}]}}}};</script>
+</head>
+<body class="bg-background text-on-background font-body-md antialiased">
+<!-- TopAppBar -->
+<header class="bg-surface/90 dark:bg-background/90 backdrop-blur-md top-0 sticky z-50 border-b border-outline-variant/30 dark:border-outline-variant/10 shadow-sm w-full">
+<div class="flex justify-between items-center w-full px-margin-mobile md:px-margin-desktop py-4 max-w-container-max mx-auto">
+<a class="text-headline-md font-headline-md font-bold text-primary dark:text-primary-fixed flex items-center gap-2" href="#">
+<span class="material-symbols-outlined text-primary" data-weight="fill" style="font-variation-settings: 'FILL' 1;">monitoring</span>
+                Koç Ram Finans
+            </a>
+<!-- Desktop Navigation -->
+<nav class="hidden md:flex items-center gap-8">
+<a class="text-primary dark:text-primary-fixed-dim border-b-2 border-primary dark:border-primary-fixed-dim pb-1 font-label-md text-label-md hover:text-primary dark:hover:text-primary-fixed transition-colors duration-200" href="#">Hizmetler</a>
+<a class="text-on-surface-variant dark:text-surface-variant font-label-md text-label-md hover:text-primary dark:hover:text-primary-fixed transition-colors duration-200" href="#">Hakkımızda</a>
+<a class="text-on-surface-variant dark:text-surface-variant font-label-md text-label-md hover:text-primary dark:hover:text-primary-fixed transition-colors duration-200" href="#">Başarı Hikayeleri</a>
+<a class="text-on-surface-variant dark:text-surface-variant font-label-md text-label-md hover:text-primary dark:hover:text-primary-fixed transition-colors duration-200" href="#">Blog</a>
+</nav>
+<!-- Actions -->
+<div class="hidden md:flex items-center gap-4">
+<button class="font-label-md text-label-md text-primary hover:bg-primary-container/10 px-4 py-2 rounded-lg transition-colors duration-200">Giriş Yap</button>
+<button class="bg-primary text-on-primary font-label-md text-label-md px-6 py-2.5 rounded-lg hover:bg-primary/90 scale-95 transition-transform duration-150 shadow-ambient-medium">Koçluğa Başla</button>
+</div>
+<!-- Mobile Menu Toggle -->
+<button class="md:hidden text-on-surface-variant p-2">
+<span class="material-symbols-outlined">menu</span>
+</button>
+</div>
+</header>
+<main>
+<!-- Hero Section -->
+<section class="relative pt-24 pb-32 overflow-hidden">
+<div class="absolute inset-0 bg-gradient-to-br from-primary-container/20 to-surface pointer-events-none -z-10"></div>
+<div class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop grid grid-cols-1 md:grid-cols-12 gap-gutter items-center">
+<div class="md:col-span-7 flex flex-col items-start gap-6 z-10">
+<div class="inline-flex items-center gap-2 bg-secondary-container/50 text-on-secondary-container px-4 py-1.5 rounded-full font-label-md text-label-md">
+<span class="material-symbols-outlined text-[18px]">campaign</span>
+<span>Finansal Özgürlüğe İlk Adım</span>
+</div>
+<h1 class="font-headline-xl text-headline-xl text-on-surface md:pr-12">
+                        Geleceğinizi Güvence Altına Alın, <span class="text-primary">Stresi Geride Bırakın.</span>
+</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl">
+                        Koç Ram Finans ile karmaşık finansal kararları basitleştiriyoruz. Dostane, şeffaf ve tamamen size özel koçluk yaklaşımımızla paranızı yönetmeyi öğrenin ve büyütün.
+                    </p>
+<div class="flex flex-col sm:flex-row gap-4 mt-4 w-full sm:w-auto">
+<button class="bg-primary text-on-primary font-label-md text-label-md px-8 py-4 rounded-lg hover:bg-primary/90 transition-colors shadow-ambient-high flex items-center justify-center gap-2">
+                            Ücretsiz Görüşme Ayarla
+                            <span class="material-symbols-outlined">arrow_forward</span>
+</button>
+<button class="bg-surface border border-outline-variant text-on-surface font-label-md text-label-md px-8 py-4 rounded-lg hover:bg-surface-variant transition-colors flex items-center justify-center gap-2 shadow-ambient-low">
+                            Nasıl Çalışır?
+                        </button>
+</div>
+</div>
+<div class="md:col-span-5 relative mt-12 md:mt-0 flex justify-center">
+<!-- Decorative background blur behind mascot -->
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-primary-fixed blur-3xl opacity-30 rounded-full -z-10"></div>
+<div class="relative w-full max-w-[400px] aspect-square rounded-2xl bg-surface shadow-ambient-high flex items-center justify-center p-8 border-t-4 border-primary">
+<img alt="Koç Ram Finans friendly ram mascot" class="w-full h-auto object-contain drop-shadow-xl" src="https://lh3.googleusercontent.com/aida/ADBb0uii6ONYZ2VjCJ7Apc7e45lcMInjiFwwgPNuvJrgDZ_84hIkEoK9mIaLGXoWKEBg_Nz_7sQCF22UsVxuBMxDA-HWrUx6X21amjFZJ5TtQ4BucAnynbAZONheLmxUMXWyRXwqjn4jrEZNnJQpNZPc1l_SeGx4EqVG78rW3Xg_BVwU9A4ZqiEW6CYsO9v23tMJVjA8zj2AkBPxnip515vMVVfbxorMIIuhYaIXh67MMm2HByysQWipBKTuBHQxsBC7OZ4tiECjAH4Tshc"/>
+<!-- Floating Badge -->
+<div class="absolute -bottom-6 -left-6 bg-surface p-4 rounded-xl shadow-ambient-medium flex items-center gap-3 border border-outline-variant/30">
+<div class="bg-primary-container text-on-primary-container w-10 h-10 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined">check_circle</span>
+</div>
+<div>
+<p class="font-label-md text-label-md text-on-surface">500+ Mutlu Müşteri</p>
+<p class="font-body-md text-sm text-on-surface-variant">Güvenilir Rehberlik</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Services Section (Bento Grid Style) -->
+<section class="py-24 bg-surface-container-lowest">
+<div class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop">
+<div class="text-center max-w-3xl mx-auto mb-16">
+<h2 class="font-headline-lg text-headline-lg text-on-surface mb-4">Size Özel Finansal Çözümler</h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant">İhtiyaçlarınıza uygun, anlaşılır ve eyleme geçirilebilir hizmetlerimizle yanınızdayız.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-12 gap-gutter">
+<!-- Bütçe Yönetimi (Large Card) -->
+<div class="md:col-span-8 bg-surface rounded-2xl p-8 shadow-ambient-medium border-t-4 border-primary relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
+<span class="material-symbols-outlined text-[120px] text-primary">account_balance_wallet</span>
+</div>
+<div class="relative z-10">
+<div class="bg-primary-container/20 w-12 h-12 rounded-xl flex items-center justify-center mb-6">
+<span class="material-symbols-outlined text-primary text-[24px]">account_balance_wallet</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface mb-3">Bütçe Yönetimi</h3>
+<p class="font-body-md text-on-surface-variant mb-6 max-w-md">Gelir ve giderlerinizi optimize ederek, ay sonunu düşünmeden yaşamaya başlayın. Şeffaf tablolar ve kişisel harcama analizleriyle paranızın kontrolünü elinize alın.</p>
+<a class="inline-flex items-center gap-2 font-label-md text-label-md text-primary hover:text-primary/80 transition-colors" href="#">
+                                Detayları İncele <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</a>
+</div>
+</div>
+<!-- Yatırım Danışmanlığı (Tall Card) -->
+<div class="md:col-span-4 bg-secondary rounded-2xl p-8 shadow-ambient-medium relative overflow-hidden text-on-secondary">
+<div class="absolute -bottom-10 -right-10 opacity-10">
+<span class="material-symbols-outlined text-[150px]">trending_up</span>
+</div>
+<div class="relative z-10">
+<div class="bg-white/10 w-12 h-12 rounded-xl flex items-center justify-center mb-6">
+<span class="material-symbols-outlined text-on-secondary text-[24px]">trending_up</span>
+</div>
+<h3 class="font-headline-md text-headline-md mb-3">Yatırım Danışmanlığı</h3>
+<p class="font-body-md text-on-secondary/90 mb-6">Risk profilinize uygun stratejilerle, birikimlerinizi enflasyona karşı koruyun ve güvenle büyütün.</p>
+<ul class="space-y-3 mb-8 font-label-md text-label-md text-on-secondary/80">
+<li class="flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">check</span> Portföy Çeşitlendirmesi</li>
+<li class="flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">check</span> Uzun Vadeli Planlama</li>
+</ul>
+</div>
+</div>
+<!-- Borç Yapılandırma (Small Card) -->
+<div class="md:col-span-6 bg-surface rounded-2xl p-8 shadow-ambient-low border border-outline-variant/30 hover:shadow-ambient-medium transition-shadow">
+<div class="flex items-center gap-4 mb-4">
+<div class="bg-tertiary-container/20 w-12 h-12 rounded-xl flex items-center justify-center">
+<span class="material-symbols-outlined text-tertiary text-[24px]">payments</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface text-[20px]">Borç Yapılandırma</h3>
+</div>
+<p class="font-body-md text-on-surface-variant">Mevcut borçlarınızı konsolide ederek faiz yükünden kurtulun ve net bir ödeme planı oluşturun.</p>
+</div>
+<!-- Emeklilik Planlaması (Small Card) -->
+<div class="md:col-span-6 bg-surface rounded-2xl p-8 shadow-ambient-low border border-outline-variant/30 hover:shadow-ambient-medium transition-shadow">
+<div class="flex items-center gap-4 mb-4">
+<div class="bg-secondary-container/30 w-12 h-12 rounded-xl flex items-center justify-center">
+<span class="material-symbols-outlined text-secondary text-[24px]">elderly</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface text-[20px]">Emeklilik Planlaması</h3>
+</div>
+<p class="font-body-md text-on-surface-variant">Geleceğinizi şimdiden garantiye alın. Hayalinizdeki emeklilik için gerekli adımları birlikte atalım.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Why Us Section -->
+<section class="py-24 bg-background">
+<div class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
+<div>
+<h2 class="font-headline-lg text-headline-lg text-on-surface mb-6">Neden Koç Ram Finans?</h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant mb-8">
+                            Finans dünyası karmaşık ve soğuk görünse de, biz onu ulaşılabilir ve dostane hale getiriyoruz. Sürecin merkezine 'sizi' koyuyoruz.
+                        </p>
+<div class="space-y-6">
+<div class="flex gap-4">
+<div class="flex-shrink-0 mt-1 bg-primary-container text-on-primary-container w-8 h-8 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]">psychology</span>
+</div>
+<div>
+<h4 class="font-label-md text-label-md text-on-surface text-[16px] mb-1">Anlaşılır Bir Dil</h4>
+<p class="font-body-md text-on-surface-variant text-sm">Karmaşık finansal terimleri kullanmıyoruz. Her konuyu günlük hayattan örneklerle basitleştiriyoruz.</p>
+</div>
+</div>
+<div class="flex gap-4">
+<div class="flex-shrink-0 mt-1 bg-primary-container text-on-primary-container w-8 h-8 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]">handshake</span>
+</div>
+<div>
+<h4 class="font-label-md text-label-md text-on-surface text-[16px] mb-1">Şeffaf Yaklaşım</h4>
+<p class="font-body-md text-on-surface-variant text-sm">Gizli ücretler veya sürprizler yok. Tüm süreçlerimiz ve ücretlendirmemiz ilk günden bellidir.</p>
+</div>
+</div>
+<div class="flex gap-4">
+<div class="flex-shrink-0 mt-1 bg-primary-container text-on-primary-container w-8 h-8 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]">support_agent</span>
+</div>
+<div>
+<h4 class="font-label-md text-label-md text-on-surface text-[16px] mb-1">Sürekli Destek</h4>
+<p class="font-body-md text-on-surface-variant text-sm">Sadece plan yapmakla kalmıyor, uygulama sürecinde de yanınızda yürüyoruz.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="relative">
+<div class="aspect-[4/3] rounded-2xl overflow-hidden shadow-ambient-high">
+<div class="w-full h-full bg-surface-variant flex items-center justify-center relative bg-cover bg-center" data-alt="A modern, well-lit office setting where a friendly financial advisor is reviewing documents with a relaxed client. The atmosphere is warm, professional, and accessible, reflecting a light-mode aesthetic with soft natural light. The color palette incorporates subtle tones of navy and warm orange accents to match the brand identity. The mood is collaborative and empowering." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBLbu8BaYKEb-2h5lpVt34DwH1nhV2GDnag14vLJjAh3E1ZDgKhRCCf_7AwDfH_A0leVyBXP9bL5NfmbGf-UF7SUCr-rjkSEvoKE0e3kfkdMMBU-NcAnhY4mdP_C3QRtn0KcuVGrI7RfKjsbp7tTyanJK7JF8fQvqEkCLou8eM3HTIS37Nlhpi0aR7HW6n6rIdaD80fmKPF3w2M5vR0XBDLdMCzBbXQXL-cLwm-_hFw6iqsTcktl2gRCgxML83tNaX-5rxoXesFIINy');">
+<div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+</div>
+</div>
+<!-- Stats floating card -->
+<div class="absolute -bottom-8 -left-8 bg-surface p-6 rounded-xl shadow-ambient-high border border-outline-variant/20 flex gap-8">
+<div class="text-center">
+<p class="font-headline-md text-headline-md text-primary">10+</p>
+<p class="font-label-md text-sm text-on-surface-variant">Yıllık Tecrübe</p>
+</div>
+<div class="w-px bg-outline-variant/30"></div>
+<div class="text-center">
+<p class="font-headline-md text-headline-md text-primary">%98</p>
+<p class="font-label-md text-sm text-on-surface-variant">Müşteri Memnuniyeti</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- CTA Section -->
+<section class="py-24 bg-surface-container">
+<div class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop">
+<div class="bg-primary text-on-primary rounded-3xl p-12 md:p-16 text-center relative overflow-hidden shadow-ambient-high">
+<div class="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-96 h-96 bg-white/10 rounded-full blur-3xl"></div>
+<div class="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/4 w-64 h-64 bg-black/10 rounded-full blur-2xl"></div>
+<div class="relative z-10 max-w-2xl mx-auto">
+<h2 class="font-headline-lg text-headline-lg mb-6">Finansal Stresi Geride Bırakmaya Hazır mısınız?</h2>
+<p class="font-body-lg text-body-lg mb-10 text-on-primary/90">İlk görüşmemiz tamamen ücretsizdir. Hedeflerinizi konuşalım ve size nasıl yardımcı olabileceğimizi birlikte keşfedelim.</p>
+<button class="bg-surface text-primary font-label-md text-label-md px-8 py-4 rounded-lg hover:bg-surface-bright scale-95 transition-all shadow-ambient-medium flex items-center justify-center gap-2 mx-auto">
+                            Hemen Randevu Oluştur
+                            <span class="material-symbols-outlined">calendar_month</span>
+</button>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="bg-secondary dark:bg-inverse-surface w-full mt-auto border-t-0">
+<div class="w-full px-margin-mobile md:px-margin-desktop py-12 flex flex-col md:flex-row justify-between items-center gap-unit max-w-container-max mx-auto">
+<!-- Brand & Copyright -->
+<div class="flex flex-col items-center md:items-start gap-4 mb-8 md:mb-0">
+<a class="font-headline-md text-headline-md font-bold text-on-secondary flex items-center gap-2" href="#">
+<span class="material-symbols-outlined text-on-secondary" data-weight="fill" style="font-variation-settings: 'FILL' 1;">monitoring</span>
+                    Koç Ram Finans
+                </a>
+<p class="font-body-md text-body-md text-on-secondary/80">© 2024 Koç Ram Finansal Danışmanlık. Tüm hakları saklıdır.</p>
+</div>
+<!-- Links -->
+<nav class="flex flex-wrap justify-center md:justify-end gap-6">
+<a class="font-label-md text-label-md text-on-secondary/80 dark:text-inverse-on-surface/80 hover:text-on-secondary dark:hover:text-inverse-on-surface transition-colors opacity-80 hover:opacity-100" href="#">Gizlilik Politikası</a>
+<a class="font-label-md text-label-md text-on-secondary/80 dark:text-inverse-on-surface/80 hover:text-on-secondary dark:hover:text-inverse-on-surface transition-colors opacity-80 hover:opacity-100" href="#">Kullanım Şartları</a>
+<a class="font-label-md text-label-md text-on-secondary/80 dark:text-inverse-on-surface/80 hover:text-on-secondary dark:hover:text-inverse-on-surface transition-colors opacity-80 hover:opacity-100" href="#">İletişim</a>
+<a class="font-label-md text-label-md text-on-secondary/80 dark:text-inverse-on-surface/80 hover:text-on-secondary dark:hover:text-inverse-on-surface transition-colors opacity-80 hover:opacity-100" href="#">SSS</a>
+</nav>
+</div>
+</footer>
+</body></html>
+
+Yukarısıda Websitesi
+Dizaynı bu olacak ! 
+
+---
+name: Orange Ram Financial
+colors:
+  surface: '#f8f9fa'
+  surface-dim: '#d9dadb'
+  surface-bright: '#f8f9fa'
+  surface-container-lowest: '#ffffff'
+  surface-container-low: '#f3f4f5'
+  surface-container: '#edeeef'
+  surface-container-high: '#e7e8e9'
+  surface-container-highest: '#e1e3e4'
+  on-surface: '#191c1d'
+  on-surface-variant: '#554336'
+  inverse-surface: '#2e3132'
+  inverse-on-surface: '#f0f1f2'
+  outline: '#887364'
+  outline-variant: '#dbc2b0'
+  surface-tint: '#8c5000'
+  primary: '#8c5000'
+  on-primary: '#ffffff'
+  primary-container: '#f18d02'
+  on-primary-container: '#5a3100'
+  inverse-primary: '#ffb874'
+  secondary: '#666000'
+  on-secondary: '#ffffff'
+  secondary-container: '#efe440'
+  on-secondary-container: '#6a6500'
+  tertiary: '#36684d'
+  on-tertiary: '#ffffff'
+  tertiary-container: '#7cb191'
+  on-tertiary-container: '#0d442b'
+  error: '#ba1a1a'
+  on-error: '#ffffff'
+  error-container: '#ffdad6'
+  on-error-container: '#93000a'
+  primary-fixed: '#ffdcbf'
+  primary-fixed-dim: '#ffb874'
+  on-primary-fixed: '#2d1600'
+  on-primary-fixed-variant: '#6a3b00'
+  secondary-fixed: '#f2e743'
+  secondary-fixed-dim: '#d5ca24'
+  on-secondary-fixed: '#1e1c00'
+  on-secondary-fixed-variant: '#4d4800'
+  tertiary-fixed: '#b8efcc'
+  tertiary-fixed-dim: '#9dd3b1'
+  on-tertiary-fixed: '#002111'
+  on-tertiary-fixed-variant: '#1c5036'
+  background: '#f8f9fa'
+  on-background: '#191c1d'
+  surface-variant: '#e1e3e4'
+typography:
+  headline-xl:
+    fontFamily: Montserrat
+    fontSize: 48px
+    fontWeight: '700'
+    lineHeight: 56px
+    letterSpacing: -0.02em
+  headline-lg:
+    fontFamily: Montserrat
+    fontSize: 32px
+    fontWeight: '700'
+    lineHeight: 40px
+    letterSpacing: -0.01em
+  headline-md:
+    fontFamily: Montserrat
+    fontSize: 24px
+    fontWeight: '600'
+    lineHeight: 32px
+  body-lg:
+    fontFamily: Work Sans
+    fontSize: 18px
+    fontWeight: '400'
+    lineHeight: 28px
+  body-md:
+    fontFamily: Work Sans
+    fontSize: 16px
+    fontWeight: '400'
+    lineHeight: 24px
+  label-md:
+    fontFamily: Work Sans
+    fontSize: 14px
+    fontWeight: '600'
+    lineHeight: 20px
+  headline-lg-mobile:
+    fontFamily: Montserrat
+    fontSize: 28px
+    fontWeight: '700'
+    lineHeight: 36px
+rounded:
+  sm: 0.25rem
+  DEFAULT: 0.5rem
+  md: 0.75rem
+  lg: 1rem
+  xl: 1.5rem
+  full: 9999px
+spacing:
+  unit: 8px
+  gutter: 24px
+  margin-mobile: 16px
+  margin-desktop: 64px
+  container-max: 1200px
+---
+
+## Brand & Style
+The design system is centered on the intersection of professional financial guidance and warm, accessible coaching. It draws inspiration from its ram mascot, embodying qualities of resilience, leadership, and friendliness. The target audience includes individuals seeking a non-intimidating entry point into wealth management and financial literacy.
+
+The UI style follows a **Corporate / Modern** aesthetic with a high-energy, optimistic twist. It prioritizes clarity and trust through high-quality typography and structured layouts, while using rounded geometry and a vibrant palette to lower the barrier to entry for complex financial topics. The emotional response should be one of "optimistic empowerment"—users should feel that their financial future is bright, approachable, and human.
+
+## Colors
+The palette is anchored by **Vivid Orange (#F08C00)**, used primarily for action-oriented elements and brand moments. This is complemented by **Sunbeam Yellow (#FFF44F)**, which adds a sense of optimism and energy to the interface, and **Sage Green (#A0D6B4)** for balanced, calming accents.
+
+- **Primary (Orange):** Main call-to-actions, progress indicators, and active states.
+- **Secondary (Yellow):** High-visibility accents, celebratory moments, and secondary buttons that require attention without the weight of the primary orange.
+- **Tertiary (Sage):** Success states, balance indicators, and soft background accents to provide a calming counterpoint to the warmer tones.
+- **Backgrounds:** A crisp white (#FFFFFF) for main content areas, with a soft cool gray (#F8F9FA) for section differentiation and card backgrounds.
+
+## Typography
+This design system utilizes **Montserrat** for headings to convey confidence and modern energy. Its geometric nature reflects the rounded horns of the mascot. For long-form data and body text, **Work Sans** is used for its exceptional legibility and professional, grounded character.
+
+Hierarchy is established through significant weight contrast. Large headlines should use heavy weights (700) with slight negative letter-spacing to feel impactful and "branded." Body text maintains a generous line-height to ensure financial data remains easy to parse and less stressful to read.
+
+## Layout & Spacing
+The layout follows a **Fixed Grid** model on desktop, centered within a 1200px container to ensure readability of financial tables and dashboards. 
+
+- **Desktop:** 12-column grid with 24px gutters.
+- **Tablet:** 8-column grid with 20px gutters.
+- **Mobile:** 4-column grid with 16px margins.
+
+Spacing follows an 8px base unit. Generous whitespace (padding) is used within containers to prevent the UI from feeling "cramped," which helps reduce user anxiety regarding financial information. Section transitions should use large vertical padding (80px - 120px) to maintain an airy, premium feel.
+
+## Elevation & Depth
+To achieve a friendly yet professional look, this design system avoids harsh, black shadows. Instead, it utilizes **Ambient Shadows** with a subtle warm tint to ground elements.
+
+- **Low Elevation:** 1px subtle gray-tinted border for input fields and static cards.
+- **Medium Elevation:** Soft, diffused shadows (Blur: 15px, Y: 4px, Opacity: 8% of a warm neutral) for interactive cards and dropdowns.
+- **High Elevation:** Deep, soft shadows for modals and primary coaching prompts (Blur: 30px, Y: 10px, Opacity: 12% of a warm neutral).
+- **Background Blurs:** Used sparingly on navigation overlays to maintain context without clutter.
+
+## Shapes
+The shape language is defined by a **Rounded (0.5rem)** base. This specific radius is used to echo the curves of the ram mascot, softening the "hard" edges typically associated with banking and finance. 
+
+- **Standard Buttons & Inputs:** 0.5rem (8px).
+- **Cards & Containers:** 1rem (16px) to create a clear, nested hierarchy.
+- **Feature Modules:** 1.5rem (24px) for high-impact marketing sections.
+- **Iconography:** Use a consistent 2px stroke weight with rounded caps and joins to match the typography.
+
+## Components
+- **Buttons:** Primary buttons use the Vivid Orange with white text. Secondary buttons use the Sunbeam Yellow with dark text. All buttons feature the 8px rounded corner and a subtle scale-down effect on press.
+- **Cards:** White backgrounds with the "Medium Elevation" shadow and a 16px corner radius. Include a 4px top-border in Orange or Sage to categorize content.
+- **Input Fields:** Large, 48px height minimum for accessibility. Use a light gray border that transitions to Orange on focus. Labels should always be visible above the field.
+- **Chips/Tags:** Used for financial categories (e.g., "Savings", "Debt"). Use a pale version of the Sage Green with dark green text for high readability and "positive" categories.
+- **Progress Bars:** Thick, rounded bars using a soft gray track and an Orange or Sage fill to indicate goal completion.
+- **Mascot Integration:** The ram mascot should appear in "Empty States," onboarding screens, and success messages to provide encouragement.

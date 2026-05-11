@@ -66,59 +66,59 @@ export default async function DashboardPage() {
   const savingsRate = totalIncome > 0 ? ((totalIncome - totalExpense) / totalIncome) * 100 : 0;
 
   return (
-    <div className="flex-1 space-y-10 p-8 pt-10 bg-[#faf9f6] min-h-screen">
+    <div className="flex-1 space-y-10 p-8 pt-10 bg-[#f8f9fa] min-h-screen">
       {/* Welcome Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <div className="flex items-center gap-2 mb-1">
-             <Sparkles className="h-5 w-5 text-[#fed65b] fill-[#fed65b]" />
-             <span className="text-[10px] font-bold text-[#735c00] uppercase tracking-[0.2em]">Kişisel Finans Asistanı</span>
+             <Sparkles className="h-5 w-5 text-[#efe440] fill-[#efe440]" />
+             <span className="text-[10px] font-bold text-[#666000] uppercase tracking-[0.2em]">Kişisel Finans Asistanı</span>
           </div>
-          <h2 className="text-4xl font-heading font-bold text-[#001b44] tracking-tight">
+          <h2 className="text-4xl font-heading font-bold text-[#8c5000] tracking-tight">
             Finansal Özet
           </h2>
-          <p className="text-[#434750] mt-1 font-medium italic opacity-80">Geleceğinizi verilerle inşa ediyoruz.</p>
+          <p className="text-[#554336] mt-1 font-medium italic opacity-80">Geleceğinizi verilerle inşa ediyoruz.</p>
         </div>
         
-        <div className="bg-white p-4 rounded-2xl shadow-sm border border-[#c4c6d2]/20 flex items-center gap-6">
+        <div className="bg-white p-4 rounded-2xl shadow-ambient-medium border border-[#dbc2b0]/20 flex items-center gap-6">
            <div className="flex flex-col">
-              <span className="text-[10px] font-bold text-[#747781] uppercase tracking-widest">Tasarruf Oranı</span>
+              <span className="text-[10px] font-bold text-[#554336] uppercase tracking-widest">Tasarruf Oranı</span>
               <span className={cn(
                 "text-2xl font-bold font-heading",
-                savingsRate > 20 ? "text-emerald-600" : "text-[#735c00]"
+                savingsRate > 20 ? "text-emerald-600" : "text-[#666000]"
               )}>
                 %{savingsRate.toFixed(1)}
               </span>
            </div>
-           <div className="w-12 h-12 bg-[#f4f3f1] rounded-xl flex items-center justify-center">
-              <TrendingUp className="h-6 w-6 text-[#001b44]" />
+           <div className="w-12 h-12 bg-[#f8f9fa] rounded-xl flex items-center justify-center shadow-inner">
+              <TrendingUp className="h-6 w-6 text-[#8c5000]" />
            </div>
         </div>
       </div>
       
       {/* Stats Grid */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="relative overflow-hidden bg-white border-[#c4c6d2]/20 shadow-sm hover:shadow-xl transition-all duration-300 group rounded-[24px]">
-          <div className="absolute -right-4 -top-4 p-8 bg-[#001b44]/5 rounded-full group-hover:scale-110 transition-transform"></div>
+        <Card className="relative overflow-hidden bg-white border-[#dbc2b0]/20 shadow-ambient-medium hover:shadow-ambient-high transition-all duration-300 group rounded-[24px]">
+          <div className="absolute -right-4 -top-4 p-8 bg-[#8c5000]/5 rounded-full group-hover:scale-110 transition-transform"></div>
           <CardHeader className="pb-2">
-            <CardTitle className="text-[10px] font-bold text-[#747781] uppercase tracking-widest">Net Varlık</CardTitle>
+            <CardTitle className="text-[10px] font-bold text-[#554336] uppercase tracking-widest">Net Varlık</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-heading font-bold text-[#001b44]">{netWorth.toLocaleString('tr-TR')} ₺</div>
+            <div className="text-3xl font-heading font-bold text-[#8c5000]">{netWorth.toLocaleString('tr-TR')} ₺</div>
             <div className="mt-3 flex items-center gap-2">
-              <div className="h-1.5 w-1.5 rounded-full bg-[#fed65b] animate-pulse"></div>
-              <span className="text-[10px] font-bold text-[#434750] opacity-60">GÜNCEL DURUM</span>
+              <div className="h-1.5 w-1.5 rounded-full bg-[#efe440] animate-pulse"></div>
+              <span className="text-[10px] font-bold text-[#554336] opacity-60">GÜNCEL DURUM</span>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="relative overflow-hidden bg-white border-[#c4c6d2]/20 shadow-sm hover:shadow-xl transition-all duration-300 group rounded-[24px]">
+        <Card className="relative overflow-hidden bg-white border-[#dbc2b0]/20 shadow-ambient-medium hover:shadow-ambient-high transition-all duration-300 group rounded-[24px]">
           <div className="absolute -right-4 -top-4 p-8 bg-emerald-50 rounded-full group-hover:scale-110 transition-transform"></div>
           <CardHeader className="pb-2">
-            <CardTitle className="text-[10px] font-bold text-[#747781] uppercase tracking-widest">Aylık Nakit Akışı</CardTitle>
+            <CardTitle className="text-[10px] font-bold text-[#554336] uppercase tracking-widest">Aylık Nakit Akışı</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-heading font-bold text-[#001b44]">{(totalIncome - totalExpense).toLocaleString('tr-TR')} ₺</div>
+            <div className="text-3xl font-heading font-bold text-[#8c5000]">{(totalIncome - totalExpense).toLocaleString('tr-TR')} ₺</div>
             <div className="mt-3 text-[10px] font-bold text-emerald-600 flex items-center gap-1">
               <ArrowUpRight className="h-3 w-3" />
               Gelir: {totalIncome.toLocaleString('tr-TR')} ₺
@@ -126,13 +126,13 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="relative overflow-hidden bg-white border-[#c4c6d2]/20 shadow-sm hover:shadow-xl transition-all duration-300 group rounded-[24px]">
+        <Card className="relative overflow-hidden bg-white border-[#dbc2b0]/20 shadow-ambient-medium hover:shadow-ambient-high transition-all duration-300 group rounded-[24px]">
           <div className="absolute -right-4 -top-4 p-8 bg-rose-50 rounded-full group-hover:scale-110 transition-transform"></div>
           <CardHeader className="pb-2">
-            <CardTitle className="text-[10px] font-bold text-[#747781] uppercase tracking-widest">Toplam Borç</CardTitle>
+            <CardTitle className="text-[10px] font-bold text-[#554336] uppercase tracking-widest">Toplam Borç</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-heading font-bold text-[#001b44]">{totalDebt.toLocaleString('tr-TR')} ₺</div>
+            <div className="text-3xl font-heading font-bold text-[#8c5000]">{totalDebt.toLocaleString('tr-TR')} ₺</div>
             <div className="mt-3 text-[10px] font-bold text-rose-600 flex items-center gap-1">
               <ArrowDownRight className="h-3 w-3" />
               Borç Yükü: %{((totalDebt / (totalIncome || 1)) * 100).toFixed(1)}
@@ -140,7 +140,7 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="relative overflow-hidden bg-[#001b44] border-none shadow-xl hover:shadow-2xl transition-all duration-300 group rounded-[24px]">
+        <Card className="relative overflow-hidden bg-[#8c5000] border-none shadow-ambient-high hover:shadow-ambient-high transition-all duration-300 group rounded-[24px]">
           <div className="absolute -right-4 -top-4 p-8 bg-white/10 rounded-full group-hover:scale-110 transition-transform"></div>
           <CardHeader className="pb-2">
             <CardTitle className="text-[10px] font-bold text-white/60 uppercase tracking-widest">Portföy Kar/Zarar</CardTitle>
@@ -148,7 +148,7 @@ export default async function DashboardPage() {
           <CardContent>
             <div className={cn(
               "text-3xl font-heading font-bold",
-              totalProfit >= 0 ? "text-[#fed65b]" : "text-rose-400"
+              totalProfit >= 0 ? "text-[#efe440]" : "text-rose-400"
             )}>
               {totalProfit.toLocaleString('tr-TR')} ₺
             </div>
@@ -165,10 +165,10 @@ export default async function DashboardPage() {
 
       {/* Middle Sections */}
       <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="col-span-4 bg-white border-[#c4c6d2]/20 shadow-lg rounded-[32px] overflow-hidden">
-          <CardHeader className="bg-[#faf9f6]/50 border-b border-[#c4c6d2]/10 py-6">
-            <CardTitle className="text-xl font-heading font-bold text-[#001b44] flex items-center gap-2">
-              <PieChart className="h-5 w-5 text-[#fed65b] fill-[#fed65b]" /> Bütçe Dengesi
+        <Card className="col-span-4 bg-white border-[#dbc2b0]/20 shadow-ambient-medium rounded-[32px] overflow-hidden">
+          <CardHeader className="bg-[#f8f9fa] border-b border-[#dbc2b0]/10 py-6">
+            <CardTitle className="text-xl font-heading font-bold text-[#8c5000] flex items-center gap-2">
+              <PieChart className="h-5 w-5 text-[#efe440] fill-[#efe440]" /> Bütçe Dengesi
             </CardTitle>
           </CardHeader>
           <CardContent className="p-8">
@@ -176,10 +176,10 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
         
-        <Card className="col-span-3 bg-white border-[#c4c6d2]/20 shadow-lg rounded-[32px] overflow-hidden">
-          <CardHeader className="bg-[#faf9f6]/50 border-b border-[#c4c6d2]/10 py-6">
-            <CardTitle className="text-xl font-heading font-bold text-[#001b44] flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-[#001b44]" /> Ödeme Takvimi
+        <Card className="col-span-3 bg-white border-[#dbc2b0]/20 shadow-ambient-medium rounded-[32px] overflow-hidden">
+          <CardHeader className="bg-[#f8f9fa] border-b border-[#dbc2b0]/10 py-6">
+            <CardTitle className="text-xl font-heading font-bold text-[#8c5000] flex items-center gap-2">
+              <Calendar className="h-5 w-5 text-[#8c5000]" /> Ödeme Takvimi
             </CardTitle>
           </CardHeader>
           <CardContent className="p-8">
@@ -189,8 +189,8 @@ export default async function DashboardPage() {
       </div>
 
       {/* Investment Section */}
-      <Card className="bg-white border-[#c4c6d2]/20 shadow-lg rounded-[32px] overflow-hidden">
-        <CardHeader className="bg-[#001b44] py-6 px-8 flex flex-row items-center justify-between">
+      <Card className="bg-white border-[#dbc2b0]/20 shadow-ambient-medium rounded-[32px] overflow-hidden">
+        <CardHeader className="bg-[#8c5000] py-6 px-8 flex flex-row items-center justify-between">
           <CardTitle className="text-xl font-heading font-bold text-white">Varlık Dağılımı ve Portföy</CardTitle>
           <div className="flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full">
              <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></div>
