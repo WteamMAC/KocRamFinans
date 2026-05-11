@@ -1,43 +1,69 @@
 import { SignUpButton, SignInButton } from "@clerk/nextjs";
 import { auth } from "@clerk/nextjs/server";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, BarChart3, Bot, ShieldCheck, Sparkles, TrendingUp, Shield, Headphones } from "lucide-react";
+import { 
+  ArrowRight, 
+  BarChart3, 
+  Bot, 
+  ShieldCheck, 
+  Sparkles, 
+  TrendingUp, 
+  Shield, 
+  Headphones,
+  Wallet,
+  Coins,
+  History,
+  Calendar,
+  CheckCircle2,
+  Users,
+  Handshake,
+  BrainCircuit,
+  MessagesSquare,
+  ArrowUpRight,
+  TrendingDown,
+  Clock
+} from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 
 export default async function LandingPage() {
   const { userId } = await auth();
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#f8f9fa] text-[#191c1d] font-sans antialiased">
+    <div className="flex flex-col min-h-screen bg-[#f8f9fa] text-[#191c1d] font-sans antialiased selection:bg-[#efe440]/30">
       {/* TopAppBar */}
-      <header className="bg-[#f8f9fa]/80 backdrop-blur-md sticky top-0 z-50 border-b border-[#dbc2b0]/30 shadow-ambient-low">
-        <div className="flex justify-between items-center max-w-[1280px] mx-auto px-4 md:px-16 py-4">
-          <Link className="flex items-center gap-2" href="/">
-            <BarChart3 className="h-8 w-8 text-[#efe440] fill-[#efe440]" />
-            <span className="text-2xl font-heading font-bold text-[#8c5000]">Koç Ram Finans</span>
+      <header className="bg-white/90 backdrop-blur-md sticky top-0 z-50 border-b border-[#dbc2b0]/30 shadow-ambient-low transition-all duration-300">
+        <div className="flex justify-between items-center max-w-[1200px] mx-auto px-6 md:px-8 py-4">
+          <Link className="flex items-center gap-2 group" href="/">
+            <div className="p-2 bg-[#8c5000]/5 rounded-lg group-hover:scale-110 transition-transform">
+              <BarChart3 className="h-7 w-7 text-[#8c5000] fill-[#8c5000]" />
+            </div>
+            <span className="text-2xl font-heading font-bold text-[#8c5000] tracking-tight">Koç Ram Finans</span>
           </Link>
+          
           <nav className="hidden md:flex items-center gap-8">
-            <a className="text-[#554336] hover:text-[#8c5000] transition-colors text-sm font-medium" href="#features">Özellikler</a>
-            <a className="text-[#554336] hover:text-[#8c5000] transition-colors text-sm font-medium" href="#solutions">Çözümler</a>
-            <a className="text-[#554336] hover:text-[#8c5000] transition-colors text-sm font-medium" href="#about">Hakkımızda</a>
+            <a className="text-[#554336] hover:text-[#8c5000] transition-colors text-sm font-semibold tracking-tight" href="#hizmetler">Hizmetler</a>
+            <a className="text-[#554336] hover:text-[#8c5000] transition-colors text-sm font-semibold tracking-tight" href="#neden-biz">Hakkımızda</a>
+            <a className="text-[#554336] hover:text-[#8c5000] transition-colors text-sm font-semibold tracking-tight" href="#blog">Blog</a>
           </nav>
+          
           <div className="flex items-center gap-4">
             {!userId ? (
               <>
                 <SignInButton mode="modal">
-                  <button className="hidden md:block text-[#554336] hover:text-[#8c5000] transition-colors text-sm font-semibold">
+                  <button className="hidden md:block text-[#554336] hover:text-[#8c5000] transition-colors text-sm font-bold">
                     Giriş Yap
                   </button>
                 </SignInButton>
                 <SignUpButton mode="modal">
-                  <button className="bg-[#8c5000] text-white hover:bg-[#6e3f00] rounded-full transition-all px-6 py-2.5 text-sm font-semibold shadow-ambient-medium">
-                    Hemen Başla
+                  <button className="bg-[#8c5000] text-white hover:bg-[#6e3f00] rounded-xl transition-all px-6 py-2.5 text-sm font-bold shadow-ambient-medium hover:shadow-ambient-high scale-100 active:scale-95">
+                    Koçluğa Başla
                   </button>
                 </SignUpButton>
               </>
             ) : (
               <Link href="/dashboard">
-                <button className="bg-[#8c5000] text-white hover:bg-[#6e3f00] rounded-full transition-all px-6 py-2.5 text-sm font-semibold shadow-ambient-medium">
+                <button className="bg-[#8c5000] text-white hover:bg-[#6e3f00] rounded-xl transition-all px-6 py-2.5 text-sm font-bold shadow-ambient-medium hover:shadow-ambient-high">
                   Panele Git
                 </button>
               </Link>
@@ -48,120 +74,269 @@ export default async function LandingPage() {
 
       <main>
         {/* Hero Section */}
-        <section className="pt-24 pb-20 px-4 md:px-16 text-center max-w-[1280px] mx-auto flex flex-col items-center">
-          {/* Social Proof Badge */}
-          <div className="flex items-center justify-center gap-3 bg-[#edeeef] border border-[#dbc2b0]/30 rounded-full py-1.5 px-4 mb-8 shadow-ambient-low">
-            <div className="flex -space-x-2">
-              <div className="w-8 h-8 rounded-full border-2 border-[#edeeef] bg-slate-200"></div>
-              <div className="w-8 h-8 rounded-full border-2 border-[#edeeef] bg-slate-300"></div>
-              <div className="w-8 h-8 rounded-full border-2 border-[#edeeef] bg-slate-400"></div>
+        <section className="relative pt-16 md:pt-24 pb-32 overflow-hidden px-6 md:px-8">
+          <div className="absolute inset-0 bg-gradient-to-br from-[#f18d02]/10 to-[#f8f9fa] pointer-events-none -z-10"></div>
+          <div className="max-w-[1200px] mx-auto grid grid-cols-1 md:grid-cols-12 gap-12 items-center">
+            <div className="md:col-span-7 flex flex-col items-start gap-8 z-10 animate-in fade-in slide-in-from-left-8 duration-700">
+              <div className="inline-flex items-center gap-2 bg-[#efe440]/20 text-[#6a6500] px-4 py-2 rounded-full font-bold text-xs uppercase tracking-widest border border-[#efe440]/30 shadow-ambient-low">
+                <Sparkles className="h-4 w-4" />
+                <span>Finansal Özgürlüğe İlk Adım</span>
+              </div>
+              <h1 className="font-heading text-5xl md:text-7xl text-[#191c1d] leading-[1.1] font-bold tracking-tight">
+                Geleceğinizi Güvence Altına Alın, <span className="text-[#8c5000]">Stresi Geride Bırakın.</span>
+              </h1>
+              <p className="text-lg md:text-xl text-[#554336] max-w-2xl leading-relaxed opacity-90 font-medium">
+                Koç Ram Finans ile karmaşık finansal kararları basitleştiriyoruz. Dostane, şeffaf ve tamamen size özel koçluk yaklaşımımızla paranızı yönetmeyi öğrenin ve büyütün.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+                <SignUpButton mode="modal">
+                  <button className="bg-[#8c5000] text-white font-bold px-8 py-5 rounded-2xl hover:bg-[#6e3f00] transition-all shadow-ambient-high flex items-center justify-center gap-3 text-lg group">
+                    Ücretsiz Görüşme Ayarla
+                    <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                  </button>
+                </SignUpButton>
+                <button className="bg-white border-2 border-[#dbc2b0]/30 text-[#554336] font-bold px-8 py-5 rounded-2xl hover:bg-[#f8f9fa] transition-all flex items-center justify-center gap-3 shadow-ambient-low text-lg">
+                  Nasıl Çalışır?
+                </button>
+              </div>
             </div>
-            <div className="flex items-center gap-1 text-[#efe440]">
-              {[...Array(5)].map((_, i) => (
-                <Sparkles key={i} className="h-3 w-3 fill-current" />
-              ))}
-            </div>
-            <span className="text-[10px] uppercase tracking-wider font-bold text-[#554336]">4.5+ Puan / 10.000+ Kullanıcı</span>
-          </div>
-
-          {/* Headline & Sub */}
-          <h1 className="font-heading text-4xl md:text-7xl text-[#8c5000] max-w-4xl mx-auto mb-6 leading-[1.1] tracking-tight">
-            Finansal Geleceğinizi Yapay Zeka ile Şekillendirin
-          </h1>
-          <p className="text-lg md:text-xl text-[#554336] max-w-2xl mx-auto mb-10 leading-relaxed italic opacity-80">
-            Koç Ram Finans ile veriye dayalı, güvenli ve akıllı yatırım kararları alın. Geleceğinizi bugünden planlayın.
-          </p>
-
-          {/* CTA */}
-          {!userId ? (
-            <SignUpButton mode="modal">
-              <button className="bg-[#8c5000] text-white rounded-full px-8 py-4 flex items-center justify-center gap-2 hover:bg-[#6e3f00] transition-all shadow-ambient-high text-lg font-semibold">
-                Hemen Başlayın
-                <ArrowRight className="h-5 w-5" />
-              </button>
-            </SignUpButton>
-          ) : (
-            <Link href="/dashboard">
-              <button className="bg-[#8c5000] text-white rounded-full px-8 py-4 flex items-center justify-center gap-2 hover:bg-[#6e3f00] transition-all shadow-ambient-high text-lg font-semibold">
-                Panele Git
-                <ArrowRight className="h-5 w-5" />
-              </button>
-            </Link>
-          )}
-
-          {/* Device Mockup placeholder */}
-          <div className="mt-20 relative w-full max-w-4xl mx-auto">
-            <div className="absolute inset-0 bg-[#efe440]/10 blur-[100px] rounded-full w-3/4 h-3/4 left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 -z-10"></div>
-            <div className="bg-white p-4 rounded-[40px] shadow-ambient-high border-4 border-white overflow-hidden aspect-[16/9] flex items-center justify-center">
-               <div className="w-full h-full bg-[#f8f9fa] rounded-[32px] flex flex-col p-8 items-center justify-center text-[#8c5000]/20">
-                  <Bot className="h-24 w-24 mb-4" />
-                  <p className="font-heading text-2xl font-bold italic">Koç Ram Finans Dashboard Mockup</p>
-               </div>
+            
+            <div className="md:col-span-5 relative mt-12 md:mt-0 flex justify-center animate-in fade-in zoom-in-95 duration-1000">
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-[#ffdcbf] blur-[120px] opacity-40 rounded-full -z-10"></div>
+              <div className="relative w-full max-w-[440px] aspect-square rounded-[40px] bg-white shadow-ambient-high flex items-center justify-center p-12 border-t-8 border-[#8c5000]">
+                <img 
+                  alt="Koç Ram Finans mascot" 
+                  className="w-full h-auto object-contain drop-shadow-2xl" 
+                  src="https://lh3.googleusercontent.com/aida/ADBb0uii6ONYZ2VjCJ7Apc7e45lcMInjiFwwgPNuvJrgDZ_84hIkEoK9mIaLGXoWKEBg_Nz_7sQCF22UsVxuBMxDA-HWrUx6X21amjFZJ5TtQ4BucAnynbAZONheLmxUMXWyRXwqjn4jrEZNnJQpNZPc1l_SeGx4EqVG78rW3Xg_BVwU9A4ZqiEW6CYsO9v23tMJVjA8zj2AkBPxnip515vMVVfbxorMIIuhYaIXh67MMm2HByysQWipBKTuBHQxsBC7OZ4tiECjAH4Tshc" 
+                />
+                {/* Floating Badge */}
+                <div className="absolute -bottom-8 -left-8 bg-white p-5 rounded-2xl shadow-ambient-high flex items-center gap-4 border border-[#dbc2b0]/20 animate-bounce [animation-duration:3s]">
+                  <div className="bg-[#f18d02]/10 text-[#8c5000] w-12 h-12 rounded-xl flex items-center justify-center">
+                    <CheckCircle2 className="h-7 w-7" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-sm text-[#191c1d]">500+ Mutlu Müşteri</p>
+                    <p className="text-xs font-bold text-[#554336] opacity-60">Güvenilir Rehberlik</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </section>
 
-        {/* Feature Grid */}
-        <section id="features" className="py-24 px-4 md:px-16 max-w-[1280px] mx-auto bg-[#f3f4f5] rounded-[40px] shadow-ambient-low">
-          <div className="text-center mb-16">
-            <h2 className="font-heading text-4xl text-[#8c5000] mb-4">Neden Koç Ram Finans?</h2>
-            <p className="text-[#554336] text-lg max-w-2xl mx-auto opacity-80">Güçlü algoritmalar ve profesyonel koçluk güvencesiyle finansal kararlarınızı optimize edin.</p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="bg-white rounded-[24px] p-8 shadow-ambient-medium border border-[#dbc2b0]/20 hover:shadow-ambient-high transition-shadow relative overflow-hidden group">
-              <div className="w-14 h-14 bg-[#8c5000] text-white rounded-xl flex items-center justify-center mb-6 shadow-ambient-low">
-                <TrendingUp className="h-7 w-7" />
-              </div>
-              <h3 className="font-heading text-2xl text-[#8c5000] mb-3">Akıllı Analiz</h3>
-              <p className="text-[#554336] leading-relaxed opacity-90">
-                Makine öğrenimi modellerimiz, piyasa trendlerini gerçek zamanlı olarak analiz eder ve size en uygun yatırım stratejilerini sunar.
-              </p>
+        {/* Services Section (Bento Grid) */}
+        <section id="hizmetler" className="py-32 bg-white px-6 md:px-8">
+          <div className="max-w-[1200px] mx-auto">
+            <div className="text-center max-w-3xl mx-auto mb-20">
+              <h2 className="font-heading text-4xl md:text-5xl text-[#191c1d] font-bold tracking-tight mb-6">Size Özel Finansal Çözümler</h2>
+              <p className="text-lg text-[#554336] font-medium opacity-80 italic">İhtiyaçlarınıza uygun, anlaşılır ve eyleme geçirilebilir hizmetlerimizle yanınızdayız.</p>
             </div>
-            <div className="bg-white rounded-[24px] p-8 shadow-ambient-medium border border-[#dbc2b0]/20 hover:shadow-ambient-high transition-shadow relative overflow-hidden group">
-              <div className="w-14 h-14 bg-[#efe440] text-[#6a6500] rounded-xl flex items-center justify-center mb-6 shadow-ambient-low">
-                <Shield className="h-7 w-7" />
+            
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
+              {/* Bütçe Yönetimi (Large Card) */}
+              <div className="md:col-span-8 bg-[#f8f9fa] rounded-[32px] p-10 shadow-ambient-medium border-t-8 border-[#8c5000] relative overflow-hidden group hover:shadow-ambient-high transition-all duration-500">
+                <div className="absolute top-0 right-0 p-12 opacity-5 group-hover:opacity-10 transition-opacity transform group-hover:scale-110 duration-500">
+                  <Wallet className="w-48 h-48 text-[#8c5000]" />
+                </div>
+                <div className="relative z-10">
+                  <div className="bg-[#8c5000]/10 w-16 h-16 rounded-2xl flex items-center justify-center mb-8 shadow-inner">
+                    <Wallet className="h-8 w-8 text-[#8c5000]" />
+                  </div>
+                  <h3 className="font-heading text-3xl font-bold text-[#191c1d] mb-4">Bütçe Yönetimi</h3>
+                  <p className="text-[#554336] text-lg font-medium mb-8 max-w-md leading-relaxed">
+                    Gelir ve giderlerinizi optimize ederek, ay sonunu düşünmeden yaşamaya başlayın. Şeffaf tablolar ve kişisel harcama analizleriyle paranızın kontrolünü elinize alın.
+                  </p>
+                  <a className="inline-flex items-center gap-3 font-bold text-[#8c5000] hover:text-[#6e3f00] transition-colors group/link" href="#">
+                    Detayları İncele 
+                    <ArrowRight className="h-5 w-5 group-hover/link:translate-x-1 transition-transform" />
+                  </a>
+                </div>
               </div>
-              <h3 className="font-heading text-2xl text-[#8c5000] mb-3">Güvenli Altyapı</h3>
-              <p className="text-[#554336] leading-relaxed opacity-90">
-                Verileriniz ve varlıklarınız, bankacılık standartlarında şifreleme ve gelişmiş güvenlik protokolleri ile korunur.
-              </p>
-            </div>
-            <div className="bg-white rounded-[24px] p-8 shadow-ambient-medium border border-[#dbc2b0]/20 hover:shadow-ambient-high transition-shadow relative overflow-hidden group">
-              <div className="w-14 h-14 bg-[#edeeef] text-[#191c1d] rounded-xl flex items-center justify-center mb-6 shadow-ambient-low">
-                <Headphones className="h-7 w-7" />
+
+              {/* Yatırım Danışmanlığı (Tall Card) */}
+              <div className="md:col-span-4 bg-[#666000] rounded-[32px] p-10 shadow-ambient-medium relative overflow-hidden text-white group hover:shadow-ambient-high transition-all duration-500">
+                <div className="absolute -bottom-10 -right-10 opacity-10 transform group-hover:rotate-12 transition-transform duration-700">
+                  <TrendingUp className="w-64 h-64" />
+                </div>
+                <div className="relative z-10 h-full flex flex-col">
+                  <div className="bg-white/10 w-16 h-16 rounded-2xl flex items-center justify-center mb-8 shadow-inner">
+                    <TrendingUp className="h-8 w-8 text-white" />
+                  </div>
+                  <h3 className="font-heading text-3xl font-bold mb-4">Yatırım Danışmanlığı</h3>
+                  <p className="text-white/90 text-lg font-medium mb-8 leading-relaxed">
+                    Risk profilinize uygun stratejilerle, birikimlerinizi enflasyona karşı koruyun ve güvenle büyütün.
+                  </p>
+                  <ul className="space-y-4 mb-auto font-bold text-white/80">
+                    <li className="flex items-center gap-3">
+                      <div className="p-1 bg-[#efe440] rounded-full text-[#666000]">
+                        <CheckCircle2 className="h-4 w-4" />
+                      </div>
+                      Portföy Çeşitlendirmesi
+                    </li>
+                    <li className="flex items-center gap-3">
+                      <div className="p-1 bg-[#efe440] rounded-full text-[#666000]">
+                        <CheckCircle2 className="h-4 w-4" />
+                      </div>
+                      Uzun Vadeli Planlama
+                    </li>
+                  </ul>
+                </div>
               </div>
-              <h3 className="font-heading text-2xl text-[#8c5000] mb-3">7/24 Destek</h3>
-              <p className="text-[#554336] leading-relaxed opacity-90">
-                Uzman finansal danışmanlarımız ve yapay zeka asistanımız, ihtiyaç duyduğunuz her an yanınızda.
-              </p>
+
+              {/* Borç Yapılandırma */}
+              <div className="md:col-span-6 bg-white border-2 border-[#dbc2b0]/20 rounded-[32px] p-10 shadow-ambient-low hover:shadow-ambient-medium transition-all duration-500 group">
+                <div className="flex items-center gap-6 mb-6">
+                  <div className="bg-[#7cb191]/10 w-16 h-16 rounded-2xl flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform">
+                    <Coins className="h-8 w-8 text-[#36684d]" />
+                  </div>
+                  <h3 className="font-heading text-2xl font-bold text-[#191c1d]">Borç Yapılandırma</h3>
+                </div>
+                <p className="text-[#554336] text-lg font-medium leading-relaxed opacity-80">
+                  Mevcut borçlarınızı konsolide ederek faiz yükünden kurtulun ve net bir ödeme planı oluşturun.
+                </p>
+              </div>
+
+              {/* Emeklilik Planlaması */}
+              <div className="md:col-span-6 bg-white border-2 border-[#dbc2b0]/20 rounded-[32px] p-10 shadow-ambient-low hover:shadow-ambient-medium transition-all duration-500 group">
+                <div className="flex items-center gap-6 mb-6">
+                  <div className="bg-[#efe440]/10 w-16 h-16 rounded-2xl flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform">
+                    <Calendar className="h-8 w-8 text-[#666000]" />
+                  </div>
+                  <h3 className="font-heading text-2xl font-bold text-[#191c1d]">Emeklilik Planlaması</h3>
+                </div>
+                <p className="text-[#554336] text-lg font-medium leading-relaxed opacity-80">
+                  Geleceğinizi şimdiden garantiye alın. Hayalinizdeki emeklilik için gerekli adımları birlikte atalım.
+                </p>
+              </div>
             </div>
           </div>
         </section>
 
-        {/* Trust Section */}
-        <section className="py-24 px-4 md:px-16 text-center">
-          <p className="text-xs font-bold text-[#554336] uppercase tracking-[0.2em] mb-6 opacity-60">Güvenin Adresi</p>
-          <h2 className="font-heading text-4xl text-[#8c5000] mb-10">Profesyonel Finansal Koçluk</h2>
-          <div className="flex items-center justify-center gap-12 opacity-40 grayscale hover:grayscale-0 hover:opacity-100 transition-all duration-500">
-             <BarChart3 className="h-16 w-16 text-[#8c5000]" />
+        {/* Why Us Section */}
+        <section id="neden-biz" className="py-32 bg-[#f8f9fa] px-6 md:px-8">
+          <div className="max-w-[1200px] mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-20 items-center">
+              <div className="animate-in fade-in slide-in-from-left-8 duration-700">
+                <h2 className="font-heading text-4xl md:text-5xl text-[#191c1d] font-bold mb-8 leading-tight">Neden Koç Ram Finans?</h2>
+                <p className="text-xl text-[#554336] font-medium mb-12 opacity-80 leading-relaxed italic">
+                  Finans dünyası karmaşık ve soğuk görünse de, biz onu ulaşılabilir ve dostane hale getiriyoruz. Sürecin merkezine 'sizi' koyuyoruz.
+                </p>
+                
+                <div className="space-y-8">
+                  <div className="flex gap-6 group">
+                    <div className="flex-shrink-0 bg-[#8c5000] text-white w-12 h-12 rounded-xl flex items-center justify-center shadow-ambient-medium group-hover:scale-110 transition-transform">
+                      <BrainCircuit className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-[#191c1d] text-xl mb-2">Anlaşılır Bir Dil</h4>
+                      <p className="text-[#554336] font-medium leading-relaxed opacity-80">Karmaşık finansal terimleri kullanmıyoruz. Her konuyu günlük hayattan örneklerle basitleştiriyoruz.</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-6 group">
+                    <div className="flex-shrink-0 bg-[#8c5000] text-white w-12 h-12 rounded-xl flex items-center justify-center shadow-ambient-medium group-hover:scale-110 transition-transform">
+                      <Handshake className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-[#191c1d] text-xl mb-2">Şeffaf Yaklaşım</h4>
+                      <p className="text-[#554336] font-medium leading-relaxed opacity-80">Gizli ücretler veya sürprizler yok. Tüm süreçlerimiz ve ücretlendirmemiz ilk günden bellidir.</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-6 group">
+                    <div className="flex-shrink-0 bg-[#8c5000] text-white w-12 h-12 rounded-xl flex items-center justify-center shadow-ambient-medium group-hover:scale-110 transition-transform">
+                      <MessagesSquare className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-[#191c1d] text-xl mb-2">Sürekli Destek</h4>
+                      <p className="text-[#554336] font-medium leading-relaxed opacity-80">Sadece plan yapmakla kalmıyor, uygulama sürecinde de yanınızda yürüyoruz.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="relative animate-in fade-in slide-in-from-right-8 duration-1000">
+                <div className="aspect-[4/3] rounded-[40px] overflow-hidden shadow-ambient-high relative border-4 border-white">
+                  <div className="w-full h-full bg-cover bg-center transition-transform duration-700 hover:scale-105" style={{ backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuBLbu8BaYKEb-2h5lpVt34DwH1nhV2GDnag14vLJjAh3E1ZDgKhRCCf_7AwDfH_A0leVyBXP9bL5NfmbGf-UF7SUCr-rjkSEvoKE0e3kfkdMMBU-NcAnhY4mdP_C3QRtn0KcuVGrI7RfKjsbp7tTyanJK7JF8fQvqEkCLou8eM3HTIS37Nlhpi0aR7HW6n6rIdaD80fmKPF3w2M5vR0XBDLdMCzBbXQXL-cLwm-_hFw6iqsTcktl2gRCgxML83tNaX-5rxoXesFIINy')" }}>
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#8c5000]/40 to-transparent"></div>
+                  </div>
+                </div>
+                
+                {/* Stats floating card */}
+                <div className="absolute -bottom-10 -left-10 bg-white p-8 rounded-3xl shadow-ambient-high border border-[#dbc2b0]/20 flex gap-12 animate-in slide-in-from-bottom-8 duration-700">
+                  <div className="text-center">
+                    <p className="text-4xl font-heading font-bold text-[#8c5000] mb-1">10+</p>
+                    <p className="text-xs font-bold text-[#554336] uppercase tracking-widest opacity-60">Yıllık Tecrübe</p>
+                  </div>
+                  <div className="w-px bg-[#dbc2b0]/30"></div>
+                  <div className="text-center">
+                    <p className="text-4xl font-heading font-bold text-[#8c5000] mb-1">%98</p>
+                    <p className="text-xs font-bold text-[#554336] uppercase tracking-widest opacity-60">Memnuniyet</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* CTA Section */}
+        <section className="py-32 px-6 md:px-8 bg-white">
+          <div className="max-w-[1200px] mx-auto">
+            <div className="bg-[#8c5000] text-white rounded-[48px] p-12 md:p-20 text-center relative overflow-hidden shadow-ambient-high group">
+              <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-96 h-96 bg-white/10 rounded-full blur-[100px] group-hover:scale-125 transition-transform duration-1000"></div>
+              <div className="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/4 w-96 h-96 bg-black/10 rounded-full blur-[100px] group-hover:scale-125 transition-transform duration-1000"></div>
+              
+              <div className="relative z-10 max-w-2xl mx-auto">
+                <h2 className="font-heading text-4xl md:text-5xl font-bold mb-8 tracking-tight">Finansal Stresi Geride Bırakmaya Hazır mısınız?</h2>
+                <p className="text-xl mb-12 text-white/90 leading-relaxed font-medium italic opacity-90">
+                  İlk görüşmemiz tamamen ücretsizdir. Hedeflerinizi konuşalım ve size nasıl yardımcı olabileceğimizi birlikte keşfedelim.
+                </p>
+                <SignUpButton mode="modal">
+                  <button className="bg-[#efe440] text-[#666000] font-bold px-10 py-5 rounded-2xl hover:bg-white transition-all shadow-ambient-medium hover:shadow-ambient-high scale-100 active:scale-95 flex items-center justify-center gap-3 mx-auto text-lg">
+                    Hemen Randevu Oluştur
+                    <Calendar className="h-6 w-6" />
+                  </button>
+                </SignUpButton>
+              </div>
+            </div>
           </div>
         </section>
       </main>
 
-      <footer className="bg-white border-t border-[#dbc2b0]/50 mt-auto">
-        <div className="max-w-[1280px] mx-auto px-4 md:px-16 py-12 flex flex-col md:flex-row justify-between items-center gap-8">
-          <div className="flex items-center gap-2 font-heading font-bold text-[#8c5000]">
-            <BarChart3 className="h-6 w-6 text-[#efe440] fill-[#efe440]" />
-            <span>Koç Ram Finans</span>
+      <footer className="bg-[#666000] text-white w-full border-t border-white/5">
+        <div className="max-w-[1200px] mx-auto px-6 md:px-8 py-16">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-12">
+            <div className="flex flex-col items-center md:items-start gap-6 mb-8 md:mb-0">
+              <Link className="flex items-center gap-2 group" href="/">
+                <div className="p-2 bg-white/10 rounded-lg group-hover:scale-110 transition-transform">
+                  <BarChart3 className="h-7 w-7 text-white fill-white" />
+                </div>
+                <span className="text-3xl font-heading font-bold text-white tracking-tight">Koç Ram Finans</span>
+              </Link>
+              <p className="text-white/70 font-medium text-center md:text-left max-w-sm">
+                Geleceğinizi güvence altına almak için yanınızdayız. Profesyonel finansal koçluk ve stratejik planlama.
+              </p>
+            </div>
+            
+            <nav className="flex flex-wrap justify-center md:justify-end gap-x-10 gap-y-4">
+              <a className="text-white/80 hover:text-white font-bold transition-colors uppercase tracking-widest text-xs" href="#">Gizlilik</a>
+              <a className="text-white/80 hover:text-white font-bold transition-colors uppercase tracking-widest text-xs" href="#">Kullanım</a>
+              <a className="text-white/80 hover:text-white font-bold transition-colors uppercase tracking-widest text-xs" href="#">İletişim</a>
+              <a className="text-white/80 hover:text-white font-bold transition-colors uppercase tracking-widest text-xs" href="#">SSS</a>
+            </nav>
           </div>
-          <nav className="flex flex-wrap justify-center gap-8 text-sm text-[#554336]">
-            <a className="hover:text-[#8c5000] underline decoration-[#dbc2b0] underline-offset-4 transition-colors" href="#">Gizlilik</a>
-            <a className="hover:text-[#8c5000] underline decoration-[#dbc2b0] underline-offset-4 transition-colors" href="#">Koşullar</a>
-            <a className="hover:text-[#8c5000] underline decoration-[#dbc2b0] underline-offset-4 transition-colors" href="#">KVKK</a>
-          </nav>
-          <p className="text-sm text-[#554336] opacity-80">
-            © 2026 Koç Ram Finans. Tüm Hakları Saklıdır.
-          </p>
+          
+          <div className="mt-16 pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-6">
+            <p className="text-sm font-bold text-white/40 uppercase tracking-widest">
+              © 2026 Koç Ram Finans. Tüm Hakları Saklıdır.
+            </p>
+            <div className="flex gap-6 opacity-40">
+              {/* Social icons placeholder */}
+              <div className="w-5 h-5 bg-white rounded-full"></div>
+              <div className="w-5 h-5 bg-white rounded-full"></div>
+              <div className="w-5 h-5 bg-white rounded-full"></div>
+            </div>
+          </div>
         </div>
       </footer>
     </div>
