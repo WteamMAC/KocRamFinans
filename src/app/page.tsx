@@ -50,16 +50,12 @@ export default async function LandingPage() {
           <div className="flex items-center gap-4">
             {!userId ? (
               <>
-                <SignInButton mode="modal">
-                  <button className="hidden md:block text-[#554336] hover:text-[#8c5000] transition-colors text-sm font-bold">
-                    Giriş Yap
-                  </button>
-                </SignInButton>
-                <SignUpButton mode="modal">
-                  <button className="bg-[#8c5000] text-white hover:bg-[#6e3f00] rounded-xl transition-all px-6 py-2.5 text-sm font-bold shadow-ambient-medium hover:shadow-ambient-high scale-100 active:scale-95">
-                    Koçluğa Başla
-                  </button>
-                </SignUpButton>
+                <Link href="/sign-in" className="hidden md:block text-[#554336] hover:text-[#8c5000] transition-colors text-sm font-bold">
+                  Giriş Yap
+                </Link>
+                <Link href="/sign-up" className="bg-[#8c5000] text-white hover:bg-[#6e3f00] rounded-xl transition-all px-6 py-2.5 text-sm font-bold shadow-ambient-medium hover:shadow-ambient-high scale-100 active:scale-95">
+                  Koçluğa Başla
+                </Link>
               </>
             ) : (
               <Link href="/dashboard">
@@ -89,12 +85,10 @@ export default async function LandingPage() {
                 Koç Ram Finans ile karmaşık finansal kararları basitleştiriyoruz. Dostane, şeffaf ve tamamen size özel koçluk yaklaşımımızla paranızı yönetmeyi öğrenin ve büyütün.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-                <SignUpButton mode="modal">
-                  <button className="bg-[#8c5000] text-white font-bold px-8 py-5 rounded-2xl hover:bg-[#6e3f00] transition-all shadow-ambient-high flex items-center justify-center gap-3 text-lg group">
-                    Ücretsiz Görüşme Ayarla
-                    <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                  </button>
-                </SignUpButton>
+                <Link href="/sign-up" className="bg-[#8c5000] text-white font-bold px-8 py-5 rounded-2xl hover:bg-[#6e3f00] transition-all shadow-ambient-high flex items-center justify-center gap-3 text-lg group">
+                  Ücretsiz Görüşme Ayarla
+                  <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                </Link>
                 <button className="bg-white border-2 border-[#dbc2b0]/30 text-[#554336] font-bold px-8 py-5 rounded-2xl hover:bg-[#f8f9fa] transition-all flex items-center justify-center gap-3 shadow-ambient-low text-lg">
                   Nasıl Çalışır?
                 </button>
@@ -291,12 +285,10 @@ export default async function LandingPage() {
                 <p className="text-xl mb-12 text-white/90 leading-relaxed font-medium italic opacity-90">
                   İlk görüşmemiz tamamen ücretsizdir. Hedeflerinizi konuşalım ve size nasıl yardımcı olabileceğimizi birlikte keşfedelim.
                 </p>
-                <SignUpButton mode="modal">
-                  <button className="bg-[#efe440] text-[#666000] font-bold px-10 py-5 rounded-2xl hover:bg-white transition-all shadow-ambient-medium hover:shadow-ambient-high scale-100 active:scale-95 flex items-center justify-center gap-3 mx-auto text-lg">
-                    Hemen Randevu Oluştur
-                    <Calendar className="h-6 w-6" />
-                  </button>
-                </SignUpButton>
+                <Link href="/sign-up" className="bg-[#efe440] text-[#666000] font-bold px-10 py-5 rounded-2xl hover:bg-white transition-all shadow-ambient-medium hover:shadow-ambient-high scale-100 active:scale-95 flex items-center justify-center gap-3 mx-auto text-lg">
+                  Hemen Randevu Oluştur
+                  <Calendar className="h-6 w-6" />
+                </Link>
               </div>
             </div>
           </div>
