@@ -84,7 +84,7 @@ export async function searchSymbols(query: string, category: string) {
     });
 
     // Seçili kategoriye göre sıralama yap (Seçili olanlar en üstte)
-    const sortedQuotes = processedQuotes.sort((a, b) => {
+    const sortedQuotes = processedQuotes.sort((a: any, b: any) => {
       if (a.suggestedCategory === category && b.suggestedCategory !== category) return -1;
       if (a.suggestedCategory !== category && b.suggestedCategory === category) return 1;
       return 0;
