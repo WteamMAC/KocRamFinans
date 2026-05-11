@@ -53,7 +53,7 @@ export async function addAsset(data: {
       description: data.description || null,
       status: "OPEN",
       transactionType: "BUY",
-    },
+    } as any,
   });
 
   revalidatePath("/dashboard");
@@ -94,7 +94,7 @@ export async function sellAsset(id: string) {
       transactionType: "SELL",
       soldPrice: sellPrice,
       soldAt: new Date(),
-    },
+    } as any,
   });
 
   revalidatePath("/dashboard");
