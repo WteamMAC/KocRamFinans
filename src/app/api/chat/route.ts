@@ -7,24 +7,19 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 // ─── API KEY ROTASYONU ──────────────────────────────────────────────────────
-// Env içindeki GEMINI_API_KEY, GEMINI_API_KEY_2, GEMINI_API_KEY_3... anahtarlarını toplar
 const getApiKeys = () => {
   const keys = [];
   if (process.env.GEMINI_API_KEY) keys.push(process.env.GEMINI_API_KEY);
-
-  // Ek anahtarları ara (GEMINI_API_KEY_2'den 10'a kadar)
   for (let i = 2; i <= 10; i++) {
     const key = process.env[`GEMINI_API_KEY_${i}`];
     if (key) keys.push(key);
   }
-
   return keys.length > 0 ? keys : ["missing_api_key"];
 };
 
 const API_KEYS = getApiKeys();
 let currentKeyIndex = 0;
 
-// Belirli bir indexteki anahtarı veren yardımcı fonksiyon
 const getKeyAtIndex = (index: number) => {
   const key = API_KEYS[index % API_KEYS.length];
   const maskedKey = `...${key.slice(-4)}`;
@@ -32,14 +27,10 @@ const getKeyAtIndex = (index: number) => {
 };
 
 // ─── MODELLER VE ARAÇLAR ─────────────────────────────────────────────────────
-
 const FALLBACK_MODELS = [
   "gemini-2.0-flash",
-  "gemini-2.0-flash-exp",
-  "gemini-1.5-flash-002",
-  "gemini-1.5-flash-001",
-  "gemini-1.5-pro-002",
-  "gemini-1.5-pro-001"
+  "gemini-1.5-flash",
+  "gemini-1.5-pro",
 ];
 
 const MARKET_KEYWORDS = [
@@ -112,31 +103,23 @@ type ToolMode = "none" | "search" | "db";
 
 function classifyMessage(message: string): ToolMode {
   const lower = message.toLowerCase();
-  
-  // "Borç" veya "Maaş" kelimesi tek başına DB tetiklememeli, yanında bir eylem (ekle vb.) olmalı.
   const hasAction = ["ekle", "kaydet", "sil", "güncelle"].some(kw => lower.includes(kw));
-  const hasSpecificAction = ["yeni gelir", "yeni gider", "yeni borç"].some(kw => lower.includes(kw));
+  const hasSpecificAction = ["yeni gelir", "yeni gider", "yeni borç", "yeni yatırım"].some(kw => lower.includes(kw));
 
   if (hasAction || hasSpecificAction) {
      if (DB_ACTION_KEYWORDS.some(kw => lower.includes(kw))) return "db";
   }
   
-  // Arama motoru sadece "fiyat, kur, kaç tl, ne kadar" gibi spesifik piyasa verisi sorularında tetiklensin.
-  const priceKeywords = ["kaç tl", "fiyat", "kur", "ne kadar", "borsa durumu", "güncel haber", "endeks", "değeri"];
+  const priceKeywords = ["kaç tl", "fiyat", "kur", "ne kadar", "borsa durumu", "güncel haber", "endeks", "değeri", "borsa"];
   const hasMarketKeyword = MARKET_KEYWORDS.some(kw => lower.includes(kw));
   const isAskingPrice = priceKeywords.some(pk => lower.includes(pk));
 
   if (hasMarketKeyword && isAskingPrice) return "search";
-  
   return "none";
 }
 
-// ─── ANA HANDLER ─────────────────────────────────────────────────────────────
-
 export async function POST(req: Request) {
-  const startTime = Date.now();
   const traceId = Math.random().toString(36).substring(7);
-  let currentStage = "INIT";
   let lastRateLimitReason = "";
 
   try {
@@ -145,14 +128,10 @@ export async function POST(req: Request) {
 
     const body = await req.json();
     const { messages } = body;
-
-    // ─── GEÇMİŞ BUDAMA (TOKEN TASARRUFU) ────────────────────────────────────────
-    // Son 10 mesajı al (Bağlamı korurken kotayı rahatlatır)
     const limitedMessages = messages.slice(-10);
     const lastMessage = limitedMessages[limitedMessages.length - 1].content;
     const toolMode = classifyMessage(lastMessage);
 
-    currentStage = "DB";
     const user = await prisma.user.findUnique({
       where: { clerkUserId: userId },
       include: {
@@ -165,40 +144,27 @@ export async function POST(req: Request) {
 
     if (!user) return new Response("User not found", { status: 404 });
 
-    currentStage = "CONTEXT";
     const financialContext = await getFinancialContext(user);
     const systemPrompt = MASTER_PROMPT
       .replace("{USER_DATA}", financialContext)
       .replace("{CURRENT_DATE}", new Date().toLocaleDateString("tr-TR"));
 
-    // --- AI DENEME DÖNGÜSÜ (Key + Model Rotasyonu) ---
-    currentStage = "AI";
-
+    // --- AI DENEME DÖNGÜSÜ ---
     for (let keyTrial = 0; keyTrial < API_KEYS.length; keyTrial++) {
-      const trialIndex = (currentKeyIndex + keyTrial) % API_KEYS.length;
+      const trialIndex = (currentKeyIndex) % API_KEYS.length;
       const { key, maskedKey } = getKeyAtIndex(trialIndex);
-      // v1beta (varsayılan) sistem talimatlarını daha iyi destekler. 400 hatasını çözmek için v1'i kaldırıyoruz.
       const ai = new GoogleGenAI({ apiKey: key });
 
       for (let modelIndex = 0; modelIndex < FALLBACK_MODELS.length; modelIndex++) {
         const modelId = FALLBACK_MODELS[modelIndex];
-
-        console.log(`[${traceId}] [TRIAL] KeyIndex: ${trialIndex}, Key: ${maskedKey}, Model: ${modelId}, Tool: ${toolMode}`);
+        console.log(`[${traceId}] [TRIAL] KeyIndex: ${trialIndex}, Model: ${modelId}, Tool: ${toolMode}`);
 
         try {
           let tools: any[] | undefined;
           if (toolMode === "db") {
             tools = [{ functionDeclarations: FUNCTION_DECLARATIONS }];
           } else if (toolMode === "search") {
-            // Google Arama aracını dinamik eşik değeriyle etkinleştiriyoruz
-            tools = [{ 
-              googleSearchRetrieval: { 
-                dynamicRetrievalConfig: { 
-                  mode: "MODE_DYNAMIC", 
-                  dynamicThreshold: 0.3 
-                } 
-              } 
-            } as any];
+            tools = [{ googleSearchRetrieval: { dynamicRetrievalConfig: { mode: "MODE_DYNAMIC", dynamicThreshold: 0.3 } } } as any];
           }
 
           const response = await ai.models.generateContentStream({
@@ -211,52 +177,34 @@ export async function POST(req: Request) {
               { role: "user", parts: [{ text: lastMessage }] }
             ],
             config: {
-              systemInstruction: {
-                parts: [{ text: systemPrompt }]
-              },
+              systemInstruction: { parts: [{ text: systemPrompt }] },
               tools: tools as any
             }
           });
 
-          // Stream okuma ve Response döndürme
           const encoder = new TextEncoder();
           const stream = new ReadableStream({
             async start(controller) {
               try {
                 let hasSentAnything = false;
                 for await (const chunk of response) {
-                  let chunkText = "";
-
                   if (chunk.candidates?.[0]?.content?.parts) {
-                    const parts = chunk.candidates[0].content.parts;
-                    for (const part of parts) {
+                    for (const part of chunk.candidates[0].content.parts) {
                       if (part.text) {
-                        chunkText += part.text;
+                        controller.enqueue(encoder.encode(part.text));
+                        hasSentAnything = true;
                       }
                       if (part.functionCall) {
-                        const call = part.functionCall;
-                        const payload = JSON.stringify({ name: call.name, args: call.args });
+                        const payload = JSON.stringify({ name: part.functionCall.name, args: part.functionCall.args });
                         controller.enqueue(encoder.encode(`\n\n__TOOL_CALL__:${payload}__END_TOOL_CALL__\n`));
                         hasSentAnything = true;
                       }
                     }
                   }
-
-                  if (chunkText) {
-                    controller.enqueue(encoder.encode(chunkText));
-                    hasSentAnything = true;
-                  }
                 }
-                
-                if (!hasSentAnything) {
-                  controller.enqueue(encoder.encode("Üzgünüm, bu konuda şu an bilgi sağlayamıyorum. Lütfen sorunuzu farklı bir şekilde sormayı deneyin."));
-                }
-                
+                if (!hasSentAnything) controller.enqueue(encoder.encode("Üzgünüm, şu an yanıt veremiyorum."));
                 controller.close();
-              } catch (e) { 
-                console.error("[STREAM ERROR]", e);
-                controller.error(e); 
-              }
+              } catch (e) { controller.error(e); }
             }
           });
 
@@ -265,55 +213,21 @@ export async function POST(req: Request) {
         } catch (err: any) {
           const errorDetails = err.message || JSON.stringify(err);
           const statusCode = err.status || (err.response?.status) || 0;
-          
-          const is429 = statusCode === 429 || errorDetails.includes("429");
-          const is404 = statusCode === 404 || errorDetails.includes("404") || errorDetails.includes("not found");
-          
-          // DİKKAT: 503 ve 500'ü buradan kaldırdık! Sadece gerçek 429 hataları kota hatasıdır.
-          const isQuotaError = is429 || errorDetails.includes("quota"); 
-          const isAuthError = errorDetails.includes("API key expired") || errorDetails.includes("API_KEY_INVALID") || (statusCode === 401);
+          console.warn(`[${traceId}] [FAIL] KeyIndex: ${trialIndex}, Model: ${modelId}, Status: ${statusCode}`);
 
-          console.warn(`[${traceId}] [FAIL] Key: ${maskedKey}, Model: ${modelId}, Status: ${statusCode}, Error: ${errorDetails}`);
-
-          // Eğer model bulunamadıysa (404) veya Google sunucuları geçici hata verdiyse (500, 503)
-          // BREAK YAPMA, sıradaki modele (örneğin 2.5-flash) geçiş yap!
-          if (is404 || statusCode === 503 || statusCode === 500) {
-            lastRateLimitReason = `Model Geçici Hatası (${statusCode}): ${modelId}`;
-            // Spam engellemek için sıradaki modele geçmeden önce 500ms bekle
-            await new Promise((resolve) => setTimeout(resolve, 500));
-            continue; 
-          } 
-
-          // Eğer gerçekten API limiti dolduysa veya API Key yetkisizse:
-          if (isQuotaError || isAuthError) {
-            lastRateLimitReason = isQuotaError 
-              ? `Kota Dolu (${modelId}) - Anahtar: ${maskedKey}`
-              : `Yetki Hatası - Anahtar: ${maskedKey}`;
-            
-            // Kota dolduysa veya yetki hatası varsa, global indexi bir sonraki anahtara kaydır
-            currentKeyIndex = (trialIndex + 1) % API_KEYS.length;
-            break; // İçteki model döngüsünden çık, dıştaki key döngüsünde sıradaki anahtara geç
+          if (statusCode === 429 || statusCode === 401 || errorDetails.includes("quota") || errorDetails.includes("API_KEY")) {
+            lastRateLimitReason = `Anahtar Hatası (${statusCode}): ${maskedKey}`;
+            currentKeyIndex = (currentKeyIndex + 1) % API_KEYS.length;
+            break; // Bir sonraki anahtara geç
           }
 
-          // Diğer bilinmeyen hatalarda da sistemin çökmemesi için sıradaki modeli denemesini sağla
-          lastRateLimitReason = `Bilinmeyen Hata (${statusCode})`;
-          continue;
+          lastRateLimitReason = `Model Hatası (${statusCode}): ${modelId}`;
+          continue; 
         }
       }
     }
-
-    throw new Error("Tüm modeller denendi. Son hata: " + lastRateLimitReason);
-
-
+    throw new Error("Tüm kaynaklar tükendi. Son durum: " + lastRateLimitReason);
   } catch (error: any) {
-    const message = lastRateLimitReason
-      ? `Sorun Tespit Edildi: ${lastRateLimitReason}.`
-      : "Sistem şu an yoğun, lütfen 15 saniye sonra tekrar deneyin.";
-
-    console.error(`[${traceId}] FINAL ERROR:`, error.message);
-    return new Response(JSON.stringify({
-      error: message,
-      details: error.message
-    }), { status: 500, headers: { "Content-Type": "application/json" } });
+    return new Response(JSON.stringify({ error: lastRateLimitReason || "Sistem yoğun.", details: error.message }), { status: 500 });
   }
 }
