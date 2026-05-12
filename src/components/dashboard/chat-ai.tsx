@@ -33,6 +33,21 @@ export function ChatAI() {
     setInput(e.target.value);
   };
 
+  // Mesajları daha okunaklı hale getirmek (Kalın yazılar ve alt satırlar) için formatter
+  const formatMessageText = (text: string) => {
+    if (!text) return null;
+    return text.split('\n').map((line, i) => (
+      <span key={i}>
+        {line.split(/(\*\*.*?\*\*)/).map((part, j) =>
+          part.startsWith('**') && part.endsWith('**')
+            ? <strong key={j} className="font-bold text-[#8c5000]">{part.slice(2, -2)}</strong>
+            : part
+        )}
+        <br />
+      </span>
+    ));
+  };
+
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!input.trim() || isLoading) return;
@@ -75,7 +90,12 @@ export function ChatAI() {
       }
     } catch (error) {
       console.error("Chat Hatası:", error);
-      setMessages(prev => [...prev, { id: Date.now().toString(), role: "assistant", content: "Bağlantı hatası oluştu, lütfen tekrar deneyin." }]);
+      // Hata oluştuğunda UI'da yeni bir baloncuk açmak yerine boş olan mesajı güncelliyoruz
+      setMessages(prev => prev.map(msg =>
+        msg.role === "assistant" && msg.content === ""
+          ? { ...msg, content: "Bağlantı koptu, lütfen tekrar deneyin." }
+          : msg
+      ));
     } finally {
       setIsLoading(false);
     }
@@ -166,7 +186,7 @@ export function ChatAI() {
                             ? "bg-[#f8f9fa] text-[#191c1d] rounded-tl-none border border-[#dbc2b0]/20 shadow-sm"
                             : "bg-[#8c5000] text-white rounded-tr-none shadow-ambient-medium"
                         )}>
-                          {m.content || (isLoading && m.role === "assistant" ? (
+                          {m.content ? formatMessageText(m.content) : (isLoading && m.role === "assistant" ? (
                             <div className="flex items-center gap-2 opacity-70">
                               <Loader2 className="h-4 w-4 animate-spin text-[#8c5000]" />
                               <span className="text-[#8c5000] text-xs font-medium">Düşünüyor...</span>

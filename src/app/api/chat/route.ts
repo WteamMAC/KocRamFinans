@@ -3,6 +3,7 @@ import type { Content, Part } from "@google/generative-ai";
 import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 import { MASTER_PROMPT, getFinancialContext } from "@/lib/gemini";
+import { standardizeInvestmentType } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -138,6 +139,12 @@ export async function POST(req: Request) {
         // ve dışarıdaki catch bloğuna düşerek YEDEK API ANAHTARINA GEÇİŞ (fallback) sistemini çalıştırır.
         let currentResult = await chat.sendMessageStream(lastMessage);
 
+        // ÇÖZÜM 2: Google SDK stream'i tembel (lazy) getirir. Hata ancak okunmaya başlandığında fırlatılır.
+        // Hatayı Response dönmeden önce yakalamak için stream'den İLK parçayı çekiyoruz. 
+        // Eğer 429 Kota veya 400 Bad Request varsa, TAM BURADA patlar ve dış döngüdeki YEDEK modele geçer!
+        let iterator = currentResult.stream[Symbol.asyncIterator]();
+        let chunkResult = await iterator.next();
+
         const stream = new ReadableStream({
           async start(controller) {
             try {
@@ -145,21 +152,21 @@ export async function POST(req: Request) {
                 let toolCalls: any[] = [];
 
                 // Gelen stream'i okuyoruz
-                for await (const chunk of currentResult.stream) {
+                while (!chunkResult.done) {
+                  const chunk = chunkResult.value;
                   const calls = chunk.functionCalls();
-                  if (calls && calls.length > 0) {
-                    toolCalls.push(...calls);
-                  }
+                  if (calls && calls.length > 0) toolCalls.push(...calls);
 
-                  // ÇÖZÜM 2: 'else' bloğunu kaldırdık. Model bazen aynı parça (chunk) içinde 
-                  // hem tool çağrısı yapıp hem de "İşleminizi yapıyorum..." gibi bir metin döndürebilir.
                   try {
                     const text = chunk.text();
-                    if (text) {
-                      controller.enqueue(new TextEncoder().encode(text));
-                    }
+                    if (text) controller.enqueue(new TextEncoder().encode(text));
+                  } catch (e) { }
+
+                  try {
+                    chunkResult = await iterator.next();
                   } catch (e) {
-                    // Eğer chunk içinde text yoksa SDK hata fırlatır, bunu güvenle yoksayabiliriz.
+                    console.error("[AI-CHAT] ❌ Stream Okuma Hatası:", e);
+                    break; // Sistemi çökertmeden nazikçe durdur
                   }
                 }
 
@@ -197,7 +204,7 @@ export async function POST(req: Request) {
                             await prisma.investment.create({
                               data: {
                                 userId: user.id,
-                                type: category.toUpperCase(),
+                                type: standardizeInvestmentType(category), // Veri bütünlüğü sağlandı
                                 symbol: description || category,
                                 quantity: Number(quantity) || 1,
                                 purchasePrice: Number(purchasePrice) || Number(amount),
@@ -226,7 +233,14 @@ export async function POST(req: Request) {
                   }
 
                   // Tool sonuçlarını modele geri gönder ve yeni cevabın stream'ini alarak döngüye devam et
-                  currentResult = await chat.sendMessageStream(functionResponses);
+                  try {
+                    currentResult = await chat.sendMessageStream(functionResponses);
+                    iterator = currentResult.stream[Symbol.asyncIterator]();
+                    chunkResult = await iterator.next();
+                  } catch (e) {
+                    console.error("[AI-CHAT] ❌ Tool Stream Hatası:", e);
+                    break; // Sistemi çökertmeden nazikçe durdur
+                  }
                 } else {
                   // Tool çağrısı yoksa modelin son doğal dil cevabı bitmiştir, döngüyü kır
                   break;
@@ -235,7 +249,8 @@ export async function POST(req: Request) {
               console.log(`[AI-CHAT] ✅ Başarılı: ${modelName}`);
               controller.close();
             } catch (err) {
-              controller.error(err);
+              console.error("[AI-CHAT] ❌ Genel Controller Hatası:", err);
+              controller.close(); // Uygulamayı çökertmek yerine sessizce kapatıyoruz
             }
           }
         });
@@ -249,10 +264,12 @@ export async function POST(req: Request) {
         });
 
       } catch (err: any) {
-        console.error(`[AI-CHAT] ❌ HATA [${modelName}]:`, err.message);
+        // ÇÖZÜM 3: err.message 'undefined' olursa catch bloğunun çökmesini engelliyoruz.
+        const errorMessage = err?.message || err?.toString() || "";
+        console.error(`[AI-CHAT] ❌ HATA [${modelName}]:`, errorMessage);
 
         // QUOTA / RATE LIMIT MANTIĞI
-        if (err.status === 429 || err.message?.toLowerCase().includes("quota")) {
+        if (err?.status === 429 || errorMessage.toLowerCase().includes("quota")) {
           if (API_KEYS.length === 1) {
             console.error(`[AI-CHAT] 💀 Tek anahtar kotası doldu. İşlem durduruluyor.`);
             break; // Tek key varsa diğer modelleri deneme (paylaşımlı kota)
