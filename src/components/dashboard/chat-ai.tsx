@@ -2,27 +2,38 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
-  MessageSquare, 
-  X, 
   Send, 
+  Sparkles, 
+  X, 
   Bot, 
   User, 
   Loader2, 
-  Sparkles, 
-  TrendingUp, 
-  MinusCircle, 
-  PlusCircle,
-  BrainCircuit
+  Minimize2, 
+  Maximize2,
+  TrendingUp,
+  Search,
+  Globe
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import ReactMarkdown from "react-markdown";
+import { motion, AnimatePresence } from "framer-motion";
+
+interface Message {
+  role: "user" | "assistant";
+  content: string;
+  isStreaming?: boolean;
+  type?: "text" | "tool";
+}
 
 export function ChatAI() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
   const [input, setInput] = useState("");
-  const [messages, setMessages] = useState<{ role: "user" | "assistant"; content: string }[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -30,175 +41,187 @@ export function ChatAI() {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages, isOpen]);
+  }, [messages]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
 
-    const userMessage = input.trim();
+    const userMessage: Message = { role: "user", content: input };
+    setMessages(prev => [...prev, userMessage]);
     setInput("");
-    setMessages(prev => [...prev, { role: "user", content: userMessage }]);
     setIsLoading(true);
 
     try {
       const response = await fetch("/api/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: [...messages, { role: "user", content: userMessage }] }),
+        body: JSON.stringify({ messages: [...messages, userMessage] }),
       });
 
-      if (!response.ok) throw new Error("API hatası");
+      if (!response.ok) throw new Error("Bir hata oluştu.");
 
       const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
-      let assistantMessage = "";
-
-      setMessages(prev => [...prev, { role: "assistant", content: "" }]);
+      const decoder = new TextEncoder();
+      let assistantContent = "";
+      
+      setMessages(prev => [...prev, { role: "assistant", content: "", isStreaming: true }]);
 
       while (true) {
         const { done, value } = await reader!.read();
         if (done) break;
 
-        const chunk = decoder.decode(value);
-        assistantMessage += chunk;
+        const text = new TextDecoder().decode(value);
         
+        // JSON sızıntılarını ayıkla (Tool call sonuçları için)
+        if (text.includes("__JSON__:")) {
+           const match = text.match(/__JSON__:(.*?)__END__/);
+           if (match) {
+             // Opsiyonel: Tool call görselleştirmesi yapılabilir
+             continue;
+           }
+        }
+
+        assistantContent += text;
         setMessages(prev => {
-          const newMessages = [...prev];
-          newMessages[newMessages.length - 1].content = assistantMessage;
-          return newMessages;
+          const last = prev[prev.length - 1];
+          if (last.role === "assistant") {
+            return [...prev.slice(0, -1), { ...last, content: assistantContent }];
+          }
+          return prev;
         });
       }
     } catch (error) {
-      console.error("Chat Error:", error);
-      setMessages(prev => [...prev, { role: "assistant", content: "Bir hata oluştu. Lütfen tekrar deneyin." }]);
+      setMessages(prev => [...prev, { role: "assistant", content: "Üzgünüm, şu an cevap veremiyorum." }]);
     } finally {
       setIsLoading(false);
+      setMessages(prev => prev.map(m => ({ ...m, isStreaming: false })));
     }
   };
 
   return (
-    <>
-      {/* Floating Button */}
-      <motion.button
-        initial={{ scale: 0, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.9 }}
-        onClick={() => setIsOpen(true)}
-        className="fixed bottom-8 right-8 w-16 h-16 bg-[#8c5000] text-white rounded-full shadow-ambient-high z-[100] flex items-center justify-center group border-2 border-white/20"
-      >
-        <BrainCircuit className="w-8 h-8 group-hover:rotate-12 transition-transform" />
-        <div className="absolute -top-1 -right-1 w-5 h-5 bg-[#efe440] rounded-full flex items-center justify-center animate-pulse shadow-sm">
-          <Sparkles className="w-3 h-3 text-[#8c5000]" />
-        </div>
-      </motion.button>
+    <div className="fixed bottom-6 right-6 z-[999]">
+      <AnimatePresence>
+        {!isOpen && (
+          <motion.button
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0, opacity: 0 }}
+            onClick={() => setIsOpen(true)}
+            className="w-16 h-16 bg-[#8c5000] text-white rounded-full shadow-ambient-high flex items-center justify-center hover:scale-110 transition-transform group relative overflow-hidden"
+          >
+            <div className="absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <Sparkles className="h-7 w-7 animate-pulse" />
+          </motion.button>
+        )}
+      </AnimatePresence>
 
-      {/* Chat Window */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: 100, scale: 0.8 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 100, scale: 0.8 }}
-            className="fixed bottom-28 right-8 w-[400px] h-[600px] bg-white/80 backdrop-blur-xl border border-[#dbc2b0]/30 rounded-[32px] shadow-ambient-high z-[100] flex flex-col overflow-hidden"
+            initial={{ y: 100, opacity: 0, scale: 0.9 }}
+            animate={{ y: 0, opacity: 1, scale: 1 }}
+            exit={{ y: 100, opacity: 0, scale: 0.9 }}
+            className={cn(
+              "bg-white/80 backdrop-blur-2xl border border-[#dbc2b0]/30 shadow-ambient-high rounded-[32px] overflow-hidden flex flex-col transition-all duration-300",
+              isMinimized ? "h-20 w-72" : "h-[600px] w-[400px] md:w-[450px]"
+            )}
           >
-            {/* Header */}
-            <div className="p-6 bg-[#8c5000] text-white flex items-center justify-between">
+            <CardHeader className="p-6 bg-[#8c5000] text-white flex flex-row items-center justify-between space-y-0">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                  <Bot className="w-6 h-6" />
+                  <Bot className="h-6 w-6" />
                 </div>
                 <div>
-                  <h3 className="font-heading font-bold text-lg">Koç Ram Asistan</h3>
+                  <CardTitle className="text-lg font-heading font-bold tracking-tight">Koç Ram Finans AI</CardTitle>
                   <div className="flex items-center gap-1.5">
-                    <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
-                    <span className="text-[10px] font-bold text-white/70 uppercase tracking-widest">Çevrimiçi</span>
+                    <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest opacity-70">Çevrimiçi Asistan</span>
                   </div>
                 </div>
               </div>
-              <button 
-                onClick={() => setIsOpen(false)}
-                className="w-8 h-8 hover:bg-white/10 rounded-lg flex items-center justify-center transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Messages */}
-            <div 
-              ref={scrollRef}
-              className="flex-1 overflow-y-auto p-6 space-y-6 scroll-smooth"
-            >
-              {messages.length === 0 && (
-                <div className="h-full flex flex-col items-center justify-center text-center space-y-4 opacity-40">
-                  <BrainCircuit className="w-16 h-16" />
-                  <div>
-                    <p className="font-bold text-sm">Merhaba! Ben Koç Ram.</p>
-                    <p className="text-xs">Harcamalarını ekleyebilir, portföyünü analiz edebilirim.</p>
-                  </div>
-                </div>
-              )}
-              
-              {messages.map((msg, i) => (
-                <motion.div
-                  initial={{ opacity: 0, x: msg.role === "user" ? 20 : -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  key={i}
-                  className={cn(
-                    "flex items-start gap-3",
-                    msg.role === "user" ? "flex-row-reverse" : "flex-row"
-                  )}
-                >
-                  <div className={cn(
-                    "w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 shadow-sm",
-                    msg.role === "user" ? "bg-[#efe440] text-[#8c5000]" : "bg-[#8c5000] text-white"
-                  )}>
-                    {msg.role === "user" ? <User className="w-5 h-5" /> : <Bot className="w-5 h-5" />}
-                  </div>
-                  <div className={cn(
-                    "max-w-[80%] p-4 rounded-2xl text-sm leading-relaxed shadow-ambient-low",
-                    msg.role === "user" 
-                      ? "bg-[#8c5000] text-white rounded-tr-none" 
-                      : "bg-white text-[#191c1d] rounded-tl-none border border-[#dbc2b0]/20"
-                  )}>
-                    <div className="prose prose-sm max-w-none prose-invert dark:prose-neutral">
-                      <ReactMarkdown>
-                        {msg.content}
-                      </ReactMarkdown>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-              {isLoading && (
-                <div className="flex items-center gap-2 text-[#8c5000] opacity-60">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span className="text-xs font-bold tracking-widest uppercase">Analiz yapılıyor...</span>
-                </div>
-              )}
-            </div>
-
-            {/* Input */}
-            <form onSubmit={handleSubmit} className="p-6 bg-[#f8f9fa] border-t border-[#dbc2b0]/20">
-              <div className="relative">
-                <input
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  placeholder="Bir mesaj yazın..."
-                  className="w-full bg-white border border-[#dbc2b0]/30 rounded-2xl px-5 py-4 pr-14 text-sm focus:outline-none focus:ring-2 focus:ring-[#8c5000]/20 transition-all shadow-inner"
-                />
-                <button
-                  type="submit"
-                  disabled={!input.trim() || isLoading}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-[#8c5000] text-white rounded-xl flex items-center justify-center disabled:opacity-50 hover:bg-[#6e3f00] transition-colors shadow-md"
-                >
-                  <Send className="w-5 h-5" />
-                </button>
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-white/10 text-white" onClick={() => setIsMinimized(!isMinimized)}>
+                  {isMinimized ? <Maximize2 className="h-4 w-4" /> : <Minimize2 className="h-4 w-4" />}
+                </Button>
+                <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-white/10 text-white" onClick={() => setIsOpen(false)}>
+                  <X className="h-4 w-4" />
+                </Button>
               </div>
-            </form>
+            </CardHeader>
+
+            {!isMinimized && (
+              <>
+                <ScrollArea className="flex-1 p-6" ref={scrollRef}>
+                  <div className="space-y-6">
+                    {messages.length === 0 && (
+                      <div className="flex flex-col items-center justify-center py-12 text-center">
+                        <div className="w-16 h-16 bg-[#8c5000]/5 rounded-3xl flex items-center justify-center mb-4">
+                          <TrendingUp className="h-8 w-8 text-[#8c5000]" />
+                        </div>
+                        <h4 className="font-bold text-[#8c5000] mb-2">Nasıl yardımcı olabilirim?</h4>
+                        <p className="text-xs text-[#554336] opacity-60 max-w-[200px]">
+                          Finansal durumunu analiz edebilir, harcama ekleyebilir veya piyasaları sorabilirsin.
+                        </p>
+                      </div>
+                    )}
+                    {messages.map((m, i) => (
+                      <div key={i} className={cn("flex gap-3", m.role === "assistant" ? "justify-start" : "justify-end")}>
+                        {m.role === "assistant" && (
+                          <div className="w-8 h-8 rounded-lg bg-[#8c5000]/10 flex items-center justify-center flex-shrink-0">
+                            <Bot className="h-4 w-4 text-[#8c5000]" />
+                          </div>
+                        )}
+                        <div className={cn(
+                          "max-w-[80%] p-4 rounded-2xl text-sm leading-relaxed",
+                          m.role === "assistant" 
+                            ? "bg-[#f8f9fa] text-[#191c1d] rounded-tl-none border border-[#dbc2b0]/20 shadow-sm" 
+                            : "bg-[#8c5000] text-white rounded-tr-none shadow-ambient-medium"
+                        )}>
+                          {m.content}
+                        </div>
+                        {m.role === "user" && (
+                          <div className="w-8 h-8 rounded-lg bg-[#8c5000] flex items-center justify-center flex-shrink-0">
+                            <User className="h-4 w-4 text-white" />
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                    {isLoading && (
+                      <div className="flex gap-3 animate-in fade-in duration-300">
+                        <div className="w-8 h-8 rounded-lg bg-[#8c5000]/10 flex items-center justify-center">
+                          <Bot className="h-4 w-4 text-[#8c5000]" />
+                        </div>
+                        <div className="bg-[#f8f9fa] p-4 rounded-2xl rounded-tl-none border border-[#dbc2b0]/20 flex items-center gap-2">
+                          <Loader2 className="h-4 w-4 animate-spin text-[#8c5000]" />
+                          <span className="text-xs font-bold text-[#554336] opacity-60">Düşünüyorum...</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </ScrollArea>
+
+                <CardFooter className="p-6 pt-0">
+                  <form onSubmit={handleSubmit} className="w-full flex gap-3 relative">
+                    <Input
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      placeholder="Sorunuzu buraya yazın..."
+                      className="bg-[#f8f9fa] border-[#dbc2b0]/30 h-14 rounded-2xl pr-14 focus:ring-[#8c5000] placeholder:text-[#554336]/40"
+                    />
+                    <Button 
+                      type="submit" 
+                      disabled={isLoading}
+                      className="absolute right-2 top-2 h-10 w-10 bg-[#8c5000] hover:bg-[#6e3f00] text-white rounded-xl shadow-ambient-medium active:scale-95 transition-all"
+                    >
+                      <Send className="h-4 w-4" />
+                    </Button>
+                  </form>
+                </CardFooter>
+              </>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
-    </>
+    </div>
   );
 }

@@ -1,184 +1,168 @@
 
-import { GoogleGenerativeAI, DynamicRetrievalMode } from "@google/generative-ai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
-import { MASTER_PROMPT, FUNCTION_DECLARATIONS } from "@/lib/gemini";
-import { revalidatePath } from "next/cache";
+import { MASTER_PROMPT, getFinancialContext, FUNCTION_DECLARATIONS } from "@/lib/gemini";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-// API Key yönetimi
-const getApiKey = () => {
-  return process.env.GEMINI_API_KEY || "";
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+const getApiKeys = () => {
+  const keys = [];
+  if (process.env.GEMINI_API_KEY) keys.push(process.env.GEMINI_API_KEY);
+  for (let i = 2; i <= 10; i++) {
+    const key = process.env[`GEMINI_API_KEY_${i}`];
+    if (key) keys.push(key);
+  }
+  return keys.length > 0 ? keys : ["missing_api_key"];
 };
+
+const API_KEYS = getApiKeys();
+let currentKeyIndex = 0;
+
+const MODELS = [
+  "gemini-2.0-flash", // En hızlı ve güncel
+  "gemini-1.5-flash",
+  "gemini-1.5-pro"
+];
 
 async function executeTool(name: string, args: any, userId: string) {
   const user = await prisma.user.findUnique({
     where: { clerkUserId: userId },
-    include: { incomes: true, expenses: true, debts: true, investments: true }
+    include: {
+      incomes: { take: 20, orderBy: { createdAt: 'desc' } },
+      expenses: { take: 20, orderBy: { createdAt: 'desc' } },
+      debts: { take: 10, orderBy: { createdAt: 'desc' } },
+      investments: { take: 20, orderBy: { createdAt: 'desc' } }
+    }
   });
 
   if (!user) return { error: "Kullanıcı bulunamadı." };
 
-  try {
-    switch (name) {
-      case "getFinancialSummary":
-        return {
-          totalIncome: user.incomes.reduce((acc, i) => acc + i.amount, 0),
-          totalExpense: user.expenses.reduce((acc, i) => acc + i.amount, 0),
-          totalDebt: user.debts.reduce((acc, i) => acc + i.amount, 0),
-          totalInvestment: user.investments.reduce((acc, i) => acc + i.amount, 0),
-          recentIncomes: user.incomes.slice(-5),
-          recentExpenses: user.expenses.slice(-5),
-          investments: user.investments.map(i => ({ symbol: i.symbol, qty: i.quantity, avgPrice: i.purchasePrice }))
-        };
-
-      case "addIncome":
-        await prisma.income.create({
-          data: { userId: user.id, type: args.type, amount: Number(args.amount), description: args.description }
-        });
-        revalidatePath("/dashboard");
-        return { success: true, message: "Gelir başarıyla eklendi." };
-
-      case "addExpense":
-        await prisma.expense.create({
-          data: { 
-            userId: user.id, 
-            type: args.type, 
-            amount: Number(args.amount), 
-            isRecurring: args.isRecurring || false, 
-            description: args.description 
-          }
-        });
-        revalidatePath("/dashboard");
-        return { success: true, message: "Gider başarıyla eklendi." };
-
-      case "addDebt":
-        await prisma.debt.create({
-          data: { 
-            userId: user.id, 
-            type: args.type, 
-            amount: Number(args.amount), 
-            remainingInstallments: args.remainingInstallments, 
-            description: args.description 
-          }
-        });
-        revalidatePath("/dashboard");
-        return { success: true, message: "Borç başarıyla eklendi." };
-
-      case "addInvestment":
-        await prisma.investment.create({
-          data: { 
-            userId: user.id, 
-            type: args.type, 
-            symbol: args.symbol.toUpperCase(), 
-            quantity: Number(args.quantity), 
-            purchasePrice: Number(args.purchasePrice),
-            amount: Number(args.quantity) * Number(args.purchasePrice),
-            description: args.description,
-            status: "OPEN",
-            transactionType: "BUY"
-          }
-        });
-        revalidatePath("/dashboard");
-        revalidatePath("/dashboard/assets");
-        return { success: true, message: "Yatırım başarıyla eklendi." };
-
-      default:
-        return { error: "Bilinmeyen araç." };
-    }
-  } catch (error: any) {
-    console.error("Tool Execution Error:", error);
-    return { error: "İşlem sırasında bir hata oluştu: " + error.message };
+  if (name === "getFinancialHistory") {
+    const { category } = args;
+    if (category === "all") return { incomes: user.incomes, expenses: user.expenses, debts: user.debts, investments: user.investments };
+    if (category === "incomes") return user.incomes;
+    if (category === "expenses") return user.expenses;
+    if (category === "debts") return user.debts;
+    if (category === "investments") return user.investments;
   }
+
+  if (name === "addFinancialRecord") {
+    const { type, amount, category, description } = args;
+    try {
+      if (type === "income") {
+        await prisma.income.create({ data: { userId: user.id, type: category, amount, description } });
+      } else if (type === "expense") {
+        await prisma.expense.create({ data: { userId: user.id, type: category, amount, description } });
+      } else if (type === "debt") {
+        await prisma.debt.create({ data: { userId: user.id, type: category, amount, description } });
+      }
+      return { success: true, message: "İşlem başarıyla kaydedildi." };
+    } catch (e) {
+      return { error: "Kayıt sırasında hata oluştu." };
+    }
+  }
+  return null;
 }
 
 export async function POST(req: Request) {
   try {
     const { userId } = await auth();
-    if (!userId) return new Response("Unauthorized", { status: 401 });
-
-    const apiKey = getApiKey();
-    if (!apiKey) return new Response("API Key missing", { status: 500 });
+    if (!userId) return new Response("Yetkisiz erişim.", { status: 401 });
 
     const { messages } = await req.json();
     const lastMessage = messages[messages.length - 1];
 
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash",
-      systemInstruction: MASTER_PROMPT,
-      tools: [
-        { functionDeclarations: FUNCTION_DECLARATIONS as any },
-        { 
-          // @ts-ignore
-          googleSearchRetrieval: { 
-            dynamicRetrievalConfig: { 
-              mode: DynamicRetrievalMode.MODE_DYNAMIC, 
-              dynamicThreshold: 0.3 
-            } 
-          } 
-        }
-      ]
+    const user = await prisma.user.findUnique({
+      where: { clerkUserId: userId },
+      include: { incomes: { take: 1 }, expenses: { take: 1 }, debts: { take: 1 }, investments: { take: 1 } }
     });
 
-    const chat = model.startChat({
-      history: messages.slice(0, -1).map((m: any) => ({
-        role: m.role === "assistant" ? "model" : "user",
-        parts: [{ text: m.content }]
-      })),
-    });
+    if (!user) return new Response("Kullanıcı kaydı tamamlanmamış.", { status: 404 });
 
-    const result = await chat.sendMessageStream(lastMessage.content);
-    
-    const encoder = new TextEncoder();
-    const stream = new ReadableStream({
-      async start(controller) {
-        try {
-          for await (const chunk of result.stream) {
-            const parts = chunk.candidates?.[0]?.content?.parts;
-            if (!parts) continue;
+    const financialContext = await getFinancialContext(user);
+    const systemPrompt = MASTER_PROMPT
+      .replace("{CURRENT_DATE}", new Date().toLocaleDateString("tr-TR"))
+      .replace("{USER_DATA}", financialContext);
 
-            for (const part of parts) {
-              if (part.text) {
-                controller.enqueue(encoder.encode(part.text));
-              }
-              
-              if (part.functionCall) {
-                const { name, args } = part.functionCall;
-                const toolResult = await executeTool(name, args, userId);
-                
-                // Araca cevabı gönderip devam ediyoruz
-                const followUp = await chat.sendMessage([{
-                  functionResponse: {
-                    name,
-                    response: toolResult
+    // Key Rotasyonu Denemesi
+    for (let attempt = 0; attempt < API_KEYS.length; attempt++) {
+      const apiKey = API_KEYS[currentKeyIndex];
+      
+      try {
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const model = genAI.getGenerativeModel({
+          model: MODELS[0],
+          systemInstruction: systemPrompt,
+          tools: [
+            { functionDeclarations: FUNCTION_DECLARATIONS },
+            { 
+               // @ts-ignore
+               googleSearchRetrieval: { dynamicRetrievalConfig: { mode: "MODE_DYNAMIC", dynamicThreshold: 0.3 } } 
+            }
+          ] as any
+        }, { apiVersion: "v1beta" });
+
+        const history = messages.slice(0, -1).map((m: any) => ({
+          role: m.role === "assistant" ? "model" : "user",
+          parts: [{ text: m.content }]
+        }));
+
+        const chat = model.startChat({ history });
+        const result = await chat.sendMessageStream(lastMessage.content);
+
+        const encoder = new TextEncoder();
+        const stream = new ReadableStream({
+          async start(controller) {
+            try {
+              for await (const chunk of result.stream) {
+                const parts = chunk.candidates?.[0]?.content?.parts;
+                if (!parts) continue;
+
+                for (const part of parts) {
+                  if (part.text) {
+                    controller.enqueue(encoder.encode(part.text));
                   }
-                }]);
-                
-                const responseText = followUp.response.text();
-                controller.enqueue(encoder.encode(responseText));
+                  if (part.functionCall) {
+                    const call = part.functionCall;
+                    const toolResult = await executeTool(call.name, call.args, userId);
+                    
+                    // Tool sonucunu modele geri besle ve devam et (Stream içinde basitleştirilmiş)
+                    // Not: Stream içinde çok turlu tool call için tam etkileşimli yapı gerekir, 
+                    // burada temel "tool çağırdım" bilgisini istemciye JSON olarak sızdırabiliriz.
+                    const payload = JSON.stringify({ type: "tool", name: call.name, result: toolResult });
+                    controller.enqueue(encoder.encode(`\n__JSON__:${payload}__END__\n`));
+                  }
+                }
               }
+              controller.close();
+            } catch (e) {
+              controller.close();
             }
           }
-          controller.close();
-        } catch (e) {
-          console.error("Stream Error:", e);
-          controller.close();
-        }
-      }
-    });
+        });
 
-    return new Response(stream, {
-      headers: { "Content-Type": "text/plain; charset=utf-8" }
-    });
+        return new Response(stream, { headers: { "Content-Type": "text/plain; charset=utf-8" } });
+
+      } catch (err: any) {
+        // Kota hatası veya API hatası durumunda bekle ve key değiştir
+        if (err.status === 429 || err.message?.includes("quota")) {
+          console.warn(`Key ${currentKeyIndex} kotası doldu, 2 saniye bekleniyor...`);
+          await sleep(2000);
+          currentKeyIndex = (currentKeyIndex + 1) % API_KEYS.length;
+          continue;
+        }
+        throw err;
+      }
+    }
+
+    return new Response("Tüm API anahtarları başarısız oldu.", { status: 500 });
 
   } catch (error: any) {
     console.error("Chat API Error:", error);
-    return new Response(JSON.stringify({ error: error.message }), { 
-      status: 500,
-      headers: { "Content-Type": "application/json" }
-    });
+    return new Response(JSON.stringify({ error: error.message }), { status: 500 });
   }
 }
