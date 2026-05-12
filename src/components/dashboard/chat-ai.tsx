@@ -26,12 +26,26 @@ export function ChatAI() {
   const [isMinimized, setIsMinimized] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
+  const [input, setInput] = useState("");
+  const { messages, sendMessage, status, error: chatError } = useChat({
     api: "/api/chat",
     onError: (error: any) => {
       console.error("Chat Error Details:", error);
     }
   } as any) as any;
+
+  const isLoading = status === "streaming" || status === "submitted";
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setInput(e.target.value);
+  };
+
+  const handleSubmit = (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!input.trim() || isLoading) return;
+    sendMessage({ text: input });
+    setInput("");
+  };
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -118,19 +132,37 @@ export function ChatAI() {
                             ? "bg-[#f8f9fa] text-[#191c1d] rounded-tl-none border border-[#dbc2b0]/20 shadow-sm" 
                             : "bg-[#8c5000] text-white rounded-tr-none shadow-ambient-medium"
                         )}>
-                          {m.content}
-                          {m.toolInvocations?.map((toolInvocation: any) => {
+                          {m.parts ? (
+                            m.parts.map((part: any, i: number) => {
+                              if (part.type === 'text') return <span key={i}>{part.text}</span>;
+                              // Tool invocations in v6 are often part types starting with 'tool-' or 'dynamic-tool'
+                              if (part.type.startsWith('tool-') || part.type === 'dynamic-tool') {
+                                const { state, toolName } = part;
+                                if (state !== 'result') {
+                                  return (
+                                    <div key={i} className="flex items-center gap-2 mt-2 text-[10px] font-bold text-[#8c5000] animate-pulse">
+                                      <Loader2 className="h-3 w-3 animate-spin" />
+                                      {toolName === 'getFinancialHistory' ? 'Veriler Sorgulanıyor...' : 'İşlem Kaydediliyor...'}
+                                    </div>
+                                  );
+                                }
+                              }
+                              return null;
+                            })
+                          ) : (
+                            m.content
+                          )}
+                          
+                          {/* Backward compatibility for toolInvocations if still present */}
+                          {!m.parts && m.toolInvocations?.map((toolInvocation: any) => {
                             const { toolName, toolCallId, state } = toolInvocation;
-                            if (state === 'result') {
-                              return null; // Tool sonuçlarını direkt göstermiyoruz, asistanın yorumlamasını bekliyoruz
-                            } else {
-                              return (
-                                <div key={toolCallId} className="flex items-center gap-2 mt-2 text-[10px] font-bold text-[#8c5000] animate-pulse">
-                                  <Loader2 className="h-3 w-3 animate-spin" />
-                                  {toolName === 'getFinancialHistory' ? 'Veriler Sorgulanıyor...' : 'İşlem Kaydediliyor...'}
-                                </div>
-                              );
-                            }
+                            if (state === 'result') return null;
+                            return (
+                              <div key={toolCallId} className="flex items-center gap-2 mt-2 text-[10px] font-bold text-[#8c5000] animate-pulse">
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                                {toolName === 'getFinancialHistory' ? 'Veriler Sorgulanıyor...' : 'İşlem Kaydediliyor...'}
+                              </div>
+                            );
                           })}
                         </div>
                         {m.role === "user" && (
