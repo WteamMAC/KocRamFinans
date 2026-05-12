@@ -59,11 +59,11 @@ const FUNCTION_DECLARATIONS = [
     name: "addIncome",
     description: "Yeni bir gelir kaynağı ekler.",
     parameters: {
-      type: "object",
+      type: "OBJECT",
       properties: {
-        type: { type: "string", description: "Gelir türü (Salary, Rent, Freelance, Other)" },
-        amount: { type: "number", description: "Miktar" },
-        description: { type: "string", description: "Açıklama" }
+        type: { type: "STRING", description: "Gelir türü (Salary, Rent, Freelance, Other)" },
+        amount: { type: "NUMBER", description: "Miktar" },
+        description: { type: "STRING", description: "Açıklama" }
       },
       required: ["type", "amount"]
     }
@@ -72,11 +72,11 @@ const FUNCTION_DECLARATIONS = [
     name: "addExpense",
     description: "Yeni bir gider ekler.",
     parameters: {
-      type: "object",
+      type: "OBJECT",
       properties: {
-        type: { type: "string", description: "Gider türü (Rent, Bill, Groceries, Other)" },
-        amount: { type: "number", description: "Miktar" },
-        isRecurring: { type: "boolean", description: "Düzenli mi?" }
+        type: { type: "STRING", description: "Gider türü (Rent, Bill, Groceries, Other)" },
+        amount: { type: "NUMBER", description: "Miktar" },
+        isRecurring: { type: "BOOLEAN", description: "Düzenli mi?" }
       },
       required: ["type", "amount"]
     }
@@ -85,10 +85,10 @@ const FUNCTION_DECLARATIONS = [
     name: "addDebt",
     description: "Yeni bir borç ekler.",
     parameters: {
-      type: "object",
+      type: "OBJECT",
       properties: {
-        type: { type: "string", description: "Borç türü" },
-        amount: { type: "number", description: "Miktar" }
+        type: { type: "STRING", description: "Borç türü" },
+        amount: { type: "NUMBER", description: "Miktar" }
       },
       required: ["type", "amount"]
     }
@@ -97,13 +97,13 @@ const FUNCTION_DECLARATIONS = [
     name: "addInvestment",
     description: "Yeni bir yatırım (hisse, kripto, altın vb.) ekler.",
     parameters: {
-      type: "object",
+      type: "OBJECT",
       properties: {
-        type: { type: "string", description: "Yatırım türü (BIST, NASDAQ, CRYPTO, GOLD)" },
-        symbol: { type: "string", description: "Sembol (Örn: THYAO, BTC, AAPL, XAU)" },
-        quantity: { type: "number", description: "Adet/Miktar" },
-        purchasePrice: { type: "number", description: "Birim Alış Fiyatı" },
-        description: { type: "string", description: "Not" }
+        type: { type: "STRING", description: "Yatırım türü (BIST, NASDAQ, CRYPTO, GOLD)" },
+        symbol: { type: "STRING", description: "Sembol (Örn: THYAO, BTC, AAPL, XAU)" },
+        quantity: { type: "NUMBER", description: "Adet/Miktar" },
+        purchasePrice: { type: "NUMBER", description: "Birim Alış Fiyatı" },
+        description: { type: "STRING", description: "Not" }
       },
       required: ["type", "quantity", "purchasePrice"]
     }
@@ -181,7 +181,6 @@ export async function POST(req: Request) {
 
           const response = await ai.models.generateContentStream({
             model: modelId,
-            systemInstruction: systemPrompt,
             contents: [
               ...limitedMessages.slice(0, -1).map((m: any) => ({
                 role: m.role === "user" ? "user" : "model",
@@ -189,7 +188,10 @@ export async function POST(req: Request) {
               })),
               { role: "user", parts: [{ text: lastMessage }] }
             ],
-            tools: tools as any
+            config: {
+              systemInstruction: systemPrompt,
+              tools: tools as any
+            }
           });
 
           // Stream okuma ve Response döndürme
@@ -197,10 +199,10 @@ export async function POST(req: Request) {
           const stream = new ReadableStream({
             async start(controller) {
               try {
-                for await (const chunk of response.stream) {
+                for await (const chunk of response) {
                   let chunkText = "";
                   
-                  // Yeni SDK'da text hem metod hem property olabilir, güvenli okuma:
+                  // Yeni SDK'da response nesnesi doğrudan iteratördür
                   if (chunk.candidates?.[0]?.content?.parts) {
                     const parts = chunk.candidates[0].content.parts;
                     for (const part of parts) {
