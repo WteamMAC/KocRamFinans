@@ -36,11 +36,10 @@ const getNextKey = () => {
 // ─── MODELLER VE ARAÇLAR ─────────────────────────────────────────────────────
 
 const FALLBACK_MODELS = [
-  "models/gemini-3.1-flash-lite", 
-  "models/gemini-2.5-flash-lite",
-  "models/gemini-3-flash",
-  "models/gemini-2.5-flash",
-  "models/gemini-2-flash"
+  "gemini-2.5-flash",
+  "gemini-2.5-flash-lite",
+  "gemini-2.0-flash",
+  "gemini-1.5-flash"
 ];
 
 const MARKET_KEYWORDS = [
@@ -173,9 +172,9 @@ export async function POST(req: Request) {
         try {
           let tools: any[] | undefined;
           if (toolMode === "db") {
-            tools = [{ function_declarations: FUNCTION_DECLARATIONS }];
+            tools = [{ functionDeclarations: FUNCTION_DECLARATIONS }];
           } else if (toolMode === "search") {
-            tools = [{ google_search_retrieval: {} }];
+            tools = [{ googleSearch: {} }];
           }
 
           const response = await ai.models.generateContentStream({
@@ -255,7 +254,7 @@ export async function POST(req: Request) {
       }
     }
 
-    throw new Error("Tüm modeller denendi. Son hata: " + (global as any).lastAiError);
+    throw new Error("Tüm modeller denendi. Son hata: " + lastRateLimitReason);
 
 
   } catch (error: any) {
