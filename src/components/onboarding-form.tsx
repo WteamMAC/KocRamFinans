@@ -60,7 +60,7 @@ const onboardingSchema = z.object({
   })),
   investments: z.array(z.object({
     type: z.string().min(1, "Tür seçiniz"),
-    symbol: z.string().min(1, "Varlık sembolü seçiniz"),
+    symbol: z.string().min(1, "Varlık adı veya sembolü giriniz"),
     quantity: z.coerce.number().min(0, "Miktar giriniz"),
     purchasePrice: z.coerce.number().min(0, "Alış fiyatı giriniz"),
     currentValuation: z.coerce.number().optional(),
@@ -505,6 +505,8 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
                                 <SelectItem value="NASDAQ">NASDAQ (Hisse)</SelectItem>
                                 <SelectItem value="CRYPTO">Kripto Para</SelectItem>
                                 <SelectItem value="GOLD">Altın/Emtia</SelectItem>
+                                <SelectItem value="VEHICLE">Araba / Araç</SelectItem>
+                                <SelectItem value="REAL_ESTATE">Konut / Gayrimenkul</SelectItem>
                               </SelectContent>
                             </Select>
                           )}
@@ -516,9 +518,18 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
                         <div className="relative">
                           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#434750] opacity-40" />
                           <Input 
-                            placeholder="Örn: THYAO, BTC" 
+                            placeholder={form.watch(`investments.${index}.type`) === "VEHICLE" || form.watch(`investments.${index}.type`) === "REAL_ESTATE" ? "Örn: 2023 BMW 320i, Kadıköy Daire" : "Örn: THYAO, BTC"}
                             value={searchQueries[index] || form.getValues(`investments.${index}.symbol`) || ""}
-                            onChange={(e) => handleSearch(index, e.target.value, form.getValues(`investments.${index}.type`))}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              const type = form.getValues(`investments.${index}.type`);
+                              if (type === "VEHICLE" || type === "REAL_ESTATE") {
+                                form.setValue(`investments.${index}.symbol`, val);
+                                setSearchQueries(p => ({ ...p, [index]: val }));
+                              } else {
+                                handleSearch(index, val, type);
+                              }
+                            }}
                             className={cn(
                               "pl-12 bg-white border-[#c4c6d2]/20 h-12 rounded-xl",
                               form.formState.errors.investments?.[index]?.symbol && "border-rose-300"
@@ -561,7 +572,9 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
                       </div>
 
                       <div className="space-y-2">
-                        <Label className="text-[9px] font-bold text-[#747781] uppercase px-1">Birim Alış Fiyatı (₺)</Label>
+                        <Label className="text-[9px] font-bold text-[#747781] uppercase px-1">
+                          {(form.watch(`investments.${index}.type`) === "VEHICLE" || form.watch(`investments.${index}.type`) === "REAL_ESTATE") ? "Tahmini Güncel Değer (₺)" : "Birim Alış Fiyatı (₺)"}
+                        </Label>
                         <Input 
                           type="number" 
                           step="any"

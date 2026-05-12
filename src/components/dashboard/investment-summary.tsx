@@ -21,6 +21,8 @@ export function InvestmentSummary({ investments }: InvestmentSummaryProps) {
     NASDAQ: "NASDAQ (Hisse)",
     CRYPTO: "Kripto Para",
     GOLD: "Altın/Emtia",
+    VEHICLE: "Araba / Araç",
+    REAL_ESTATE: "Konut / Gayrimenkul",
   };
 
   const groupedData = investments.reduce((acc: any, inv: any) => {

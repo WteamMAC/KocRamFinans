@@ -118,11 +118,19 @@ export function calculatePortfolioMetrics(investments: any[], livePrices: Map<st
   const activeInvestments = (investments || []).filter(inv => !inv.status || inv.status === "OPEN");
 
   const detailedAssets = activeInvestments.map(inv => {
-    const live = inv.symbol ? livePrices.get(inv.symbol) : null;
+    const isFixedAsset = inv.type === "VEHICLE" || inv.type === "REAL_ESTATE";
+    const live = (inv.symbol && !isFixedAsset) ? livePrices.get(inv.symbol) : null;
     
-    const currentPrice = (live && live.price > 0) 
-      ? live.price 
-      : (inv.purchasePrice || (inv.amount / (inv.quantity || 1)));
+    let currentPrice = 0;
+    
+    if (isFixedAsset) {
+      // Sabit varlıklar için kullanıcının girdiği güncel değer veya alış fiyatı kullanılır
+      currentPrice = inv.currentValuation || inv.purchasePrice || (inv.amount / (inv.quantity || 1));
+    } else {
+      currentPrice = (live && live.price > 0) 
+        ? live.price 
+        : (inv.purchasePrice || (inv.amount / (inv.quantity || 1)));
+    }
       
     const currentValue = (inv.quantity || 1) * currentPrice;
     const cost = inv.amount || 0; 

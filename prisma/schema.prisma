@@ -78,7 +78,7 @@ model Investment {
   id               String   @id @default(cuid())
   userId           String
   user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type             String   // "Gold", "Crypto", "Stock", "RealEstate", "ForeignCurrency", "BIST", "NASDAQ", "CRYPTO"
+  type             String   // "Gold", "Crypto", "Stock", "RealEstate", "ForeignCurrency", "BIST", "NASDAQ", "CRYPTO", "VEHICLE", "REAL_ESTATE"
   symbol           String?  // Ticker symbol (e.g., "BTC", "THYAO", "TSLA")
   quantity         Float    @default(1)
   purchasePrice    Float?   // Alış birim fiyatı

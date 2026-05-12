@@ -27,7 +27,9 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Wallet,
-  ArrowRight
+  ArrowRight,
+  Car,
+  Home
 } from "lucide-react";
 import { addAsset, deleteAsset, sellAsset } from "@/app/actions/assets";
 import { useRouter } from "next/navigation";
@@ -209,6 +211,8 @@ export function AssetList({ assets, allInvestments }: AssetListProps) {
                   <SelectItem value="NASDAQ">NASDAQ (Hisse)</SelectItem>
                   <SelectItem value="CRYPTO">Kripto Para</SelectItem>
                   <SelectItem value="GOLD">Altın/Emtia</SelectItem>
+                  <SelectItem value="VEHICLE">Araba / Araç</SelectItem>
+                  <SelectItem value="REAL_ESTATE">Konut / Gayrimenkul</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -218,9 +222,14 @@ export function AssetList({ assets, allInvestments }: AssetListProps) {
               <div className="relative">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-[#554336] opacity-50" />
                 <Input
-                  placeholder="Örn: THYAO, BTC, AAPL..."
+                  placeholder={formData.type === "VEHICLE" || formData.type === "REAL_ESTATE" ? "Örn: 2023 BMW 320i, Kadıköy Daire" : "Örn: THYAO, BTC, AAPL..."}
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    if (formData.type === "VEHICLE" || formData.type === "REAL_ESTATE") {
+                      setFormData(p => ({ ...p, symbol: e.target.value }));
+                    }
+                  }}
                   className="pl-12 bg-[#f8f9fa] border-[#dbc2b0]/30 h-12 rounded-xl focus:ring-[#8c5000]"
                 />
               </div>
@@ -280,7 +289,9 @@ export function AssetList({ assets, allInvestments }: AssetListProps) {
             </div>
 
             <div className="space-y-3">
-              <Label className="text-[10px] font-bold text-[#747781] uppercase tracking-widest px-1">Alış Fiyatı (Opsiyonel)</Label>
+              <Label className="text-[10px] font-bold text-[#747781] uppercase tracking-widest px-1">
+                {(formData.type === "VEHICLE" || formData.type === "REAL_ESTATE") ? "Tahmini Güncel Değer (₺)" : "Alış Fiyatı (Opsiyonel)"}
+              </Label>
               <div className="flex gap-2">
                 <Input
                   type="number"
@@ -371,7 +382,9 @@ export function AssetList({ assets, allInvestments }: AssetListProps) {
                       <div className="flex justify-between items-start">
                         <div className="flex gap-4">
                           <div className="w-14 h-14 bg-[#f8f9fa] rounded-2xl flex items-center justify-center font-bold text-[#8c5000] text-lg border border-[#dbc2b0]/20 shadow-inner group-hover:bg-[#efe440]/10 transition-colors">
-                            {group.symbol.substring(0, 3)}
+                            {group.type === "VEHICLE" ? <Car className="h-7 w-7" /> : 
+                             group.type === "REAL_ESTATE" ? <Home className="h-7 w-7" /> : 
+                             group.symbol.substring(0, 3)}
                           </div>
                           <div>
                             <div className="flex items-center gap-2">
