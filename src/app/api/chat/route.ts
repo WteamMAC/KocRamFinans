@@ -74,7 +74,9 @@ export async function POST(req: Request) {
     if (!userId) return new Response("Yetkisiz erişim.", { status: 401 });
 
     if (API_KEYS.length === 0) {
-      return new Response(JSON.stringify({ error: "Gemini API anahtarı eksik. Lütfen Vercel üzerinden GEMINI_API_KEY ekleyin." }), { status: 500 });
+      return new Response(JSON.stringify({ 
+        error: "GEMINI_API_KEY bulunamadı! Lütfen Vercel ayarlarından API anahtarını eklediğinizden ve deployment'ı tetiklediğinizden emin olun." 
+      }), { status: 500 });
     }
 
     const { messages } = await req.json();
@@ -92,7 +94,7 @@ export async function POST(req: Request) {
       .replace("{CURRENT_DATE}", new Date().toLocaleDateString("tr-TR"))
       .replace("{USER_DATA}", financialContext);
 
-    // Key ve Model Rotasyonu
+    // Key ve Model Rotasyonu (Dirençli Mimarisi)
     for (let k = 0; k < API_KEYS.length; k++) {
       const apiKey = API_KEYS[currentKeyIndex];
       
@@ -104,10 +106,7 @@ export async function POST(req: Request) {
             systemInstruction: systemPrompt,
             tools: [
               { functionDeclarations: FUNCTION_DECLARATIONS },
-              { 
-                // @ts-ignore
-                googleSearchRetrieval: { dynamicRetrievalConfig: { mode: "MODE_DYNAMIC", dynamicThreshold: 0.3 } } 
-              }
+              { googleSearch: {} } // Daha stabil Google Search formatı
             ] as any
           }, { apiVersion: "v1beta" });
 
@@ -149,25 +148,29 @@ export async function POST(req: Request) {
           return new Response(stream, { headers: { "Content-Type": "text/plain; charset=utf-8" } });
 
         } catch (err: any) {
-          // Model bulunamadıysa (404), bir sonraki modeli dene
-          if (err.status === 404) continue;
-          
+          console.error(`Deneme Başarısız (Key: ${currentKeyIndex}, Model: ${modelName}):`, err.message);
+
           // Kota hatası (429), bir sonraki key'e geç ve bekle
           if (err.status === 429 || err.message?.includes("quota")) {
-            console.warn(`Key ${currentKeyIndex} kotası doldu, 2 saniye bekleniyor...`);
+            console.warn(`Kota doldu, 2 saniye bekleniyor...`);
             await sleep(2000);
             currentKeyIndex = (currentKeyIndex + 1) % API_KEYS.length;
-            break; // Key değiştir, modelleri tekrar dene
+            break; // Model döngüsünü kır, yeni key'e geç
           }
-          throw err;
+
+          // Diğer tüm hatalarda (404, 500 vb.) bir sonraki modeli veya key'i denemeye devam et
+          if (modelName === MODELS[MODELS.length - 1]) {
+            currentKeyIndex = (currentKeyIndex + 1) % API_KEYS.length;
+          }
+          continue; 
         }
       }
     }
 
-    return new Response("Tüm API anahtarları veya modeller başarısız oldu.", { status: 500 });
+    return new Response("Tüm API anahtarları ve modeller denendi ancak başarılı olunamadı. Lütfen API anahtarlarınızın geçerliliğini kontrol edin.", { status: 500 });
 
   } catch (error: any) {
-    console.error("Chat API Error:", error);
+    console.error("Kritik Chat Hatası:", error);
     return new Response(JSON.stringify({ error: error.message }), { status: 500 });
   }
 }
