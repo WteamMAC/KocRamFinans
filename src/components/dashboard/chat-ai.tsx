@@ -29,7 +29,7 @@ export function ChatAI() {
   const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
     api: "/api/chat",
     onError: (error: any) => {
-      console.error("Chat Error:", error);
+      console.error("Chat Error Details:", error);
     }
   } as any) as any;
 
@@ -144,7 +144,13 @@ export function ChatAI() {
                 </ScrollArea>
 
                 <CardFooter className="p-6 pt-0">
-                  <form onSubmit={handleSubmit} className="w-full flex gap-3 relative">
+                  <form 
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      handleSubmit(e);
+                    }} 
+                    className="w-full flex gap-3 relative"
+                  >
                     <Input
                       value={input}
                       onChange={handleInputChange}
