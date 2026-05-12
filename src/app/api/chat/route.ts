@@ -35,7 +35,9 @@ export async function POST(req: Request) {
     const API_KEYS = getApiKeys();
     if (API_KEYS.length === 0) return new Response("GEMINI_API_KEY eksik", { status: 500 });
 
-    const { messages } = await req.json();
+    const body = await req.json().catch(() => ({ messages: [] }));
+    const messages = body.messages || [];
+    if (!messages.length) return new Response("Geçersiz mesaj formatı.", { status: 400 });
 
     // PERFORMANS: Tüm finansal veriyi tek sorguda çekiyoruz
     const user = await prisma.user.findUnique({
@@ -62,12 +64,17 @@ export async function POST(req: Request) {
 
     for (const m of rawHistory) {
       const role = m.role === "assistant" || m.role === "model" ? "model" : "user";
-      const text = m.content || " ";
+      const text = m.content?.trim() ? m.content : "[Boş mesaj]";
       if (formattedHistory.length > 0 && formattedHistory[formattedHistory.length - 1].role === role) {
         formattedHistory[formattedHistory.length - 1].parts[0].text += `\n${text}`;
       } else {
         formattedHistory.push({ role, parts: [{ text }] });
       }
+    }
+
+    // Kural: Geçmiş kesinlikle model ile başlayamaz, aksi halde 400 fırlatır.
+    if (formattedHistory.length > 0 && formattedHistory[0].role === "model") {
+      formattedHistory.unshift({ role: "user", parts: [{ text: "Merhaba" }] });
     }
 
     // Gemini API, mesajların kesinlikle 'user' -> 'model' şeklinde değişmesini bekler.
@@ -76,7 +83,7 @@ export async function POST(req: Request) {
       formattedHistory.push({ role: "model", parts: [{ text: "Anladım, lütfen devam edin." }] });
     }
 
-    const lastMessage = messages[messages.length - 1].content || " ";
+    const lastMessage = messages[messages.length - 1].content?.trim() || "Merhaba";
 
     const maxAttempts = API_KEYS.length * MODELS.length;
     let attempts = 0;
@@ -148,7 +155,14 @@ export async function POST(req: Request) {
         const stream = new ReadableStream({
           async start(controller) {
             try {
+              let toolCallCount = 0;
               while (true) {
+                toolCallCount++;
+                if (toolCallCount > 7) {
+                  controller.enqueue(new TextEncoder().encode(`\n\n*[Sistem Uyarısı]: İşlem çok uzun sürdüğü için durduruldu.*`));
+                  break;
+                }
+
                 let toolCalls: any[] = [];
 
                 // Gelen stream'i okuyoruz
@@ -186,7 +200,8 @@ export async function POST(req: Request) {
                           debts: user.debts,
                           investments: user.investments
                         };
-                        apiResponse = category === "all" ? dataMap : (dataMap[category] || { error: "Kategori bulunamadı" });
+                        // ÇÖZÜM: API çökmesini önlemek için tool response kesinlikle Object ({ data: [...] }) olmalıdır
+                        apiResponse = category === "all" ? dataMap : { data: dataMap[category] || [] };
                       } else if (call.name === "addFinancialRecord") {
                         const { type, amount, category, description, quantity, purchasePrice } = call.args as any;
                         const baseData = {
@@ -272,11 +287,14 @@ export async function POST(req: Request) {
         if (err?.status === 429 || errorMessage.toLowerCase().includes("quota")) {
           if (API_KEYS.length === 1) {
             console.error(`[AI-CHAT] 💀 Tek anahtar kotası doldu. İşlem durduruluyor.`);
-            break; // Tek key varsa diğer modelleri deneme (paylaşımlı kota)
+            return new Response("Yapay zeka kullanım kotanız doldu (Rate Limit). Lütfen 1 dakika bekleyip tekrar deneyin.", { status: 429 });
           }
           console.warn(`[AI-CHAT] ⏳ Kota aşıldı, sonraki anahtara geçiliyor...`);
           attempts = (keyIndex + 1) * MODELS.length; // Bir sonraki anahtarın başına atla
           await sleep(2000);
+        } else if (err?.status === 400 || errorMessage.toLowerCase().includes("bad request")) {
+          console.error(`[AI-CHAT] ❌ Geçersiz istek (400 Bad Request):`, errorMessage);
+          return new Response("Yapay zeka bu mesaj formatını kabul etmedi.", { status: 400 });
         } else {
           attempts++;
           await sleep(500);
