@@ -36,12 +36,11 @@ const getNextKey = () => {
 // ─── MODELLER VE ARAÇLAR ─────────────────────────────────────────────────────
 
 const FALLBACK_MODELS = [
-  "gemini-3.1-flash-lite",  // 15 RPM
-  "gemini-2.5-flash-lite",  // 10 RPM
-  "gemini-3-flash",         // 5 RPM
-  "gemini-2.5-flash",       // 5 RPM
-  "gemini-2-flash",
-  "gemini-1.5-flash"
+  "models/gemini-3.1-flash-lite", 
+  "models/gemini-2.5-flash-lite",
+  "models/gemini-3-flash",
+  "models/gemini-2.5-flash",
+  "models/gemini-2-flash"
 ];
 
 const MARKET_KEYWORDS = [
@@ -227,8 +226,8 @@ export async function POST(req: Request) {
           return new Response(stream, { headers: { "Content-Type": "text/plain; charset=utf-8" } });
 
         } catch (err: any) {
-          const errorDetails = err.message || "Unknown error";
-          const statusCode = err.status || 0;
+          const errorDetails = err.message || JSON.stringify(err);
+          const statusCode = err.status || (err.response?.status) || 0;
           const is429 = statusCode === 429 || errorDetails.includes("429");
           const is404 = statusCode === 404 || errorDetails.includes("404") || errorDetails.includes("not found");
           const isQuotaError = is429 || errorDetails.includes("quota") || statusCode === 503 || statusCode === 500;
@@ -236,29 +235,21 @@ export async function POST(req: Request) {
           
           console.warn(`[${traceId}] [FAIL] Key: ${maskedKey}, Model: ${modelId}, Status: ${statusCode}, Error: ${errorDetails}`);
 
-          // Eğer model bulunamadıysa (404), bir sonraki modele geç (anahtarı değiştirme)
+          // Eğer model bulunamadıysa (404), bir sonraki modele geç
           if (is404) {
-            console.warn(`[${traceId}] [404] Model ${modelId} bulunamadı, bir sonrakine geçiliyor.`);
-            // @ts-ignore
-            global.lastAiError = `Model ${modelId} bulunamadı.`;
+            lastRateLimitReason = `Model Bulunamadı (404): ${modelId}`;
             continue;
           }
 
           if (isQuotaError || isAuthError) {
-            // Teşhis Et
-            if (errorDetails.includes("RPM")) lastRateLimitReason = `Dakikalık İstek Sınırı (RPM) - Anahtar: ${maskedKey}`;
-            else if (errorDetails.includes("TPM")) lastRateLimitReason = `Dakikalık Token Sınırı (TPM) - Anahtar: ${maskedKey}`;
-            else if (errorDetails.includes("RPD")) lastRateLimitReason = `Günlük İstek Sınırı (RPD) - Anahtar: ${maskedKey}`;
-            else if (isAuthError) lastRateLimitReason = `API Anahtarı Geçersiz veya Yetkisiz - Anahtar: ${maskedKey}`;
-            else lastRateLimitReason = `Hata: ${errorDetails.slice(0, 50)}... - Anahtar: ${maskedKey}`;
-
-            console.warn(`[${traceId}] [DIAGNOSIS] Reason: ${lastRateLimitReason}`);
-            break; // Bir sonraki API anahtarına geç
+            if (errorDetails.includes("RPM")) lastRateLimitReason = `RPM Sınırı - Anahtar: ${maskedKey}`;
+            else if (errorDetails.includes("TPM")) lastRateLimitReason = `TPM Sınırı - Anahtar: ${maskedKey}`;
+            else if (isAuthError) lastRateLimitReason = `Yetki Hatası - Anahtar: ${maskedKey}`;
+            else lastRateLimitReason = `Sistem Hatası (${statusCode}): ${errorDetails.slice(0, 30)}`;
+            break;
           }
 
-          // Diğer hatalarda aynı anahtarın sonraki modelini dene
-          // @ts-ignore
-          global.lastAiError = errorDetails;
+          lastRateLimitReason = `Hata (${statusCode}): ${errorDetails.slice(0, 30)}`;
           continue;
         }
       }
