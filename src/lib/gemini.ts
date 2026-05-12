@@ -20,6 +20,10 @@ GÖREVLERİN VE KURALLARIN:
 Bugünün Tarihi: {CURRENT_DATE}
 Kullanıcı Özeti: {USER_DATA}
 
+GEÇERLİ KATEGORİLER:
+- Gelir (Income): Maaş, Eş Maaşı, Kira Geliri, Faiz, Sponsorluk, Devlet Desteği, Sosyal Medya, Diğer.
+- Gider (Expense): Kira, Fatura, Market, Ulaşım, Diğer.
+
 UYARI: Yatırım tavsiyesi verirken mutlaka "Yatırım Tavsiyesi Değildir (YTD)" notunu ekle.
 `;
 

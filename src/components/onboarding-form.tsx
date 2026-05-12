@@ -362,6 +362,9 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
                             <SelectItem value="Kira Geliri">Kira Geliri</SelectItem>
                             <SelectItem value="Sosyal Medya">Sosyal Medya</SelectItem>
                             <SelectItem value="Taksi/Ek İş">Taksi/Ek İş</SelectItem>
+                            <SelectItem value="Faiz">Faiz</SelectItem>
+                            <SelectItem value="Sponsorluk">Sponsorluk</SelectItem>
+                            <SelectItem value="Devlet Desteği">Devlet Desteği</SelectItem>
                             <SelectItem value="Diğer">Diğer</SelectItem>
                           </SelectContent>
                         </Select>
