@@ -65,7 +65,10 @@ export function ChatAI() {
         body: JSON.stringify({ messages: newMessages }),
       });
 
-      if (!res.ok) throw new Error("API Hatası");
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(errorText || `API Hatası (${res.status})`);
+      }
 
       const reader = res.body?.getReader();
       if (!reader) throw new Error("Stream desteklenmiyor");
@@ -88,12 +91,20 @@ export function ChatAI() {
           );
         }
       }
+
+      // Eğer API hiçbir metin döndürmediyse (Boş yanıt)
+      setMessages(prev => prev.map(msg =>
+        msg.id === assistantMsgId && !msg.content.trim()
+          ? { ...msg, content: "Yapay zeka bu isteğinize cevap üretemedi, lütfen farklı bir şekilde sorun." }
+          : msg
+      ));
+
     } catch (error) {
       console.error("Chat Hatası:", error);
       // Hata oluştuğunda UI'da yeni bir baloncuk açmak yerine boş olan mesajı güncelliyoruz
       setMessages(prev => prev.map(msg =>
         msg.role === "assistant" && msg.content === ""
-          ? { ...msg, content: "Bağlantı koptu, lütfen tekrar deneyin." }
+          ? { ...msg, content: error.message || "Bağlantı koptu, lütfen tekrar deneyin." }
           : msg
       ));
     } finally {

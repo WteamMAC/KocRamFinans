@@ -216,14 +216,19 @@ export async function POST(req: Request) {
                           case "expense": await prisma.expense.create({ data: baseData }); break;
                           case "debt": await prisma.debt.create({ data: baseData }); break;
                           case "investment":
+                            const q = Number(quantity) > 0 ? Number(quantity) : 1;
+                            const amt = Number(amount) > 0 ? Number(amount) : 0;
+                            const p = Number(purchasePrice) > 0 ? Number(purchasePrice) : (amt > 0 ? amt / q : 0);
+                            const finalAmt = amt > 0 ? amt : (q * p);
+
                             await prisma.investment.create({
                               data: {
                                 userId: user.id,
                                 type: standardizeInvestmentType(category), // Veri bütünlüğü sağlandı
                                 symbol: description || category,
-                                quantity: Number(quantity) || 1,
-                                purchasePrice: Number(purchasePrice) || Number(amount),
-                                amount: Number(amount),
+                                quantity: q,
+                                purchasePrice: p,
+                                amount: finalAmt,
                                 description: description || null,
                                 status: "OPEN",
                                 transactionType: "BUY",
@@ -284,7 +289,10 @@ export async function POST(req: Request) {
         console.error(`[AI-CHAT] ❌ HATA [${modelName}]:`, errorMessage);
 
         // QUOTA / RATE LIMIT MANTIĞI
-        if (err?.status === 429 || errorMessage.toLowerCase().includes("quota")) {
+        const isRateLimit = err?.status === 429 || errorMessage.toLowerCase().includes("quota") || errorMessage.includes("429") || errorMessage.toLowerCase().includes("too many requests");
+        const isBadRequest = err?.status === 400 || errorMessage.toLowerCase().includes("bad request") || errorMessage.includes("400");
+
+        if (isRateLimit) {
           if (API_KEYS.length === 1) {
             console.error(`[AI-CHAT] 💀 Tek anahtar kotası doldu. İşlem durduruluyor.`);
             return new Response("Yapay zeka kullanım kotanız doldu (Rate Limit). Lütfen 1 dakika bekleyip tekrar deneyin.", { status: 429 });
@@ -292,7 +300,7 @@ export async function POST(req: Request) {
           console.warn(`[AI-CHAT] ⏳ Kota aşıldı, sonraki anahtara geçiliyor...`);
           attempts = (keyIndex + 1) * MODELS.length; // Bir sonraki anahtarın başına atla
           await sleep(2000);
-        } else if (err?.status === 400 || errorMessage.toLowerCase().includes("bad request")) {
+        } else if (isBadRequest) {
           console.error(`[AI-CHAT] ❌ Geçersiz istek (400 Bad Request):`, errorMessage);
           return new Response("Yapay zeka bu mesaj formatını kabul etmedi.", { status: 400 });
         } else {
