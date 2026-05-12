@@ -55,11 +55,26 @@ export async function POST(req: Request) {
       .replace("{CURRENT_DATE}", new Date().toLocaleDateString("tr-TR"))
       .replace("{USER_DATA}", financialContext);
 
-    // Mesaj formatını resmi Google SDK (Content[]) formatına dönüştür
-    const formattedHistory: Content[] = messages.slice(0, -1).map((m: any) => ({
-      role: m.role === "assistant" || m.role === "model" ? "model" : "user",
-      parts: [{ text: m.content || " " }] // Boş metin API'nin çökmesine neden olur, koruma eklendi
-    }));
+    // Mesaj formatını resmi Google SDK (Content[]) formatına dönüştür ve ardışık mesajları birleştir (Gemini 400 hatasını önler)
+    const rawHistory = messages.slice(0, -1);
+    const formattedHistory: Content[] = [];
+
+    for (const m of rawHistory) {
+      const role = m.role === "assistant" || m.role === "model" ? "model" : "user";
+      const text = m.content || " ";
+      if (formattedHistory.length > 0 && formattedHistory[formattedHistory.length - 1].role === role) {
+        formattedHistory[formattedHistory.length - 1].parts[0].text += `\n${text}`;
+      } else {
+        formattedHistory.push({ role, parts: [{ text }] });
+      }
+    }
+
+    // Gemini API, mesajların kesinlikle 'user' -> 'model' şeklinde değişmesini bekler.
+    // Eğer geçmiş bir 'user' mesajıyla bitiyorsa, yeni göndereceğimiz mesaj da 'user' olacağı için API çöker.
+    if (formattedHistory.length > 0 && formattedHistory[formattedHistory.length - 1].role === "user") {
+      formattedHistory.push({ role: "model", parts: [{ text: "Anladım, lütfen devam edin." }] });
+    }
+
     const lastMessage = messages[messages.length - 1].content || " ";
 
     const maxAttempts = API_KEYS.length * MODELS.length;
@@ -118,13 +133,14 @@ export async function POST(req: Request) {
 
         const chat = model.startChat({ history: formattedHistory });
 
-        // ÇÖZÜM: Stream kontrolü ve Tool (Araç) çağırma döngüsünü stream'in içine entegre ediyoruz.
-        // Aksi takdirde 'await result.response' denildiğinde stream API tarafından tüketilmiş oluyor.
+        // ÇÖZÜM 1: İlk API isteğini (stream oluşturmayı) ReadableStream içine girmeden ÖNCE yapıyoruz.
+        // Böylece API Anahtarı kotası (429) veya model hatası varsa, bu asenkron çağrı direkt hata fırlatır 
+        // ve dışarıdaki catch bloğuna düşerek YEDEK API ANAHTARINA GEÇİŞ (fallback) sistemini çalıştırır.
+        let currentResult = await chat.sendMessageStream(lastMessage);
+
         const stream = new ReadableStream({
           async start(controller) {
             try {
-              let currentResult = await chat.sendMessageStream(lastMessage);
-
               while (true) {
                 let toolCalls: any[] = [];
 
@@ -133,15 +149,17 @@ export async function POST(req: Request) {
                   const calls = chunk.functionCalls();
                   if (calls && calls.length > 0) {
                     toolCalls.push(...calls);
-                  } else {
-                    try {
-                      const text = chunk.text();
-                      if (text) {
-                        controller.enqueue(new TextEncoder().encode(text));
-                      }
-                    } catch (e) {
-                      // Eğer chunk içinde text yoksa SDK hata fırlatabilir, yoksayıyoruz.
+                  }
+
+                  // ÇÖZÜM 2: 'else' bloğunu kaldırdık. Model bazen aynı parça (chunk) içinde 
+                  // hem tool çağrısı yapıp hem de "İşleminizi yapıyorum..." gibi bir metin döndürebilir.
+                  try {
+                    const text = chunk.text();
+                    if (text) {
+                      controller.enqueue(new TextEncoder().encode(text));
                     }
+                  } catch (e) {
+                    // Eğer chunk içinde text yoksa SDK hata fırlatır, bunu güvenle yoksayabiliriz.
                   }
                 }
 
