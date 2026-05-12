@@ -12,8 +12,8 @@ const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 const MODELS = [
   "gemini-2.0-flash",
-  "gemini-3-flash",
-  "gemini-3.1-pro"
+  "gemini-1.5-pro",
+  "gemini-1.5-flash"
 ] as const;
 
 
@@ -189,6 +189,7 @@ export async function POST(req: Request) {
                     try {
                       if (call.name === "getFinancialHistory") {
                         const category = (call.args as any).category;
+                        const cat = String(category).toLowerCase();
                         // ÇÖZÜM 3: Token patlamasını engellemek için tüm DB'yi değil, son 5 kaydı modele sun!
                         const dataMap: Record<string, any> = {
                           incomes: user.incomes.slice(-5),
@@ -196,8 +197,15 @@ export async function POST(req: Request) {
                           debts: user.debts.slice(-5),
                           investments: user.investments.slice(-5)
                         };
+
+                        let selectedData: any[] = [];
+                        if (cat.includes("income") || cat.includes("gelir")) selectedData = dataMap.incomes;
+                        else if (cat.includes("expense") || cat.includes("gider")) selectedData = dataMap.expenses;
+                        else if (cat.includes("debt") || cat.includes("borç")) selectedData = dataMap.debts;
+                        else if (cat.includes("investment") || cat.includes("yatırım")) selectedData = dataMap.investments;
+
                         // ÇÖZÜM: API çökmesini önlemek için tool response kesinlikle Object ({ data: [...] }) olmalıdır
-                        apiResponse = category === "all" ? dataMap : { data: dataMap[category] || [] };
+                        apiResponse = (cat === "all" || cat === "hepsi") ? dataMap : { data: selectedData };
                       } else if (call.name === "addFinancialRecord") {
                         const { type, amount, category, description, quantity, purchasePrice } = call.args as any;
 
@@ -213,16 +221,22 @@ export async function POST(req: Request) {
                         };
 
                         switch (type) {
-                          case "income": await prisma.income.create({ data: baseData }); break;
-                          case "expense": await prisma.expense.create({ data: baseData }); break;
-                          case "debt": await prisma.debt.create({ data: baseData }); break;
+                          case "income":
+                            user.incomes.push(await prisma.income.create({ data: baseData }));
+                            break;
+                          case "expense":
+                            user.expenses.push(await prisma.expense.create({ data: baseData }));
+                            break;
+                          case "debt":
+                            user.debts.push(await prisma.debt.create({ data: baseData }));
+                            break;
                           case "investment":
                             const q = Number(quantity) > 0 ? Number(quantity) : 1;
                             const amt = Number(amount) > 0 ? Number(amount) : 0;
                             const p = Number(purchasePrice) > 0 ? Number(purchasePrice) : (amt > 0 ? amt / q : 0);
                             const finalAmt = amt > 0 ? amt : (q * p);
 
-                            await prisma.investment.create({
+                            const newInv = await prisma.investment.create({
                               data: {
                                 userId: user.id,
                                 type: standardizeInvestmentType(category), // Veri bütünlüğü sağlandı
@@ -235,6 +249,7 @@ export async function POST(req: Request) {
                                 transactionType: "BUY",
                               }
                             });
+                            user.investments.push(newInv as any);
                             break;
                           default: throw new Error("Geçersiz işlem tipi");
                         }
