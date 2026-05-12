@@ -1,6 +1,6 @@
 
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import { streamText } from "ai";
+import { streamText, tool } from "ai";
 import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 import { MASTER_PROMPT, getFinancialContext } from "@/lib/gemini";
@@ -21,39 +21,48 @@ const getApiKeys = () => {
   return keys;
 };
 
-const API_KEYS = getApiKeys();
 const MODELS = [
   "gemini-2.0-flash",
   "gemini-1.5-flash",
   "gemini-1.5-pro"
 ] as const;
 
+// Şemalar Merkezi Olarak Tanımlandı
 const getFinancialHistorySchema = z.object({
-  category: z.enum(["all", "incomes", "expenses", "debts", "investments"] as const),
+  category: z.enum(["all", "incomes", "expenses", "debts", "investments"]),
 });
 
 const addFinancialRecordSchema = z.object({
-  type: z.enum(["income", "expense", "debt"] as const),
-  amount: z.number(),
-  category: z.string(),
+  type: z.enum(["income", "expense", "debt", "investment"]),
+  amount: z.number().positive(),
+  category: z.string().min(1),
   description: z.string().optional(),
 });
 
 export async function POST(req: Request) {
   try {
-    const { userId } = await auth();
-    if (!userId) return new Response("Yetkisiz erişim.", { status: 401 });
+    const { userId: clerkId } = await auth();
+    if (!clerkId) return new Response("Yetkisiz erişim.", { status: 401 });
 
+    const API_KEYS = getApiKeys();
     if (API_KEYS.length === 0) return new Response("GEMINI_API_KEY eksik", { status: 500 });
 
     const { messages } = await req.json();
+
+    // PERFORMANS: Tüm finansal veriyi tek sorguda çekiyoruz
     const user = await prisma.user.findUnique({
-      where: { clerkUserId: userId },
-      include: { incomes: { take: 1 }, expenses: { take: 1 }, debts: { take: 1 }, investments: { take: 1 } }
+      where: { clerkUserId: clerkId },
+      include: { 
+        incomes: true, 
+        expenses: true, 
+        debts: true, 
+        investments: true 
+      }
     });
 
     if (!user) return new Response("Kullanıcı bulunamadı.", { status: 404 });
 
+    // Sistem Promptu Hazırlığı
     const financialContext = await getFinancialContext(user);
     const systemPrompt = MASTER_PROMPT
       .replace("{CURRENT_DATE}", new Date().toLocaleDateString("tr-TR"))
@@ -63,9 +72,15 @@ export async function POST(req: Request) {
     let attempts = 0;
 
     while (attempts < maxAttempts) {
-      const keyIndex = Math.floor(attempts / MODELS.length) % API_KEYS.length;
-      const modelName = MODELS[attempts % MODELS.length];
+      const keyIndex = Math.floor(attempts / MODELS.length);
+      const modelIndex = attempts % MODELS.length;
+      
+      if (keyIndex >= API_KEYS.length) break;
+
       const apiKey = API_KEYS[keyIndex];
+      const modelName = MODELS[modelIndex];
+
+      console.log(`[AI-CHAT] 🌀 Deneme ${attempts + 1}/${maxAttempts} | KeyIndex: ${keyIndex} | Model: ${modelName}`);
 
       try {
         const googleProvider = createGoogleGenerativeAI({ apiKey });
@@ -75,56 +90,81 @@ export async function POST(req: Request) {
           system: systemPrompt,
           messages,
           tools: {
-            getFinancialHistory: {
-              description: "Kullanıcının finansal verilerini çeker.",
+            getFinancialHistory: tool({
+              description: "Kullanıcının mevcut finansal özetini ve geçmiş verilerini getirir.",
               parameters: getFinancialHistorySchema,
+              // @ts-expect-error - AI SDK type collision with execute arguments
               execute: async ({ category }: z.infer<typeof getFinancialHistorySchema>) => {
-                const userData = await prisma.user.findUnique({
-                  where: { clerkUserId: userId },
-                  include: { incomes: true, expenses: true, debts: true, investments: true }
-                });
-                if (!userData) return { error: "Veri yok" };
-                if (category === "all") return { incomes: userData.incomes, expenses: userData.expenses, debts: userData.debts, investments: userData.investments };
-                const map: any = { incomes: userData.incomes, expenses: userData.expenses, debts: userData.debts, investments: userData.investments };
-                return map[category] || { error: "Hatalı kategori" };
+                console.log(`[TOOL] 🔍 getFinancialHistory | Kategori: ${category}`);
+                // OPTİMİZASYON: Başta çekilen 'user' verisini kullanıyoruz, tekrar DB'ye gitmiyoruz
+                const dataMap: Record<string, any> = {
+                  incomes: user.incomes,
+                  expenses: user.expenses,
+                  debts: user.debts,
+                  investments: user.investments
+                };
+                return category === "all" ? dataMap : (dataMap[category] || { error: "Kategori bulunamadı" });
               },
-            },
-            addFinancialRecord: {
-              description: "Yeni bir finansal kayıt ekler.",
+            }),
+            addFinancialRecord: tool({
+              description: "Yeni bir gelir, gider, borç veya yatırım kaydı oluşturur.",
               parameters: addFinancialRecordSchema,
+              // @ts-expect-error - AI SDK type collision with execute arguments
               execute: async ({ type, amount, category, description }: z.infer<typeof addFinancialRecordSchema>) => {
+                console.log(`[TOOL] ➕ addFinancialRecord | Tip: ${type} | Tutar: ${amount}`);
                 try {
-                  const dbUser = await prisma.user.findUnique({ where: { clerkUserId: userId } });
-                  if (!dbUser) return { error: "Kullanıcı yok" };
-                  const data = { userId: dbUser.id, type: category, amount, description };
-                  if (type === "income") await (prisma.income as any).create({ data });
-                  else if (type === "expense") await (prisma.expense as any).create({ data });
-                  else if (type === "debt") await (prisma.debt as any).create({ data });
-                  return { success: true };
+                  const baseData = {
+                    userId: user.id,
+                    amount,
+                    description: description || "",
+                    type: category // DB'deki 'type' kolonu kategoriyi (Örn: 'Market') tutar
+                  };
+
+                  // Tip Güvenli Model Erişimi
+                  switch (type) {
+                    case "income": await prisma.income.create({ data: baseData }); break;
+                    case "expense": await prisma.expense.create({ data: baseData }); break;
+                    case "debt": await prisma.debt.create({ data: baseData }); break;
+                    case "investment": await prisma.investment.create({ data: baseData }); break;
+                    default: throw new Error("Geçersiz işlem tipi");
+                  }
+
+                  console.log(`[TOOL] ✅ Kayıt başarılı: ${type}`);
+                  return { success: true, message: "Kayıt başarıyla eklendi." };
                 } catch (e: any) {
-                  return { error: e.message };
+                  console.error(`[TOOL] ❌ addFinancialRecord Hatası:`, e.message);
+                  return { error: `Kayıt başarısız: ${e.message}` };
                 }
               },
-            },
+            }),
           },
-          maxSteps: 5,
-        } as any);
+        });
 
-        // Hem TS hatasını önlemek hem de runtime'da metodun varlığını zorlamak için any cast kullanıyoruz
-        return (result as any).toDataStreamResponse();
+        console.log(`[AI-CHAT] ✅ Başarılı: ${modelName}`);
+        return result.toTextStreamResponse();
 
       } catch (err: any) {
-        attempts++;
-        if (err.status === 429 || err.message?.includes("quota")) {
-          attempts = (Math.floor((attempts - 1) / MODELS.length) + 1) * MODELS.length;
+        console.error(`[AI-CHAT] ❌ HATA [${modelName}]:`, err.message);
+
+        // QUOTA / RATE LIMIT MANTIĞI
+        if (err.status === 429 || err.message?.toLowerCase().includes("quota")) {
+          if (API_KEYS.length === 1) {
+            console.error(`[AI-CHAT] 💀 Tek anahtar kotası doldu. İşlem durduruluyor.`);
+            break; // Tek key varsa diğer modelleri deneme (paylaşımlı kota)
+          }
+          console.warn(`[AI-CHAT] ⏳ Kota aşıldı, sonraki anahtara geçiliyor...`);
+          attempts = (keyIndex + 1) * MODELS.length; // Bir sonraki anahtarın başına atla
           await sleep(2000);
         } else {
+          attempts++;
           await sleep(500);
         }
       }
     }
-    return new Response("Başarısız", { status: 500 });
+
+    return new Response("Servis şu anda yoğun, lütfen biraz bekleyip tekrar deneyin.", { status: 503 });
   } catch (error: any) {
-    return new Response(error.message, { status: 500 });
+    console.error(`[AI-CHAT] 🚨 SİSTEM HATASI:`, error.message);
+    return new Response("Sunucu tarafında bir hata oluştu.", { status: 500 });
   }
 }
