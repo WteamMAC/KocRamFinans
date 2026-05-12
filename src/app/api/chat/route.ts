@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 import { MASTER_PROMPT, getFinancialContext } from "@/lib/gemini";
@@ -164,55 +164,58 @@ export async function POST(req: Request) {
 
     for (let keyTrial = 0; keyTrial < API_KEYS.length; keyTrial++) {
       const { key, maskedKey } = getNextKey();
-      const genAI = new GoogleGenerativeAI(key);
+      const ai = new GoogleGenAI({ apiKey: key });
 
       for (let modelIndex = 0; modelIndex < FALLBACK_MODELS.length; modelIndex++) {
         const modelId = FALLBACK_MODELS[modelIndex];
 
-        console.log(`[${traceId}] [TRIAL] Key: ${maskedKey}, Model: ${modelId}, Tool: ${toolMode}`);
+        console.log(`[${traceId}] [TRIAL] [V1-SDK] Key: ${maskedKey}, Model: ${modelId}, Tool: ${toolMode}`);
 
         try {
           let tools: any[] | undefined;
-          if (toolMode === "db") tools = [{ functionDeclarations: FUNCTION_DECLARATIONS }];
-          else if (toolMode === "search") tools = [{ 
-            googleSearchRetrieval: { 
-              dynamicRetrievalConfig: { mode: "unspecified", dynamicThreshold: 0.06 } 
-            } 
-          }];
+          if (toolMode === "db") {
+            tools = [{ function_declarations: FUNCTION_DECLARATIONS }];
+          } else if (toolMode === "search") {
+            tools = [{ google_search_retrieval: {} }];
+          }
 
-          const model = genAI.getGenerativeModel({
+          const response = await ai.models.generateContentStream({
             model: modelId,
             systemInstruction: systemPrompt,
-            ...(tools ? { tools: tools as any } : {}),
+            contents: [
+              ...limitedMessages.slice(0, -1).map((m: any) => ({
+                role: m.role === "user" ? "user" : "model",
+                parts: [{ text: m.content }]
+              })),
+              { role: "user", parts: [{ text: lastMessage }] }
+            ],
+            tools: tools as any
           });
-
-          // Truncated history ile sohbeti başlat
-          const chat = model.startChat({
-            history: limitedMessages.slice(0, -1).map((m: any) => ({
-              role: m.role === "user" ? "user" : "model",
-              parts: [{ text: m.content }]
-            }))
-          });
-
-          const result = await chat.sendMessageStream(lastMessage);
 
           // Stream okuma ve Response döndürme
           const encoder = new TextEncoder();
           const stream = new ReadableStream({
             async start(controller) {
               try {
-                for await (const chunk of result.stream) {
+                for await (const chunk of response.stream) {
                   let chunkText = "";
-                  try { chunkText = chunk.text(); } catch { }
-                  if (chunkText) controller.enqueue(encoder.encode(chunkText));
-
-                  const calls = chunk.functionCalls?.();
-                  if (calls) {
-                    for (const call of calls) {
-                      const payload = JSON.stringify({ name: call.name, args: call.args });
-                      controller.enqueue(encoder.encode(`\n\n__TOOL_CALL__:${payload}__END_TOOL_CALL__\n`));
+                  
+                  // Yeni SDK'da text hem metod hem property olabilir, güvenli okuma:
+                  if (chunk.candidates?.[0]?.content?.parts) {
+                    const parts = chunk.candidates[0].content.parts;
+                    for (const part of parts) {
+                      if (part.text) {
+                        chunkText += part.text;
+                      }
+                      if (part.functionCall) {
+                        const call = part.functionCall;
+                        const payload = JSON.stringify({ name: call.name, args: call.args });
+                        controller.enqueue(encoder.encode(`\n\n__TOOL_CALL__:${payload}__END_TOOL_CALL__\n`));
+                      }
                     }
                   }
+                  
+                  if (chunkText) controller.enqueue(encoder.encode(chunkText));
                 }
                 controller.close();
               } catch (e) { controller.error(e); }
