@@ -1,6 +1,4 @@
 
-import { FunctionDeclaration, SchemaType } from "@google/generative-ai";
-
 /**
  * KOÇ RAM FİNANS - AGENTIC GEMINI MASTER PROMPT
  * Bu prompt, modelin cümleleri anlamasını, gereksiz konuşmamasını ve 
@@ -16,7 +14,7 @@ GÖREVLERİN VE KURALLARIN:
 3. SADECE SORULAN SORU: Kullanıcı ne sorduysa sadece ona cevap ver. Konu dışına çıkma.
 4. VERİ ÇEKME: Kullanıcının finansal durumuyla ilgili her türlü soruda (Örn: "Param ne durumda?", "Geçen ay ne harcadım?") mutlaka 'getFinancialHistory' aracını kullan. Ezbere cevap verme.
 5. AKSİYON ALMA (Danışmanlık): Mevcut finansal durumu analiz et ve kullanıcının tasarruf oranını artıracak, borçlarını azaltacak somut öneriler ver.
-6. İNTERNET ARAMASI: Güncel borsa, döviz, kripto fiyatları veya ekonomik haberler sorulduğunda Google Search (google_search_retrieval) aracını kullan. Bilgiyi çok kısa ve net ilet.
+6. İNTERNET ARAMASI: Güncel borsa, döviz, kripto fiyatları veya ekonomik haberler sorulduğunda Google Search aracını kullan. Bilgiyi çok kısa ve net ilet.
 7. BÖLGESEL UYUMLULUK: Tüm para birimi işlemlerini aksi belirtilmedikçe TL üzerinden yap. Tarih formatı olarak TR formatını kullan.
 
 Bugünün Tarihi: {CURRENT_DATE}
@@ -24,53 +22,6 @@ Kullanıcı Özeti: {USER_DATA}
 
 UYARI: Yatırım tavsiyesi verirken mutlaka "Yatırım Tavsiyesi Değildir (YTD)" notunu ekle.
 `;
-
-export const FUNCTION_DECLARATIONS: FunctionDeclaration[] = [
-  {
-    name: "getFinancialHistory",
-    description: "Kullanıcının gelir, gider, borç ve yatırım verilerini veritabanından çeker. Kullanıcının finansal durumu sorulduğunda ilk buraya başvurulmalıdır.",
-    parameters: {
-      type: SchemaType.OBJECT,
-      properties: {
-        category: {
-          type: SchemaType.STRING,
-          description: "Sorgulanacak kategori: 'all', 'incomes', 'expenses', 'debts', 'investments'",
-        },
-        period: {
-          type: SchemaType.STRING,
-          description: "Dönem: 'last_month', 'last_3_months', 'all_time'",
-        }
-      },
-      required: ["category"]
-    }
-  },
-  {
-    name: "addFinancialRecord",
-    description: "Yeni bir finansal işlem (gelir, gider, borç) ekler. Kullanıcı '1000 TL kira ödedim' gibi cümleler kurduğunda kullanılır.",
-    parameters: {
-      type: SchemaType.OBJECT,
-      properties: {
-        type: {
-          type: SchemaType.STRING,
-          description: "İşlem tipi: 'income', 'expense', 'debt'",
-        },
-        amount: {
-          type: SchemaType.NUMBER,
-          description: "Miktar (TL)",
-        },
-        category: {
-          type: SchemaType.STRING,
-          description: "Kategori (Kira, Market, Maaş vb.)",
-        },
-        description: {
-          type: SchemaType.STRING,
-          description: "Kısa açıklama",
-        }
-      },
-      required: ["type", "amount", "category"]
-    }
-  }
-];
 
 export async function getFinancialContext(user: any) {
   const totals = {

@@ -2,8 +2,9 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useChat } from "@ai-sdk/react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
@@ -16,87 +17,27 @@ import {
   Minimize2, 
   Maximize2,
   TrendingUp,
-  Search,
-  Globe
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
-interface Message {
-  role: "user" | "assistant";
-  content: string;
-  isStreaming?: boolean;
-  type?: "text" | "tool";
-}
-
 export function ChatAI() {
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
-  const [input, setInput] = useState("");
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
+    api: "/api/chat",
+    onError: (error: any) => {
+      console.error("Chat Error:", error);
+    }
+  } as any) as any;
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim() || isLoading) return;
-
-    const userMessage: Message = { role: "user", content: input };
-    setMessages(prev => [...prev, userMessage]);
-    setInput("");
-    setIsLoading(true);
-
-    try {
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        body: JSON.stringify({ messages: [...messages, userMessage] }),
-      });
-
-      if (!response.ok) throw new Error("Bir hata oluştu.");
-
-      const reader = response.body?.getReader();
-      const decoder = new TextEncoder();
-      let assistantContent = "";
-      
-      setMessages(prev => [...prev, { role: "assistant", content: "", isStreaming: true }]);
-
-      while (true) {
-        const { done, value } = await reader!.read();
-        if (done) break;
-
-        const text = new TextDecoder().decode(value);
-        
-        // JSON sızıntılarını ayıkla (Tool call sonuçları için)
-        if (text.includes("__JSON__:")) {
-           const match = text.match(/__JSON__:(.*?)__END__/);
-           if (match) {
-             // Opsiyonel: Tool call görselleştirmesi yapılabilir
-             continue;
-           }
-        }
-
-        assistantContent += text;
-        setMessages(prev => {
-          const last = prev[prev.length - 1];
-          if (last.role === "assistant") {
-            return [...prev.slice(0, -1), { ...last, content: assistantContent }];
-          }
-          return prev;
-        });
-      }
-    } catch (error) {
-      setMessages(prev => [...prev, { role: "assistant", content: "Üzgünüm, şu an cevap veremiyorum." }]);
-    } finally {
-      setIsLoading(false);
-      setMessages(prev => prev.map(m => ({ ...m, isStreaming: false })));
-    }
-  };
 
   return (
     <div className="fixed bottom-6 right-6 z-[999]">
@@ -164,20 +105,33 @@ export function ChatAI() {
                         </p>
                       </div>
                     )}
-                    {messages.map((m, i) => (
-                      <div key={i} className={cn("flex gap-3", m.role === "assistant" ? "justify-start" : "justify-end")}>
+                    {messages.map((m: any) => (
+                      <div key={m.id} className={cn("flex gap-3", m.role === "assistant" ? "justify-start" : "justify-end")}>
                         {m.role === "assistant" && (
                           <div className="w-8 h-8 rounded-lg bg-[#8c5000]/10 flex items-center justify-center flex-shrink-0">
                             <Bot className="h-4 w-4 text-[#8c5000]" />
                           </div>
                         )}
                         <div className={cn(
-                          "max-w-[80%] p-4 rounded-2xl text-sm leading-relaxed",
+                          "max-w-[80%] p-4 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap",
                           m.role === "assistant" 
                             ? "bg-[#f8f9fa] text-[#191c1d] rounded-tl-none border border-[#dbc2b0]/20 shadow-sm" 
                             : "bg-[#8c5000] text-white rounded-tr-none shadow-ambient-medium"
                         )}>
                           {m.content}
+                          {m.toolInvocations?.map((toolInvocation: any) => {
+                            const { toolName, toolCallId, state } = toolInvocation;
+                            if (state === 'result') {
+                              return null; // Tool sonuçlarını direkt göstermiyoruz, asistanın yorumlamasını bekliyoruz
+                            } else {
+                              return (
+                                <div key={toolCallId} className="flex items-center gap-2 mt-2 text-[10px] font-bold text-[#8c5000] animate-pulse">
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                  {toolName === 'getFinancialHistory' ? 'Veriler Sorgulanıyor...' : 'İşlem Kaydediliyor...'}
+                                </div>
+                              );
+                            }
+                          })}
                         </div>
                         {m.role === "user" && (
                           <div className="w-8 h-8 rounded-lg bg-[#8c5000] flex items-center justify-center flex-shrink-0">
@@ -186,17 +140,6 @@ export function ChatAI() {
                         )}
                       </div>
                     ))}
-                    {isLoading && (
-                      <div className="flex gap-3 animate-in fade-in duration-300">
-                        <div className="w-8 h-8 rounded-lg bg-[#8c5000]/10 flex items-center justify-center">
-                          <Bot className="h-4 w-4 text-[#8c5000]" />
-                        </div>
-                        <div className="bg-[#f8f9fa] p-4 rounded-2xl rounded-tl-none border border-[#dbc2b0]/20 flex items-center gap-2">
-                          <Loader2 className="h-4 w-4 animate-spin text-[#8c5000]" />
-                          <span className="text-xs font-bold text-[#554336] opacity-60">Düşünüyorum...</span>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 </ScrollArea>
 
@@ -204,7 +147,7 @@ export function ChatAI() {
                   <form onSubmit={handleSubmit} className="w-full flex gap-3 relative">
                     <Input
                       value={input}
-                      onChange={(e) => setInput(e.target.value)}
+                      onChange={handleInputChange}
                       placeholder="Sorunuzu buraya yazın..."
                       className="bg-[#f8f9fa] border-[#dbc2b0]/30 h-14 rounded-2xl pr-14 focus:ring-[#8c5000] placeholder:text-[#554336]/40"
                     />
