@@ -75,7 +75,7 @@ export async function POST(req: Request) {
 
     if (API_KEYS.length === 0) {
       return new Response(JSON.stringify({ 
-        error: "GEMINI_API_KEY bulunamadı! Lütfen Vercel ayarlarından API anahtarını eklediğinizden ve deployment'ı tetiklediğinizden emin olun." 
+        error: "GEMINI_API_KEY bulunamadı! Lütfen Vercel ayarlarından API anahtarını ekleyin." 
       }), { status: 500 });
     }
 
@@ -94,80 +94,81 @@ export async function POST(req: Request) {
       .replace("{CURRENT_DATE}", new Date().toLocaleDateString("tr-TR"))
       .replace("{USER_DATA}", financialContext);
 
-    // Key ve Model Rotasyonu (Dirençli Mimarisi)
-    for (let k = 0; k < API_KEYS.length; k++) {
+    // Toplam deneme hakkı (Key sayısı * Model sayısı)
+    const maxAttempts = API_KEYS.length * MODELS.length;
+    let attempts = 0;
+
+    while (attempts < maxAttempts) {
       const apiKey = API_KEYS[currentKeyIndex];
+      // Mevcut key için uygun modeli seç (her denemede bir sonrakine geçebiliriz)
+      const modelName = MODELS[attempts % MODELS.length];
       
-      for (const modelName of MODELS) {
-        try {
-          const genAI = new GoogleGenerativeAI(apiKey);
-          const model = genAI.getGenerativeModel({
-            model: modelName,
-            systemInstruction: systemPrompt,
-            tools: [
-              { functionDeclarations: FUNCTION_DECLARATIONS },
-              { googleSearch: {} } // Daha stabil Google Search formatı
-            ] as any
-          }, { apiVersion: "v1beta" });
+      try {
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const model = genAI.getGenerativeModel({
+          model: modelName,
+          systemInstruction: systemPrompt,
+          tools: [
+            { functionDeclarations: FUNCTION_DECLARATIONS },
+            { googleSearch: {} }
+          ] as any
+        }, { apiVersion: "v1beta" });
 
-          const history = messages.slice(0, -1).map((m: any) => ({
-            role: m.role === "assistant" ? "model" : "user",
-            parts: [{ text: m.content }]
-          }));
+        const history = messages.slice(0, -1).map((m: any) => ({
+          role: m.role === "assistant" ? "model" : "user",
+          parts: [{ text: m.content }]
+        }));
 
-          const chat = model.startChat({ history });
-          const result = await chat.sendMessageStream(lastMessage.content);
+        const chat = model.startChat({ history });
+        const result = await chat.sendMessageStream(lastMessage.content);
 
-          const encoder = new TextEncoder();
-          const stream = new ReadableStream({
-            async start(controller) {
-              try {
-                for await (const chunk of result.stream) {
-                  const parts = chunk.candidates?.[0]?.content?.parts;
-                  if (!parts) continue;
-
-                  for (const part of parts) {
-                    if (part.text) {
-                      controller.enqueue(encoder.encode(part.text));
-                    }
-                    if (part.functionCall) {
-                      const call = part.functionCall;
-                      const toolResult = await executeTool(call.name, call.args, userId);
-                      const payload = JSON.stringify({ type: "tool", name: call.name, result: toolResult });
-                      controller.enqueue(encoder.encode(`\n__JSON__:${payload}__END__\n`));
-                    }
+        const encoder = new TextEncoder();
+        const stream = new ReadableStream({
+          async start(controller) {
+            try {
+              for await (const chunk of result.stream) {
+                const parts = chunk.candidates?.[0]?.content?.parts;
+                if (!parts) continue;
+                for (const part of parts) {
+                  if (part.text) controller.enqueue(encoder.encode(part.text));
+                  if (part.functionCall) {
+                    const call = part.functionCall;
+                    const toolResult = await executeTool(call.name, call.args, userId);
+                    const payload = JSON.stringify({ type: "tool", name: call.name, result: toolResult });
+                    controller.enqueue(encoder.encode(`\n__JSON__:${payload}__END__\n`));
                   }
                 }
-                controller.close();
-              } catch (e) {
-                controller.close();
               }
+              controller.close();
+            } catch (e) {
+              controller.close();
             }
-          });
-
-          return new Response(stream, { headers: { "Content-Type": "text/plain; charset=utf-8" } });
-
-        } catch (err: any) {
-          console.error(`Deneme Başarısız (Key: ${currentKeyIndex}, Model: ${modelName}):`, err.message);
-
-          // Kota hatası (429), bir sonraki key'e geç ve bekle
-          if (err.status === 429 || err.message?.includes("quota")) {
-            console.warn(`Kota doldu, 2 saniye bekleniyor...`);
-            await sleep(2000);
-            currentKeyIndex = (currentKeyIndex + 1) % API_KEYS.length;
-            break; // Model döngüsünü kır, yeni key'e geç
           }
+        });
 
-          // Diğer tüm hatalarda (404, 500 vb.) bir sonraki modeli veya key'i denemeye devam et
-          if (modelName === MODELS[MODELS.length - 1]) {
+        return new Response(stream, { headers: { "Content-Type": "text/plain; charset=utf-8" } });
+
+      } catch (err: any) {
+        attempts++;
+        console.warn(`Deneme ${attempts}/${maxAttempts} başarısız (Key: ${currentKeyIndex}, Model: ${modelName}):`, err.message);
+
+        if (err.status === 429 || err.message?.includes("quota")) {
+          // Eğer key bittiyse ve başka key varsa hemen değiştir
+          if (API_KEYS.length > 1) {
             currentKeyIndex = (currentKeyIndex + 1) % API_KEYS.length;
+            console.log("Yeni key'e geçiliyor...");
           }
-          continue; 
+          await sleep(2000); // Her halükarda 2sn bekle
+        } else if (err.status === 404) {
+          // Model yoksa bir sonrakini denemek için devam et (attempts artıyor zaten)
+        } else {
+          // Beklenmedik hata, yine de devam etmeyi dene
+          await sleep(1000);
         }
       }
     }
 
-    return new Response("Tüm API anahtarları ve modeller denendi ancak başarılı olunamadı. Lütfen API anahtarlarınızın geçerliliğini kontrol edin.", { status: 500 });
+    return new Response("Mevcut tüm kota ve modeller tükendi. Lütfen bir süre bekleyin veya yeni API anahtarları ekleyin.", { status: 500 });
 
   } catch (error: any) {
     console.error("Kritik Chat Hatası:", error);
