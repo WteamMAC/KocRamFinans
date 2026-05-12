@@ -52,11 +52,11 @@ export async function POST(req: Request) {
     // PERFORMANS: Tüm finansal veriyi tek sorguda çekiyoruz
     const user = await prisma.user.findUnique({
       where: { clerkUserId: clerkId },
-      include: { 
-        incomes: true, 
-        expenses: true, 
-        debts: true, 
-        investments: true 
+      include: {
+        incomes: true,
+        expenses: true,
+        debts: true,
+        investments: true
       }
     });
 
@@ -74,7 +74,7 @@ export async function POST(req: Request) {
     while (attempts < maxAttempts) {
       const keyIndex = Math.floor(attempts / MODELS.length);
       const modelIndex = attempts % MODELS.length;
-      
+
       if (keyIndex >= API_KEYS.length) break;
 
       const apiKey = API_KEYS[keyIndex];
@@ -114,16 +114,16 @@ export async function POST(req: Request) {
                   // Tip Güvenli Model Erişimi
                   switch (type) {
                     case "income": 
-                      await prisma.income.create({ data: { userId: user.id, amount, description: description || "", type: category } }); 
+                      await prisma.income.create({ data: baseData as any }); 
                       break;
                     case "expense": 
-                      await prisma.expense.create({ data: { userId: user.id, amount, description: description || "", type: category, isRecurring: false } }); 
+                      await prisma.expense.create({ data: { ...baseData, isRecurring: false } as any }); 
                       break;
                     case "debt": 
-                      await prisma.debt.create({ data: { userId: user.id, amount, description: description || "", type: category } }); 
+                      await prisma.debt.create({ data: baseData as any }); 
                       break;
                     case "investment": 
-                      await prisma.investment.create({ data: { userId: user.id, amount, description: description || "", type: category, quantity: 1, purchasePrice: amount, status: "OPEN", transactionType: "BUY" } }); 
+                      await prisma.investment.create({ data: { ...baseData, quantity: 1, purchasePrice: amount, status: "OPEN", transactionType: "BUY" } as any }); 
                       break;
                     default: throw new Error("Geçersiz işlem tipi");
                   }
