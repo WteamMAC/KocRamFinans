@@ -276,14 +276,16 @@ export async function POST(req: Request) {
             continue; 
           } 
 
-          // Eğer gerçekten API limiti dolduysa veya API Key yetkisizse, diğer API Key'e geçmek için döngüyü kır.
-          if (isQuotaError || isAuthError) {
-            if (errorDetails.includes("RPM")) lastRateLimitReason = `RPM Sınırı - Anahtar: ${maskedKey}`;
-            else if (errorDetails.includes("TPM")) lastRateLimitReason = `TPM Sınırı - Anahtar: ${maskedKey}`;
-            else if (isAuthError) lastRateLimitReason = `Yetki Hatası - Anahtar: ${maskedKey}`;
-            else lastRateLimitReason = `Kota Hatası (${statusCode})`;
-            
-            break; // Sadece key değiştirmek için döngüyü kır
+          // Eğer gerçekten API limiti dolduysa veya API Key yetkisizse:
+          if (isQuotaError) {
+            lastRateLimitReason = `Model Kotası Dolu (${modelId}) - Anahtar: ${maskedKey}`;
+            // DİKKAT: Break yapmıyoruz, çünkü aynı key ile başka bir model (örn: 8b) hala çalışabilir!
+            continue; 
+          }
+
+          if (isAuthError) {
+            lastRateLimitReason = `Yetki Hatası - Anahtar: ${maskedKey}`;
+            break; // Yetki hatası varsa anahtar geçersizdir, diğer anahtara geç.
           }
 
           // Diğer bilinmeyen hatalarda da sistemin çökmemesi için sıradaki modeli denemesini sağla
