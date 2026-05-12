@@ -36,13 +36,10 @@ const getNextKey = () => {
 // ─── MODELLER VE ARAÇLAR ─────────────────────────────────────────────────────
 
 const FALLBACK_MODELS = [
-  "gemini-3.1-flash",
-  "gemini-3.1-flash-lite",
-  "gemini-3-flash",
-  "gemini-2.5-flash",
-  "gemini-2.5-flash-lite",
   "gemini-2.0-flash",
-  "gemini-1.5-flash"
+  "gemini-1.5-flash",
+  "gemini-1.5-flash-8b",
+  "gemini-1.5-pro"
 ];
 
 const MARKET_KEYWORDS = [
@@ -115,8 +112,18 @@ type ToolMode = "none" | "search" | "db";
 
 function classifyMessage(message: string): ToolMode {
   const lower = message.toLowerCase();
+  
+  // Veritabanı işlemleri (ekle, kaydet, sil vb.)
   if (DB_ACTION_KEYWORDS.some(kw => lower.includes(kw))) return "db";
-  if (MARKET_KEYWORDS.some(kw => lower.includes(kw))) return "search";
+  
+  // Arama motoru sadece "fiyat, kur, kaç tl, ne kadar" gibi spesifik piyasa verisi sorularında tetiklensin.
+  // "Ne önerirsin", "altın almalı mıyım" gibi tavsiye sorularında modelin kendi bilgisini kullanması daha iyidir.
+  const priceKeywords = ["kaç tl", "fiyat", "kur", "ne kadar", "borsa durumu", "güncel haber", "endeks", "değeri"];
+  const hasMarketKeyword = MARKET_KEYWORDS.some(kw => lower.includes(kw));
+  const isAskingPrice = priceKeywords.some(pk => lower.includes(pk));
+
+  if (hasMarketKeyword && isAskingPrice) return "search";
+  
   return "none";
 }
 
@@ -177,7 +184,15 @@ export async function POST(req: Request) {
           if (toolMode === "db") {
             tools = [{ functionDeclarations: FUNCTION_DECLARATIONS }];
           } else if (toolMode === "search") {
-            tools = [{ googleSearch: {} }];
+            // Google Arama aracını dinamik eşik değeriyle etkinleştiriyoruz
+            tools = [{ 
+              googleSearchRetrieval: { 
+                dynamicRetrievalConfig: { 
+                  mode: "MODE_DYNAMIC", 
+                  dynamicThreshold: 0.3 
+                } 
+              } 
+            } as any];
           }
 
           const response = await ai.models.generateContentStream({
@@ -200,10 +215,10 @@ export async function POST(req: Request) {
           const stream = new ReadableStream({
             async start(controller) {
               try {
+                let hasSentAnything = false;
                 for await (const chunk of response) {
                   let chunkText = "";
 
-                  // Yeni SDK'da response nesnesi doğrudan iteratördür
                   if (chunk.candidates?.[0]?.content?.parts) {
                     const parts = chunk.candidates[0].content.parts;
                     for (const part of parts) {
@@ -214,14 +229,26 @@ export async function POST(req: Request) {
                         const call = part.functionCall;
                         const payload = JSON.stringify({ name: call.name, args: call.args });
                         controller.enqueue(encoder.encode(`\n\n__TOOL_CALL__:${payload}__END_TOOL_CALL__\n`));
+                        hasSentAnything = true;
                       }
                     }
                   }
 
-                  if (chunkText) controller.enqueue(encoder.encode(chunkText));
+                  if (chunkText) {
+                    controller.enqueue(encoder.encode(chunkText));
+                    hasSentAnything = true;
+                  }
                 }
+                
+                if (!hasSentAnything) {
+                  controller.enqueue(encoder.encode("Üzgünüm, bu konuda şu an bilgi sağlayamıyorum. Lütfen sorunuzu farklı bir şekilde sormayı deneyin."));
+                }
+                
                 controller.close();
-              } catch (e) { controller.error(e); }
+              } catch (e) { 
+                console.error("[STREAM ERROR]", e);
+                controller.error(e); 
+              }
             }
           });
 
