@@ -37,9 +37,11 @@ const getNextKey = () => {
 
 const FALLBACK_MODELS = [
   "gemini-2.0-flash",
+  "gemini-1.5-flash-latest",
   "gemini-1.5-flash",
-  "gemini-1.5-flash-8b",
-  "gemini-1.5-pro"
+  "gemini-1.5-pro-latest",
+  "gemini-1.5-pro",
+  "gemini-1.5-flash-8b"
 ];
 
 const MARKET_KEYWORDS = [
@@ -176,7 +178,8 @@ export async function POST(req: Request) {
 
     for (let keyTrial = 0; keyTrial < API_KEYS.length; keyTrial++) {
       const { key, maskedKey } = getNextKey();
-      const ai = new GoogleGenAI({ apiKey: key });
+      // v1 API kullanarak 1.5 modellerinin 404 hatası vermesini engelliyoruz.
+      const ai = new GoogleGenAI({ apiKey: key, apiVersion: "v1" } as any);
 
       for (let modelIndex = 0; modelIndex < FALLBACK_MODELS.length; modelIndex++) {
         const modelId = FALLBACK_MODELS[modelIndex];
