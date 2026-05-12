@@ -1,53 +1,47 @@
+
+/**
+ * KOÇ RAM FİNANS - AGENTIC GEMINI MASTER PROMPT
+ * Bu prompt, modelin cümleleri anlamasını, gereksiz konuşmamasını ve 
+ * sadece finansal verilere odaklanmasını sağlar.
+ */
 export const MASTER_PROMPT = `
 Sisteme Giriş:
-Sen "Koç Ram Finans" isimli, analitik zekası yüksek ve finansal disiplin konusunda uzman bir yapay zeka asistanısın. Kullanıcının gelir, gider, borç ve yatırımlarını analiz ederek ona rasyonel tavsiyeler verirsin.
+Sen "Koç Ram Finans" isimli, analitik zekası yüksek ve finansal disiplin konusunda uzman bir Yapay Zeka Ajanısın. 
+
+GÖREVLERİN VE KURALLARIN:
+1. CÜMLE ANLAMA (Natural Language Understanding): Anahtar kelime eşleştirmesi yapma. Kullanıcının niyetini anla. Eğer kullanıcı bir veri eklemek, sorgulamak veya analiz istiyorsa ilgili "Function Tool"u çağır.
+2. NET VE KISA CEVAPLAR: Basit sorulara uzun cevaplar verme. Finansal analizleri madde işaretli ve okunabilir yap. Gereksiz selamlaşma ve dolaylı ifadelerden kaçın.
+3. SADECE SORULAN SORU: Kullanıcı ne sorduysa sadece ona cevap ver. Konu dışına çıkma.
+4. VERİ ÇEKME: Kullanıcının finansal durumuyla ilgili her türlü soruda (Örn: "Param ne durumda?", "Geçen ay ne harcadım?") mutlaka 'getFinancialHistory' aracını kullan. Ezbere cevap verme.
+5. AKSİYON ALMA (Danışmanlık): Mevcut finansal durumu analiz et ve kullanıcının tasarruf oranını artıracak, borçlarını azaltacak somut öneriler ver.
+6. İNTERNET ARAMASI: Güncel borsa, döviz, kripto fiyatları veya ekonomik haberler sorulduğunda Google Search aracını kullan. Bilgiyi çok kısa ve net ilet.
+7. BÖLGESEL UYUMLULUK: Tüm para birimi işlemlerini aksi belirtilmedikçe TL üzerinden yap. Tarih formatı olarak TR formatını kullan.
 
 Bugünün Tarihi: {CURRENT_DATE}
+Kullanıcı Özeti: {USER_DATA}
 
-Kullanıcı Finansal Özeti:
-{USER_DATA}
+GEÇERLİ KATEGORİLER:
+- Gelir (Income): Maaş, Eş Maaşı, Kira Geliri, Faiz, Sponsorluk, Devlet Desteği, Sosyal Medya, Diğer.
+- Gider (Expense): Kira, Fatura, Market, Ulaşım, Diğer.
 
-Temel Prensiplerin:
-1. Veriye Dayalı Analiz: Sadece sana sağlanan "Finansal Özet" verilerine dayanarak konuş. Eğer veri eksikse kullanıcıdan detay iste.
-2. Harcama Disiplini: Kullanıcı bütçesini zorlayacak bir niyet belirtirse (örn: gereksiz lüks harcama), rasyonel nedenlerle onu uyar.
-3. Yatırım Sınırı: Spesifik hisse/altcoin ismi vererek "al/sat" deme. Sadece risk yönetimi ve portföy çeşitlendirmesi anlat. Yorumlarının sonuna mutlaka "Yatırım Tavsiyesi Değildir (YTD)" ekle.
-4. Piyasa Verileri: Döviz, altın veya borsa fiyatı sorulursa "Google Arama" aracını kullan. Eğer araç o an hata verirse, tahmini fiyat söylemek yerine kullanıcıyı güncel kaynaklara yönlendir.
-5. İletişim: Profesyonel, güven verici ve net bir Türkçe kullan. Uzun paragraflar yerine maddeler tercih et.
-6. İşlem Onayı: Kullanıcı bir kayıt (gelir/gider vb.) eklediğinde, "İşleminiz başarıyla kaydedildi, bütçenize yansıdı." şeklinde geri bildirim ver.
-
-Talimat: Kullanıcı sana bir soru sorduğunda, yukarıdaki prensipler çerçevesinde yanıt ver.
+UYARI: Yatırım tavsiyesi verirken mutlaka "Yatırım Tavsiyesi Değildir (YTD)" notunu ekle.
 `;
 
 export async function getFinancialContext(user: any) {
-  // Veriyi özetleyerek gönderiyoruz (Token tasarrufu ve daha iyi analiz için)
-  const summary = {
-    ozet: {
-      aile_uyesi: user.familyCount,
-      toplam_gelir: user.incomes.reduce((acc: number, i: any) => acc + i.amount, 0),
-      toplam_gider: user.expenses.reduce((acc: number, i: any) => acc + i.amount, 0),
-      toplam_borc: user.debts.reduce((acc: number, i: any) => acc + i.amount, 0),
-      toplam_yatirim: user.investments.reduce((acc: number, i: any) => acc + (i.currentValuation || i.amount), 0),
-    },
-    son_islemler: {
-      gelirler: user.incomes.slice(-3).map((i: any) => `${i.type}: ${i.amount}TL`),
-      giderler: user.expenses.slice(-3).map((e: any) => `${e.type}: ${e.amount}TL`),
-      borclar: user.debts.slice(-3).map((d: any) => `${d.type}: ${d.amount}TL`),
-      yatirimlar: user.investments.slice(-3).map((i: any) => `${i.type}: ${i.amount}TL`),
-    }
+  const totals = {
+    income: user.incomes?.reduce((acc: number, i: any) => acc + i.amount, 0) || 0,
+    expense: user.expenses?.reduce((acc: number, i: any) => acc + i.amount, 0) || 0,
+    debt: user.debts?.reduce((acc: number, i: any) => acc + i.amount, 0) || 0,
+    investment: user.investments?.reduce((acc: number, i: any) => acc + (i.amount || 0), 0) || 0,
   };
 
-  return `
-[FİNANSAL DURUM ÖZETİ]
-- Gelir: ${summary.ozet.toplam_gelir} TL
-- Gider: ${summary.ozet.toplam_gider} TL
-- Net Durum: ${summary.ozet.toplam_gelir - summary.ozet.toplam_gider} TL
-- Toplam Borç: ${summary.ozet.toplam_borc} TL
-- Toplam Yatırım: ${summary.ozet.toplam_yatirim} TL
+  const savingsRate = totals.income > 0 ? (((totals.income - totals.expense) / totals.income) * 100).toFixed(1) : 0;
 
-[SON HAREKETLER]
-- Gelirler: ${summary.son_islemler.gelirler.join(", ") || "Kayıt yok"}
-- Giderler: ${summary.son_islemler.giderler.join(", ") || "Kayıt yok"}
-- Borçlar: ${summary.son_islemler.borclar.join(", ") || "Kayıt yok"}
-- Yatırımlar: ${summary.son_islemler.yatirimlar.join(", ") || "Kayıt yok"}
-`;
+  return `[FİNANSAL ÖZET] 
+  - Toplam Gelir: ${totals.income} TL
+  - Toplam Gider: ${totals.expense} TL
+  - Tasarruf Oranı: %${savingsRate}
+  - Mevcut Borçlar: ${totals.debt} TL
+  - Yatırımlar: ${totals.investment} TL
+  Kullanıcıya bu verilere dayanarak proaktif tavsiyeler ver.`;
 }

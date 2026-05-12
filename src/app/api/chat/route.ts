@@ -1,247 +1,130 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import { streamText } from "ai";
 import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 import { MASTER_PROMPT, getFinancialContext } from "@/lib/gemini";
+import { z } from "zod";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-// ─── API KEY ROTASYONU ──────────────────────────────────────────────────────
-// Env içindeki GEMINI_API_KEY, GEMINI_API_KEY_2, GEMINI_API_KEY_3... anahtarlarını toplar
-const getApiKeys = () => {
-  const keys = [];
-  if (process.env.GEMINI_API_KEY) keys.push(process.env.GEMINI_API_KEY);
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-  // Ek anahtarları ara (GEMINI_API_KEY_2'den 10'a kadar)
+const getApiKeys = () => {
+  const keys: string[] = [];
+  if (process.env.GEMINI_API_KEY) keys.push(process.env.GEMINI_API_KEY);
   for (let i = 2; i <= 10; i++) {
     const key = process.env[`GEMINI_API_KEY_${i}`];
     if (key) keys.push(key);
   }
-
-  return keys.length > 0 ? keys : ["missing_api_key"];
+  return keys;
 };
 
 const API_KEYS = getApiKeys();
-let currentKeyIndex = 0;
+const MODELS = [
+  "gemini-2.0-flash",
+  "gemini-1.5-flash",
+  "gemini-1.5-pro"
+] as const;
 
-// Sıradaki API anahtarını veren yardımcı fonksiyon
-const getNextGenAI = () => {
-  const key = API_KEYS[currentKeyIndex];
-  currentKeyIndex = (currentKeyIndex + 1) % API_KEYS.length;
-  console.log(`[ROTATION] Kullanılan Key Index: ${currentKeyIndex} (Toplam: ${API_KEYS.length})`);
-  return new GoogleGenerativeAI(key);
-};
+const getFinancialHistorySchema = z.object({
+  category: z.enum(["all", "incomes", "expenses", "debts", "investments"] as const),
+});
 
-// ─── MODELLER VE ARAÇLAR ─────────────────────────────────────────────────────
-
-const FALLBACK_MODELS = [
-  "gemini-3.1-flash-lite",
-  "gemini-2.5-flash",
-  "gemini-3-flash",
-  "gemini-flash-latest",
-];
-
-const MARKET_KEYWORDS = [
-  "dolar", "euro", "sterlin", "döviz", "kur", "altın", "gram altın", "çeyrek altın",
-  "borsa", "bist", "hisse", "endeks", "bitcoin", "btc", "kripto", "fiyat", "kaç tl",
-  "piyasa", "ekonomi", "faiz", "enflasyon", "güncel haber", "borsa istanbul"
-];
-
-const DB_ACTION_KEYWORDS = [
-  "ekle", "kaydet", "sil", "güncelle", "yeni gelir", "yeni gider", "borç", "maaş"
-];
-
-const FUNCTION_DECLARATIONS = [
-  {
-    name: "addIncome",
-    description: "Yeni bir gelir kaynağı ekler.",
-    parameters: {
-      type: "object",
-      properties: {
-        type: { type: "string", description: "Gelir türü (Salary, Rent, Freelance, Other)" },
-        amount: { type: "number", description: "Miktar" },
-        description: { type: "string", description: "Açıklama" }
-      },
-      required: ["type", "amount"]
-    }
-  },
-  {
-    name: "addExpense",
-    description: "Yeni bir gider ekler.",
-    parameters: {
-      type: "object",
-      properties: {
-        type: { type: "string", description: "Gider türü (Rent, Bill, Groceries, Other)" },
-        amount: { type: "number", description: "Miktar" },
-        isRecurring: { type: "boolean", description: "Düzenli mi?" }
-      },
-      required: ["type", "amount"]
-    }
-  },
-  {
-    name: "addDebt",
-    description: "Yeni bir borç ekler.",
-    parameters: {
-      type: "object",
-      properties: {
-        type: { type: "string", description: "Borç türü" },
-        amount: { type: "number", description: "Miktar" }
-      },
-      required: ["type", "amount"]
-    }
-  },
-  {
-    name: "addInvestment",
-    description: "Yeni bir yatırım (hisse, kripto, altın vb.) ekler.",
-    parameters: {
-      type: "object",
-      properties: {
-        type: { type: "string", description: "Yatırım türü (BIST, NASDAQ, CRYPTO, GOLD)" },
-        symbol: { type: "string", description: "Sembol (Örn: THYAO, BTC, AAPL, XAU)" },
-        quantity: { type: "number", description: "Adet/Miktar" },
-        purchasePrice: { type: "number", description: "Birim Alış Fiyatı" },
-        description: { type: "string", description: "Not" }
-      },
-      required: ["type", "quantity", "purchasePrice"]
-    }
-  }
-];
-
-type ToolMode = "none" | "search" | "db";
-
-function classifyMessage(message: string): ToolMode {
-  const lower = message.toLowerCase();
-  if (DB_ACTION_KEYWORDS.some(kw => lower.includes(kw))) return "db";
-  if (MARKET_KEYWORDS.some(kw => lower.includes(kw))) return "search";
-  return "none";
-}
-
-// ─── ANA HANDLER ─────────────────────────────────────────────────────────────
+const addFinancialRecordSchema = z.object({
+  type: z.enum(["income", "expense", "debt"] as const),
+  amount: z.number(),
+  category: z.string(),
+  description: z.string().optional(),
+});
 
 export async function POST(req: Request) {
-  const startTime = Date.now();
-  const traceId = Math.random().toString(36).substring(7);
-  let currentStage = "INIT";
-  let lastRateLimitReason = "";
-
   try {
     const { userId } = await auth();
-    if (!userId) return new Response("Yetkisiz.", { status: 401 });
+    if (!userId) return new Response("Yetkisiz erişim.", { status: 401 });
 
-    const body = await req.json();
-    const { messages } = body;
-    const lastMessage = messages[messages.length - 1].content;
-    const toolMode = classifyMessage(lastMessage);
+    if (API_KEYS.length === 0) return new Response("GEMINI_API_KEY eksik", { status: 500 });
 
-    currentStage = "DB";
+    const { messages } = await req.json();
     const user = await prisma.user.findUnique({
       where: { clerkUserId: userId },
-      include: { incomes: true, expenses: true, debts: true, investments: true },
+      include: { incomes: { take: 1 }, expenses: { take: 1 }, debts: { take: 1 }, investments: { take: 1 } }
     });
 
-    if (!user) return new Response("User not found", { status: 404 });
+    if (!user) return new Response("Kullanıcı bulunamadı.", { status: 404 });
 
-    currentStage = "CONTEXT";
     const financialContext = await getFinancialContext(user);
     const systemPrompt = MASTER_PROMPT
-      .replace("{USER_DATA}", financialContext)
-      .replace("{CURRENT_DATE}", new Date().toLocaleDateString("tr-TR"));
+      .replace("{CURRENT_DATE}", new Date().toLocaleDateString("tr-TR"))
+      .replace("{USER_DATA}", financialContext);
 
-    // --- AI DENEME DÖNGÜSÜ (Key + Model Rotasyonu) ---
-    currentStage = "AI";
+    const maxAttempts = API_KEYS.length * MODELS.length;
+    let attempts = 0;
 
-    // Her bir anahtar için modelleri tek tek dene
-    for (let keyTrial = 0; keyTrial < API_KEYS.length; keyTrial++) {
-      const genAI = getNextGenAI(); // Rotasyondaki sıradaki anahtarı al
+    while (attempts < maxAttempts) {
+      const keyIndex = Math.floor(attempts / MODELS.length) % API_KEYS.length;
+      const modelName = MODELS[attempts % MODELS.length];
+      const apiKey = API_KEYS[keyIndex];
 
-      for (let modelIndex = 0; modelIndex < FALLBACK_MODELS.length; modelIndex++) {
-        const modelId = FALLBACK_MODELS[modelIndex];
+      try {
+        const googleProvider = createGoogleGenerativeAI({ apiKey });
 
-        console.log(`[${traceId}] [TRIAL] KeyTrial: ${keyTrial + 1}, Model: ${modelId}, Tool: ${toolMode}`);
-
-        try {
-          let tools: any[] | undefined;
-          if (toolMode === "db") tools = [{ functionDeclarations: FUNCTION_DECLARATIONS }];
-          else if (toolMode === "search") tools = [{ googleSearchRetrieval: {} }];
-
-          const model = genAI.getGenerativeModel({
-            model: modelId,
-            systemInstruction: systemPrompt,
-            ...(tools ? { tools: tools as any } : {}),
-          });
-
-          const chat = model.startChat({
-            history: messages.slice(0, -1).map((m: any) => ({
-              role: m.role === "user" ? "user" : "model",
-              parts: [{ text: m.content }]
-            }))
-          });
-
-          const result = await chat.sendMessageStream(lastMessage);
-
-          // Stream okuma ve Response döndürme
-          const encoder = new TextEncoder();
-          const stream = new ReadableStream({
-            async start(controller) {
-              try {
-                for await (const chunk of result.stream) {
-                  let chunkText = "";
-                  try { chunkText = chunk.text(); } catch { }
-                  if (chunkText) controller.enqueue(encoder.encode(chunkText));
-
-                  const calls = chunk.functionCalls?.();
-                  if (calls) {
-                    for (const call of calls) {
-                      const payload = JSON.stringify({ name: call.name, args: call.args });
-                      controller.enqueue(encoder.encode(`\n\n__TOOL_CALL__:${payload}__END_TOOL_CALL__\n`));
-                    }
-                  }
+        const result = await streamText({
+          model: googleProvider(modelName),
+          system: systemPrompt,
+          messages,
+          tools: {
+            getFinancialHistory: {
+              description: "Kullanıcının finansal verilerini çeker.",
+              parameters: getFinancialHistorySchema,
+              execute: async ({ category }: z.infer<typeof getFinancialHistorySchema>) => {
+                const userData = await prisma.user.findUnique({
+                  where: { clerkUserId: userId },
+                  include: { incomes: true, expenses: true, debts: true, investments: true }
+                });
+                if (!userData) return { error: "Veri yok" };
+                if (category === "all") return { incomes: userData.incomes, expenses: userData.expenses, debts: userData.debts, investments: userData.investments };
+                const map: any = { incomes: userData.incomes, expenses: userData.expenses, debts: userData.debts, investments: userData.investments };
+                return map[category] || { error: "Hatalı kategori" };
+              },
+            },
+            addFinancialRecord: {
+              description: "Yeni bir finansal kayıt ekler.",
+              parameters: addFinancialRecordSchema,
+              execute: async ({ type, amount, category, description }: z.infer<typeof addFinancialRecordSchema>) => {
+                try {
+                  const dbUser = await prisma.user.findUnique({ where: { clerkUserId: userId } });
+                  if (!dbUser) return { error: "Kullanıcı yok" };
+                  const data = { userId: dbUser.id, type: category, amount, description };
+                  if (type === "income") await (prisma.income as any).create({ data });
+                  else if (type === "expense") await (prisma.expense as any).create({ data });
+                  else if (type === "debt") await (prisma.debt as any).create({ data });
+                  return { success: true };
+                } catch (e: any) {
+                  return { error: e.message };
                 }
-                controller.close();
-              } catch (e) { controller.error(e); }
-            }
-          });
+              },
+            },
+          },
+          maxSteps: 5,
+        } as any);
 
-          return new Response(stream, { headers: { "Content-Type": "text/plain; charset=utf-8" } });
+        // Hem TS hatasını önlemek hem de runtime'da metodun varlığını zorlamak için any cast kullanıyoruz
+        return (result as any).toDataStreamResponse();
 
-          } catch (err: any) {
-            const errorDetails = err.message || "Unknown error";
-            const is429 = err.status === 429 || errorDetails.includes("429");
-            console.warn(`[${traceId}] [FAIL] Key Index: ${currentKeyIndex}, Model: ${modelId}, Error: ${errorDetails}`);
-
-            if (is429) {
-              // Teşhis Et
-              if (errorDetails.includes("RPM")) lastRateLimitReason = "Dakikalık İstek Sınırı (RPM)";
-              else if (errorDetails.includes("TPM")) lastRateLimitReason = "Dakikalık Token Sınırı (TPM)";
-              else if (errorDetails.includes("RPD")) lastRateLimitReason = "Günlük İstek Sınırı (RPD)";
-              else lastRateLimitReason = "Genel Kota Sınırı (429)";
-
-              console.warn(`[${traceId}] [429 DETECTED] Reason: ${lastRateLimitReason}`);
-
-              // Eğer bu anahtarda kota bittiyse, bu anahtarın diğer modellerini deneme, 
-              // hemen BİR SONRAKİ ANAHTARA geç.
-              break; // İçteki model döngüsünden çık, dıştaki key döngüsüne git
-            }
-
-          // Diğer hatalarda aynı anahtarın sonraki modelini dene
-          // @ts-ignore
-          global.lastAiError = errorDetails;
-          continue;
+      } catch (err: any) {
+        attempts++;
+        if (err.status === 429 || err.message?.includes("quota")) {
+          attempts = (Math.floor((attempts - 1) / MODELS.length) + 1) * MODELS.length;
+          await sleep(2000);
+        } else {
+          await sleep(500);
         }
       }
     }
-
-    throw new Error("Tüm modeller denendi. Son hata: " + (global as any).lastAiError);
-
-
+    return new Response("Başarısız", { status: 500 });
   } catch (error: any) {
-    const message = lastRateLimitReason 
-      ? `Gemini API kotası aşıldı: ${lastRateLimitReason}. Lütfen biraz bekleyin.` 
-      : "Sistem şu an yoğun, lütfen 15 saniye sonra tekrar deneyin.";
-
-    return new Response(JSON.stringify({
-      error: message,
-      details: error.message
-    }), { status: 500 });
+    return new Response(error.message, { status: 500 });
   }
 }

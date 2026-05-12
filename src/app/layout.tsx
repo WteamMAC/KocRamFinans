@@ -17,7 +17,7 @@ const workSans = Work_Sans({
 
 export const metadata: Metadata = {
   title: "Koç Ram Finans - Geleceğinizi Güvence Altına Alın",
-  description: "Dostane ve profesyonel finansal koçluk asistanınız",
+  description: "Finansal durumunuzu takip edin ve geleceğinizi planlayın.",
 };
 
 export default function RootLayout({

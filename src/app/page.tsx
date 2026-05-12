@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { 
   ArrowRight, 
   BarChart3, 
-  Bot, 
   ShieldCheck, 
   Sparkles, 
   TrendingUp, 
