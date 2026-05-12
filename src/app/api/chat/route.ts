@@ -25,11 +25,12 @@ const API_KEYS = getApiKeys();
 let currentKeyIndex = 0;
 
 // Sıradaki API anahtarını veren yardımcı fonksiyon
-const getNextGenAI = () => {
+const getNextKey = () => {
   const key = API_KEYS[currentKeyIndex];
+  const maskedKey = `...${key.slice(-4)}`;
   currentKeyIndex = (currentKeyIndex + 1) % API_KEYS.length;
-  console.log(`[ROTATION] Kullanılan Key Index: ${currentKeyIndex} (Toplam: ${API_KEYS.length})`);
-  return new GoogleGenerativeAI(key);
+  console.log(`[ROTATION] Kullanılan Key: ${maskedKey} (Index: ${currentKeyIndex})`);
+  return { key, maskedKey };
 };
 
 // ─── MODELLER VE ARAÇLAR ─────────────────────────────────────────────────────
@@ -161,14 +162,14 @@ export async function POST(req: Request) {
     // --- AI DENEME DÖNGÜSÜ (Key + Model Rotasyonu) ---
     currentStage = "AI";
 
-    // Her bir anahtar için modelleri tek tek dene
     for (let keyTrial = 0; keyTrial < API_KEYS.length; keyTrial++) {
-      const genAI = getNextGenAI(); // Rotasyondaki sıradaki anahtarı al
+      const { key, maskedKey } = getNextKey();
+      const genAI = new GoogleGenerativeAI(key);
 
       for (let modelIndex = 0; modelIndex < FALLBACK_MODELS.length; modelIndex++) {
         const modelId = FALLBACK_MODELS[modelIndex];
 
-        console.log(`[${traceId}] [TRIAL] KeyTrial: ${keyTrial + 1}, Model: ${modelId}, Tool: ${toolMode}`);
+        console.log(`[${traceId}] [TRIAL] Key: ${maskedKey}, Model: ${modelId}, Tool: ${toolMode}`);
 
         try {
           let tools: any[] | undefined;
@@ -226,16 +227,16 @@ export async function POST(req: Request) {
           const isQuotaError = is429 || errorDetails.includes("quota") || err.status === 503 || err.status === 500;
           const isAuthError = errorDetails.includes("API key expired") || errorDetails.includes("API_KEY_INVALID") || err.status === 400;
           
-          console.warn(`[${traceId}] [FAIL] Key Index: ${currentKeyIndex}, Model: ${modelId}, Error: ${errorDetails}`);
+          console.warn(`[${traceId}] [FAIL] Key: ${maskedKey}, Model: ${modelId}, Error: ${errorDetails}`);
 
           if (isQuotaError || isAuthError) {
             // Teşhis Et
-            if (errorDetails.includes("RPM")) lastRateLimitReason = "Dakikalık İstek Sınırı (RPM)";
-            else if (errorDetails.includes("TPM")) lastRateLimitReason = "Dakikalık Token Sınırı (TPM)";
-            else if (errorDetails.includes("RPD")) lastRateLimitReason = "Günlük İstek Sınırı (RPD)";
-            else if (errorDetails.includes("expired")) lastRateLimitReason = "API Anahtarının Süresi Dolmuş (Expired)";
-            else if (isAuthError) lastRateLimitReason = "API Anahtarı veya İstek Hatası (400)";
-            else lastRateLimitReason = "Servis Yoğunluğu veya Kota (429/50x)";
+            if (errorDetails.includes("RPM")) lastRateLimitReason = `Dakikalık İstek Sınırı (RPM) - Anahtar: ${maskedKey}`;
+            else if (errorDetails.includes("TPM")) lastRateLimitReason = `Dakikalık Token Sınırı (TPM) - Anahtar: ${maskedKey}`;
+            else if (errorDetails.includes("RPD")) lastRateLimitReason = `Günlük İstek Sınırı (RPD) - Anahtar: ${maskedKey}`;
+            else if (errorDetails.includes("expired")) lastRateLimitReason = `API Anahtarı Geçersiz/Süresi Dolmuş (Expired) - Anahtar: ${maskedKey}`;
+            else if (isAuthError) lastRateLimitReason = `İstek veya Yetki Hatası (400) - Anahtar: ${maskedKey}`;
+            else lastRateLimitReason = `Hata: ${errorDetails.slice(0, 50)}... - Anahtar: ${maskedKey}`;
 
             console.warn(`[${traceId}] [DIAGNOSIS] Reason: ${lastRateLimitReason}`);
             break; // Bir sonraki API anahtarına geç
