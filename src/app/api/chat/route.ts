@@ -93,7 +93,6 @@ export async function POST(req: Request) {
             getFinancialHistory: tool({
               description: "Kullanıcının mevcut finansal özetini ve geçmiş verilerini getirir.",
               parameters: getFinancialHistorySchema,
-              // @ts-expect-error - AI SDK type collision with execute arguments
               execute: async ({ category }: z.infer<typeof getFinancialHistorySchema>) => {
                 console.log(`[TOOL] 🔍 getFinancialHistory | Kategori: ${category}`);
                 // OPTİMİZASYON: Başta çekilen 'user' verisini kullanıyoruz, tekrar DB'ye gitmiyoruz
@@ -109,7 +108,6 @@ export async function POST(req: Request) {
             addFinancialRecord: tool({
               description: "Yeni bir gelir, gider, borç veya yatırım kaydı oluşturur.",
               parameters: addFinancialRecordSchema,
-              // @ts-expect-error - AI SDK type collision with execute arguments
               execute: async ({ type, amount, category, description }: z.infer<typeof addFinancialRecordSchema>) => {
                 console.log(`[TOOL] ➕ addFinancialRecord | Tip: ${type} | Tutar: ${amount}`);
                 try {

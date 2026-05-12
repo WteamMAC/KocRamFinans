@@ -80,17 +80,20 @@ const team = [
   {
     name: "Murat Efe Şahin",
     role: "CEO",
-    image: "https://github.com/murratefe.png"
+    initials: "MEŞ",
+    color: "bg-primary-container text-on-primary-container"
   },
   {
     name: "Cemal Kılıç",
     role: "CEO",
-    image: "https://github.com/cemalkilic.png"
+    initials: "CL",
+    color: "bg-tertiary-container text-on-tertiary-container"
   },
   {
     name: "Atakan Dem",
     role: "CEO",
-    image: "https://ui-avatars.com/api/?name=Atakan+Dem&background=8c5000&color=fff&size=512"
+    initials: "AD",
+    color: "bg-secondary-container text-on-secondary-container"
   }
 ];
 
@@ -257,7 +260,7 @@ export default function AboutPage() {
             </motion.div>
             
             <motion.div 
-              className="grid sm:grid-cols-2 lg:grid-cols-4 gap-10"
+              className="grid sm:grid-cols-2 lg:grid-cols-3 gap-10 max-w-5xl mx-auto"
               variants={staggerContainer}
               initial="initial"
               whileInView="animate"
@@ -270,11 +273,9 @@ export default function AboutPage() {
                   className="group text-center"
                 >
                   <div className="relative mb-6 mx-auto overflow-hidden rounded-2xl aspect-[4/5] max-w-[280px]">
-                    <img 
-                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
-                      alt={member.name} 
-                      src={member.image} 
-                    />
+                    <div className={`w-full h-full flex items-center justify-center text-5xl font-bold transition-transform duration-700 group-hover:scale-110 ${member.color}`}>
+                      {member.initials}
+                    </div>
                     <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
                       <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-primary cursor-pointer hover:bg-primary-container transition-colors shadow-lg">
                         <span className="material-symbols-outlined text-xl">share</span>
