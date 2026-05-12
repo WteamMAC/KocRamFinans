@@ -44,7 +44,8 @@ export async function POST(req: Request) {
         incomes: true,
         expenses: true,
         debts: true,
-        investments: true
+        investments: true,
+        fixedAssets: true
       }
     });
 
@@ -106,7 +107,7 @@ export async function POST(req: Request) {
                   parameters: {
                     type: SchemaType.OBJECT,
                     properties: {
-                      category: { type: SchemaType.STRING, description: "all, incomes, expenses, debts, investments" }
+                      category: { type: SchemaType.STRING, description: "all, incomes, expenses, debts, investments, fixedAssets" }
                     },
                     required: ["category"]
                   }
@@ -117,7 +118,7 @@ export async function POST(req: Request) {
                   parameters: {
                     type: SchemaType.OBJECT,
                     properties: {
-                      type: { type: SchemaType.STRING, description: "income, expense, debt, investment" },
+                      type: { type: SchemaType.STRING, description: "income, expense, debt, investment, fixedAsset" },
                       amount: { type: SchemaType.NUMBER, description: "Tutar" },
                       category: { type: SchemaType.STRING, description: "Kategori (örn: Market, Maaş)" },
                       description: { type: SchemaType.STRING, description: "Açıklama" },
@@ -184,7 +185,8 @@ export async function POST(req: Request) {
                           incomes: user.incomes,
                           expenses: user.expenses,
                           debts: user.debts,
-                          investments: user.investments
+                          investments: user.investments,
+                          fixedAssets: user.fixedAssets
                         };
                         apiResponse = category === "all" ? dataMap : (dataMap[category] || { error: "Kategori bulunamadı" });
                       } else if (call.name === "addFinancialRecord") {
@@ -200,6 +202,16 @@ export async function POST(req: Request) {
                           case "income": await prisma.income.create({ data: baseData }); break;
                           case "expense": await prisma.expense.create({ data: baseData }); break;
                           case "debt": await prisma.debt.create({ data: baseData }); break;
+                          case "fixedAsset":
+                            await prisma.fixedAsset.create({
+                              data: {
+                                userId: user.id,
+                                name: category,
+                                value: Number(amount),
+                                description: description || ""
+                              }
+                            });
+                            break;
                           case "investment":
                             await prisma.investment.create({
                               data: {
