@@ -60,7 +60,7 @@ const onboardingSchema = z.object({
   })),
   investments: z.array(z.object({
     type: z.string().min(1, "Tür seçiniz"),
-    symbol: z.string().optional(),
+    symbol: z.string().min(1, "Varlık sembolü seçiniz"),
     quantity: z.coerce.number().min(0, "Miktar giriniz"),
     purchasePrice: z.coerce.number().min(0, "Alış fiyatı giriniz"),
     currentValuation: z.coerce.number().optional(),
@@ -509,7 +509,7 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
                       </div>
 
                       <div className="space-y-2 relative" ref={el => { inputRefs.current[index] = el; }}>
-                        <Label className="text-[9px] font-bold text-[#747781] uppercase px-1">Sembol / İçerik</Label>
+                        <Label className="text-[9px] font-bold text-[#747781] uppercase px-1">Sembol / İçerik <span className="text-rose-500">*</span></Label>
                         <div className="relative">
                           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#434750] opacity-40" />
                           <Input 

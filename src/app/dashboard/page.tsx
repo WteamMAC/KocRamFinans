@@ -9,6 +9,7 @@ import { ArrowDownRight, ArrowUpRight, Banknote, Calendar, PieChart, Wallet, Tre
 import { BudgetOverview } from "@/components/dashboard/budget-overview";
 import { UpcomingPayments } from "@/components/dashboard/upcoming-payments";
 import { InvestmentSummary } from "@/components/dashboard/investment-summary";
+import { PerformanceChart } from "@/components/dashboard/performance-chart";
 import { ChatAI } from "@/components/dashboard/chat-ai";
 import { cn } from "@/lib/utils";
 import { getLivePrices, calculatePortfolioMetrics } from "@/lib/price-service";
@@ -163,9 +164,24 @@ export default async function DashboardPage() {
         </Card>
       </div>
 
-      {/* Middle Sections */}
+      {/* Performance & Budget Chart */}
       <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-7">
         <Card className="col-span-4 bg-white border-[#dbc2b0]/20 shadow-ambient-medium rounded-[32px] overflow-hidden">
+          <CardHeader className="bg-[#f8f9fa] border-b border-[#dbc2b0]/10 py-6">
+            <CardTitle className="text-xl font-heading font-bold text-[#8c5000] flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-[#efe440]" /> Gelişim Grafiği (Son 30 Gün)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-8">
+            <PerformanceChart 
+              incomes={user.incomes} 
+              expenses={user.expenses} 
+              investments={user.investments} 
+            />
+          </CardContent>
+        </Card>
+
+        <Card className="col-span-3 bg-white border-[#dbc2b0]/20 shadow-ambient-medium rounded-[32px] overflow-hidden">
           <CardHeader className="bg-[#f8f9fa] border-b border-[#dbc2b0]/10 py-6">
             <CardTitle className="text-xl font-heading font-bold text-[#8c5000] flex items-center gap-2">
               <PieChart className="h-5 w-5 text-[#efe440] fill-[#efe440]" /> Bütçe Dengesi
@@ -175,18 +191,19 @@ export default async function DashboardPage() {
             <BudgetOverview incomes={user.incomes} expenses={user.expenses} />
           </CardContent>
         </Card>
-        
-        <Card className="col-span-3 bg-white border-[#dbc2b0]/20 shadow-ambient-medium rounded-[32px] overflow-hidden">
-          <CardHeader className="bg-[#f8f9fa] border-b border-[#dbc2b0]/10 py-6">
-            <CardTitle className="text-xl font-heading font-bold text-[#8c5000] flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-[#8c5000]" /> Ödeme Takvimi
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-8">
-            <UpcomingPayments expenses={user.expenses} />
-          </CardContent>
-        </Card>
       </div>
+
+      {/* Upcoming Payments */}
+      <Card className="bg-white border-[#dbc2b0]/20 shadow-ambient-medium rounded-[32px] overflow-hidden">
+        <CardHeader className="bg-[#f8f9fa] border-b border-[#dbc2b0]/10 py-6">
+          <CardTitle className="text-xl font-heading font-bold text-[#8c5000] flex items-center gap-2">
+            <Calendar className="h-5 w-5 text-[#8c5000]" /> Ödeme Takvimi
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-8">
+          <UpcomingPayments expenses={user.expenses} />
+        </CardContent>
+      </Card>
 
       {/* Investment Section */}
       <Card className="bg-white border-[#dbc2b0]/20 shadow-ambient-medium rounded-[32px] overflow-hidden">
