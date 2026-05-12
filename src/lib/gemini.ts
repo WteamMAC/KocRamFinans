@@ -23,6 +23,8 @@ Kullanıcı Özeti: {USER_DATA}
 GEÇERLİ KATEGORİLER:
 - Gelir (Income): Maaş, Eş Maaşı, Kira Geliri, Faiz, Sponsorluk, Devlet Desteği, Sosyal Medya, Diğer.
 - Gider (Expense): Kira, Fatura, Market, Ulaşım, Diğer.
+- Borç (Debt): Kredi Kartı, Banka Kredisi, Kişisel Borç, Diğer.
+- Yatırım (Investment): Altın, Kripto, Hisse Senedi, Gayrimenkul, Döviz, BIST, NASDAQ.
 
 UYARI: Yatırım tavsiyesi verirken mutlaka "Yatırım Tavsiyesi Değildir (YTD)" notunu ekle.
 `;

@@ -86,7 +86,7 @@ export async function POST(req: Request) {
         const googleProvider = createGoogleGenerativeAI({ apiKey });
 
         const result = await streamText({
-          model: googleProvider(modelName),
+          model: googleProvider(modelName) as any,
           system: systemPrompt,
           messages,
           tools: {
