@@ -36,6 +36,9 @@ const getNextKey = () => {
 // ─── MODELLER VE ARAÇLAR ─────────────────────────────────────────────────────
 
 const FALLBACK_MODELS = [
+  "gemini-3.1-flash",
+  "gemini-3.1-flash-lite",
+  "gemini-3-flash",
   "gemini-2.5-flash",
   "gemini-2.5-flash-lite",
   "gemini-2.0-flash",
@@ -131,7 +134,7 @@ export async function POST(req: Request) {
 
     const body = await req.json();
     const { messages } = body;
-    
+
     // ─── GEÇMİŞ BUDAMA (TOKEN TASARRUFU) ────────────────────────────────────────
     // Son 10 mesajı al (Bağlamı korurken kotayı rahatlatır)
     const limitedMessages = messages.slice(-10);
@@ -141,11 +144,11 @@ export async function POST(req: Request) {
     currentStage = "DB";
     const user = await prisma.user.findUnique({
       where: { clerkUserId: userId },
-      include: { 
-        incomes: { take: 10 }, 
-        expenses: { take: 10 }, 
-        debts: { take: 10 }, 
-        investments: { take: 20 } 
+      include: {
+        incomes: { take: 10 },
+        expenses: { take: 10 },
+        debts: { take: 10 },
+        investments: { take: 20 }
       },
     });
 
@@ -199,7 +202,7 @@ export async function POST(req: Request) {
               try {
                 for await (const chunk of response) {
                   let chunkText = "";
-                  
+
                   // Yeni SDK'da response nesnesi doğrudan iteratördür
                   if (chunk.candidates?.[0]?.content?.parts) {
                     const parts = chunk.candidates[0].content.parts;
@@ -214,7 +217,7 @@ export async function POST(req: Request) {
                       }
                     }
                   }
-                  
+
                   if (chunkText) controller.enqueue(encoder.encode(chunkText));
                 }
                 controller.close();
@@ -231,7 +234,7 @@ export async function POST(req: Request) {
           const is404 = statusCode === 404 || errorDetails.includes("404") || errorDetails.includes("not found");
           const isQuotaError = is429 || errorDetails.includes("quota") || statusCode === 503 || statusCode === 500;
           const isAuthError = errorDetails.includes("API key expired") || errorDetails.includes("API_KEY_INVALID") || (statusCode === 401);
-          
+
           console.warn(`[${traceId}] [FAIL] Key: ${maskedKey}, Model: ${modelId}, Status: ${statusCode}, Error: ${errorDetails}`);
 
           // Eğer model bulunamadıysa (404), bir sonraki modele geç
