@@ -230,28 +230,35 @@ export async function POST(req: Request) {
         } catch (err: any) {
           const errorDetails = err.message || JSON.stringify(err);
           const statusCode = err.status || (err.response?.status) || 0;
+          
           const is429 = statusCode === 429 || errorDetails.includes("429");
           const is404 = statusCode === 404 || errorDetails.includes("404") || errorDetails.includes("not found");
-          const isQuotaError = is429 || errorDetails.includes("quota") || statusCode === 503 || statusCode === 500;
+          
+          // DİKKAT: 503 ve 500'ü buradan kaldırdık! Sadece gerçek 429 hataları kota hatasıdır.
+          const isQuotaError = is429 || errorDetails.includes("quota"); 
           const isAuthError = errorDetails.includes("API key expired") || errorDetails.includes("API_KEY_INVALID") || (statusCode === 401);
 
           console.warn(`[${traceId}] [FAIL] Key: ${maskedKey}, Model: ${modelId}, Status: ${statusCode}, Error: ${errorDetails}`);
 
-          // Eğer model bulunamadıysa (404), bir sonraki modele geç
-          if (is404) {
-            lastRateLimitReason = `Model Bulunamadı (404): ${modelId}`;
-            continue;
+          // Eğer model bulunamadıysa (404) veya Google sunucuları geçici hata verdiyse (500, 503)
+          // BREAK YAPMA, sıradaki modele (örneğin 2.5-flash) geçiş yap!
+          if (is404 || statusCode === 503 || statusCode === 500) {
+            lastRateLimitReason = `Model Geçici Hatası (${statusCode}): ${modelId}`;
+            continue; 
           }
 
+          // Eğer gerçekten API limiti dolduysa veya API Key yetkisizse, diğer API Key'e geçmek için döngüyü kır.
           if (isQuotaError || isAuthError) {
             if (errorDetails.includes("RPM")) lastRateLimitReason = `RPM Sınırı - Anahtar: ${maskedKey}`;
             else if (errorDetails.includes("TPM")) lastRateLimitReason = `TPM Sınırı - Anahtar: ${maskedKey}`;
             else if (isAuthError) lastRateLimitReason = `Yetki Hatası - Anahtar: ${maskedKey}`;
-            else lastRateLimitReason = `Sistem Hatası (${statusCode}): ${errorDetails.slice(0, 30)}`;
-            break;
+            else lastRateLimitReason = `Kota Hatası (${statusCode})`;
+            
+            break; // Sadece key değiştirmek için döngüyü kır
           }
 
-          lastRateLimitReason = `Hata (${statusCode}): ${errorDetails.slice(0, 30)}`;
+          // Diğer bilinmeyen hatalarda da sistemin çökmemesi için sıradaki modeli denemesini sağla
+          lastRateLimitReason = `Bilinmeyen Hata (${statusCode})`;
           continue;
         }
       }
