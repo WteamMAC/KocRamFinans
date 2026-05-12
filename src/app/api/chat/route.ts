@@ -244,8 +244,10 @@ export async function POST(req: Request) {
           // BREAK YAPMA, sıradaki modele (örneğin 2.5-flash) geçiş yap!
           if (is404 || statusCode === 503 || statusCode === 500) {
             lastRateLimitReason = `Model Geçici Hatası (${statusCode}): ${modelId}`;
+            // Spam engellemek için sıradaki modele geçmeden önce 500ms bekle
+            await new Promise((resolve) => setTimeout(resolve, 500));
             continue; 
-          }
+          } 
 
           // Eğer gerçekten API limiti dolduysa veya API Key yetkisizse, diğer API Key'e geçmek için döngüyü kır.
           if (isQuotaError || isAuthError) {
