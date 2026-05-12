@@ -44,7 +44,7 @@ async function executeTool(name: string, args: any, userId: string) {
 
     const { category, period } = args;
     let data: any = {};
-    
+
     if (category === "all" || category === "incomes") data.incomes = user.incomes;
     if (category === "all" || category === "expenses") data.expenses = user.expenses;
     if (category === "all" || category === "debts") data.debts = user.debts;
@@ -52,13 +52,13 @@ async function executeTool(name: string, args: any, userId: string) {
 
     return { success: true, data };
   }
-  
+
   return null; // For write tools that need UI confirmation
 }
 
 export async function POST(req: Request) {
   const traceId = Math.random().toString(36).substring(7);
-  
+
   try {
     const { userId } = await auth();
     if (!userId) return new Response("Unauthorized", { status: 401 });
@@ -66,9 +66,9 @@ export async function POST(req: Request) {
     // Rate Limit Check
     const rateLimit = await checkRateLimit(req as any, userId);
     if (!rateLimit.success) {
-      return new Response(JSON.stringify({ 
+      return new Response(JSON.stringify({
         error: "Çok fazla istek gönderdiniz. Lütfen 15 saniye bekleyin.",
-        reset: rateLimit.reset 
+        reset: rateLimit.reset
       }), { status: 429, headers: { "Content-Type": "application/json" } });
     }
 
@@ -102,16 +102,16 @@ export async function POST(req: Request) {
     // AI Execution Loop (Key + Model Rotation)
     for (let attempt = 0; attempt < API_KEYS.length * 2; attempt++) {
       const keyIndex = (currentKeyIndex + Math.floor(attempt / 2)) % API_KEYS.length;
-      const modelIndex = attempt % 2 === 0 ? 0 : 1; 
-      
+      const modelIndex = attempt % 2 === 0 ? 0 : 1;
+
       const apiKey = API_KEYS[keyIndex];
       const modelId = FALLBACK_MODELS[modelIndex] || FALLBACK_MODELS[0];
-      
+
       console.log(`[${traceId}] Attempt ${attempt}: Key ${keyIndex}, Model ${modelId}`);
 
       try {
         const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ 
+        const model = genAI.getGenerativeModel({
           model: modelId,
           systemInstruction: systemPrompt,
           tools
@@ -142,7 +142,7 @@ export async function POST(req: Request) {
                   if (part.functionCall) {
                     const call = part.functionCall;
                     const toolResult = await executeTool(call.name, call.args, userId);
-                    
+
                     if (toolResult) {
                       controller.enqueue(encoder.encode(`\n\n[SİSTEM]: ${JSON.stringify(toolResult.data)}`));
                     } else {
@@ -170,7 +170,7 @@ export async function POST(req: Request) {
       } catch (err: any) {
         const status = err.status || 0;
         console.warn(`[${traceId}] Failed: ${modelId} (${status}) - ${err.message}`);
-        
+
         if (status === 429 || status === 401) {
           if (status === 429) currentKeyIndex = (keyIndex + 1) % API_KEYS.length;
           continue;
