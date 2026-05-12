@@ -36,12 +36,12 @@ const getNextKey = () => {
 // ─── MODELLER VE ARAÇLAR ─────────────────────────────────────────────────────
 
 const FALLBACK_MODELS = [
-  "gemini-3.1-flash",       // En güncel ve yetenekli Flash
-  "gemini-2.5-flash",       // Stabil orta segment
-  "gemini-1.5-flash",       // Klasik güvenilir model
-  "gemini-3.1-flash-lite",  // Daha düşük gecikme, yüksek hız
-  "gemini-1.5-flash-8b",    // En yüksek hız limiti (429'dan kaçış noktası)
-  "gemini-flash-latest"     // Genel yönlendirme
+  "gemini-3.1-flash-lite",  // 15 RPM
+  "gemini-2.5-flash-lite",  // 10 RPM
+  "gemini-3-flash",         // 5 RPM
+  "gemini-2.5-flash",       // 5 RPM
+  "gemini-2-flash",
+  "gemini-1.5-flash"
 ];
 
 const MARKET_KEYWORDS = [
@@ -223,19 +223,28 @@ export async function POST(req: Request) {
 
         } catch (err: any) {
           const errorDetails = err.message || "Unknown error";
-          const is429 = err.status === 429 || errorDetails.includes("429");
-          const isQuotaError = is429 || errorDetails.includes("quota") || err.status === 503 || err.status === 500;
-          const isAuthError = errorDetails.includes("API key expired") || errorDetails.includes("API_KEY_INVALID") || err.status === 400;
+          const statusCode = err.status || 0;
+          const is429 = statusCode === 429 || errorDetails.includes("429");
+          const is404 = statusCode === 404 || errorDetails.includes("404") || errorDetails.includes("not found");
+          const isQuotaError = is429 || errorDetails.includes("quota") || statusCode === 503 || statusCode === 500;
+          const isAuthError = errorDetails.includes("API key expired") || errorDetails.includes("API_KEY_INVALID") || (statusCode === 401);
           
-          console.warn(`[${traceId}] [FAIL] Key: ${maskedKey}, Model: ${modelId}, Error: ${errorDetails}`);
+          console.warn(`[${traceId}] [FAIL] Key: ${maskedKey}, Model: ${modelId}, Status: ${statusCode}, Error: ${errorDetails}`);
+
+          // Eğer model bulunamadıysa (404), bir sonraki modele geç (anahtarı değiştirme)
+          if (is404) {
+            console.warn(`[${traceId}] [404] Model ${modelId} bulunamadı, bir sonrakine geçiliyor.`);
+            // @ts-ignore
+            global.lastAiError = `Model ${modelId} bulunamadı.`;
+            continue;
+          }
 
           if (isQuotaError || isAuthError) {
             // Teşhis Et
             if (errorDetails.includes("RPM")) lastRateLimitReason = `Dakikalık İstek Sınırı (RPM) - Anahtar: ${maskedKey}`;
             else if (errorDetails.includes("TPM")) lastRateLimitReason = `Dakikalık Token Sınırı (TPM) - Anahtar: ${maskedKey}`;
             else if (errorDetails.includes("RPD")) lastRateLimitReason = `Günlük İstek Sınırı (RPD) - Anahtar: ${maskedKey}`;
-            else if (errorDetails.includes("expired")) lastRateLimitReason = `API Anahtarı Geçersiz/Süresi Dolmuş (Expired) - Anahtar: ${maskedKey}`;
-            else if (isAuthError) lastRateLimitReason = `İstek veya Yetki Hatası (400) - Anahtar: ${maskedKey}`;
+            else if (isAuthError) lastRateLimitReason = `API Anahtarı Geçersiz veya Yetkisiz - Anahtar: ${maskedKey}`;
             else lastRateLimitReason = `Hata: ${errorDetails.slice(0, 50)}... - Anahtar: ${maskedKey}`;
 
             console.warn(`[${traceId}] [DIAGNOSIS] Reason: ${lastRateLimitReason}`);
