@@ -36,8 +36,11 @@ export async function POST(req: Request) {
     if (API_KEYS.length === 0) return new Response("GEMINI_API_KEY eksik", { status: 500 });
 
     const body = await req.json().catch(() => ({ messages: [] }));
-    const messages = body.messages || [];
-    if (!messages.length) return new Response("Geçersiz mesaj formatı.", { status: 400 });
+    const allMessages = body.messages || [];
+    if (!allMessages.length) return new Response("Geçersiz mesaj formatı.", { status: 400 });
+
+    // ÇÖZÜM 1: History Bloat (Geçmiş Şişmesi) engellemek için sadece son 6 mesajı baz al
+    const messages = allMessages.slice(-6);
 
     // PERFORMANS: Tüm finansal veriyi tek sorguda çekiyoruz
     const user = await prisma.user.findUnique({
@@ -180,6 +183,14 @@ export async function POST(req: Request) {
                     chunkResult = await iterator.next();
                   } catch (e) {
                     console.error("[AI-CHAT] ❌ Stream Okuma Hatası:", e);
+
+                    // ÇÖZÜM 2: Sessiz kırılmaları engelleyerek frontend'e hatayı göster
+                    const errMsg = (e as any)?.message?.toLowerCase() || "";
+                    if (errMsg.includes("quota") || errMsg.includes("429") || errMsg.includes("too many requests")) {
+                      controller.enqueue(new TextEncoder().encode(`\n\n*[Sistem Uyarısı]: İşlem kotası aşıldı, lütfen 1 dakika bekleyin.*`));
+                    } else {
+                      controller.enqueue(new TextEncoder().encode(`\n\n*[Sistem Uyarısı]: Ağ bağlantısında anlık bir kopma yaşandı.*`));
+                    }
                     break; // Sistemi çökertmeden nazikçe durdur
                   }
                 }
@@ -194,19 +205,25 @@ export async function POST(req: Request) {
                     try {
                       if (call.name === "getFinancialHistory") {
                         const category = (call.args as any).category;
+                        // ÇÖZÜM 3: Token patlamasını engellemek için tüm DB'yi değil, son 5 kaydı modele sun!
                         const dataMap: Record<string, any> = {
-                          incomes: user.incomes,
-                          expenses: user.expenses,
-                          debts: user.debts,
-                          investments: user.investments
+                          incomes: user.incomes.slice(-5),
+                          expenses: user.expenses.slice(-5),
+                          debts: user.debts.slice(-5),
+                          investments: user.investments.slice(-5)
                         };
                         // ÇÖZÜM: API çökmesini önlemek için tool response kesinlikle Object ({ data: [...] }) olmalıdır
                         apiResponse = category === "all" ? dataMap : { data: dataMap[category] || [] };
                       } else if (call.name === "addFinancialRecord") {
                         const { type, amount, category, description, quantity, purchasePrice } = call.args as any;
+
+                        // ÇÖZÜM 4: Prisma NaN çökmesini önleyen güvenlik katmanı
+                        const safeAmount = Number(amount) || 0;
+                        if (safeAmount <= 0) throw new Error("Tutar 0'dan büyük olmalıdır.");
+
                         const baseData = {
                           userId: user.id,
-                          amount: Number(amount),
+                          amount: safeAmount,
                           description: description || "",
                           type: category
                         };
@@ -259,6 +276,14 @@ export async function POST(req: Request) {
                     chunkResult = await iterator.next();
                   } catch (e) {
                     console.error("[AI-CHAT] ❌ Tool Stream Hatası:", e);
+
+                    // Tool işlendi ama cevap dönerken koptuysa kullanıcıyı bilgilendir
+                    const errMsg = (e as any)?.message?.toLowerCase() || "";
+                    if (errMsg.includes("quota") || errMsg.includes("429") || errMsg.includes("too many requests")) {
+                      controller.enqueue(new TextEncoder().encode(`\n\n*[Sistem Uyarısı]: İşleminiz veritabanına kaydedildi ancak kota dolduğu için özet cevap oluşturulamadı.*`));
+                    } else {
+                      controller.enqueue(new TextEncoder().encode(`\n\n*[Sistem Uyarısı]: İşlem yapıldı ancak özet oluşturulurken bağlantı koptu.*`));
+                    }
                     break; // Sistemi çökertmeden nazikçe durdur
                   }
                 } else {
