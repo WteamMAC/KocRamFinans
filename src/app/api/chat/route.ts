@@ -45,15 +45,7 @@ const FALLBACK_MODELS = [
   "gemini-1.5-flash"
 ];
 
-const MARKET_KEYWORDS = [
-  "dolar", "euro", "sterlin", "döviz", "kur", "altın", "gram altın", "çeyrek altın",
-  "borsa", "bist", "hisse", "endeks", "bitcoin", "btc", "kripto", "fiyat", "kaç tl",
-  "piyasa", "ekonomi", "faiz", "enflasyon", "güncel haber", "borsa istanbul"
-];
 
-const DB_ACTION_KEYWORDS = [
-  "ekle", "kaydet", "sil", "güncelle", "yeni gelir", "yeni gider", "borç", "maaş"
-];
 
 const FUNCTION_DECLARATIONS = [
   {
@@ -111,14 +103,7 @@ const FUNCTION_DECLARATIONS = [
   }
 ];
 
-type ToolMode = "none" | "search" | "db";
 
-function classifyMessage(message: string): ToolMode {
-  const lower = message.toLowerCase();
-  if (DB_ACTION_KEYWORDS.some(kw => lower.includes(kw))) return "db";
-  if (MARKET_KEYWORDS.some(kw => lower.includes(kw))) return "search";
-  return "none";
-}
 
 // ─── ANA HANDLER ─────────────────────────────────────────────────────────────
 
@@ -139,7 +124,6 @@ export async function POST(req: Request) {
     // Son 10 mesajı al (Bağlamı korurken kotayı rahatlatır)
     const limitedMessages = messages.slice(-10);
     const lastMessage = limitedMessages[limitedMessages.length - 1].content;
-    const toolMode = classifyMessage(lastMessage);
 
     currentStage = "DB";
     const user = await prisma.user.findUnique({
@@ -170,15 +154,12 @@ export async function POST(req: Request) {
       for (let modelIndex = 0; modelIndex < FALLBACK_MODELS.length; modelIndex++) {
         const modelId = FALLBACK_MODELS[modelIndex];
 
-        console.log(`[${traceId}] [TRIAL] [V1-SDK] Key: ${maskedKey}, Model: ${modelId}, Tool: ${toolMode}`);
-
         try {
-          let tools: any[] | undefined;
-          if (toolMode === "db") {
-            tools = [{ functionDeclarations: FUNCTION_DECLARATIONS }];
-          } else if (toolMode === "search") {
-            tools = [{ googleSearch: {} }];
-          }
+          // ARAÇLARI SABİT OLARAK VERİYORUZ (Yapay Zeka hangisini kullanacağını kendi seçecek)
+          const tools = [
+            { functionDeclarations: FUNCTION_DECLARATIONS },
+            { googleSearch: {} }
+          ];
 
           const response = await ai.models.generateContentStream({
             model: modelId,
