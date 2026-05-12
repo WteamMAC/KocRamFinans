@@ -78,24 +78,19 @@ const values = [
 
 const team = [
   {
-    name: "Ahmet Koç",
-    role: "Kurucu & CEO",
-    image: "https://lh3.googleusercontent.com/aida-public/AB6AXuA-mT2x5FdrfxqfWxhEmKerWeTU6qIDo8AS-MHWCfirh4stbYNCghOCA_MoZcUDgMTa7qOTA3YGwoG8IuORS2sVlm_u-3ih8Vg8V3vznTiUbbDB3wEAv7wIbEUVuBFOaWHn_O56JbXq7JK2fe_PFR-6Yo-vi4Lshk3kjxh71e_R_Ngt5woB1ls8FMGya7NX5oe6pJhqXHwJO7xRU60_xlKI90fjukDq29Kp6H4Df5WaOyvK1XVqjaz-AA6nZr14vR7NDoDzwI4EDy9P"
+    name: "Murat Efe Şahin",
+    role: "CEO",
+    image: "https://github.com/murratefe.png"
   },
   {
-    name: "Elif Demir",
-    role: "Strateji Başkanı",
-    image: "https://lh3.googleusercontent.com/aida-public/AB6AXu_gqKGpbO0zM6dqrqSQuISMv15COanen-wSu6o6ofbP21rVriLv_r2YDc2sKm9TKCTIrvzNLFVrpO81POogcRwUPUHLcd68TplkCTpsSSEdyk8ApsUrOHyZk7Qx7R7QJXVh5iB2sn510eUoIq31WCdZ3yxo5-I76poLAfTWV_PixP6eqNuO2VcPSYsBkiFRnpUbEOEoKsW_3eW-OVnLT_VwoZPiMbhlQAuJaGpL9LHAcri0KWC150kI2YuHdlO6BtyDDH0_DG-2z-B"
+    name: "Cemal Kılıç",
+    role: "CEO",
+    image: "https://github.com/cemalkilic.png"
   },
   {
-    name: "Can Özkan",
-    role: "Operasyon Direktörü",
-    image: "https://lh3.googleusercontent.com/aida-public/AB6AXuACT8CM7EfuOK6oFfuDO60A_LqhkT23T6qkHxt2MeQxwKRRIVYzOUhcorz-UkMfcZTYV6uzaj95EMGfU3u1dqzBtzy4PkgaSEWkWFw6trx0beJMUbCcP6tDD0MnXtBIB-i7CqM713tScpFvrwNqwjwUIDpNP0CY0l1-emXq4D1Uf867E9jXL1D7I9UoM321hHKB8BwUzV5BimzLI-uL0zGO7MVEwKhkNwd82Y-_ue0Vh91XRDw0dg44t6pBfmtGyV7_eaE2771v-FPe"
-  },
-  {
-    name: "Selin Ak",
-    role: "Eğitim Koordinatörü",
-    image: "https://lh3.googleusercontent.com/aida-public/AB6AXuD6J9WOdkolp39EKYwaiXENqnfnivL2ny1jKptFwatHs6KuW6dX4VHJpDmmxTs1FQSIo6-HCG_TdUuwXediZy7xswPBAiI6cOGM8JPh-Vc6FtqUt_Wt0C7OnRT5Y0SIcVizjMmn3Rz_4fPfaoZ_5B808uD6nPXiOqXiGEkqQYS6y6Pf5d2J7-QneC4s64JqLO5vDm-ZsHkQxDRSt2M9Cxl-yY0CnYSfCQb8wZjFe-8gn-rGLeHJL7fkkf_CByhgZ4ZyVvNp6ZQvpfRj"
+    name: "Atakan Dem",
+    role: "CEO",
+    image: "https://ui-avatars.com/api/?name=Atakan+Dem&background=8c5000&color=fff&size=512"
   }
 ];
 
