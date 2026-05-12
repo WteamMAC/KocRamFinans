@@ -5,12 +5,11 @@ import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowDownRight, ArrowUpRight, Banknote, Calendar, PieChart, Wallet, TrendingUp, Sparkles } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Banknote, Calendar, PieChart, Wallet, TrendingUp } from "lucide-react";
 import { BudgetOverview } from "@/components/dashboard/budget-overview";
 import { UpcomingPayments } from "@/components/dashboard/upcoming-payments";
 import { InvestmentSummary } from "@/components/dashboard/investment-summary";
 import { PerformanceChart } from "@/components/dashboard/performance-chart";
-import { ChatAI } from "@/components/dashboard/chat-ai";
 import { cn } from "@/lib/utils";
 import { getLivePrices, calculatePortfolioMetrics } from "@/lib/price-service";
 import { fixCategories } from "@/app/actions/assets";
@@ -71,10 +70,6 @@ export default async function DashboardPage() {
       {/* Welcome Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-             <Sparkles className="h-5 w-5 text-[#efe440] fill-[#efe440]" />
-             <span className="text-[10px] font-bold text-[#666000] uppercase tracking-[0.2em]">Kişisel Finans Asistanı</span>
-          </div>
           <h2 className="text-4xl font-heading font-bold text-[#8c5000] tracking-tight">
             Finansal Özet
           </h2>
@@ -218,8 +213,6 @@ export default async function DashboardPage() {
           <InvestmentSummary investments={portfolioMetrics.assets} />
         </CardContent>
       </Card>
-
-      <ChatAI />
     </div>
   );
 }

@@ -11,16 +11,18 @@ export async function completeOnboarding(formData: {
   marriageDate?: string;
   hasChildren?: boolean;
   children?: { birthDate: string }[];
-  incomes: { type: string; amount: number; description?: string }[];
-  expenses: { type: string; amount: number; dueDate?: number; isRecurring: boolean; description?: string }[];
-  debts: { type: string; amount: number; remainingInstallments?: number; description?: string }[];
-  investments: { 
-    type: string; 
-    symbol?: string; 
-    quantity: number; 
-    purchasePrice: number; 
-    currentValuation?: number; 
-    description?: string 
+  livingSituation?: string;
+  transportationType?: string;
+  incomes: { type: string; amount: number; stability?: string; description?: string }[];
+  expenses: { type: string; amount: number; dueDate?: number; isRecurring: boolean; isSubscription?: boolean; description?: string }[];
+  debts: { type: string; amount: number; remainingInstallments?: number; interestRate?: number; priority?: number; description?: string }[];
+  investments: {
+    type: string;
+    symbol?: string;
+    quantity: number;
+    purchasePrice: number;
+    currentValuation?: number;
+    description?: string
   }[];
 }) {
   const { userId } = await auth();
@@ -32,18 +34,22 @@ export async function completeOnboarding(formData: {
   // 1. Kullanıcıyı oluştur veya güncelle
   const user = await prisma.user.upsert({
     where: { clerkUserId: userId },
-    update: { 
+    update: {
       familyCount: formData.familyCount,
       maritalStatus: formData.maritalStatus,
       marriageDate: formData.marriageDate ? new Date(formData.marriageDate) : null,
       hasChildren: formData.hasChildren || false,
+      livingSituation: formData.livingSituation,
+      transportationType: formData.transportationType,
     },
-    create: { 
+    create: {
       clerkUserId: userId,
       familyCount: formData.familyCount,
       maritalStatus: formData.maritalStatus,
       marriageDate: formData.marriageDate ? new Date(formData.marriageDate) : null,
       hasChildren: formData.hasChildren || false,
+      livingSituation: formData.livingSituation,
+      transportationType: formData.transportationType,
     },
   });
 
@@ -65,8 +71,8 @@ export async function completeOnboarding(formData: {
       data: formData.debts.map((debt) => ({ ...debt, userId: user.id })),
     }),
     prisma.investment.createMany({
-      data: formData.investments.map((inv) => ({ 
-        ...inv, 
+      data: formData.investments.map((inv) => ({
+        ...inv,
         userId: user.id,
         amount: inv.quantity * inv.purchasePrice
       })),
