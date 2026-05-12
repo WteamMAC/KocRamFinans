@@ -1,6 +1,7 @@
 export const MASTER_PROMPT = `
 Sisteme Giriş:
-Sen "Koç Ram Finans" isimli, analitik zekası yüksek ve finansal disiplin konusunda uzman bir yapay zeka asistanısın. Kullanıcının gelir, gider, borç ve yatırımlarını analiz ederek ona rasyonel tavsiyeler verirsin.
+Sen "Koç Ram Finans" isimli, analitik zekası yüksek ve finansal disiplin konusunda uzman bir yapay zeka asistanısın. 
+Kullanıcının gelir, gider, borç ve yatırımlarını analiz ederek ona rasyonel, veriye dayalı ve proaktif finansal tavsiyeler verirsin.
 
 Bugünün Tarihi: {CURRENT_DATE}
 
@@ -8,16 +9,89 @@ Kullanıcı Finansal Özeti:
 {USER_DATA}
 
 Temel Prensiplerin:
-1. Veriye Dayalı Analiz: Sadece sana sağlanan "Finansal Özet" verilerine dayanarak konuş. Eğer veri eksikse kullanıcıdan detay iste.
-2. Harcama Disiplini: Kullanıcı bütçesini zorlayacak bir niyet belirtirse (örn: gereksiz lüks harcama), rasyonel nedenlerle onu uyar.
-3. Yatırım Sınırı: Spesifik hisse/altcoin ismi vererek "al/sat" deme. Sadece risk yönetimi ve portföy çeşitlendirmesi anlat. Yorumlarının sonuna mutlaka "Yatırım Tavsiyesi Değildir (YTD)" ekle.
-4. Piyasa Verileri: Döviz, altın veya borsa fiyatı sorulursa "Google Arama" aracını kullan. Eğer araç o an hata verirse, tahmini fiyat söylemek yerine kullanıcıyı güncel kaynaklara yönlendir.
-5. İletişim: Profesyonel, güven verici ve net bir Türkçe kullan. Uzun paragraflar yerine maddeler tercih et.
-6. İşlem Onayı: Kullanıcı bir kayıt (gelir/gider vb.) eklediğinde, "İşleminiz başarıyla kaydedildi, bütçenize yansıdı." şeklinde geri bildirim ver.
-7. Kısalık ve Özlük: Gereksiz uzatmalardan kaçın. Eğer kullanıcı sadece selam verdiyse (örn: "merhaba") veya basit bir soru sorduysa, çok kısa ve öz cevap ver. Analiz gerektiren durumlarda bile laf kalabalığı yapma, doğrudan sonuca odaklan.
+1. Veriye Dayalı Analiz: Sadece sağlanan verilere dayan. Veri eksikse araçları (tools) kullanarak sorgula veya kullanıcıdan iste.
+2. Harcama Disiplini: Bütçeyi sarsacak harcamalarda (örn: lüks tüketim) rasyonel uyarılar yap.
+3. Yatırım Sınırı: Spesifik varlık adı vererek "al/sat" deme. Risk yönetimi ve sepet mantığını anlat. Mutlaka "Yatırım Tavsiyesi Değildir (YTD)" ekle.
+4. Piyasa Verileri: Güncel fiyatlar için "googleSearchRetrieval" aracını kullan.
+5. İşlem Kaydı: Kullanıcı bir veri eklemek istediğinde ilgili fonksiyonu çağır. Kayıt sonrası doğal bir onay mesajı ver.
+6. Proaktif Yaklaşım: Kullanıcının harcama alışkanlıklarındaki anormallikleri fark et ve öneriler sun.
 
-Talimat: Kullanıcı sana bir soru sorduğunda, yukarıdaki prensipler çerçevesinde yanıt ver.
+İletişim Tarzı:
+- Profesyonel, güven verici ve net Türkçe.
+- Kısa, öz ve madde işaretli yanıtlar.
+- Karmaşık finansal terimleri basitleştirerek açıkla.
 `;
+
+export const FUNCTION_DECLARATIONS = [
+  {
+    name: "addIncome",
+    description: "Yeni bir gelir kaynağı (maaş, kira, ek gelir vb.) ekler.",
+    parameters: {
+      type: "OBJECT",
+      properties: {
+        type: { type: "STRING", description: "Gelir türü (Salary, Rent, Freelance, Other)" },
+        amount: { type: "NUMBER", description: "Miktar (TL)" },
+        description: { type: "STRING", description: "Açıklama veya kaynak" }
+      },
+      required: ["type", "amount"]
+    }
+  },
+  {
+    name: "addExpense",
+    description: "Yeni bir gider (fatura, market, kira vb.) ekler.",
+    parameters: {
+      type: "OBJECT",
+      properties: {
+        type: { type: "STRING", description: "Gider türü (Rent, Bill, Groceries, Transport, Entertainment, Other)" },
+        amount: { type: "NUMBER", description: "Miktar (TL)" },
+        isRecurring: { type: "BOOLEAN", description: "Bu her ay tekrarlanan bir gider mi?" },
+        description: { type: "STRING", description: "Gider detayı" }
+      },
+      required: ["type", "amount"]
+    }
+  },
+  {
+    name: "addDebt",
+    description: "Yeni bir borç veya taksitli ödeme ekler.",
+    parameters: {
+      type: "OBJECT",
+      properties: {
+        type: { type: "STRING", description: "Borç türü (CreditCard, BankLoan, Personal, Other)" },
+        amount: { type: "NUMBER", description: "Toplam borç miktarı" },
+        remainingInstallments: { type: "NUMBER", description: "Kalan taksit sayısı (varsa)" },
+        description: { type: "STRING", description: "Borç detayı" }
+      },
+      required: ["type", "amount"]
+    }
+  },
+  {
+    name: "addInvestment",
+    description: "Yeni bir yatırım (hisse, kripto, altın, döviz vb.) ekler.",
+    parameters: {
+      type: "OBJECT",
+      properties: {
+        type: { type: "STRING", description: "Yatırım türü (BIST, NASDAQ, CRYPTO, GOLD, CURRENCY)" },
+        symbol: { type: "STRING", description: "Sembol (Örn: THYAO, BTC, AAPL, XAU, USD)" },
+        quantity: { type: "NUMBER", description: "Adet/Miktar" },
+        purchasePrice: { type: "NUMBER", description: "Birim Alış Fiyatı" },
+        description: { type: "STRING", description: "Yatırım notu" }
+      },
+      required: ["type", "symbol", "quantity", "purchasePrice"]
+    }
+  },
+  {
+    name: "getFinancialHistory",
+    description: "Kullanıcının geçmiş finansal verilerini (gelir, gider, borç, yatırım) detaylı olarak getirir.",
+    parameters: {
+      type: "OBJECT",
+      properties: {
+        category: { type: "STRING", description: "Hangi kategori sorgulanacak? (incomes, expenses, debts, investments, all)" },
+        period: { type: "STRING", description: "Hangi dönem? (last_month, last_3_months, all_time)" }
+      },
+      required: ["category"]
+    }
+  }
+];
 
 export async function getFinancialContext(user: any) {
   // Veriyi özetleyerek gönderiyoruz (Token tasarrufu ve daha iyi analiz için)

@@ -1,163 +1,86 @@
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
-import { MASTER_PROMPT, getFinancialContext } from "@/lib/gemini";
+import { MASTER_PROMPT, getFinancialContext, FUNCTION_DECLARATIONS } from "@/lib/gemini";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-// ─── API KEY ROTASYONU ──────────────────────────────────────────────────────
-// Env içindeki GEMINI_API_KEY, GEMINI_API_KEY_2, GEMINI_API_KEY_3... anahtarlarını toplar
+// API Key Management
 const getApiKeys = () => {
   const keys = [];
   if (process.env.GEMINI_API_KEY) keys.push(process.env.GEMINI_API_KEY);
-
-  // Ek anahtarları ara (GEMINI_API_KEY_2'den 10'a kadar)
   for (let i = 2; i <= 10; i++) {
     const key = process.env[`GEMINI_API_KEY_${i}`];
     if (key) keys.push(key);
   }
-
   return keys.length > 0 ? keys : ["missing_api_key"];
 };
 
 const API_KEYS = getApiKeys();
 let currentKeyIndex = 0;
 
-// Belirli bir indexteki anahtarı veren yardımcı fonksiyon
-const getKeyAtIndex = (index: number) => {
-  const key = API_KEYS[index % API_KEYS.length];
-  const maskedKey = `...${key.slice(-4)}`;
-  return { key, maskedKey };
-};
-
-// ─── MODELLER VE ARAÇLAR ─────────────────────────────────────────────────────
-
 const FALLBACK_MODELS = [
   "gemini-2.0-flash",
-  "gemini-2.0-flash-exp",
-  "gemini-1.5-flash-002",
-  "gemini-1.5-flash-001",
-  "gemini-1.5-pro-002",
-  "gemini-1.5-pro-001"
+  "gemini-1.5-flash",
+  "gemini-1.5-pro"
 ];
 
-const MARKET_KEYWORDS = [
-  "dolar", "euro", "sterlin", "döviz", "kur", "altın", "gram altın", "çeyrek altın",
-  "borsa", "bist", "hisse", "endeks", "bitcoin", "btc", "kripto", "fiyat", "kaç tl",
-  "piyasa", "ekonomi", "faiz", "enflasyon", "güncel haber", "borsa istanbul"
-];
-
-const DB_ACTION_KEYWORDS = [
-  "ekle", "kaydet", "sil", "güncelle", "yeni gelir", "yeni gider", "borç ekle", "maaş ekle", "yatırım ekle"
-];
-
-const FUNCTION_DECLARATIONS = [
-  {
-    name: "addIncome",
-    description: "Yeni bir gelir kaynağı ekler.",
-    parameters: {
-      type: "OBJECT",
-      properties: {
-        type: { type: "STRING", description: "Gelir türü (Salary, Rent, Freelance, Other)" },
-        amount: { type: "NUMBER", description: "Miktar" },
-        description: { type: "STRING", description: "Açıklama" }
-      },
-      required: ["type", "amount"]
-    }
-  },
-  {
-    name: "addExpense",
-    description: "Yeni bir gider ekler.",
-    parameters: {
-      type: "OBJECT",
-      properties: {
-        type: { type: "STRING", description: "Gider türü (Rent, Bill, Groceries, Other)" },
-        amount: { type: "NUMBER", description: "Miktar" },
-        isRecurring: { type: "BOOLEAN", description: "Düzenli mi?" }
-      },
-      required: ["type", "amount"]
-    }
-  },
-  {
-    name: "addDebt",
-    description: "Yeni bir borç ekler.",
-    parameters: {
-      type: "OBJECT",
-      properties: {
-        type: { type: "STRING", description: "Borç türü" },
-        amount: { type: "NUMBER", description: "Miktar" }
-      },
-      required: ["type", "amount"]
-    }
-  },
-  {
-    name: "addInvestment",
-    description: "Yeni bir yatırım (hisse, kripto, altın vb.) ekler.",
-    parameters: {
-      type: "OBJECT",
-      properties: {
-        type: { type: "STRING", description: "Yatırım türü (BIST, NASDAQ, CRYPTO, GOLD)" },
-        symbol: { type: "STRING", description: "Sembol (Örn: THYAO, BTC, AAPL, XAU)" },
-        quantity: { type: "NUMBER", description: "Adet/Miktar" },
-        purchasePrice: { type: "NUMBER", description: "Birim Alış Fiyatı" },
-        description: { type: "STRING", description: "Not" }
-      },
-      required: ["type", "quantity", "purchasePrice"]
-    }
-  }
-];
-
-type ToolMode = "none" | "search" | "db";
-
-function classifyMessage(message: string): ToolMode {
-  const lower = message.toLowerCase();
-  
-  // "Borç" veya "Maaş" kelimesi tek başına DB tetiklememeli, yanında bir eylem (ekle vb.) olmalı.
-  const hasAction = ["ekle", "kaydet", "sil", "güncelle"].some(kw => lower.includes(kw));
-  const hasSpecificAction = ["yeni gelir", "yeni gider", "yeni borç"].some(kw => lower.includes(kw));
-
-  if (hasAction || hasSpecificAction) {
-     if (DB_ACTION_KEYWORDS.some(kw => lower.includes(kw))) return "db";
-  }
-  
-  // Arama motoru sadece "fiyat, kur, kaç tl, ne kadar" gibi spesifik piyasa verisi sorularında tetiklensin.
-  const priceKeywords = ["kaç tl", "fiyat", "kur", "ne kadar", "borsa durumu", "güncel haber", "endeks", "değeri"];
-  const hasMarketKeyword = MARKET_KEYWORDS.some(kw => lower.includes(kw));
-  const isAskingPrice = priceKeywords.some(pk => lower.includes(pk));
-
-  if (hasMarketKeyword && isAskingPrice) return "search";
-  
-  return "none";
-}
-
-// ─── ANA HANDLER ─────────────────────────────────────────────────────────────
-
-export async function POST(req: Request) {
-  const startTime = Date.now();
-  const traceId = Math.random().toString(36).substring(7);
-  let currentStage = "INIT";
-  let lastRateLimitReason = "";
-
-  try {
-    const { userId } = await auth();
-    if (!userId) return new Response("Yetkisiz.", { status: 401 });
-
-    const body = await req.json();
-    const { messages } = body;
-
-    // ─── GEÇMİŞ BUDAMA (TOKEN TASARRUFU) ────────────────────────────────────────
-    // Son 10 mesajı al (Bağlamı korurken kotayı rahatlatır)
-    const limitedMessages = messages.slice(-10);
-    const lastMessage = limitedMessages[limitedMessages.length - 1].content;
-    const toolMode = classifyMessage(lastMessage);
-
-    currentStage = "DB";
+// Helper to execute read-only tools on the server
+async function executeTool(name: string, args: any, userId: string) {
+  if (name === "getFinancialHistory") {
     const user = await prisma.user.findUnique({
       where: { clerkUserId: userId },
       include: {
-        incomes: { take: 10 },
-        expenses: { take: 10 },
+        incomes: true,
+        expenses: true,
+        debts: true,
+        investments: true
+      }
+    });
+
+    if (!user) return { error: "User not found" };
+
+    const { category, period } = args;
+    let data: any = {};
+    
+    if (category === "all" || category === "incomes") data.incomes = user.incomes;
+    if (category === "all" || category === "expenses") data.expenses = user.expenses;
+    if (category === "all" || category === "debts") data.debts = user.debts;
+    if (category === "all" || category === "investments") data.investments = user.investments;
+
+    return { success: true, data };
+  }
+  
+  return null; // For write tools that need UI confirmation
+}
+
+export async function POST(req: Request) {
+  const traceId = Math.random().toString(36).substring(7);
+  
+  try {
+    const { userId } = await auth();
+    if (!userId) return new Response("Unauthorized", { status: 401 });
+
+    // Rate Limit Check
+    const rateLimit = await checkRateLimit(req as any, userId);
+    if (!rateLimit.success) {
+      return new Response(JSON.stringify({ 
+        error: "Çok fazla istek gönderdiniz. Lütfen 15 saniye bekleyin.",
+        reset: rateLimit.reset 
+      }), { status: 429, headers: { "Content-Type": "application/json" } });
+    }
+
+    const { messages } = await req.json();
+    const lastMessage = messages[messages.length - 1].content;
+
+    // Fetch User & Context
+    const user = await prisma.user.findUnique({
+      where: { clerkUserId: userId },
+      include: {
+        incomes: { take: 20 },
+        expenses: { take: 20 },
         debts: { take: 10 },
         investments: { take: 20 }
       },
@@ -165,155 +88,104 @@ export async function POST(req: Request) {
 
     if (!user) return new Response("User not found", { status: 404 });
 
-    currentStage = "CONTEXT";
     const financialContext = await getFinancialContext(user);
     const systemPrompt = MASTER_PROMPT
       .replace("{USER_DATA}", financialContext)
       .replace("{CURRENT_DATE}", new Date().toLocaleDateString("tr-TR"));
 
-    // --- AI DENEME DÖNGÜSÜ (Key + Model Rotasyonu) ---
-    currentStage = "AI";
+    // Tool Configuration
+    const tools: any[] = [
+      { functionDeclarations: FUNCTION_DECLARATIONS },
+      { googleSearchRetrieval: { dynamicRetrievalConfig: { mode: "MODE_DYNAMIC", dynamicThreshold: 0.3 } } }
+    ];
 
-    for (let keyTrial = 0; keyTrial < API_KEYS.length; keyTrial++) {
-      const trialIndex = (currentKeyIndex + keyTrial) % API_KEYS.length;
-      const { key, maskedKey } = getKeyAtIndex(trialIndex);
-      // v1beta (varsayılan) sistem talimatlarını daha iyi destekler. 400 hatasını çözmek için v1'i kaldırıyoruz.
-      const ai = new GoogleGenAI({ apiKey: key });
+    // AI Execution Loop (Key + Model Rotation)
+    for (let attempt = 0; attempt < API_KEYS.length * 2; attempt++) {
+      const keyIndex = (currentKeyIndex + Math.floor(attempt / 2)) % API_KEYS.length;
+      const modelIndex = attempt % 2 === 0 ? 0 : 1; 
+      
+      const apiKey = API_KEYS[keyIndex];
+      const modelId = FALLBACK_MODELS[modelIndex] || FALLBACK_MODELS[0];
+      
+      console.log(`[${traceId}] Attempt ${attempt}: Key ${keyIndex}, Model ${modelId}`);
 
-      for (let modelIndex = 0; modelIndex < FALLBACK_MODELS.length; modelIndex++) {
-        const modelId = FALLBACK_MODELS[modelIndex];
+      try {
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const model = genAI.getGenerativeModel({ 
+          model: modelId,
+          systemInstruction: systemPrompt,
+          tools
+        });
 
-        console.log(`[${traceId}] [TRIAL] KeyIndex: ${trialIndex}, Key: ${maskedKey}, Model: ${modelId}, Tool: ${toolMode}`);
+        const history = messages.slice(0, -1).map((m: any) => ({
+          role: m.role === "user" ? "user" : "model",
+          parts: [{ text: m.content }]
+        }));
 
-        try {
-          let tools: any[] | undefined;
-          if (toolMode === "db") {
-            tools = [{ functionDeclarations: FUNCTION_DECLARATIONS }];
-          } else if (toolMode === "search") {
-            // Google Arama aracını dinamik eşik değeriyle etkinleştiriyoruz
-            tools = [{ 
-              googleSearchRetrieval: { 
-                dynamicRetrievalConfig: { 
-                  mode: "MODE_DYNAMIC", 
-                  dynamicThreshold: 0.3 
-                } 
-              } 
-            } as any];
-          }
+        const chat = model.startChat({ history });
+        const result = await chat.sendMessageStream(lastMessage);
 
-          const response = await ai.models.generateContentStream({
-            model: modelId,
-            contents: [
-              ...limitedMessages.slice(0, -1).map((m: any) => ({
-                role: m.role === "user" ? "user" : "model",
-                parts: [{ text: m.content }]
-              })),
-              { role: "user", parts: [{ text: lastMessage }] }
-            ],
-            config: {
-              systemInstruction: {
-                parts: [{ text: systemPrompt }]
-              },
-              tools: tools as any
-            }
-          });
+        const encoder = new TextEncoder();
+        const stream = new ReadableStream({
+          async start(controller) {
+            try {
+              let hasContent = false;
+              for await (const chunk of result.stream) {
+                const parts = chunk.candidates?.[0]?.content?.parts;
+                if (!parts) continue;
 
-          // Stream okuma ve Response döndürme
-          const encoder = new TextEncoder();
-          const stream = new ReadableStream({
-            async start(controller) {
-              try {
-                let hasSentAnything = false;
-                for await (const chunk of response) {
-                  let chunkText = "";
-
-                  if (chunk.candidates?.[0]?.content?.parts) {
-                    const parts = chunk.candidates[0].content.parts;
-                    for (const part of parts) {
-                      if (part.text) {
-                        chunkText += part.text;
-                      }
-                      if (part.functionCall) {
-                        const call = part.functionCall;
-                        const payload = JSON.stringify({ name: call.name, args: call.args });
-                        controller.enqueue(encoder.encode(`\n\n__TOOL_CALL__:${payload}__END_TOOL_CALL__\n`));
-                        hasSentAnything = true;
-                      }
+                for (const part of parts) {
+                  if (part.text) {
+                    controller.enqueue(encoder.encode(part.text));
+                    hasContent = true;
+                  }
+                  if (part.functionCall) {
+                    const call = part.functionCall;
+                    const toolResult = await executeTool(call.name, call.args, userId);
+                    
+                    if (toolResult) {
+                      controller.enqueue(encoder.encode(`\n\n[SİSTEM]: ${JSON.stringify(toolResult.data)}`));
+                    } else {
+                      const payload = JSON.stringify({ name: call.name, args: call.args });
+                      controller.enqueue(encoder.encode(`\n\n__TOOL_CALL__:${payload}__END_TOOL_CALL__\n`));
                     }
-                  }
-
-                  if (chunkText) {
-                    controller.enqueue(encoder.encode(chunkText));
-                    hasSentAnything = true;
+                    hasContent = true;
                   }
                 }
-                
-                if (!hasSentAnything) {
-                  controller.enqueue(encoder.encode("Üzgünüm, bu konuda şu an bilgi sağlayamıyorum. Lütfen sorunuzu farklı bir şekilde sormayı deneyin."));
-                }
-                
-                controller.close();
-              } catch (e) { 
-                console.error("[STREAM ERROR]", e);
-                controller.error(e); 
               }
+
+              if (!hasContent) {
+                controller.enqueue(encoder.encode("Üzgünüm, şu an yanıt veremiyorum."));
+              }
+              controller.close();
+            } catch (e) {
+              console.error("[STREAM ERROR]", e);
+              controller.error(e);
             }
-          });
-
-          return new Response(stream, { headers: { "Content-Type": "text/plain; charset=utf-8" } });
-
-        } catch (err: any) {
-          const errorDetails = err.message || JSON.stringify(err);
-          const statusCode = err.status || (err.response?.status) || 0;
-          
-          const is429 = statusCode === 429 || errorDetails.includes("429");
-          const is404 = statusCode === 404 || errorDetails.includes("404") || errorDetails.includes("not found");
-          
-          // DİKKAT: 503 ve 500'ü buradan kaldırdık! Sadece gerçek 429 hataları kota hatasıdır.
-          const isQuotaError = is429 || errorDetails.includes("quota"); 
-          const isAuthError = errorDetails.includes("API key expired") || errorDetails.includes("API_KEY_INVALID") || (statusCode === 401);
-
-          console.warn(`[${traceId}] [FAIL] Key: ${maskedKey}, Model: ${modelId}, Status: ${statusCode}, Error: ${errorDetails}`);
-
-          // Eğer model bulunamadıysa (404) veya Google sunucuları geçici hata verdiyse (500, 503)
-          // BREAK YAPMA, sıradaki modele (örneğin 2.5-flash) geçiş yap!
-          if (is404 || statusCode === 503 || statusCode === 500) {
-            lastRateLimitReason = `Model Geçici Hatası (${statusCode}): ${modelId}`;
-            // Spam engellemek için sıradaki modele geçmeden önce 500ms bekle
-            await new Promise((resolve) => setTimeout(resolve, 500));
-            continue; 
-          } 
-
-          // Eğer gerçekten API limiti dolduysa veya API Key yetkisizse:
-          if (isQuotaError || isAuthError) {
-            lastRateLimitReason = isQuotaError 
-              ? `Kota Dolu (${modelId}) - Anahtar: ${maskedKey}`
-              : `Yetki Hatası - Anahtar: ${maskedKey}`;
-            
-            // Kota dolduysa veya yetki hatası varsa, global indexi bir sonraki anahtara kaydır
-            currentKeyIndex = (trialIndex + 1) % API_KEYS.length;
-            break; // İçteki model döngüsünden çık, dıştaki key döngüsünde sıradaki anahtara geç
           }
+        });
 
-          // Diğer bilinmeyen hatalarda da sistemin çökmemesi için sıradaki modeli denemesini sağla
-          lastRateLimitReason = `Bilinmeyen Hata (${statusCode})`;
+        return new Response(stream, { headers: { "Content-Type": "text/plain; charset=utf-8" } });
+
+      } catch (err: any) {
+        const status = err.status || 0;
+        console.warn(`[${traceId}] Failed: ${modelId} (${status}) - ${err.message}`);
+        
+        if (status === 429 || status === 401) {
+          if (status === 429) currentKeyIndex = (keyIndex + 1) % API_KEYS.length;
           continue;
         }
+        continue;
       }
     }
 
-    throw new Error("Tüm modeller denendi. Son hata: " + lastRateLimitReason);
-
+    throw new Error("All attempts failed.");
 
   } catch (error: any) {
-    const message = lastRateLimitReason
-      ? `Sorun Tespit Edildi: ${lastRateLimitReason}.`
-      : "Sistem şu an yoğun, lütfen 15 saniye sonra tekrar deneyin.";
-
-    console.error(`[${traceId}] FINAL ERROR:`, error.message);
-    return new Response(JSON.stringify({
-      error: message,
-      details: error.message
-    }), { status: 500, headers: { "Content-Type": "application/json" } });
+    console.error(`[${traceId}] Final Error:`, error.message);
+    return new Response(JSON.stringify({ error: "Sistem şu an yoğun, lütfen birazdan tekrar deneyin." }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" }
+    });
   }
 }

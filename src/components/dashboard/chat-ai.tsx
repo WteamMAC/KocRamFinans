@@ -60,6 +60,13 @@ export function ChatAI() {
         } catch {
           errorData = { error: "Sunucu hatası" };
         }
+        
+        // Sunucudan dönen rate limit bilgisini kullan
+        if (response.status === 429 && errorData.reset) {
+          const remaining = Math.ceil((errorData.reset - Date.now()) / 1000);
+          if (remaining > 0) startCooldown(remaining);
+        }
+        
         throw new Error(errorData.error || errorData.details || "Sunucu hatası");
       }
 
