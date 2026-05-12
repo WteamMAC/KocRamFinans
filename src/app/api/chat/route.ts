@@ -93,7 +93,7 @@ export async function POST(req: Request) {
             getFinancialHistory: tool({
               description: "Kullanıcının mevcut finansal özetini ve geçmiş verilerini getirir.",
               parameters: getFinancialHistorySchema,
-              execute: async ({ category }) => {
+              execute: async ({ category }: z.infer<typeof getFinancialHistorySchema>) => {
                 console.log(`[TOOL] 🔍 getFinancialHistory | Kategori: ${category}`);
                 // OPTİMİZASYON: Başta çekilen 'user' verisini kullanıyoruz, tekrar DB'ye gitmiyoruz
                 const dataMap: Record<string, unknown> = {
@@ -108,7 +108,7 @@ export async function POST(req: Request) {
             addFinancialRecord: tool({
               description: "Yeni bir gelir, gider, borç veya yatırım kaydı oluşturur.",
               parameters: addFinancialRecordSchema,
-              execute: async ({ type, amount, category, description }) => {
+              execute: async ({ type, amount, category, description }: z.infer<typeof addFinancialRecordSchema>) => {
                 console.log(`[TOOL] ➕ addFinancialRecord | Tip: ${type} | Tutar: ${amount}`);
                 try {
                   // Tip Güvenli Model Erişimi
