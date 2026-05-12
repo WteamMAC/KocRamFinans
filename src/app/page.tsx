@@ -41,9 +41,9 @@ export default async function LandingPage() {
           </Link>
           
           <nav className="hidden md:flex items-center gap-8">
-            <a className="text-[#554336] hover:text-[#8c5000] transition-colors text-sm font-semibold tracking-tight" href="#hizmetler">Hizmetler</a>
-            <a className="text-[#554336] hover:text-[#8c5000] transition-colors text-sm font-semibold tracking-tight" href="#neden-biz">Hakkımızda</a>
-            <a className="text-[#554336] hover:text-[#8c5000] transition-colors text-sm font-semibold tracking-tight" href="#blog">Blog</a>
+            <Link className="text-[#554336] hover:text-[#8c5000] transition-colors text-sm font-semibold tracking-tight" href="#hizmetler">Hizmetler</Link>
+            <Link className="text-[#554336] hover:text-[#8c5000] transition-colors text-sm font-semibold tracking-tight" href="/hakkimizda">Hakkımızda</Link>
+            <Link className="text-[#554336] hover:text-[#8c5000] transition-colors text-sm font-semibold tracking-tight" href="#blog">Blog</Link>
           </nav>
           
           <div className="flex items-center gap-4">
@@ -310,6 +310,7 @@ export default async function LandingPage() {
             </div>
             
             <nav className="flex flex-wrap justify-center md:justify-end gap-x-10 gap-y-4">
+              <Link className="text-white/80 hover:text-white font-bold transition-colors uppercase tracking-widest text-xs" href="/hakkimizda">Hakkımızda</Link>
               <a className="text-white/80 hover:text-white font-bold transition-colors uppercase tracking-widest text-xs" href="#">Gizlilik</a>
               <a className="text-white/80 hover:text-white font-bold transition-colors uppercase tracking-widest text-xs" href="#">Kullanım</a>
               <a className="text-white/80 hover:text-white font-bold transition-colors uppercase tracking-widest text-xs" href="#">İletişim</a>
