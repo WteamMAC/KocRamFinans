@@ -117,98 +117,104 @@ export async function POST(req: Request) {
         });
 
         const chat = model.startChat({ history: formattedHistory });
-        let result = await chat.sendMessageStream(lastMessage);
 
-        let response = await result.response;
-        let functionCalls = response.functionCalls();
-
-        // Araç (Tool) Çağrısı Kontrolü ve Döngüsü
-        // Model art arda tool çağırmak isterse (Örn: Gideri ekle -> Sonra geçmişi getir)
-        while (functionCalls && functionCalls.length > 0) {
-          const functionResponses: Part[] = [];
-          for (const call of functionCalls) {
-            console.log(`[TOOL] 🔍 Tool Çağrısı: ${call.name}`);
-            let apiResponse: any = {};
-
-            try {
-              if (call.name === "getFinancialHistory") {
-                const category = (call.args as any).category;
-                const dataMap: Record<string, any> = {
-                  incomes: user.incomes,
-                  expenses: user.expenses,
-                  debts: user.debts,
-                  investments: user.investments
-                };
-                apiResponse = category === "all" ? dataMap : (dataMap[category] || { error: "Kategori bulunamadı" });
-              } else if (call.name === "addFinancialRecord") {
-                const { type, amount, category, description, quantity, purchasePrice } = call.args as any;
-                const baseData = {
-                  userId: user.id,
-                  amount: Number(amount),
-                  description: description || "",
-                  type: category
-                };
-
-                switch (type) {
-                  case "income": await prisma.income.create({ data: baseData }); break;
-                  case "expense": await prisma.expense.create({ data: baseData }); break;
-                  case "debt": await prisma.debt.create({ data: baseData }); break;
-                  case "investment":
-                    await prisma.investment.create({
-                      data: {
-                        userId: user.id,
-                        type: category.toUpperCase(),
-                        symbol: description || category,
-                        quantity: Number(quantity) || 1,
-                        purchasePrice: Number(purchasePrice) || Number(amount),
-                        amount: Number(amount),
-                        description: description || null,
-                        status: "OPEN",
-                        transactionType: "BUY",
-                      }
-                    });
-                    break;
-                  default: throw new Error("Geçersiz işlem tipi");
-                }
-                apiResponse = { success: true, message: "Kayıt başarıyla eklendi." };
-              }
-            } catch (e: any) {
-              console.error(`[TOOL] ❌ Hata:`, e.message);
-              apiResponse = { error: `İşlem başarısız: ${e.message}` };
-            }
-
-            functionResponses.push({
-              functionResponse: {
-                name: call.name,
-                response: apiResponse
-              }
-            });
-          }
-
-          // Tool sonuçlarını modele geri gönder ve asıl cevabı stream olarak al
-          result = await chat.sendMessageStream(functionResponses);
-
-          // Yeni yanıtın tekrar tool çağırıp çağırmadığını kontrol et
-          response = await result.response;
-          functionCalls = response.functionCalls();
-        }
-
-        console.log(`[AI-CHAT] ✅ Başarılı: ${modelName}`);
-
-        // Resmi SDK'dan gelen cevabı okunabilir bir veri akışına (ReadableStream) çevirme
+        // ÇÖZÜM: Stream kontrolü ve Tool (Araç) çağırma döngüsünü stream'in içine entegre ediyoruz.
+        // Aksi takdirde 'await result.response' denildiğinde stream API tarafından tüketilmiş oluyor.
         const stream = new ReadableStream({
           async start(controller) {
             try {
-              for await (const chunk of result.stream) {
-                try {
-                  const chunkText = chunk.text();
-                  if (chunkText) {
-                    controller.enqueue(new TextEncoder().encode(chunkText));
+              let currentResult = await chat.sendMessageStream(lastMessage);
+
+              while (true) {
+                let toolCalls: any[] = [];
+
+                // Gelen stream'i okuyoruz
+                for await (const chunk of currentResult.stream) {
+                  const calls = chunk.functionCalls();
+                  if (calls && calls.length > 0) {
+                    toolCalls.push(...calls);
+                  } else {
+                    try {
+                      const text = chunk.text();
+                      if (text) {
+                        controller.enqueue(new TextEncoder().encode(text));
+                      }
+                    } catch (e) {
+                      // Eğer chunk içinde text yoksa SDK hata fırlatabilir, yoksayıyoruz.
+                    }
                   }
-                } catch (e) {
-                  // Google SDK chunk.text() metodu, eğer metin yoksa (sadece tool varsa) hata fırlatır. Bunu yoksayıyoruz.
+                }
+
+                // Eğer akış sırasında model bir araca (Tool) ihtiyaç duyduysa, onları çalıştır
+                if (toolCalls.length > 0) {
+                  const functionResponses: Part[] = [];
+                  for (const call of toolCalls) {
+                    console.log(`[TOOL] 🔍 Tool Çağrısı: ${call.name}`);
+                    let apiResponse: any = {};
+
+                    try {
+                      if (call.name === "getFinancialHistory") {
+                        const category = (call.args as any).category;
+                        const dataMap: Record<string, any> = {
+                          incomes: user.incomes,
+                          expenses: user.expenses,
+                          debts: user.debts,
+                          investments: user.investments
+                        };
+                        apiResponse = category === "all" ? dataMap : (dataMap[category] || { error: "Kategori bulunamadı" });
+                      } else if (call.name === "addFinancialRecord") {
+                        const { type, amount, category, description, quantity, purchasePrice } = call.args as any;
+                        const baseData = {
+                          userId: user.id,
+                          amount: Number(amount),
+                          description: description || "",
+                          type: category
+                        };
+
+                        switch (type) {
+                          case "income": await prisma.income.create({ data: baseData }); break;
+                          case "expense": await prisma.expense.create({ data: baseData }); break;
+                          case "debt": await prisma.debt.create({ data: baseData }); break;
+                          case "investment":
+                            await prisma.investment.create({
+                              data: {
+                                userId: user.id,
+                                type: category.toUpperCase(),
+                                symbol: description || category,
+                                quantity: Number(quantity) || 1,
+                                purchasePrice: Number(purchasePrice) || Number(amount),
+                                amount: Number(amount),
+                                description: description || null,
+                                status: "OPEN",
+                                transactionType: "BUY",
+                              }
+                            });
+                            break;
+                          default: throw new Error("Geçersiz işlem tipi");
+                        }
+                        apiResponse = { success: true, message: "Kayıt başarıyla eklendi." };
+                      }
+                    } catch (e: any) {
+                      console.error(`[TOOL] ❌ Hata:`, e.message);
+                      apiResponse = { error: `İşlem başarısız: ${e.message}` };
+                    }
+
+                    functionResponses.push({
+                      functionResponse: {
+                        name: call.name,
+                        response: apiResponse
+                      }
+                    });
+                  }
+
+                  // Tool sonuçlarını modele geri gönder ve yeni cevabın stream'ini alarak döngüye devam et
+                  currentResult = await chat.sendMessageStream(functionResponses);
+                } else {
+                  // Tool çağrısı yoksa modelin son doğal dil cevabı bitmiştir, döngüyü kır
+                  break;
                 }
               }
+              console.log(`[AI-CHAT] ✅ Başarılı: ${modelName}`);
               controller.close();
             } catch (err) {
               controller.error(err);
