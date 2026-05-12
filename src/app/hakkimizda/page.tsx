@@ -3,6 +3,8 @@
 import React from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
+import Navbar from "@/components/layout/Navbar";
+import Footer from "@/components/layout/Footer";
 
 const fadeInUp = {
   initial: { opacity: 0, y: 20 },
@@ -100,22 +102,7 @@ const team = [
 export default function AboutPage() {
   return (
     <div className="bg-background text-on-surface font-sans overflow-x-hidden min-h-screen">
-      {/* TopAppBar */}
-      <header className="bg-surface/90 backdrop-blur-md sticky top-0 z-50 border-b border-outline-variant/30 shadow-sm">
-        <div className="flex justify-between items-center w-full px-4 md:px-16 py-4 max-w-[1200px] mx-auto">
-          <Link href="/" className="text-2xl font-heading font-bold text-primary">Koç Ram Finans</Link>
-          <nav className="hidden md:flex items-center gap-8">
-            <Link className="text-sm font-semibold text-on-surface-variant hover:text-primary transition-colors duration-200" href="#">Hizmetler</Link>
-            <Link className="text-sm font-semibold text-primary border-b-2 border-primary pb-1" href="/hakkimizda">Hakkımızda</Link>
-            <Link className="text-sm font-semibold text-on-surface-variant hover:text-primary transition-colors duration-200" href="#">Başarı Hikayeleri</Link>
-            <Link className="text-sm font-semibold text-on-surface-variant hover:text-primary transition-colors duration-200" href="#">Blog</Link>
-          </nav>
-          <div className="flex items-center gap-4">
-            <button className="hidden lg:block text-sm font-semibold text-primary hover:opacity-80 transition-opacity">Giriş Yap</button>
-            <button className="bg-primary-container text-on-primary px-6 py-2 rounded-lg text-sm font-semibold scale-95 transition-transform duration-150 hover:scale-100">Koçluğa Başla</button>
-          </div>
-        </div>
-      </header>
+      <Navbar />
 
       <main>
         {/* Hero Section */}
@@ -193,22 +180,22 @@ export default function AboutPage() {
                 {roadmapSteps.map((step, index) => (
                   <motion.div 
                     key={index}
-                    className={`relative flex flex-col md:flex-row items-center md:justify-between group`}
+                    className="relative grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] items-center gap-8 group"
                     initial={{ opacity: 0, x: step.side === "left" ? -50 : 50 }}
                     whileInView={{ opacity: 1, x: 0 }}
                     viewport={{ once: true, margin: "-100px" }}
                     transition={{ duration: 0.6, delay: index * 0.1 }}
                   >
-                    <div className={`md:w-[45%] text-center ${step.side === "left" ? "md:text-right" : "md:text-left md:order-2"}`}>
+                    <div className={`text-center ${step.side === "left" ? "md:text-right" : "md:text-left md:order-3"}`}>
                       <h3 className={`text-2xl font-heading font-bold mb-2 ${step.color === 'bg-primary' ? 'text-primary' : 'text-tertiary'}`}>{step.title}</h3>
-                      <p className="text-on-surface-variant">{step.description}</p>
+                      <p className="text-on-surface-variant max-w-md mx-auto md:mx-0 ${step.side === 'left' ? 'md:ml-auto' : ''}">{step.description}</p>
                     </div>
                     
-                    <div className={`w-12 h-12 ${step.color} rounded-full flex items-center justify-center ${step.textColor} z-10 my-6 md:my-0 shadow-lg ring-8 ring-background group-hover:scale-110 transition-transform duration-300`}>
+                    <div className={`md:order-2 w-12 h-12 ${step.color} rounded-full flex items-center justify-center ${step.textColor} z-10 mx-auto shadow-lg ring-8 ring-background group-hover:scale-110 transition-transform duration-300`}>
                       <span className="material-symbols-outlined">{step.icon}</span>
                     </div>
                     
-                    <div className="md:w-[45%] hidden md:block"></div>
+                    <div className={`hidden md:block ${step.side === "left" ? "md:order-3" : "md:order-1"}`}></div>
                   </motion.div>
                 ))}
               </div>
@@ -339,30 +326,7 @@ export default function AboutPage() {
         </section>
       </main>
 
-      {/* Footer */}
-      <footer className="bg-secondary text-on-secondary">
-        <div className="w-full px-4 md:px-16 py-16 flex flex-col md:flex-row justify-between items-center gap-12 max-w-[1200px] mx-auto border-t border-on-secondary/10">
-          <div className="flex flex-col items-center md:items-start gap-4">
-            <div className="text-2xl font-heading font-bold">Koç Ram Finans</div>
-            <p className="text-sm opacity-80 text-center md:text-left leading-relaxed">
-              © 2024 Koç Ram Finansal Danışmanlık. <br/>
-              Güvenilir finansal koçluk ve stratejik yönetim.
-            </p>
-          </div>
-          <nav className="flex flex-wrap justify-center gap-8 md:gap-12">
-            <Link className="text-sm font-medium opacity-80 hover:opacity-100 hover:text-secondary-container transition-all" href="#">Gizlilik</Link>
-            <Link className="text-sm font-medium opacity-80 hover:opacity-100 hover:text-secondary-container transition-all" href="#">Şartlar</Link>
-            <Link className="text-sm font-medium opacity-80 hover:opacity-100 hover:text-secondary-container transition-all" href="#">İletişim</Link>
-          </nav>
-          <div className="flex gap-4">
-            {['facebook', 'twitter', 'linkedin'].map((social) => (
-              <div key={social} className="w-10 h-10 rounded-full border border-on-secondary/30 flex items-center justify-center hover:bg-on-secondary hover:text-secondary transition-all cursor-pointer">
-                <span className="material-symbols-outlined text-sm">share</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

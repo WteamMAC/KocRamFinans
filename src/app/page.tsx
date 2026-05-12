@@ -24,48 +24,15 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
+import Navbar from "@/components/layout/Navbar";
+import Footer from "@/components/layout/Footer";
 
 export default async function LandingPage() {
   const { userId } = await auth();
 
   return (
     <div className="flex flex-col min-h-screen bg-[#f8f9fa] text-[#191c1d] font-sans antialiased selection:bg-[#efe440]/30">
-      {/* TopAppBar */}
-      <header className="bg-white/90 backdrop-blur-md sticky top-0 z-50 border-b border-[#dbc2b0]/30 shadow-ambient-low transition-all duration-300">
-        <div className="flex justify-between items-center max-w-[1200px] mx-auto px-6 md:px-8 py-4">
-          <Link className="flex items-center gap-2 group" href="/">
-            <div className="p-1 group-hover:scale-110 transition-transform">
-              <img src="/mascot.png" alt="Logo" className="h-14 w-14 object-contain" />
-            </div>
-            <span className="text-2xl font-heading font-bold text-[#8c5000] tracking-tight">Koç Ram Finans</span>
-          </Link>
-          
-          <nav className="hidden md:flex items-center gap-8">
-            <Link className="text-[#554336] hover:text-[#8c5000] transition-colors text-sm font-semibold tracking-tight" href="#hizmetler">Hizmetler</Link>
-            <Link className="text-[#554336] hover:text-[#8c5000] transition-colors text-sm font-semibold tracking-tight" href="/hakkimizda">Hakkımızda</Link>
-            <Link className="text-[#554336] hover:text-[#8c5000] transition-colors text-sm font-semibold tracking-tight" href="#blog">Blog</Link>
-          </nav>
-          
-          <div className="flex items-center gap-4">
-            {!userId ? (
-              <>
-                <Link href="/sign-in" className="hidden md:block text-[#554336] hover:text-[#8c5000] transition-colors text-sm font-bold">
-                  Giriş Yap
-                </Link>
-                <Link href="/sign-up" className="bg-[#8c5000] text-white hover:bg-[#6e3f00] rounded-xl transition-all px-6 py-2.5 text-sm font-bold shadow-ambient-medium hover:shadow-ambient-high scale-100 active:scale-95">
-                  Koçluğa Başla
-                </Link>
-              </>
-            ) : (
-              <Link href="/dashboard">
-                <button className="bg-[#8c5000] text-white hover:bg-[#6e3f00] rounded-xl transition-all px-6 py-2.5 text-sm font-bold shadow-ambient-medium hover:shadow-ambient-high">
-                  Panele Git
-                </button>
-              </Link>
-            )}
-          </div>
-        </div>
-      </header>
+      <Navbar />
 
       <main>
         {/* Hero Section */}
@@ -294,43 +261,7 @@ export default async function LandingPage() {
         </section>
       </main>
 
-      <footer className="bg-[#666000] text-white w-full border-t border-white/5">
-        <div className="max-w-[1200px] mx-auto px-6 md:px-8 py-16">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-12">
-            <div className="flex flex-col items-center md:items-start gap-6 mb-8 md:mb-0">
-              <Link className="flex items-center gap-2 group" href="/">
-                <div className="p-1 group-hover:scale-110 transition-transform">
-                  <img src="/mascot.png" alt="Logo" className="h-16 w-16 object-contain brightness-0 invert" />
-                </div>
-                <span className="text-3xl font-heading font-bold text-white tracking-tight">Koç Ram Finans</span>
-              </Link>
-              <p className="text-white/70 font-medium text-center md:text-left max-w-sm">
-                Geleceğinizi güvence altına almak için yanınızdayız. Profesyonel finansal koçluk ve stratejik planlama.
-              </p>
-            </div>
-            
-            <nav className="flex flex-wrap justify-center md:justify-end gap-x-10 gap-y-4">
-              <Link className="text-white/80 hover:text-white font-bold transition-colors uppercase tracking-widest text-xs" href="/hakkimizda">Hakkımızda</Link>
-              <a className="text-white/80 hover:text-white font-bold transition-colors uppercase tracking-widest text-xs" href="#">Gizlilik</a>
-              <a className="text-white/80 hover:text-white font-bold transition-colors uppercase tracking-widest text-xs" href="#">Kullanım</a>
-              <a className="text-white/80 hover:text-white font-bold transition-colors uppercase tracking-widest text-xs" href="#">İletişim</a>
-              <a className="text-white/80 hover:text-white font-bold transition-colors uppercase tracking-widest text-xs" href="#">SSS</a>
-            </nav>
-          </div>
-          
-          <div className="mt-16 pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-6">
-            <p className="text-sm font-bold text-white/40 uppercase tracking-widest">
-              © 2026 Koç Ram Finans. Tüm Hakları Saklıdır.
-            </p>
-            <div className="flex gap-6 opacity-40">
-              {/* Social icons placeholder */}
-              <div className="w-5 h-5 bg-white rounded-full"></div>
-              <div className="w-5 h-5 bg-white rounded-full"></div>
-              <div className="w-5 h-5 bg-white rounded-full"></div>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }
