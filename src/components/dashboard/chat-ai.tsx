@@ -2,19 +2,18 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { useChat } from "@ai-sdk/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { 
-  Send, 
-  Sparkles, 
-  X, 
-  Bot, 
-  User, 
-  Loader2, 
-  Minimize2, 
+import {
+  Send,
+  Sparkles,
+  X,
+  Bot,
+  User,
+  Loader2,
+  Minimize2,
   Maximize2,
   TrendingUp,
 } from "lucide-react";
@@ -27,24 +26,59 @@ export function ChatAI() {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const [input, setInput] = useState("");
-  const { messages, sendMessage, status, error: chatError } = useChat({
-    api: "/api/chat",
-    onError: (error: any) => {
-      console.error("Chat Error Details:", error);
-    }
-  } as any) as any;
-
-  const isLoading = status === "streaming" || status === "submitted";
+  const [messages, setMessages] = useState<{ id: string; role: "user" | "assistant"; content: string }[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInput(e.target.value);
   };
 
-  const handleSubmit = (e?: React.FormEvent) => {
+  const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!input.trim() || isLoading) return;
-    sendMessage({ text: input });
+
+    const userMsg = { id: Date.now().toString(), role: "user" as const, content: input };
+    const newMessages = [...messages, userMsg];
+    setMessages(newMessages);
     setInput("");
+    setIsLoading(true);
+
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: newMessages }),
+      });
+
+      if (!res.ok) throw new Error("API Hatası");
+
+      const reader = res.body?.getReader();
+      if (!reader) throw new Error("Stream desteklenmiyor");
+
+      const decoder = new TextDecoder();
+      let done = false;
+
+      const assistantMsgId = (Date.now() + 1).toString();
+      setMessages(prev => [...prev, { id: assistantMsgId, role: "assistant", content: "" }]);
+
+      while (!done) {
+        const { value, done: readerDone } = await reader.read();
+        done = readerDone;
+        if (value) {
+          const chunk = decoder.decode(value, { stream: true });
+          setMessages(prev =>
+            prev.map(msg =>
+              msg.id === assistantMsgId ? { ...msg, content: msg.content + chunk } : msg
+            )
+          );
+        }
+      }
+    } catch (error) {
+      console.error("Chat Hatası:", error);
+      setMessages(prev => [...prev, { id: Date.now().toString(), role: "assistant", content: "Bağlantı hatası oluştu, lütfen tekrar deneyin." }]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -128,42 +162,16 @@ export function ChatAI() {
                         )}
                         <div className={cn(
                           "max-w-[80%] p-4 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap",
-                          m.role === "assistant" 
-                            ? "bg-[#f8f9fa] text-[#191c1d] rounded-tl-none border border-[#dbc2b0]/20 shadow-sm" 
+                          m.role === "assistant"
+                            ? "bg-[#f8f9fa] text-[#191c1d] rounded-tl-none border border-[#dbc2b0]/20 shadow-sm"
                             : "bg-[#8c5000] text-white rounded-tr-none shadow-ambient-medium"
                         )}>
-                          {m.parts ? (
-                            m.parts.map((part: any, i: number) => {
-                              if (part.type === 'text') return <span key={i}>{part.text}</span>;
-                              // Tool invocations in v6 are often part types starting with 'tool-' or 'dynamic-tool'
-                              if (part.type.startsWith('tool-') || part.type === 'dynamic-tool') {
-                                const { state, toolName } = part;
-                                if (state !== 'result') {
-                                  return (
-                                    <div key={i} className="flex items-center gap-2 mt-2 text-[10px] font-bold text-[#8c5000] animate-pulse">
-                                      <Loader2 className="h-3 w-3 animate-spin" />
-                                      {toolName === 'getFinancialHistory' ? 'Veriler Sorgulanıyor...' : 'İşlem Kaydediliyor...'}
-                                    </div>
-                                  );
-                                }
-                              }
-                              return null;
-                            })
-                          ) : (
-                            m.content
-                          )}
-                          
-                          {/* Backward compatibility for toolInvocations if still present */}
-                          {!m.parts && m.toolInvocations?.map((toolInvocation: any) => {
-                            const { toolName, toolCallId, state } = toolInvocation;
-                            if (state === 'result') return null;
-                            return (
-                              <div key={toolCallId} className="flex items-center gap-2 mt-2 text-[10px] font-bold text-[#8c5000] animate-pulse">
-                                <Loader2 className="h-3 w-3 animate-spin" />
-                                {toolName === 'getFinancialHistory' ? 'Veriler Sorgulanıyor...' : 'İşlem Kaydediliyor...'}
-                              </div>
-                            );
-                          })}
+                          {m.content || (isLoading && m.role === "assistant" ? (
+                            <div className="flex items-center gap-2 opacity-70">
+                              <Loader2 className="h-4 w-4 animate-spin text-[#8c5000]" />
+                              <span className="text-[#8c5000] text-xs font-medium">Düşünüyor...</span>
+                            </div>
+                          ) : null)}
                         </div>
                         {m.role === "user" && (
                           <div className="w-8 h-8 rounded-lg bg-[#8c5000] flex items-center justify-center flex-shrink-0">
@@ -176,11 +184,11 @@ export function ChatAI() {
                 </ScrollArea>
 
                 <CardFooter className="p-6 pt-0">
-                  <form 
+                  <form
                     onSubmit={(e) => {
                       e.preventDefault();
                       handleSubmit(e);
-                    }} 
+                    }}
                     className="w-full flex gap-3 relative"
                   >
                     <Input
@@ -189,8 +197,8 @@ export function ChatAI() {
                       placeholder="Sorunuzu buraya yazın..."
                       className="bg-[#f8f9fa] border-[#dbc2b0]/30 h-14 rounded-2xl pr-14 focus:ring-[#8c5000] placeholder:text-[#554336]/40"
                     />
-                    <Button 
-                      type="submit" 
+                    <Button
+                      type="submit"
                       disabled={isLoading}
                       className="absolute right-2 top-2 h-10 w-10 bg-[#8c5000] hover:bg-[#6e3f00] text-white rounded-xl shadow-ambient-medium active:scale-95 transition-all"
                     >
