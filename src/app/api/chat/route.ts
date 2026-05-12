@@ -36,12 +36,11 @@ const getNextKey = () => {
 // ─── MODELLER VE ARAÇLAR ─────────────────────────────────────────────────────
 
 const FALLBACK_MODELS = [
-  "gemini-3.1-flash",
-  "gemini-3.1-flash-lite",
-  "gemini-3-flash",
-  "gemini-2.5-flash",
+  "gemini-2.5-flash", // En stabil olanı en üste aldık!
   "gemini-2.5-flash-lite",
   "gemini-2.0-flash",
+  "gemini-3.1-flash", // Yeni ama kotaları sıkıntılı olanları alta aldık
+  "gemini-3.1-flash-lite",
   "gemini-1.5-flash"
 ];
 
@@ -211,12 +210,12 @@ export async function POST(req: Request) {
         } catch (err: any) {
           const errorDetails = err.message || JSON.stringify(err);
           const statusCode = err.status || (err.response?.status) || 0;
-          
+
           const is429 = statusCode === 429 || errorDetails.includes("429");
           const is404 = statusCode === 404 || errorDetails.includes("404") || errorDetails.includes("not found");
-          
+
           // DİKKAT: 503 ve 500'ü buradan kaldırdık! Sadece gerçek 429 hataları kota hatasıdır.
-          const isQuotaError = is429 || errorDetails.includes("quota"); 
+          const isQuotaError = is429 || errorDetails.includes("quota");
           const isAuthError = errorDetails.includes("API key expired") || errorDetails.includes("API_KEY_INVALID") || (statusCode === 401);
 
           console.warn(`[${traceId}] [FAIL] Key: ${maskedKey}, Model: ${modelId}, Status: ${statusCode}, Error: ${errorDetails}`);
@@ -225,7 +224,7 @@ export async function POST(req: Request) {
           // BREAK YAPMA, sıradaki modele (örneğin 2.5-flash) geçiş yap!
           if (is404 || statusCode === 503 || statusCode === 500) {
             lastRateLimitReason = `Model Geçici Hatası (${statusCode}): ${modelId}`;
-            continue; 
+            continue;
           }
 
           // Eğer gerçekten API limiti dolduysa veya API Key yetkisizse, diğer API Key'e geçmek için döngüyü kır.
@@ -234,7 +233,7 @@ export async function POST(req: Request) {
             else if (errorDetails.includes("TPM")) lastRateLimitReason = `TPM Sınırı - Anahtar: ${maskedKey}`;
             else if (isAuthError) lastRateLimitReason = `Yetki Hatası - Anahtar: ${maskedKey}`;
             else lastRateLimitReason = `Kota Hatası (${statusCode})`;
-            
+
             break; // Sadece key değiştirmek için döngüyü kır
           }
 
