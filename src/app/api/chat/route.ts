@@ -16,17 +16,17 @@ const getApiKeys = () => {
     const key = process.env[`GEMINI_API_KEY_${i}`];
     if (key) keys.push(key);
   }
-  return keys.length > 0 ? keys : ["missing_api_key"];
+  return keys;
 };
 
 const API_KEYS = getApiKeys();
-let currentKeyIndex = 0;
-
 const MODELS = [
-  "gemini-2.0-flash", // En hızlı ve güncel
+  "gemini-2.0-flash", 
   "gemini-1.5-flash",
   "gemini-1.5-pro"
 ];
+
+let currentKeyIndex = 0;
 
 async function executeTool(name: string, args: any, userId: string) {
   const user = await prisma.user.findUnique({
@@ -73,6 +73,10 @@ export async function POST(req: Request) {
     const { userId } = await auth();
     if (!userId) return new Response("Yetkisiz erişim.", { status: 401 });
 
+    if (API_KEYS.length === 0) {
+      return new Response(JSON.stringify({ error: "Gemini API anahtarı eksik. Lütfen Vercel üzerinden GEMINI_API_KEY ekleyin." }), { status: 500 });
+    }
+
     const { messages } = await req.json();
     const lastMessage = messages[messages.length - 1];
 
@@ -88,78 +92,79 @@ export async function POST(req: Request) {
       .replace("{CURRENT_DATE}", new Date().toLocaleDateString("tr-TR"))
       .replace("{USER_DATA}", financialContext);
 
-    // Key Rotasyonu Denemesi
-    for (let attempt = 0; attempt < API_KEYS.length; attempt++) {
+    // Key ve Model Rotasyonu
+    for (let k = 0; k < API_KEYS.length; k++) {
       const apiKey = API_KEYS[currentKeyIndex];
       
-      try {
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({
-          model: MODELS[0],
-          systemInstruction: systemPrompt,
-          tools: [
-            { functionDeclarations: FUNCTION_DECLARATIONS },
-            { 
-               // @ts-ignore
-               googleSearchRetrieval: { dynamicRetrievalConfig: { mode: "MODE_DYNAMIC", dynamicThreshold: 0.3 } } 
-            }
-          ] as any
-        }, { apiVersion: "v1beta" });
+      for (const modelName of MODELS) {
+        try {
+          const genAI = new GoogleGenerativeAI(apiKey);
+          const model = genAI.getGenerativeModel({
+            model: modelName,
+            systemInstruction: systemPrompt,
+            tools: [
+              { functionDeclarations: FUNCTION_DECLARATIONS },
+              { 
+                // @ts-ignore
+                googleSearchRetrieval: { dynamicRetrievalConfig: { mode: "MODE_DYNAMIC", dynamicThreshold: 0.3 } } 
+              }
+            ] as any
+          }, { apiVersion: "v1beta" });
 
-        const history = messages.slice(0, -1).map((m: any) => ({
-          role: m.role === "assistant" ? "model" : "user",
-          parts: [{ text: m.content }]
-        }));
+          const history = messages.slice(0, -1).map((m: any) => ({
+            role: m.role === "assistant" ? "model" : "user",
+            parts: [{ text: m.content }]
+          }));
 
-        const chat = model.startChat({ history });
-        const result = await chat.sendMessageStream(lastMessage.content);
+          const chat = model.startChat({ history });
+          const result = await chat.sendMessageStream(lastMessage.content);
 
-        const encoder = new TextEncoder();
-        const stream = new ReadableStream({
-          async start(controller) {
-            try {
-              for await (const chunk of result.stream) {
-                const parts = chunk.candidates?.[0]?.content?.parts;
-                if (!parts) continue;
+          const encoder = new TextEncoder();
+          const stream = new ReadableStream({
+            async start(controller) {
+              try {
+                for await (const chunk of result.stream) {
+                  const parts = chunk.candidates?.[0]?.content?.parts;
+                  if (!parts) continue;
 
-                for (const part of parts) {
-                  if (part.text) {
-                    controller.enqueue(encoder.encode(part.text));
-                  }
-                  if (part.functionCall) {
-                    const call = part.functionCall;
-                    const toolResult = await executeTool(call.name, call.args, userId);
-                    
-                    // Tool sonucunu modele geri besle ve devam et (Stream içinde basitleştirilmiş)
-                    // Not: Stream içinde çok turlu tool call için tam etkileşimli yapı gerekir, 
-                    // burada temel "tool çağırdım" bilgisini istemciye JSON olarak sızdırabiliriz.
-                    const payload = JSON.stringify({ type: "tool", name: call.name, result: toolResult });
-                    controller.enqueue(encoder.encode(`\n__JSON__:${payload}__END__\n`));
+                  for (const part of parts) {
+                    if (part.text) {
+                      controller.enqueue(encoder.encode(part.text));
+                    }
+                    if (part.functionCall) {
+                      const call = part.functionCall;
+                      const toolResult = await executeTool(call.name, call.args, userId);
+                      const payload = JSON.stringify({ type: "tool", name: call.name, result: toolResult });
+                      controller.enqueue(encoder.encode(`\n__JSON__:${payload}__END__\n`));
+                    }
                   }
                 }
+                controller.close();
+              } catch (e) {
+                controller.close();
               }
-              controller.close();
-            } catch (e) {
-              controller.close();
             }
+          });
+
+          return new Response(stream, { headers: { "Content-Type": "text/plain; charset=utf-8" } });
+
+        } catch (err: any) {
+          // Model bulunamadıysa (404), bir sonraki modeli dene
+          if (err.status === 404) continue;
+          
+          // Kota hatası (429), bir sonraki key'e geç ve bekle
+          if (err.status === 429 || err.message?.includes("quota")) {
+            console.warn(`Key ${currentKeyIndex} kotası doldu, 2 saniye bekleniyor...`);
+            await sleep(2000);
+            currentKeyIndex = (currentKeyIndex + 1) % API_KEYS.length;
+            break; // Key değiştir, modelleri tekrar dene
           }
-        });
-
-        return new Response(stream, { headers: { "Content-Type": "text/plain; charset=utf-8" } });
-
-      } catch (err: any) {
-        // Kota hatası veya API hatası durumunda bekle ve key değiştir
-        if (err.status === 429 || err.message?.includes("quota")) {
-          console.warn(`Key ${currentKeyIndex} kotası doldu, 2 saniye bekleniyor...`);
-          await sleep(2000);
-          currentKeyIndex = (currentKeyIndex + 1) % API_KEYS.length;
-          continue;
+          throw err;
         }
-        throw err;
       }
     }
 
-    return new Response("Tüm API anahtarları başarısız oldu.", { status: 500 });
+    return new Response("Tüm API anahtarları veya modeller başarısız oldu.", { status: 500 });
 
   } catch (error: any) {
     console.error("Chat API Error:", error);
