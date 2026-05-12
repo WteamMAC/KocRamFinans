@@ -6,6 +6,9 @@ import { revalidatePath } from "next/cache";
 import { getLivePrices } from "@/lib/price-service";
 import { standardizeInvestmentType } from "@/lib/utils";
 
+/**
+ * Yeni bir varlık ekler.
+ */
 export async function addAsset(data: {
   type: string;
   symbol?: string;
@@ -19,19 +22,24 @@ export async function addAsset(data: {
     if (!userId) throw new Error("Oturum açmanız gerekiyor.");
 
     const user = await prisma.user.findUnique({
-      where: { clerkUserId: userId as string },
+      where: { clerkUserId: userId },
     });
 
     if (!user) throw new Error("Kullanıcı kaydı bulunamadı.");
 
+    // Sayısal değerleri doğrula
+    const quantity = Number(data.quantity);
+    if (isNaN(quantity) || quantity <= 0) throw new Error("Geçersiz miktar girdiniz.");
+
     let finalPrice = Number(data.purchasePrice) || 0;
+    const trimmedSymbol = data.symbol?.trim().toUpperCase() || null;
 
     // Eğer güncel fiyat seçildiyse Yahoo'dan çek
-    if (data.useCurrentPrice && data.symbol) {
+    if (data.useCurrentPrice && trimmedSymbol) {
       try {
-        const prices = await getLivePrices([data.symbol]);
-        const livePrice = prices.get(data.symbol.toUpperCase());
-        if (livePrice && livePrice.price) {
+        const prices = await getLivePrices([trimmedSymbol]);
+        const livePrice = prices.get(trimmedSymbol);
+        if (livePrice && livePrice.price > 0) {
           finalPrice = livePrice.price;
         }
       } catch (err) {
@@ -41,22 +49,18 @@ export async function addAsset(data: {
 
     const standardizedType = standardizeInvestmentType(data.type);
 
-    const quantity = Number(data.quantity);
-    if (isNaN(quantity) || quantity <= 0) throw new Error("Geçersiz miktar.");
-    if (isNaN(finalPrice)) finalPrice = 0;
-
     await prisma.investment.create({
       data: {
         userId: user.id,
         type: standardizedType,
-        symbol: data.symbol ? data.symbol.toUpperCase() : null,
+        symbol: trimmedSymbol,
         quantity: quantity,
         purchasePrice: finalPrice,
         amount: quantity * finalPrice,
         description: data.description || null,
         status: "OPEN",
         transactionType: "BUY",
-      } as any,
+      }
     });
 
     revalidatePath("/dashboard");
@@ -68,6 +72,9 @@ export async function addAsset(data: {
   }
 }
 
+/**
+ * Bir varlığı güncel fiyattan satar (Kapatır).
+ */
 export async function sellAsset(id: string) {
   try {
     const { userId } = await auth();
@@ -76,19 +83,18 @@ export async function sellAsset(id: string) {
     const investment = await prisma.investment.findUnique({
       where: { id },
       include: { user: true },
-    }) as any;
+    });
 
     if (!investment || investment.user.clerkUserId !== userId) {
       throw new Error("Varlık bulunamadı veya yetkiniz yok.");
     }
 
-    // Güncel fiyatı çek
     let sellPrice = investment.purchasePrice || 0;
     if (investment.symbol) {
       try {
         const prices = await getLivePrices([investment.symbol]);
         const livePrice = prices.get(investment.symbol.toUpperCase());
-        if (livePrice && livePrice.price) {
+        if (livePrice && livePrice.price > 0) {
           sellPrice = livePrice.price;
         }
       } catch (err) {
@@ -103,7 +109,7 @@ export async function sellAsset(id: string) {
         transactionType: "SELL",
         soldPrice: sellPrice,
         soldAt: new Date(),
-      } as any,
+      },
     });
 
     revalidatePath("/dashboard");
@@ -115,6 +121,9 @@ export async function sellAsset(id: string) {
   }
 }
 
+/**
+ * Bir varlık kaydını tamamen siler.
+ */
 export async function deleteAsset(id: string) {
   try {
     const { userId } = await auth();
@@ -123,7 +132,7 @@ export async function deleteAsset(id: string) {
     const investment = await prisma.investment.findUnique({
       where: { id },
       include: { user: true },
-    }) as any;
+    });
 
     if (!investment || investment.user.clerkUserId !== userId) {
       throw new Error("Varlık bulunamadı veya yetkiniz yok.");
@@ -142,26 +151,31 @@ export async function deleteAsset(id: string) {
   }
 }
 
+/**
+ * Yanlış kategorize edilmiş varlıkları düzeltir.
+ */
 export async function fixCategories() {
   try {
     const { userId } = await auth();
     if (!userId) return;
 
     const user = await prisma.user.findUnique({
-      where: { clerkUserId: userId as string },
+      where: { clerkUserId: userId },
     });
 
     if (!user) return;
 
     await prisma.investment.updateMany({
       where: { userId: user.id, OR: [{ type: "KRİPTO" }, { type: "Kripto" }] },
-      data: { type: "CRYPTO" } as any
+      data: { type: "CRYPTO" }
     });
 
     await prisma.investment.updateMany({
       where: { userId: user.id, OR: [{ type: "Gold" }, { type: "Altın" }] },
-      data: { type: "GOLD" } as any
+      data: { type: "GOLD" }
     });
+    
+    revalidatePath("/dashboard/assets");
   } catch (error) {
     console.error("Fix Categories Error:", error);
   }
