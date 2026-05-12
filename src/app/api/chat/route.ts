@@ -86,17 +86,17 @@ export async function POST(req: Request) {
         const googleProvider = createGoogleGenerativeAI({ apiKey });
 
         const result = await streamText({
-          model: googleProvider(modelName) as any,
+          model: googleProvider(modelName),
           system: systemPrompt,
           messages,
           tools: {
             getFinancialHistory: tool({
               description: "Kullanıcının mevcut finansal özetini ve geçmiş verilerini getirir.",
               parameters: getFinancialHistorySchema,
-              execute: async ({ category }: z.infer<typeof getFinancialHistorySchema>) => {
+              execute: async ({ category }) => {
                 console.log(`[TOOL] 🔍 getFinancialHistory | Kategori: ${category}`);
                 // OPTİMİZASYON: Başta çekilen 'user' verisini kullanıyoruz, tekrar DB'ye gitmiyoruz
-                const dataMap: Record<string, any> = {
+                const dataMap: Record<string, unknown> = {
                   incomes: user.incomes,
                   expenses: user.expenses,
                   debts: user.debts,
@@ -108,38 +108,32 @@ export async function POST(req: Request) {
             addFinancialRecord: tool({
               description: "Yeni bir gelir, gider, borç veya yatırım kaydı oluşturur.",
               parameters: addFinancialRecordSchema,
-              execute: async ({ type, amount, category, description }: z.infer<typeof addFinancialRecordSchema>) => {
+              execute: async ({ type, amount, category, description }) => {
                 console.log(`[TOOL] ➕ addFinancialRecord | Tip: ${type} | Tutar: ${amount}`);
                 try {
-                  const baseData = {
-                    userId: user.id,
-                    amount,
-                    description: description || "",
-                    type: category // DB'deki 'type' kolonu kategoriyi (Örn: 'Market') tutar
-                  };
-
                   // Tip Güvenli Model Erişimi
                   switch (type) {
                     case "income": 
-                      await prisma.income.create({ data: baseData as any }); 
+                      await prisma.income.create({ data: { userId: user.id, amount, description: description || "", type: category } }); 
                       break;
                     case "expense": 
-                      await prisma.expense.create({ data: { ...baseData, isRecurring: false } as any }); 
+                      await prisma.expense.create({ data: { userId: user.id, amount, description: description || "", type: category, isRecurring: false } }); 
                       break;
                     case "debt": 
-                      await prisma.debt.create({ data: baseData as any }); 
+                      await prisma.debt.create({ data: { userId: user.id, amount, description: description || "", type: category } }); 
                       break;
                     case "investment": 
-                      await prisma.investment.create({ data: { ...baseData, quantity: 1, purchasePrice: amount, status: "OPEN", transactionType: "BUY" } as any }); 
+                      await prisma.investment.create({ data: { userId: user.id, amount, description: description || "", type: category, quantity: 1, purchasePrice: amount, status: "OPEN", transactionType: "BUY" } }); 
                       break;
                     default: throw new Error("Geçersiz işlem tipi");
                   }
 
                   console.log(`[TOOL] ✅ Kayıt başarılı: ${type}`);
                   return { success: true, message: "Kayıt başarıyla eklendi." };
-                } catch (e: any) {
-                  console.error(`[TOOL] ❌ addFinancialRecord Hatası:`, e.message);
-                  return { error: `Kayıt başarısız: ${e.message}` };
+                } catch (e) {
+                  const error = e as Error;
+                  console.error(`[TOOL] ❌ addFinancialRecord Hatası:`, error.message);
+                  return { error: `Kayıt başarısız: ${error.message}` };
                 }
               },
             }),
@@ -149,7 +143,8 @@ export async function POST(req: Request) {
         console.log(`[AI-CHAT] ✅ Başarılı: ${modelName}`);
         return result.toTextStreamResponse();
 
-      } catch (err: any) {
+      } catch (e) {
+        const err = e as Error & { status?: number };
         console.error(`[AI-CHAT] ❌ HATA [${modelName}]:`, err.message);
 
         // QUOTA / RATE LIMIT MANTIĞI
@@ -169,7 +164,8 @@ export async function POST(req: Request) {
     }
 
     return new Response("Servis şu anda yoğun, lütfen biraz bekleyip tekrar deneyin.", { status: 503 });
-  } catch (error: any) {
+  } catch (e) {
+    const error = e as Error;
     console.error(`[AI-CHAT] 🚨 SİSTEM HATASI:`, error.message);
     return new Response("Sunucu tarafında bir hata oluştu.", { status: 500 });
   }
