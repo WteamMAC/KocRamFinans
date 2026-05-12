@@ -42,27 +42,27 @@ const onboardingSchema = z.object({
   })),
   incomes: z.array(z.object({
     type: z.string().min(1, "Tür seçiniz"),
-    amount: z.coerce.number().min(1, "Miktar giriniz"),
+    amount: z.coerce.number().min(0, "Miktar giriniz"),
     description: z.string().optional(),
   })),
   expenses: z.array(z.object({
     type: z.string().min(1, "Gider türü/adı giriniz"),
-    amount: z.coerce.number().min(1, "Miktar giriniz"),
+    amount: z.coerce.number().min(0, "Miktar giriniz"),
     dueDate: z.coerce.number().min(1, "1-31 arası gün giriniz").max(31, "1-31 arası gün giriniz").optional(),
     isRecurring: z.boolean().default(true),
     description: z.string().optional(),
   })),
   debts: z.array(z.object({
     type: z.string().min(1, "Borç türü/adı giriniz"),
-    amount: z.coerce.number().min(1, "Borç tutarı giriniz"),
+    amount: z.coerce.number().min(0, "Borç tutarı giriniz"),
     remainingInstallments: z.coerce.number().optional(),
     description: z.string().optional(),
   })),
   investments: z.array(z.object({
     type: z.string().min(1, "Tür seçiniz"),
-    symbol: z.string().min(1, "Varlık sembolü seçiniz"),
-    quantity: z.coerce.number().min(0.00001, "Miktar giriniz"),
-    purchasePrice: z.coerce.number().min(0.00001, "Alış fiyatı giriniz"),
+    symbol: z.string().optional(),
+    quantity: z.coerce.number().min(0, "Miktar giriniz"),
+    purchasePrice: z.coerce.number().min(0, "Alış fiyatı giriniz"),
     currentValuation: z.coerce.number().optional(),
     description: z.string().optional(),
   })),
@@ -87,7 +87,7 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
       maritalStatus: "Bekar",
       hasChildren: false,
       children: [],
-      incomes: [{ type: "Maaş", amount: 0 }],
+      incomes: [],
       expenses: [],
       debts: [],
       investments: [],
@@ -338,7 +338,7 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
               <div className="space-y-4">
                 <div className="flex justify-between items-center px-1">
                   <Label className="text-[10px] font-bold text-[#747781] uppercase tracking-widest">
-                     Gelir Kaynakları <span className="text-rose-500">*</span>
+                     Gelir Kaynakları
                   </Label>
                   <Button type="button" variant="ghost" size="sm" onClick={() => appendIncome({ type: "Maaş", amount: 0 })} className="text-[#001b44] hover:bg-[#faf9f6] font-bold">
                     <Plus className="w-4 h-4 mr-1" /> Ekle
@@ -391,7 +391,7 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div className="flex justify-between items-center px-1">
                 <Label className="text-[10px] font-bold text-[#747781] uppercase tracking-widest">
-                   Giderler ve Faturalar <span className="text-rose-500">*</span>
+                   Giderler ve Faturalar
                 </Label>
                 <Button type="button" variant="ghost" size="sm" onClick={() => appendExpense({ type: "", amount: 0, dueDate: 1, isRecurring: true })} className="text-[#001b44] font-bold">
                   <Plus className="w-4 h-4 mr-1" /> Ekle
@@ -403,15 +403,15 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
                   <div key={field.id} className="p-6 bg-[#faf9f6] border border-[#c4c6d2]/20 rounded-[24px] relative group hover:shadow-md transition-all">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2 col-span-2 md:col-span-1">
-                        <Label className="text-[9px] font-bold text-[#747781] uppercase px-1">Açıklama <span className="text-rose-500">*</span></Label>
+                        <Label className="text-[9px] font-bold text-[#747781] uppercase px-1">Açıklama</Label>
                         <Input placeholder="Örn: Kira, Elektrik" {...form.register(`expenses.${index}.type`)} className="bg-white border-[#c4c6d2]/20 h-10 rounded-lg" />
                       </div>
                       <div className="space-y-2 col-span-2 md:col-span-1">
-                        <Label className="text-[9px] font-bold text-[#747781] uppercase px-1">Miktar <span className="text-rose-500">*</span></Label>
+                        <Label className="text-[9px] font-bold text-[#747781] uppercase px-1">Miktar</Label>
                         <Input type="number" placeholder="0 ₺" {...form.register(`expenses.${index}.amount`)} className="bg-white border-[#c4c6d2]/20 h-10 rounded-lg" />
                       </div>
                       <div className="space-y-2">
-                        <Label className="text-[9px] font-bold text-[#747781] uppercase px-1">Ödeme Günü (1-31) <span className="text-rose-500">*</span></Label>
+                        <Label className="text-[9px] font-bold text-[#747781] uppercase px-1">Ödeme Günü (1-31)</Label>
                         <Input type="number" {...form.register(`expenses.${index}.dueDate`)} className="bg-white border-[#c4c6d2]/20 h-10 rounded-lg" />
                       </div>
                       <div className="flex items-center gap-3 pt-6">
@@ -432,7 +432,7 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div className="flex justify-between items-center px-1">
                 <Label className="text-[10px] font-bold text-[#747781] uppercase tracking-widest">
-                   Borçlar ve Taksitler <span className="text-rose-500">*</span>
+                   Borçlar ve Taksitler
                 </Label>
                 <Button type="button" variant="ghost" size="sm" onClick={() => appendDebt({ type: "Kredi Kartı", amount: 0 })} className="text-[#001b44] font-bold">
                   <Plus className="w-4 h-4 mr-1" /> Ekle
@@ -443,11 +443,11 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
                 {debtFields.map((field, index) => (
                   <div key={field.id} className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end p-6 bg-[#faf9f6] border border-[#c4c6d2]/20 rounded-[24px]">
                     <div className="space-y-2">
-                       <Label className="text-[9px] font-bold text-[#747781] uppercase px-1">Borç Türü <span className="text-rose-500">*</span></Label>
+                       <Label className="text-[9px] font-bold text-[#747781] uppercase px-1">Borç Türü</Label>
                        <Input placeholder="Örn: Banka, Şahıs" {...form.register(`debts.${index}.type`)} className="bg-white border-[#c4c6d2]/20 h-10 rounded-lg" />
                     </div>
                     <div className="space-y-2">
-                       <Label className="text-[9px] font-bold text-[#747781] uppercase px-1">Toplam Tutar <span className="text-rose-500">*</span></Label>
+                       <Label className="text-[9px] font-bold text-[#747781] uppercase px-1">Toplam Tutar</Label>
                        <Input type="number" {...form.register(`debts.${index}.amount`)} className="bg-white border-[#c4c6d2]/20 h-10 rounded-lg" />
                     </div>
                     <div className="flex gap-2 items-end">
@@ -469,7 +469,7 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div className="flex justify-between items-center px-1">
                 <Label className="text-[10px] font-bold text-[#747781] uppercase tracking-widest">
-                   Yatırım Portföyü <span className="text-rose-500">*</span>
+                   Yatırım Portföyü
                 </Label>
                 <Button type="button" variant="ghost" size="sm" onClick={() => appendInvestment({ type: "BIST", symbol: "", quantity: 0, purchasePrice: 0 })} className="text-[#001b44] font-bold">
                   <Plus className="w-4 h-4 mr-1" /> Ekle
@@ -509,7 +509,7 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
                       </div>
 
                       <div className="space-y-2 relative" ref={el => { inputRefs.current[index] = el; }}>
-                        <Label className="text-[9px] font-bold text-[#747781] uppercase px-1">Sembol / İçerik <span className="text-rose-500">*</span></Label>
+                        <Label className="text-[9px] font-bold text-[#747781] uppercase px-1">Sembol / İçerik</Label>
                         <div className="relative">
                           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#434750] opacity-40" />
                           <Input 
@@ -548,7 +548,7 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
                       </div>
 
                       <div className="space-y-2">
-                        <Label className="text-[9px] font-bold text-[#747781] uppercase px-1">Adet / Miktar <span className="text-rose-500">*</span></Label>
+                        <Label className="text-[9px] font-bold text-[#747781] uppercase px-1">Adet / Miktar</Label>
                         <Input 
                           type="number" 
                           step="any"
@@ -558,7 +558,7 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
                       </div>
 
                       <div className="space-y-2">
-                        <Label className="text-[9px] font-bold text-[#747781] uppercase px-1">Birim Alış Fiyatı (₺) <span className="text-rose-500">*</span></Label>
+                        <Label className="text-[9px] font-bold text-[#747781] uppercase px-1">Birim Alış Fiyatı (₺)</Label>
                         <Input 
                           type="number" 
                           step="any"
