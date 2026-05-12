@@ -49,7 +49,7 @@ const MARKET_KEYWORDS = [
 ];
 
 const DB_ACTION_KEYWORDS = [
-  "ekle", "kaydet", "sil", "güncelle", "yeni gelir", "yeni gider", "borç", "maaş"
+  "ekle", "kaydet", "sil", "güncelle", "yeni gelir", "yeni gider", "borç ekle", "maaş ekle", "yatırım ekle"
 ];
 
 const FUNCTION_DECLARATIONS = [
@@ -113,11 +113,15 @@ type ToolMode = "none" | "search" | "db";
 function classifyMessage(message: string): ToolMode {
   const lower = message.toLowerCase();
   
-  // Veritabanı işlemleri (ekle, kaydet, sil vb.)
-  if (DB_ACTION_KEYWORDS.some(kw => lower.includes(kw))) return "db";
+  // "Borç" veya "Maaş" kelimesi tek başına DB tetiklememeli, yanında bir eylem (ekle vb.) olmalı.
+  const hasAction = ["ekle", "kaydet", "sil", "güncelle"].some(kw => lower.includes(kw));
+  const hasSpecificAction = ["yeni gelir", "yeni gider", "yeni borç"].some(kw => lower.includes(kw));
+
+  if (hasAction || hasSpecificAction) {
+     if (DB_ACTION_KEYWORDS.some(kw => lower.includes(kw))) return "db";
+  }
   
   // Arama motoru sadece "fiyat, kur, kaç tl, ne kadar" gibi spesifik piyasa verisi sorularında tetiklensin.
-  // "Ne önerirsin", "altın almalı mıyım" gibi tavsiye sorularında modelin kendi bilgisini kullanması daha iyidir.
   const priceKeywords = ["kaç tl", "fiyat", "kur", "ne kadar", "borsa durumu", "güncel haber", "endeks", "değeri"];
   const hasMarketKeyword = MARKET_KEYWORDS.some(kw => lower.includes(kw));
   const isAskingPrice = priceKeywords.some(pk => lower.includes(pk));
