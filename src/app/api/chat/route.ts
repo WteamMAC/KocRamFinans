@@ -120,10 +120,18 @@ export async function POST(req: Request) {
 
                   // Tip Güvenli Model Erişimi
                   switch (type) {
-                    case "income": await prisma.income.create({ data: baseData }); break;
-                    case "expense": await prisma.expense.create({ data: baseData }); break;
-                    case "debt": await prisma.debt.create({ data: baseData }); break;
-                    case "investment": await prisma.investment.create({ data: baseData }); break;
+                    case "income": 
+                      await prisma.income.create({ data: baseData as any }); 
+                      break;
+                    case "expense": 
+                      await prisma.expense.create({ data: { ...baseData, isRecurring: false } as any }); 
+                      break;
+                    case "debt": 
+                      await prisma.debt.create({ data: baseData as any }); 
+                      break;
+                    case "investment": 
+                      await prisma.investment.create({ data: { ...baseData, quantity: 1, purchasePrice: amount, status: "OPEN", transactionType: "BUY" } as any }); 
+                      break;
                     default: throw new Error("Geçersiz işlem tipi");
                   }
 
