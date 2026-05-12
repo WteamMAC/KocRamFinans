@@ -37,17 +37,8 @@ export async function getFinancialContext(user: any) {
   };
 
   return `
-[FİNANSAL DURUM ÖZETİ]
-- Gelir: ${summary.ozet.toplam_gelir} TL
-- Gider: ${summary.ozet.toplam_gider} TL
-- Net Durum: ${summary.ozet.toplam_gelir - summary.ozet.toplam_gider} TL
-- Toplam Borç: ${summary.ozet.toplam_borc} TL
-- Toplam Yatırım: ${summary.ozet.toplam_yatirim} TL
-
-[SON HAREKETLER]
-- Gelirler: ${summary.son_islemler.gelirler.join(", ") || "Kayıt yok"}
-- Giderler: ${summary.son_islemler.giderler.join(", ") || "Kayıt yok"}
-- Borçlar: ${summary.son_islemler.borclar.join(", ") || "Kayıt yok"}
-- Yatırımlar: ${summary.son_islemler.yatirimlar.join(", ") || "Kayıt yok"}
+[DURUM] Gelir:${summary.ozet.toplam_gelir} TL | Gider:${summary.ozet.toplam_gider} TL | Net:${summary.ozet.toplam_gelir - summary.ozet.toplam_gider} TL
+[BORÇ/YATIRIM] Borç:${summary.ozet.toplam_borc} TL | Yatırım:${summary.ozet.toplam_yatirim} TL
+[SON ISLEMLER] Gelir:${summary.son_islemler.gelirler.join(", ") || "-"} | Gider:${summary.son_islemler.giderler.join(", ") || "-"}
 `;
 }

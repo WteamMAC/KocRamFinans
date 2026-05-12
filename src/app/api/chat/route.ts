@@ -132,13 +132,22 @@ export async function POST(req: Request) {
 
     const body = await req.json();
     const { messages } = body;
-    const lastMessage = messages[messages.length - 1].content;
+    
+    // ─── GEÇMİŞ BUDAMA (TOKEN TASARRUFU) ────────────────────────────────────────
+    // Son 10 mesajı al (Bağlamı korurken kotayı rahatlatır)
+    const limitedMessages = messages.slice(-10);
+    const lastMessage = limitedMessages[limitedMessages.length - 1].content;
     const toolMode = classifyMessage(lastMessage);
 
     currentStage = "DB";
     const user = await prisma.user.findUnique({
       where: { clerkUserId: userId },
-      include: { incomes: true, expenses: true, debts: true, investments: true },
+      include: { 
+        incomes: { take: 10 }, 
+        expenses: { take: 10 }, 
+        debts: { take: 10 }, 
+        investments: { take: 20 } 
+      },
     });
 
     if (!user) return new Response("User not found", { status: 404 });
@@ -164,7 +173,11 @@ export async function POST(req: Request) {
         try {
           let tools: any[] | undefined;
           if (toolMode === "db") tools = [{ functionDeclarations: FUNCTION_DECLARATIONS }];
-          else if (toolMode === "search") tools = [{ googleSearchRetrieval: {} }];
+          else if (toolMode === "search") tools = [{ 
+            googleSearchRetrieval: { 
+              dynamicRetrievalConfig: { mode: "unspecified", dynamicThreshold: 0.06 } 
+            } 
+          }];
 
           const model = genAI.getGenerativeModel({
             model: modelId,
@@ -172,8 +185,9 @@ export async function POST(req: Request) {
             ...(tools ? { tools: tools as any } : {}),
           });
 
+          // Truncated history ile sohbeti başlat
           const chat = model.startChat({
-            history: messages.slice(0, -1).map((m: any) => ({
+            history: limitedMessages.slice(0, -1).map((m: any) => ({
               role: m.role === "user" ? "user" : "model",
               parts: [{ text: m.content }]
             }))
@@ -209,23 +223,22 @@ export async function POST(req: Request) {
         } catch (err: any) {
           const errorDetails = err.message || "Unknown error";
           const is429 = err.status === 429 || errorDetails.includes("429");
+          const isQuotaError = is429 || errorDetails.includes("quota") || err.status === 503 || err.status === 500;
           const isAuthError = errorDetails.includes("API key expired") || errorDetails.includes("API_KEY_INVALID") || err.status === 400;
+          
           console.warn(`[${traceId}] [FAIL] Key Index: ${currentKeyIndex}, Model: ${modelId}, Error: ${errorDetails}`);
 
-          if (is429 || isAuthError) {
+          if (isQuotaError || isAuthError) {
             // Teşhis Et
             if (errorDetails.includes("RPM")) lastRateLimitReason = "Dakikalık İstek Sınırı (RPM)";
             else if (errorDetails.includes("TPM")) lastRateLimitReason = "Dakikalık Token Sınırı (TPM)";
             else if (errorDetails.includes("RPD")) lastRateLimitReason = "Günlük İstek Sınırı (RPD)";
             else if (errorDetails.includes("expired")) lastRateLimitReason = "API Anahtarının Süresi Dolmuş (Expired)";
-            else if (errorDetails.includes("API_KEY_INVALID")) lastRateLimitReason = "Geçersiz API Anahtarı (Invalid)";
-            else if (isAuthError) lastRateLimitReason = "API Anahtarı Hatası (400/Auth)";
-            else lastRateLimitReason = "Genel Kota Sınırı (429)";
+            else if (isAuthError) lastRateLimitReason = "API Anahtarı veya İstek Hatası (400)";
+            else lastRateLimitReason = "Servis Yoğunluğu veya Kota (429/50x)";
 
             console.warn(`[${traceId}] [DIAGNOSIS] Reason: ${lastRateLimitReason}`);
-
-            // Eğer bu anahtarda kota veya auth sorunu varsa, bir sonraki anahtara geç
-            break;
+            break; // Bir sonraki API anahtarına geç
           }
 
           // Diğer hatalarda aynı anahtarın sonraki modelini dene

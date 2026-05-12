@@ -258,21 +258,23 @@ export function ChatAI() {
                     </div>
                   </div>
                 )}
-                {messages.map((m) => (
-                  <div key={m.id} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
-                    <div className={`flex gap-3 max-w-[90%] ${m.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
-                      <div className={`h-8 w-8 rounded-xl flex items-center justify-center flex-shrink-0 mt-1 shadow-ambient-low ${m.role === "user" ? "bg-[#efe440]/20" : "bg-[#8c5000]/10"}`}>
-                        {m.role === "user" ? <User className="h-4 w-4 text-[#666000]" /> : <BarChart3 className="h-4 w-4 text-[#8c5000]" />}
-                      </div>
-                      <div className={`p-4 rounded-[20px] text-sm leading-relaxed shadow-ambient-low ${m.role === "user"
-                        ? "bg-[#8c5000] text-white rounded-tr-none font-medium"
-                        : "bg-white text-[#191c1d] border border-[#dbc2b0]/10 rounded-tl-none shadow-[0_4px_20px_rgba(0,0,0,0.03)]"
-                        }`}>
-                        {renderMessageContent(m.content)}
+                {messages
+                  .filter(m => !m.content.includes("[SİSTEM BİLGİSİ]"))
+                  .map((m) => (
+                    <div key={m.id} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+                      <div className={`flex gap-3 max-w-[90%] ${m.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
+                        <div className={`h-8 w-8 rounded-xl flex items-center justify-center flex-shrink-0 mt-1 shadow-ambient-low ${m.role === "user" ? "bg-[#efe440]/20" : "bg-[#8c5000]/10"}`}>
+                          {m.role === "user" ? <User className="h-4 w-4 text-[#666000]" /> : <BarChart3 className="h-4 w-4 text-[#8c5000]" />}
+                        </div>
+                        <div className={`p-4 rounded-[20px] text-sm leading-relaxed shadow-ambient-low ${m.role === "user"
+                          ? "bg-[#8c5000] text-white rounded-tr-none font-medium"
+                          : "bg-white text-[#191c1d] border border-[#dbc2b0]/10 rounded-tl-none shadow-[0_4px_20px_rgba(0,0,0,0.03)]"
+                          }`}>
+                          {renderMessageContent(m.content)}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
                 {isLoading && (
                   <div className="flex justify-start">
                     <div className="bg-white p-4 rounded-[20px] rounded-tl-none border border-[#dbc2b0]/10 shadow-ambient-low flex items-center gap-2">

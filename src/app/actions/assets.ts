@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 import { getLivePrices } from "@/lib/price-service";
+import { standardizeInvestmentType } from "@/lib/utils";
 
 export async function addAsset(data: {
   type: string;
@@ -38,13 +39,7 @@ export async function addAsset(data: {
       }
     }
 
-    // Tip standardizasyonu
-    let standardizedType = data.type;
-    const upperType = String(data.type).toUpperCase();
-    if (upperType.includes("KRİPTO") || upperType.includes("CRYPTO") || upperType.includes("BITCOIN")) standardizedType = "CRYPTO";
-    else if (upperType.includes("GOLD") || upperType.includes("ALTIN") || upperType.includes("GÜMÜŞ") || upperType.includes("EMTİA")) standardizedType = "GOLD";
-    else if (upperType.includes("NASDAQ") || upperType.includes("ABD") || upperType.includes("USA")) standardizedType = "NASDAQ";
-    else standardizedType = "BIST";
+    const standardizedType = standardizeInvestmentType(data.type);
 
     const quantity = Number(data.quantity);
     if (isNaN(quantity) || quantity <= 0) throw new Error("Geçersiz miktar.");
