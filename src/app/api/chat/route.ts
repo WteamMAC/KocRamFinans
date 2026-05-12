@@ -10,16 +10,6 @@ export const maxDuration = 60;
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-const getApiKeys = () => {
-  const keys: string[] = [];
-  if (process.env.GEMINI_API_KEY) keys.push(process.env.GEMINI_API_KEY);
-  for (let i = 2; i <= 10; i++) {
-    const key = process.env[`GEMINI_API_KEY_${i}`];
-    if (key) keys.push(key);
-  }
-  return keys;
-};
-//deneme
 const MODELS = [
   "gemini-2.0-flash",
   "gemini-1.5-flash",
@@ -32,8 +22,8 @@ export async function POST(req: Request) {
     const { userId: clerkId } = await auth();
     if (!clerkId) return new Response("Yetkisiz erişim.", { status: 401 });
 
-    const API_KEYS = getApiKeys();
-    if (API_KEYS.length === 0) return new Response("GEMINI_API_KEY eksik", { status: 500 });
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) return new Response("GEMINI_API_KEY eksik", { status: 500 });
 
     const body = await req.json().catch(() => ({ messages: [] }));
     const allMessages = body.messages || [];
@@ -88,19 +78,13 @@ export async function POST(req: Request) {
 
     const lastMessage = messages[messages.length - 1].content?.trim() || "Merhaba";
 
-    const maxAttempts = API_KEYS.length * MODELS.length;
+    const maxAttempts = MODELS.length;
     let attempts = 0;
 
     while (attempts < maxAttempts) {
-      const keyIndex = Math.floor(attempts / MODELS.length);
-      const modelIndex = attempts % MODELS.length;
+      const modelName = MODELS[attempts];
 
-      if (keyIndex >= API_KEYS.length) break;
-
-      const apiKey = API_KEYS[keyIndex];
-      const modelName = MODELS[modelIndex];
-
-      console.log(`[AI-CHAT] 🌀 Deneme ${attempts + 1}/${maxAttempts} | KeyIndex: ${keyIndex} | Model: ${modelName}`);
+      console.log(`[AI-CHAT] 🌀 Deneme ${attempts + 1}/${maxAttempts} | Model: ${modelName}`);
 
       try {
         const genAI = new GoogleGenerativeAI(apiKey);
@@ -318,16 +302,17 @@ export async function POST(req: Request) {
         const isBadRequest = err?.status === 400 || errorMessage.toLowerCase().includes("bad request") || errorMessage.includes("400");
 
         if (isRateLimit) {
-          if (API_KEYS.length === 1) {
-            console.error(`[AI-CHAT] 💀 Tek anahtar kotası doldu. İşlem durduruluyor.`);
-            return new Response("Yapay zeka kullanım kotanız doldu (Rate Limit). Lütfen 1 dakika bekleyip tekrar deneyin.", { status: 429 });
-          }
-          console.warn(`[AI-CHAT] ⏳ Kota aşıldı, sonraki anahtara geçiliyor...`);
-          attempts = (keyIndex + 1) * MODELS.length; // Bir sonraki anahtarın başına atla
-          await sleep(2000);
+          console.error(`[AI-CHAT] 💀 API kotası doldu. İşlem durduruluyor.`);
+          return new Response("**[Sistem Uyarısı]:** Yapay zeka kullanım kotanız doldu. Lütfen 1 dakika bekleyip tekrar deneyin.", {
+            status: 200,
+            headers: { "Content-Type": "text/plain; charset=utf-8" }
+          });
         } else if (isBadRequest) {
           console.error(`[AI-CHAT] ❌ Geçersiz istek (400 Bad Request):`, errorMessage);
-          return new Response("Yapay zeka bu mesaj formatını kabul etmedi.", { status: 400 });
+          return new Response("**[Sistem Uyarısı]:** Yapay zeka bu mesaj formatını kabul etmedi.", {
+            status: 200,
+            headers: { "Content-Type": "text/plain; charset=utf-8" }
+          });
         } else {
           attempts++;
           await sleep(500);
@@ -335,9 +320,15 @@ export async function POST(req: Request) {
       }
     }
 
-    return new Response("Servis şu anda yoğun, lütfen biraz bekleyip tekrar deneyin.", { status: 503 });
+    return new Response("**[Sistem Uyarısı]:** Servis şu anda yoğun, lütfen biraz bekleyip tekrar deneyin.", {
+      status: 200,
+      headers: { "Content-Type": "text/plain; charset=utf-8" }
+    });
   } catch (error: any) {
     console.error(`[AI-CHAT] 🚨 SİSTEM HATASI:`, error.message);
-    return new Response("Sunucu tarafında bir hata oluştu.", { status: 500 });
+    return new Response("**[Sistem Uyarısı]:** Sunucu tarafında beklenmeyen bir hata oluştu.", {
+      status: 200,
+      headers: { "Content-Type": "text/plain; charset=utf-8" }
+    });
   }
 }
