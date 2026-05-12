@@ -24,12 +24,10 @@ const getApiKeys = () => {
 const API_KEYS = getApiKeys();
 let currentKeyIndex = 0;
 
-// Sıradaki API anahtarını veren yardımcı fonksiyon
-const getNextKey = () => {
-  const key = API_KEYS[currentKeyIndex];
+// Belirli bir indexteki anahtarı veren yardımcı fonksiyon
+const getKeyAtIndex = (index: number) => {
+  const key = API_KEYS[index % API_KEYS.length];
   const maskedKey = `...${key.slice(-4)}`;
-  currentKeyIndex = (currentKeyIndex + 1) % API_KEYS.length;
-  console.log(`[ROTATION] Kullanılan Key: ${maskedKey} (Index: ${currentKeyIndex})`);
   return { key, maskedKey };
 };
 
@@ -177,14 +175,15 @@ export async function POST(req: Request) {
     currentStage = "AI";
 
     for (let keyTrial = 0; keyTrial < API_KEYS.length; keyTrial++) {
-      const { key, maskedKey } = getNextKey();
+      const trialIndex = (currentKeyIndex + keyTrial) % API_KEYS.length;
+      const { key, maskedKey } = getKeyAtIndex(trialIndex);
       // v1beta (varsayılan) sistem talimatlarını daha iyi destekler. 400 hatasını çözmek için v1'i kaldırıyoruz.
       const ai = new GoogleGenAI({ apiKey: key });
 
       for (let modelIndex = 0; modelIndex < FALLBACK_MODELS.length; modelIndex++) {
         const modelId = FALLBACK_MODELS[modelIndex];
 
-        console.log(`[${traceId}] [TRIAL] [V1-SDK] Key: ${maskedKey}, Model: ${modelId}, Tool: ${toolMode}`);
+        console.log(`[${traceId}] [TRIAL] KeyIndex: ${trialIndex}, Key: ${maskedKey}, Model: ${modelId}, Tool: ${toolMode}`);
 
         try {
           let tools: any[] | undefined;
@@ -286,15 +285,14 @@ export async function POST(req: Request) {
           } 
 
           // Eğer gerçekten API limiti dolduysa veya API Key yetkisizse:
-          if (isQuotaError) {
-            lastRateLimitReason = `Model Kotası Dolu (${modelId}) - Anahtar: ${maskedKey}`;
-            // DİKKAT: Break yapmıyoruz, çünkü aynı key ile başka bir model (örn: 8b) hala çalışabilir!
-            continue; 
-          }
-
-          if (isAuthError) {
-            lastRateLimitReason = `Yetki Hatası - Anahtar: ${maskedKey}`;
-            break; // Yetki hatası varsa anahtar geçersizdir, diğer anahtara geç.
+          if (isQuotaError || isAuthError) {
+            lastRateLimitReason = isQuotaError 
+              ? `Kota Dolu (${modelId}) - Anahtar: ${maskedKey}`
+              : `Yetki Hatası - Anahtar: ${maskedKey}`;
+            
+            // Kota dolduysa veya yetki hatası varsa, global indexi bir sonraki anahtara kaydır
+            currentKeyIndex = (trialIndex + 1) % API_KEYS.length;
+            break; // İçteki model döngüsünden çık, dıştaki key döngüsünde sıradaki anahtara geç
           }
 
           // Diğer bilinmeyen hatalarda da sistemin çökmemesi için sıradaki modeli denemesini sağla
