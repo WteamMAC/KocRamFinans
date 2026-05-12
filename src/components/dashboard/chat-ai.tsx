@@ -99,7 +99,7 @@ export function ChatAI() {
           : msg
       ));
 
-    } catch (error) {
+    } catch (error: any) {
       console.error("Chat Hatası:", error);
       // Hata oluştuğunda UI'da yeni bir baloncuk açmak yerine boş olan mesajı güncelliyoruz
       setMessages(prev => prev.map(msg =>
