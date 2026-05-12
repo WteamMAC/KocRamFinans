@@ -6,6 +6,8 @@ import { MASTER_PROMPT, getFinancialContext } from "@/lib/gemini";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 // ─── API KEY ROTASYONU ──────────────────────────────────────────────────────
 // Env içindeki GEMINI_API_KEY, GEMINI_API_KEY_2, GEMINI_API_KEY_3... anahtarlarını toplar
 const getApiKeys = () => {
@@ -234,6 +236,12 @@ export async function POST(req: Request) {
             else if (isAuthError) lastRateLimitReason = `Yetki Hatası - Anahtar: ${maskedKey}`;
             else lastRateLimitReason = `Kota Hatası (${statusCode})`;
 
+            // Kota hatası durumunda bir sonraki anahtara geçmeden önce sisteme nefes aldır
+            if (isQuotaError) {
+              console.log(`[${traceId}] 429 Tespit edildi, 1.5 saniye bekleniyor...`);
+              await sleep(1500);
+            }
+            
             break; // Sadece key değiştirmek için döngüyü kır
           }
 
