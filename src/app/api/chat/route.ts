@@ -6,8 +6,6 @@ import { MASTER_PROMPT, getFinancialContext } from "@/lib/gemini";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
 // ─── API KEY ROTASYONU ──────────────────────────────────────────────────────
 // Env içindeki GEMINI_API_KEY, GEMINI_API_KEY_2, GEMINI_API_KEY_3... anahtarlarını toplar
 const getApiKeys = () => {
@@ -38,15 +36,24 @@ const getNextKey = () => {
 // ─── MODELLER VE ARAÇLAR ─────────────────────────────────────────────────────
 
 const FALLBACK_MODELS = [
-  "gemini-2.5-flash", // En stabil olanı en üste aldık!
+  "gemini-3.1-flash",
+  "gemini-3.1-flash-lite",
+  "gemini-3-flash",
+  "gemini-2.5-flash",
   "gemini-2.5-flash-lite",
   "gemini-2.0-flash",
-  "gemini-3.1-flash", // Yeni ama kotaları sıkıntılı olanları alta aldık
-  "gemini-3.1-flash-lite",
   "gemini-1.5-flash"
 ];
 
+const MARKET_KEYWORDS = [
+  "dolar", "euro", "sterlin", "döviz", "kur", "altın", "gram altın", "çeyrek altın",
+  "borsa", "bist", "hisse", "endeks", "bitcoin", "btc", "kripto", "fiyat", "kaç tl",
+  "piyasa", "ekonomi", "faiz", "enflasyon", "güncel haber", "borsa istanbul"
+];
 
+const DB_ACTION_KEYWORDS = [
+  "ekle", "kaydet", "sil", "güncelle", "yeni gelir", "yeni gider", "borç", "maaş"
+];
 
 const FUNCTION_DECLARATIONS = [
   {
@@ -104,7 +111,14 @@ const FUNCTION_DECLARATIONS = [
   }
 ];
 
+type ToolMode = "none" | "search" | "db";
 
+function classifyMessage(message: string): ToolMode {
+  const lower = message.toLowerCase();
+  if (DB_ACTION_KEYWORDS.some(kw => lower.includes(kw))) return "db";
+  if (MARKET_KEYWORDS.some(kw => lower.includes(kw))) return "search";
+  return "none";
+}
 
 // ─── ANA HANDLER ─────────────────────────────────────────────────────────────
 
@@ -125,6 +139,7 @@ export async function POST(req: Request) {
     // Son 10 mesajı al (Bağlamı korurken kotayı rahatlatır)
     const limitedMessages = messages.slice(-10);
     const lastMessage = limitedMessages[limitedMessages.length - 1].content;
+    const toolMode = classifyMessage(lastMessage);
 
     currentStage = "DB";
     const user = await prisma.user.findUnique({
@@ -155,12 +170,15 @@ export async function POST(req: Request) {
       for (let modelIndex = 0; modelIndex < FALLBACK_MODELS.length; modelIndex++) {
         const modelId = FALLBACK_MODELS[modelIndex];
 
+        console.log(`[${traceId}] [TRIAL] [V1-SDK] Key: ${maskedKey}, Model: ${modelId}, Tool: ${toolMode}`);
+
         try {
-          // ARAÇLARI SABİT OLARAK VERİYORUZ (Yapay Zeka hangisini kullanacağını kendi seçecek)
-          const tools = [
-            { functionDeclarations: FUNCTION_DECLARATIONS },
-            { googleSearch: {} }
-          ];
+          let tools: any[] | undefined;
+          if (toolMode === "db") {
+            tools = [{ functionDeclarations: FUNCTION_DECLARATIONS }];
+          } else if (toolMode === "search") {
+            tools = [{ googleSearch: {} }];
+          }
 
           const response = await ai.models.generateContentStream({
             model: modelId,
@@ -212,12 +230,12 @@ export async function POST(req: Request) {
         } catch (err: any) {
           const errorDetails = err.message || JSON.stringify(err);
           const statusCode = err.status || (err.response?.status) || 0;
-
+          
           const is429 = statusCode === 429 || errorDetails.includes("429");
           const is404 = statusCode === 404 || errorDetails.includes("404") || errorDetails.includes("not found");
-
+          
           // DİKKAT: 503 ve 500'ü buradan kaldırdık! Sadece gerçek 429 hataları kota hatasıdır.
-          const isQuotaError = is429 || errorDetails.includes("quota");
+          const isQuotaError = is429 || errorDetails.includes("quota"); 
           const isAuthError = errorDetails.includes("API key expired") || errorDetails.includes("API_KEY_INVALID") || (statusCode === 401);
 
           console.warn(`[${traceId}] [FAIL] Key: ${maskedKey}, Model: ${modelId}, Status: ${statusCode}, Error: ${errorDetails}`);
@@ -226,7 +244,7 @@ export async function POST(req: Request) {
           // BREAK YAPMA, sıradaki modele (örneğin 2.5-flash) geçiş yap!
           if (is404 || statusCode === 503 || statusCode === 500) {
             lastRateLimitReason = `Model Geçici Hatası (${statusCode}): ${modelId}`;
-            continue;
+            continue; 
           }
 
           // Eğer gerçekten API limiti dolduysa veya API Key yetkisizse, diğer API Key'e geçmek için döngüyü kır.
@@ -235,12 +253,6 @@ export async function POST(req: Request) {
             else if (errorDetails.includes("TPM")) lastRateLimitReason = `TPM Sınırı - Anahtar: ${maskedKey}`;
             else if (isAuthError) lastRateLimitReason = `Yetki Hatası - Anahtar: ${maskedKey}`;
             else lastRateLimitReason = `Kota Hatası (${statusCode})`;
-
-            // Kota hatası durumunda bir sonraki anahtara geçmeden önce sisteme nefes aldır
-            if (isQuotaError) {
-              console.log(`[${traceId}] 429 Tespit edildi, 1.5 saniye bekleniyor...`);
-              await sleep(1500);
-            }
             
             break; // Sadece key değiştirmek için döngüyü kır
           }
