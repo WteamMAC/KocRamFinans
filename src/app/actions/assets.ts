@@ -180,3 +180,67 @@ export async function fixCategories() {
     console.error("Fix Categories Error:", error);
   }
 }
+
+/**
+ * Yeni bir sabit varlık ekler.
+ */
+export async function addFixedAsset(data: {
+  name: string;
+  type: string;
+  value: number;
+}) {
+  try {
+    const { userId } = await auth();
+    if (!userId) throw new Error("Oturum açmanız gerekiyor.");
+
+    const user = await prisma.user.findUnique({
+      where: { clerkUserId: userId },
+    });
+
+    if (!user) throw new Error("Kullanıcı kaydı bulunamadı.");
+
+    await prisma.fixedAsset.create({
+      data: {
+        userId: user.id,
+        name: data.name,
+        type: data.type,
+        value: Number(data.value),
+      }
+    });
+
+    revalidatePath("/dashboard");
+    revalidatePath("/dashboard/assets");
+    return { success: true };
+  } catch (error: any) {
+    throw new Error(error.message || "Sabit varlık eklenirken bir hata oluştu.");
+  }
+}
+
+/**
+ * Bir sabit varlık kaydını siler.
+ */
+export async function deleteFixedAsset(id: string) {
+  try {
+    const { userId } = await auth();
+    if (!userId) throw new Error("Oturum açmanız gerekiyor.");
+
+    const asset = await prisma.fixedAsset.findUnique({
+      where: { id },
+      include: { user: true },
+    });
+
+    if (!asset || asset.user.clerkUserId !== userId) {
+      throw new Error("Varlık bulunamadı veya yetkiniz yok.");
+    }
+
+    await prisma.fixedAsset.delete({
+      where: { id },
+    });
+
+    revalidatePath("/dashboard");
+    revalidatePath("/dashboard/assets");
+    return { success: true };
+  } catch (error: any) {
+    throw new Error(error.message || "Silme işlemi başarısız oldu.");
+  }
+}
