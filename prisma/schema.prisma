@@ -20,7 +20,19 @@ model User {
   expenses    Expense[]
   debts       Debt[]
   investments Investment[]
+  fixedAssets FixedAsset[]
 
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model FixedAsset {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String   // e.g., "Araba", "Ev", "Telefon"
+  type        String   // Category: "Vehicle", "RealEstate", "Electronics", "Other"
+  value       Float    // Estimated value
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }

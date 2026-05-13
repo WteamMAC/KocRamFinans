@@ -53,15 +53,20 @@ const onboardingSchema = z.object({
     remainingInstallments: z.coerce.number().optional(),
     description: z.string().optional(),
   })),
-  investments: z.array(z.object({
-    type: z.string().min(1, "Tür seçiniz"),
-    symbol: z.string().min(1, "Varlık sembolü seçiniz"),
-    quantity: z.coerce.number().min(0, "Miktar giriniz"),
-    purchasePrice: z.coerce.number().min(0, "Alış fiyatı giriniz"),
-    currentValuation: z.coerce.number().optional(),
-    description: z.string().optional(),
-  })),
-});
+    investments: z.array(z.object({
+      type: z.string().min(1, "Tür seçiniz"),
+      symbol: z.string().min(1, "Varlık sembolü seçiniz"),
+      quantity: z.coerce.number().min(0, "Miktar giriniz"),
+      purchasePrice: z.coerce.number().min(0, "Alış fiyatı giriniz"),
+      currentValuation: z.coerce.number().optional(),
+      description: z.string().optional(),
+    })),
+    fixedAssets: z.array(z.object({
+      name: z.string().min(1, "Varlık adı giriniz"),
+      type: z.string().min(1, "Tür seçiniz"),
+      value: z.coerce.number().min(0, "Değer giriniz"),
+    })),
+  });
 
 type OnboardingValues = z.infer<typeof onboardingSchema>;
 
@@ -86,6 +91,7 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
       expenses: [],
       debts: [],
       investments: [],
+      fixedAssets: [],
     },
     mode: "onChange",
   });
@@ -108,6 +114,11 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
   const { fields: investmentFields, append: appendInvestment, remove: removeInvestment } = useFieldArray({
     control: form.control,
     name: "investments",
+  });
+
+  const { fields: fixedAssetFields, append: appendFixedAsset, remove: removeFixedAsset } = useFieldArray({
+    control: form.control,
+    name: "fixedAssets",
   });
 
   const { fields: childrenFields, append: appendChild, remove: removeChild } = useFieldArray({
@@ -153,6 +164,7 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
     if (step === 2) fieldsToValidate = ["expenses"];
     if (step === 3) fieldsToValidate = ["debts"];
     if (step === 4) fieldsToValidate = ["investments"];
+    if (step === 5) fieldsToValidate = ["fixedAssets"];
     
     const isValid = await form.trigger(fieldsToValidate as any);
     return isValid;
@@ -160,7 +172,7 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
 
   const nextStep = async () => {
     const isValid = await canContinue();
-    if (isValid) setStep((s) => Math.min(s + 1, 4));
+    if (isValid) setStep((s) => Math.min(s + 1, 5));
   };
 
   const prevStep = () => setStep((s) => Math.max(s - 1, 1));
@@ -174,7 +186,7 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
         {!isSettings && (
           <div className="flex justify-center mb-8">
             <div className="flex items-center gap-3">
-              {[1, 2, 3, 4].map((i) => (
+              {[1, 2, 3, 4, 5].map((i) => (
                 <div key={i} className="flex items-center">
                   <div
                     className={cn(
@@ -185,7 +197,7 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
                   >
                     {step > i ? <Check className="w-5 h-5" /> : i}
                   </div>
-                  {i < 4 && (
+                  {i < 5 && (
                     <div className={cn(
                       "w-8 h-1 mx-2 rounded-full transition-colors duration-500",
                       step > i ? "bg-emerald-500" : "bg-[#e3e2e0]"
@@ -205,9 +217,12 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
           {step === 2 && "Giderler"}
           {step === 3 && "Borç Durumu"}
           {step === 4 && "Varlık Portföyü"}
+          {step === 5 && "Sabit Varlıklar"}
         </CardTitle>
         <CardDescription className="text-[#434750] mt-2 font-medium">
-          {step === 4 ? "Elinizdeki varlıkların adet ve alış fiyatlarını girerek maliyet takibini başlatın." : "Yıldız (*) ile işaretli alanlar zorunludur."}
+          {step === 4 ? "Elinizdeki varlıkların adet ve alış fiyatlarını girerek maliyet takibini başlatın." : 
+           step === 5 ? "Araba, ev, elektronik eşya gibi somut varlıklarınızı ekleyerek toplam servetinizi görün." :
+           "Yıldız (*) ile işaretli alanlar zorunludur."}
         </CardDescription>
       </CardHeader>
 
@@ -584,6 +599,74 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
               </div>
             </div>
           )}
+
+          {step === 5 && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="flex justify-between items-center px-1">
+                <Label className="text-[10px] font-bold text-[#747781] uppercase tracking-widest">
+                   Sabit Varlıklar (Araba, Ev, Eşya vb.)
+                </Label>
+                <Button type="button" variant="ghost" size="sm" onClick={() => appendFixedAsset({ name: "", type: "Diğer", value: 0 })} className="text-[#001b44] font-bold">
+                  <Plus className="w-4 h-4 mr-1" /> Ekle
+                </Button>
+              </div>
+              
+              <div className="grid gap-4">
+                {fixedAssetFields.map((field, index) => (
+                  <div key={field.id} className="p-6 bg-[#faf9f6] border border-[#c4c6d2]/20 rounded-[24px] relative group hover:shadow-md transition-all">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-[9px] font-bold text-[#747781] uppercase px-1">Varlık Adı</Label>
+                        <Input placeholder="Örn: BMW 3.20, iPhone 15" {...form.register(`fixedAssets.${index}.name`)} className="bg-white border-[#c4c6d2]/20 h-10 rounded-lg" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-[9px] font-bold text-[#747781] uppercase px-1">Varlık Türü</Label>
+                        <Controller
+                          name={`fixedAssets.${index}.type` as any}
+                          control={form.control}
+                          render={({ field: selectField }) => (
+                            <Select onValueChange={selectField.onChange} defaultValue={selectField.value}>
+                              <SelectTrigger className="bg-white border-[#c4c6d2]/20 h-10 rounded-lg">
+                                <SelectValue placeholder="Seçiniz" />
+                              </SelectTrigger>
+                              <SelectContent className="rounded-lg">
+                                <SelectItem value="Gayrimenkul">Gayrimenkul (Ev, Arsa)</SelectItem>
+                                <SelectItem value="Taşıt">Taşıt (Araba, Motor)</SelectItem>
+                                <SelectItem value="Elektronik">Elektronik (Tel, PC, TV)</SelectItem>
+                                <SelectItem value="Eşya/Mobilya">Eşya / Mobilya</SelectItem>
+                                <SelectItem value="Kıymetli Eşya">Kıymetli Eşya (Saat, Takı)</SelectItem>
+                                <SelectItem value="Diğer">Diğer</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          )}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-[9px] font-bold text-[#747781] uppercase px-1">Tahmini Değer (₺)</Label>
+                        <div className="flex gap-2">
+                          <Input type="number" placeholder="0 ₺" {...form.register(`fixedAssets.${index}.value`)} className="bg-white border-[#c4c6d2]/20 h-10 rounded-lg flex-1" />
+                          <Button type="button" variant="ghost" size="icon" onClick={() => removeFixedAsset(index)} className="h-10 w-10 hover:bg-rose-50 text-rose-500">
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {fixedAssetFields.length === 0 && (
+                   <div className="text-center py-12 border-2 border-dashed border-[#c4c6d2]/30 rounded-[32px] bg-[#faf9f6]/30">
+                      <div className="mx-auto w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-sm mb-4">
+                         <Plus className="w-8 h-8 text-[#001b44]/20" />
+                      </div>
+                      <p className="text-sm font-medium text-[#747781]">Henüz sabit varlık eklemediniz.</p>
+                      <Button type="button" variant="link" onClick={() => appendFixedAsset({ name: "", type: "Diğer", value: 0 })} className="text-[#001b44] font-bold mt-2">
+                         Hemen bir tane ekle
+                      </Button>
+                   </div>
+                )}
+              </div>
+            </div>
+          )}
         </form>
       </CardContent>
       
@@ -597,7 +680,7 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
         >
           <ChevronLeft className="w-5 h-5 mr-2" /> Geri
         </Button>
-        {step < 4 ? (
+        {step < 5 ? (
           <Button type="button" onClick={nextStep} className="h-12 px-8 rounded-xl bg-[#001b44] text-white hover:bg-[#002f6c] font-bold shadow-lg shadow-[#001b44]/10">
             Devam Et <ChevronRight className="w-5 h-5 ml-2" />
           </Button>
