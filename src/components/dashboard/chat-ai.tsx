@@ -11,7 +11,6 @@ import {
   X,
   Bot,
   User,
-  Loader2,
   Minimize2,
   Maximize2,
   TrendingUp,

@@ -6,11 +6,9 @@ import { UserButton } from "@clerk/nextjs";
 import {
   LayoutDashboard,
   Settings,
-  Wallet,
   TrendingUp,
   ChevronLeft,
   ChevronRight,
-  BarChart3,
   Sun,
   Moon,
   ArrowRightLeft

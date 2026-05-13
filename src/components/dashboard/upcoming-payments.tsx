@@ -1,7 +1,3 @@
-import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { format } from "date-fns";
-import { tr } from "date-fns/locale";
 import { Clock, Calendar, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -11,7 +7,7 @@ interface UpcomingPaymentsProps {
 
 export function UpcomingPayments({ expenses }: UpcomingPaymentsProps) {
   const today = new Date().getDate();
-  
+
   const sortedExpenses = [...expenses]
     .filter(exp => exp.dueDate)
     .sort((a, b) => {
@@ -23,10 +19,10 @@ export function UpcomingPayments({ expenses }: UpcomingPaymentsProps) {
   if (sortedExpenses.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
-         <div className="w-12 h-12 bg-[#f8f9fa] rounded-full flex items-center justify-center mb-4 shadow-ambient-low">
-            <Calendar className="h-6 w-6 text-[#dbc2b0]" />
-         </div>
-         <p className="text-sm font-medium text-[#554336] opacity-60">Henüz kayıtlı ödeme bulunmuyor.</p>
+        <div className="w-12 h-12 bg-[#f8f9fa] rounded-full flex items-center justify-center mb-4 shadow-ambient-low">
+          <Calendar className="h-6 w-6 text-[#dbc2b0]" />
+        </div>
+        <p className="text-sm font-medium text-[#554336] opacity-60">Henüz kayıtlı ödeme bulunmuyor.</p>
       </div>
     );
   }
