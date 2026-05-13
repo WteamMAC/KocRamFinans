@@ -1,7 +1,7 @@
 import YahooFinanceClass from 'yahoo-finance2';
 
 // Next.js/Turbopack ortamında kütüphanenin doğru başlatılması için instance oluşturuyoruz
-const yahooFinance = (function() {
+const yahooFinance = (function () {
   try {
     // Eğer YahooFinanceClass bir constructor ise yeni bir instance oluştur
     return new (YahooFinanceClass as any)();
@@ -22,40 +22,61 @@ interface PriceResult {
   error?: string;
 }
 
+// Bellek içi fiyat önbelleği ve yaşam süresi (2 Dakika)
+const priceCache = new Map<string, { data: PriceResult; timestamp: number }>();
+const CACHE_TTL = 2 * 60 * 1000;
+
 export async function getLivePrices(symbols: string[]): Promise<Map<string, PriceResult>> {
   const results = new Map<string, PriceResult>();
-  
+  const symbolsToFetch: string[] = [];
+  const now = Date.now();
+
   if (symbols.length === 0) return results;
 
-  console.log("Fetching prices for:", symbols);
+  symbols.forEach(s => {
+    const symbolUpper = s.toUpperCase();
+    const cached = priceCache.get(symbolUpper);
+    if (cached && (now - cached.timestamp < CACHE_TTL)) {
+      results.set(symbolUpper, cached.data);
+    } else {
+      symbolsToFetch.push(s);
+    }
+  });
+
+  if (symbolsToFetch.length === 0) return results;
+
+  console.log("Fetching live prices from Yahoo for:", symbolsToFetch);
 
   try {
-    const quotes = await yahooFinance.quote(symbols);
+    const quotes = await yahooFinance.quote(symbolsToFetch);
     const quotesArray = Array.isArray(quotes) ? quotes : [quotes];
-
-    console.log(`Received ${quotesArray.length} quotes from Yahoo`);
 
     quotesArray.forEach((quote: any) => {
       if (quote && quote.symbol) {
         const currentPrice = quote.regularMarketPrice || quote.postMarketPrice || quote.preMarketPrice || 0;
-        
-        results.set(quote.symbol.toUpperCase(), {
+
+        const priceData = {
           symbol: quote.symbol,
           price: currentPrice,
           changePercent: quote.regularMarketChangePercent
-        });
+        };
+
+        results.set(quote.symbol.toUpperCase(), priceData);
+        priceCache.set(quote.symbol.toUpperCase(), { data: priceData, timestamp: now });
       }
     });
 
-    symbols.forEach(s => {
+    symbolsToFetch.forEach(s => {
       if (!results.has(s.toUpperCase())) {
-        results.set(s.toUpperCase(), { symbol: s, price: 0, error: "Veri bulunamadı" });
+        const errData = { symbol: s, price: 0, error: "Veri bulunamadı" };
+        results.set(s.toUpperCase(), errData);
+        priceCache.set(s.toUpperCase(), { data: errData, timestamp: now - CACHE_TTL + 10000 }); // Hataları 10 sn tut
       }
     });
 
   } catch (error: any) {
     console.error("CRITICAL: Yahoo Finance Quote Error:", error.message);
-    symbols.forEach(s => results.set(s.toUpperCase(), { symbol: s, price: 0, error: "Bağlantı hatası" }));
+    symbolsToFetch.forEach(s => results.set(s.toUpperCase(), { symbol: s, price: 0, error: "Bağlantı hatası" }));
   }
 
   return results;
@@ -73,11 +94,11 @@ export async function searchSymbols(query: string, category: string) {
     });
 
     const quotes = (searchResults && (searchResults as any).quotes) ? (searchResults as any).quotes : [];
-    
+
     // Her sonuç için en uygun kategoriyi belirle
     const processedQuotes = quotes.map((q: any) => {
       let suggestedCategory = "BIST";
-      
+
       if (q.quoteType === "CRYPTOCURRENCY" || (q.symbol && (q.symbol.includes("-USD") || q.symbol.includes("-BTC") || q.symbol.includes("USDT")))) {
         suggestedCategory = "CRYPTO";
       } else if (q.exchange === "IST" || (q.symbol && q.symbol.endsWith(".IS"))) {
@@ -118,23 +139,15 @@ export function calculatePortfolioMetrics(investments: any[], livePrices: Map<st
   const activeInvestments = (investments || []).filter(inv => !inv.status || inv.status === "OPEN");
 
   const detailedAssets = activeInvestments.map(inv => {
-    const isFixedAsset = inv.type === "VEHICLE" || inv.type === "REAL_ESTATE";
-    const live = (inv.symbol && !isFixedAsset) ? livePrices.get(inv.symbol) : null;
-    
-    let currentPrice = 0;
-    
-    if (isFixedAsset) {
-      // Sabit varlıklar için kullanıcının girdiği güncel değer veya alış fiyatı kullanılır
-      currentPrice = inv.currentValuation || inv.purchasePrice || (inv.amount / (inv.quantity || 1));
-    } else {
-      currentPrice = (live && live.price > 0) 
-        ? live.price 
-        : (inv.purchasePrice || (inv.amount / (inv.quantity || 1)));
-    }
-      
+    const live = inv.symbol ? livePrices.get(inv.symbol) : null;
+
+    const currentPrice = (live && live.price > 0)
+      ? live.price
+      : (inv.purchasePrice || (inv.amount / (inv.quantity || 1)));
+
     const currentValue = (inv.quantity || 1) * currentPrice;
-    const cost = inv.amount || 0; 
-    
+    const cost = inv.amount || 0;
+
     totalCost += cost;
     totalCurrentValue += currentValue;
 

@@ -19,22 +19,22 @@ import {
   TrendingUp,
   TrendingDown,
   Trash2,
-  DollarSign,
-  Briefcase,
   History,
   X,
   Clock,
   ArrowUpRight,
   ArrowDownRight,
   Wallet,
-  ArrowRight,
-  Car,
-  Home
+  Download,
+  RefreshCw,
+  Moon,
+  Sun
 } from "lucide-react";
 import { addAsset, deleteAsset, sellAsset } from "@/app/actions/assets";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { searchSymbolsAction } from "@/app/actions/market";
+import { PortfolioChart } from "./portfolio-chart";
 
 interface AssetListProps {
   assets: any[];
@@ -50,6 +50,11 @@ export function AssetList({ assets, allInvestments }: AssetListProps) {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [showSearch, setShowSearch] = useState(false);
   const [expandedSymbol, setExpandedSymbol] = useState<string | null>(null);
+  const [filterQuery, setFilterQuery] = useState("");
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [theme, setThemeState] = useState<"light" | "dark">("light");
+  const [mounted, setMounted] = useState(false);
 
   const [formData, setFormData] = useState({
     type: "BIST" as string,
@@ -82,6 +87,29 @@ export function AssetList({ assets, allInvestments }: AssetListProps) {
     };
   }, [showSearch]);
 
+  useEffect(() => {
+    setMounted(true);
+    // Sayfa yüklendiğinde önceden seçili temayı kontrol et
+    if (document.documentElement.classList.contains("dark")) {
+      setThemeState("dark");
+    } else if (localStorage.getItem("theme") === "dark") {
+      setThemeState("dark");
+      document.documentElement.classList.add("dark");
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    const newTheme = theme === "dark" ? "light" : "dark";
+    setThemeState(newTheme);
+    if (newTheme === "dark") {
+      document.documentElement.classList.add("dark");
+      localStorage.setItem("theme", "dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+      localStorage.setItem("theme", "light");
+    }
+  };
+
   const groupedAssets = assets.reduce((acc: any, asset: any) => {
     const symbol = asset.symbol || "Diğer";
     if (!acc[symbol]) {
@@ -111,6 +139,37 @@ export function AssetList({ assets, allInvestments }: AssetListProps) {
     return () => clearTimeout(delayDebounceFn);
   }, [searchQuery, formData.type]);
 
+  const handleExportCSV = () => {
+    const headers = ["Sembol", "Tur", "Miktar", "Maliyet", "Anlik Fiyat", "Toplam Deger", "Kar/Zarar"];
+    const rows = Object.values(groupedAssets).map((g: any) => {
+      const totalValue = g.totalQuantity * (g.currentPrice || 0);
+      const profit = totalValue - g.totalCost;
+      return [
+        g.symbol,
+        g.type,
+        g.totalQuantity,
+        g.totalCost.toFixed(2),
+        (g.currentPrice || 0).toFixed(2),
+        totalValue.toFixed(2),
+        profit.toFixed(2)
+      ].join(",");
+    });
+    const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + [headers.join(","), ...rows].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "portfoy_ozeti.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    router.refresh();
+    setTimeout(() => setIsRefreshing(false), 1000);
+  };
+
   const handleNumberChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value === "" ? 0 : parseFloat(value) }));
   };
@@ -130,12 +189,12 @@ export function AssetList({ assets, allInvestments }: AssetListProps) {
     try {
       let finalSymbol = formData.symbol;
       if (finalSymbol.includes("(")) finalSymbol = finalSymbol.split(" ")[0];
-      
+
       await addAsset({ ...formData, symbol: finalSymbol.toUpperCase() });
       setIsAdding(false);
       setFormData({ type: "BIST", symbol: "", quantity: 0, purchasePrice: 0, useCurrentPrice: false, description: "" });
       setSearchQuery("");
-      
+
       await new Promise(r => setTimeout(r, 500));
       router.refresh();
     } catch (err: any) {
@@ -184,16 +243,45 @@ export function AssetList({ assets, allInvestments }: AssetListProps) {
           <h2 className="text-3xl font-heading font-bold text-[#8c5000]">Varlık Portföyü</h2>
           <p className="text-[#554336] mt-1">Yatırımlarınızı profesyonel bir bakış açısıyla yönetin.</p>
         </div>
-        <Button
-          onClick={() => { setIsAdding(!isAdding); setError(null); }}
-          className={cn(
-            "rounded-full px-6 py-6 h-auto text-base font-semibold shadow-ambient-medium transition-all duration-300",
-            isAdding ? "bg-[#e3e2e0] text-[#191c1d] hover:bg-[#dbdad7]" : "bg-[#8c5000] text-white hover:bg-[#6e3f00]"
+        <div className="flex flex-wrap items-center gap-3 mt-4 md:mt-0">
+          {mounted && (
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={toggleTheme}
+              className="rounded-full w-12 h-12 shrink-0 text-[#8c5000] border-[#dbc2b0]/30 hover:bg-[#8c5000]/5 bg-white shadow-ambient-low transition-colors"
+            >
+              {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            </Button>
           )}
-        >
-          {isAdding ? <X className="mr-2 h-5 w-5" /> : <Plus className="mr-2 h-5 w-5" />}
-          {isAdding ? "Vazgeç" : "Yeni Yatırım Ekle"}
-        </Button>
+          <Button
+            variant="outline"
+            onClick={handleExportCSV}
+            className="rounded-full px-4 py-2 h-12 text-sm font-semibold text-[#8c5000] border-[#dbc2b0]/30 hover:bg-[#8c5000]/5 bg-white shadow-ambient-low"
+          >
+            <Download className="mr-2 h-4 w-4" />
+            Dışa Aktar
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className="rounded-full px-4 py-2 h-12 text-sm font-semibold text-[#8c5000] border-[#dbc2b0]/30 hover:bg-[#8c5000]/5 bg-white shadow-ambient-low"
+          >
+            <RefreshCw className={cn("mr-2 h-4 w-4", isRefreshing && "animate-spin")} />
+            Yenile
+          </Button>
+          <Button
+            onClick={() => { setIsAdding(!isAdding); setError(null); }}
+            className={cn(
+              "rounded-full px-6 py-3 h-12 text-base font-semibold shadow-ambient-medium transition-all duration-300",
+              isAdding ? "bg-[#e3e2e0] text-[#191c1d] hover:bg-[#dbdad7]" : "bg-[#8c5000] text-white hover:bg-[#6e3f00]"
+            )}
+          >
+            {isAdding ? <X className="mr-2 h-5 w-5" /> : <Plus className="mr-2 h-5 w-5" />}
+            {isAdding ? "Vazgeç" : "Yatırım Ekle"}
+          </Button>
+        </div>
       </div>
 
       {/* Add Asset Form */}
@@ -211,8 +299,6 @@ export function AssetList({ assets, allInvestments }: AssetListProps) {
                   <SelectItem value="NASDAQ">NASDAQ (Hisse)</SelectItem>
                   <SelectItem value="CRYPTO">Kripto Para</SelectItem>
                   <SelectItem value="GOLD">Altın/Emtia</SelectItem>
-                  <SelectItem value="VEHICLE">Araba / Araç</SelectItem>
-                  <SelectItem value="REAL_ESTATE">Konut / Gayrimenkul</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -222,20 +308,15 @@ export function AssetList({ assets, allInvestments }: AssetListProps) {
               <div className="relative">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-[#554336] opacity-50" />
                 <Input
-                  placeholder={formData.type === "VEHICLE" || formData.type === "REAL_ESTATE" ? "Örn: 2023 BMW 320i, Kadıköy Daire" : "Örn: THYAO, BTC, AAPL..."}
+                  placeholder="Örn: THYAO, BTC, AAPL..."
                   value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value);
-                    if (formData.type === "VEHICLE" || formData.type === "REAL_ESTATE") {
-                      setFormData(p => ({ ...p, symbol: e.target.value }));
-                    }
-                  }}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-12 bg-[#f8f9fa] border-[#dbc2b0]/30 h-12 rounded-xl focus:ring-[#8c5000]"
                 />
               </div>
 
               {showSearch && searchResults.length > 0 && rect && createPortal(
-                <div 
+                <div
                   className="fixed z-[9999] bg-white border border-[#dbc2b0]/30 shadow-ambient-high rounded-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200"
                   style={{ top: rect.bottom + 8, left: rect.left, width: rect.width }}
                 >
@@ -247,8 +328,8 @@ export function AssetList({ assets, allInvestments }: AssetListProps) {
                         e.preventDefault();
                         const sym = `${result.symbol} (${result.shortname || result.symbol})`;
                         // Otomatik kategori eşleme
-                        setFormData((prev) => ({ 
-                          ...prev, 
+                        setFormData((prev) => ({
+                          ...prev,
                           symbol: sym,
                           type: result.suggestedCategory || prev.type
                         }));
@@ -260,10 +341,10 @@ export function AssetList({ assets, allInvestments }: AssetListProps) {
                         <div className="flex items-center gap-2">
                           <span className="font-bold text-[#8c5000] group-hover:text-[#666000] transition-colors">{result.symbol}</span>
                           <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-[#f0f0f0] text-[#554336] opacity-70">
-                            {result.suggestedCategory === "CRYPTO" ? "Kripto" : 
-                             result.suggestedCategory === "BIST" ? "BIST" :
-                             result.suggestedCategory === "NASDAQ" ? "NASDAQ" :
-                             result.suggestedCategory === "GOLD" ? "Altın/Emtia" : "Varlık"}
+                            {result.suggestedCategory === "CRYPTO" ? "Kripto" :
+                              result.suggestedCategory === "BIST" ? "BIST" :
+                                result.suggestedCategory === "NASDAQ" ? "NASDAQ" :
+                                  result.suggestedCategory === "GOLD" ? "Altın/Emtia" : "Varlık"}
                           </span>
                         </div>
                         <span className="text-[10px] text-[#554336] opacity-60 truncate max-w-[200px]">{result.shortname || result.longname}</span>
@@ -289,9 +370,7 @@ export function AssetList({ assets, allInvestments }: AssetListProps) {
             </div>
 
             <div className="space-y-3">
-              <Label className="text-[10px] font-bold text-[#747781] uppercase tracking-widest px-1">
-                {(formData.type === "VEHICLE" || formData.type === "REAL_ESTATE") ? "Tahmini Güncel Değer (₺)" : "Alış Fiyatı (Opsiyonel)"}
-              </Label>
+              <Label className="text-[10px] font-bold text-[#747781] uppercase tracking-widest px-1">Alış Fiyatı (Opsiyonel)</Label>
               <div className="flex gap-2">
                 <Input
                   type="number"
@@ -342,131 +421,185 @@ export function AssetList({ assets, allInvestments }: AssetListProps) {
         </Card>
       )}
 
+      {/* Summary Dashboard (Kullanıcı Deneyimi - Özet Ekranı) */}
+      {Object.values(groupedAssets).length > 0 && !isAdding && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <Card className="lg:col-span-1 p-6 bg-white border-[#dbc2b0]/30 shadow-ambient-medium rounded-[32px] flex flex-col justify-center relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-[#efe440]/20 to-transparent rounded-full -mr-10 -mt-10 pointer-events-none" />
+            <h3 className="text-[10px] font-bold text-[#554336] uppercase tracking-widest mb-2 opacity-70 relative z-10">Toplam Portföy Değeri</h3>
+            <div className="text-4xl font-heading font-bold text-[#8c5000] mb-4 relative z-10">
+              {Object.values(groupedAssets).reduce((sum: number, g: any) => sum + (g.totalQuantity * (g.currentPrice || 0)), 0).toLocaleString("tr-TR", { minimumFractionDigits: 2 })} ₺
+            </div>
+            <div className="text-sm font-medium text-[#554336] relative z-10">
+              Maliyet: {Object.values(groupedAssets).reduce((sum: number, g: any) => sum + g.totalCost, 0).toLocaleString("tr-TR")} ₺
+            </div>
+            {(() => {
+              const totalCost = Object.values(groupedAssets).reduce((sum: number, g: any) => sum + g.totalCost, 0);
+              const currentVal = Object.values(groupedAssets).reduce((sum: number, g: any) => sum + (g.totalQuantity * (g.currentPrice || 0)), 0);
+              const profit = currentVal - totalCost;
+              const profitPct = totalCost > 0 ? (profit / totalCost) * 100 : 0;
+              return (
+                <div className={cn("inline-flex items-center px-3 py-1.5 rounded-xl mt-4 w-fit font-bold relative z-10", profit >= 0 ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700")}>
+                  {profit >= 0 ? <TrendingUp className="h-4 w-4 mr-1" /> : <TrendingDown className="h-4 w-4 mr-1" />}
+                  {profitPct > 0 ? "+" : ""}{profitPct.toFixed(2)}% ({profit.toLocaleString("tr-TR")} ₺)
+                </div>
+              );
+            })()}
+          </Card>
+          <Card className="lg:col-span-2 p-6 bg-white border-[#dbc2b0]/30 shadow-ambient-medium rounded-[32px] flex flex-col">
+            <h3 className="text-[10px] font-bold text-[#554336] uppercase tracking-widest mb-4 opacity-70">Portföy Dağılımı (Kategori Bazlı)</h3>
+            <div className="flex-1 min-h-[250px] -ml-4">
+              <PortfolioChart assets={Object.values(groupedAssets).map((g: any) => ({
+                id: g.symbol,
+                symbol: g.symbol,
+                type: g.type,
+                currentValue: g.totalQuantity * (g.currentPrice || 0)
+              }))} />
+            </div>
+          </Card>
+        </div>
+      )}
+
       {/* Asset Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="space-y-6">
-          <div className="flex items-center gap-3 px-2">
-            <div className="p-2 bg-[#efe440]/20 rounded-lg">
-              <Wallet className="h-5 w-5 text-[#666000]" />
-            </div>
-            <h3 className="text-xl font-heading font-bold text-[#8c5000]">Aktif Varlıklarım</h3>
-          </div>
-          
-          <div className="space-y-4">
-            {Object.values(groupedAssets).length === 0 ? (
-              <div className="p-12 text-center bg-white rounded-[32px] border border-dashed border-[#dbc2b0] text-[#554336] opacity-60 shadow-ambient-low">
-                Henüz aktif bir varlık bulunmuyor.
+          <div className="flex items-center justify-between px-2 gap-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-[#efe440]/20 rounded-lg shrink-0">
+                <Wallet className="h-5 w-5 text-[#666000]" />
               </div>
-            ) : (
-              Object.values(groupedAssets).map((group: any) => {
-                const totalValue = group.totalQuantity * (group.currentPrice || 0);
-                const totalPortfolioValue = Object.values(groupedAssets).reduce((sum: number, g: any) => {
-                  return sum + (g.totalQuantity * (g.currentPrice || 0));
-                }, 0);
-                const portfolioRatio = totalPortfolioValue > 0 ? (totalValue / totalPortfolioValue) * 100 : 0;
-                
-                const profit = totalValue - group.totalCost;
-                const profitPercent = group.totalCost > 0 ? (profit / group.totalCost) * 100 : 0;
-                const isExpanded = expandedSymbol === group.symbol;
+              <h3 className="text-xl font-heading font-bold text-[#8c5000] truncate">Aktif Varlıklarım</h3>
+            </div>
+            <div className="relative w-full max-w-[150px] sm:max-w-[200px]">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#554336] opacity-50" />
+              <Input
+                placeholder="Ara..."
+                value={filterQuery}
+                onChange={(e) => setFilterQuery(e.target.value)}
+                className="pl-9 h-10 text-sm bg-white border-[#dbc2b0]/30 shadow-ambient-low rounded-xl focus:ring-[#8c5000]"
+              />
+            </div>
+          </div>
 
-                return (
-                  <Card 
-                    key={group.symbol} 
-                    className={cn(
-                      "overflow-hidden transition-all duration-500 cursor-pointer border-[#dbc2b0]/20 group",
-                      isExpanded ? "ring-2 ring-[#efe440] shadow-ambient-high scale-[1.02]" : "hover:shadow-ambient-medium hover:border-[#efe440]/40 shadow-ambient-low"
-                    )}
-                    onClick={() => setExpandedSymbol(isExpanded ? null : group.symbol)}
-                  >
-                    <div className="p-6">
-                      <div className="flex justify-between items-start">
-                        <div className="flex gap-4">
-                          <div className="w-14 h-14 bg-[#f8f9fa] rounded-2xl flex items-center justify-center font-bold text-[#8c5000] text-lg border border-[#dbc2b0]/20 shadow-inner group-hover:bg-[#efe440]/10 transition-colors">
-                            {group.type === "VEHICLE" ? <Car className="h-7 w-7" /> : 
-                             group.type === "REAL_ESTATE" ? <Home className="h-7 w-7" /> : 
-                             group.symbol.substring(0, 3)}
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <h4 className="font-heading font-bold text-xl text-[#8c5000]">{group.symbol}</h4>
-                              <span className="text-[10px] font-bold text-[#554336] bg-[#edeeef] px-2 py-0.5 rounded-full uppercase">{group.type}</span>
+          <div className="space-y-4">
+            {(() => {
+              const filteredGroups = Object.values(groupedAssets).filter((g: any) =>
+                g.symbol.toLowerCase().includes(filterQuery.toLowerCase()) ||
+                g.type.toLowerCase().includes(filterQuery.toLowerCase())
+              );
+              return filteredGroups.length === 0 ? (
+                <div className="p-12 text-center bg-white rounded-[32px] border border-dashed border-[#dbc2b0] text-[#554336] opacity-60 shadow-ambient-low">
+                  {filterQuery ? "Aramanıza uygun varlık bulunamadı." : "Henüz aktif bir varlık bulunmuyor."}
+                </div>
+              ) : (
+                filteredGroups.map((group: any) => {
+                  const totalValue = group.totalQuantity * (group.currentPrice || 0);
+                  const totalPortfolioValue = Object.values(groupedAssets).reduce((sum: number, g: any) => {
+                    return sum + (g.totalQuantity * (g.currentPrice || 0));
+                  }, 0);
+                  const portfolioRatio = totalPortfolioValue > 0 ? (totalValue / totalPortfolioValue) * 100 : 0;
+
+                  const profit = totalValue - group.totalCost;
+                  const profitPercent = group.totalCost > 0 ? (profit / group.totalCost) * 100 : 0;
+                  const isExpanded = expandedSymbol === group.symbol;
+
+                  return (
+                    <Card
+                      key={group.symbol}
+                      className={cn(
+                        "overflow-hidden transition-all duration-500 cursor-pointer border-[#dbc2b0]/20 group",
+                        isExpanded ? "ring-2 ring-[#efe440] shadow-ambient-high scale-[1.02]" : "hover:shadow-ambient-medium hover:border-[#efe440]/40 shadow-ambient-low"
+                      )}
+                      onClick={() => setExpandedSymbol(isExpanded ? null : group.symbol)}
+                    >
+                      <div className="p-6">
+                        <div className="flex justify-between items-start">
+                          <div className="flex gap-4">
+                            <div className="w-14 h-14 bg-[#f8f9fa] rounded-2xl flex items-center justify-center font-bold text-[#8c5000] text-lg border border-[#dbc2b0]/20 shadow-inner group-hover:bg-[#efe440]/10 transition-colors">
+                              {group.symbol.substring(0, 3)}
                             </div>
-                            <p className="text-[#554336] text-sm font-medium mt-1">
-                              {group.totalQuantity.toLocaleString("tr-TR")} Adet
-                              <span className="ml-2 text-[10px] font-bold text-[#554336] bg-[#f8f9fa] border border-[#dbc2b0]/10 px-2 py-0.5 rounded-md uppercase tracking-tighter">
-                                Portföy Payı: %{portfolioRatio.toFixed(1)}
-                              </span>
-                            </p>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <h4 className="font-heading font-bold text-xl text-[#8c5000]">{group.symbol}</h4>
+                                <span className="text-[10px] font-bold text-[#554336] bg-[#edeeef] px-2 py-0.5 rounded-full uppercase">{group.type}</span>
+                              </div>
+                              <p className="text-[#554336] text-sm font-medium mt-1">
+                                {group.totalQuantity.toLocaleString("tr-TR")} Adet
+                                <span className="ml-2 text-[10px] font-bold text-[#554336] bg-[#f8f9fa] border border-[#dbc2b0]/10 px-2 py-0.5 rounded-md uppercase tracking-tighter">
+                                  Portföy Payı: %{portfolioRatio.toFixed(1)}
+                                </span>
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-2xl font-bold text-[#8c5000]">{totalValue.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} ₺</div>
+                            <div className={cn(
+                              "flex items-center justify-end text-sm font-bold mt-1",
+                              profit >= 0 ? "text-emerald-600" : "text-rose-600"
+                            )}>
+                              {profit >= 0 ? <TrendingUp className="h-4 w-4 mr-1" /> : <TrendingDown className="h-4 w-4 mr-1" />}
+                              {profitPercent.toFixed(2)}% ({profit.toLocaleString("tr-TR")} ₺)
+                            </div>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <div className="text-2xl font-bold text-[#8c5000]">{totalValue.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} ₺</div>
-                          <div className={cn(
-                            "flex items-center justify-end text-sm font-bold mt-1",
-                            profit >= 0 ? "text-emerald-600" : "text-rose-600"
-                          )}>
-                            {profit >= 0 ? <TrendingUp className="h-4 w-4 mr-1" /> : <TrendingDown className="h-4 w-4 mr-1" />}
-                            {profitPercent.toFixed(2)}% ({profit.toLocaleString("tr-TR")} ₺)
-                          </div>
-                        </div>
-                      </div>
 
-                      {/* Expandable Details */}
-                      {isExpanded && (
-                        <div className="mt-8 pt-8 border-t border-[#dbc2b0]/20 space-y-4 animate-in slide-in-from-top-4">
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="bg-[#f8f9fa] p-4 rounded-2xl border border-[#dbc2b0]/10">
-                              <p className="text-[10px] font-bold text-[#554336] uppercase tracking-wider mb-1">Maliyet</p>
-                              <p className="text-lg font-bold text-[#8c5000]">{group.totalCost.toLocaleString("tr-TR")} ₺</p>
+                        {/* Expandable Details */}
+                        {isExpanded && (
+                          <div className="mt-8 pt-8 border-t border-[#dbc2b0]/20 space-y-4 animate-in slide-in-from-top-4">
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="bg-[#f8f9fa] p-4 rounded-2xl border border-[#dbc2b0]/10">
+                                <p className="text-[10px] font-bold text-[#554336] uppercase tracking-wider mb-1">Maliyet</p>
+                                <p className="text-lg font-bold text-[#8c5000]">{group.totalCost.toLocaleString("tr-TR")} ₺</p>
+                              </div>
+                              <div className="bg-[#f8f9fa] p-4 rounded-2xl border border-[#dbc2b0]/10">
+                                <p className="text-[10px] font-bold text-[#554336] uppercase tracking-wider mb-1">Anlık Fiyat</p>
+                                <p className="text-lg font-bold text-[#8c5000]">{group.currentPrice?.toLocaleString("tr-TR")} ₺</p>
+                              </div>
                             </div>
-                            <div className="bg-[#f8f9fa] p-4 rounded-2xl border border-[#dbc2b0]/10">
-                              <p className="text-[10px] font-bold text-[#554336] uppercase tracking-wider mb-1">Anlık Fiyat</p>
-                              <p className="text-lg font-bold text-[#8c5000]">{group.currentPrice?.toLocaleString("tr-TR")} ₺</p>
-                            </div>
-                          </div>
-                          
-                          <div className="space-y-3">
-                            <p className="text-[10px] font-bold text-[#554336] uppercase tracking-widest px-1">Alım Geçmişi</p>
-                            {group.items.map((item: any) => (
-                              <div key={item.id} className="flex justify-between items-center p-4 bg-white rounded-2xl border border-[#dbc2b0]/10 hover:border-[#efe440]/50 transition-colors shadow-ambient-low">
-                                <div className="flex items-center gap-3">
-                                  <div className="w-2 h-2 rounded-full bg-[#efe440]"></div>
-                                  <div className="flex flex-col">
-                                    <span className="text-sm font-bold text-[#191c1d]">{item.quantity.toLocaleString("tr-TR")} Adet @ {item.purchasePrice?.toLocaleString("tr-TR")} ₺</span>
-                                    <span className="text-[10px] text-[#554336] flex items-center gap-1 mt-1">
-                                      <Clock className="h-3 w-3" />
-                                      {new Date(item.createdAt).toLocaleDateString("tr-TR")} {new Date(item.createdAt).toLocaleTimeString("tr-TR", { hour: '2-digit', minute: '2-digit' })}
-                                    </span>
+
+                            <div className="space-y-3">
+                              <p className="text-[10px] font-bold text-[#554336] uppercase tracking-widest px-1">Alım Geçmişi</p>
+                              {group.items.map((item: any) => (
+                                <div key={item.id} className="flex justify-between items-center p-4 bg-white rounded-2xl border border-[#dbc2b0]/10 hover:border-[#efe440]/50 transition-colors shadow-ambient-low">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-2 h-2 rounded-full bg-[#efe440]"></div>
+                                    <div className="flex flex-col">
+                                      <span className="text-sm font-bold text-[#191c1d]">{item.quantity.toLocaleString("tr-TR")} Adet @ {item.purchasePrice?.toLocaleString("tr-TR")} ₺</span>
+                                      <span className="text-[10px] text-[#554336] flex items-center gap-1 mt-1">
+                                        <Clock className="h-3 w-3" />
+                                        {new Date(item.createdAt).toLocaleDateString("tr-TR")} {new Date(item.createdAt).toLocaleTimeString("tr-TR", { hour: '2-digit', minute: '2-digit' })}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={(e) => { e.stopPropagation(); handleSell(item.id); }}
+                                      className="h-9 px-4 rounded-xl border-[#dbc2b0]/30 text-[#8c5000] font-bold text-xs hover:bg-[#8c5000] hover:text-white transition-all"
+                                    >
+                                      Sat
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }}
+                                      className="h-9 w-9 rounded-xl text-rose-500 hover:bg-rose-50 hover:text-rose-600 transition-colors"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
                                   </div>
                                 </div>
-                                <div className="flex gap-2">
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={(e) => { e.stopPropagation(); handleSell(item.id); }}
-                                    className="h-9 px-4 rounded-xl border-[#dbc2b0]/30 text-[#8c5000] font-bold text-xs hover:bg-[#8c5000] hover:text-white transition-all"
-                                  >
-                                    Sat
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }}
-                                    className="h-9 w-9 rounded-xl text-rose-500 hover:bg-rose-50 hover:text-rose-600 transition-colors"
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              </div>
-                            ))}
+                              ))}
+                            </div>
                           </div>
-                        </div>
-                      )}
-                    </div>
-                  </Card>
-                );
-              })
-            )}
+                        )}
+                      </div>
+                    </Card>
+                  );
+                })
+              );
+            })()}
           </div>
         </div>
 
@@ -483,7 +616,7 @@ export function AssetList({ assets, allInvestments }: AssetListProps) {
               {history.length === 0 ? (
                 <div className="p-12 text-center text-[#434750] opacity-60">Kayıtlı işlem bulunamadı.</div>
               ) : (
-                history.map((log: any) => (
+                history.slice(0, 5).map((log: any) => (
                   <div key={log.id} className="p-6 hover:bg-[#f8f9fa] transition-colors flex justify-between items-center group">
                     <div className="flex items-center gap-4">
                       <div className={cn(
@@ -519,13 +652,56 @@ export function AssetList({ assets, allInvestments }: AssetListProps) {
               )}
             </div>
             {history.length > 5 && (
-               <div className="p-4 bg-[#f8f9fa] border-t border-[#dbc2b0]/10 text-center text-xs font-bold text-[#8c5000] cursor-pointer hover:bg-[#edeeef] transition-colors">
-                  Tüm İşlemleri Gör
-               </div>
+              <div onClick={() => setShowHistoryModal(true)} className="p-4 bg-[#f8f9fa] border-t border-[#dbc2b0]/10 text-center text-xs font-bold text-[#8c5000] cursor-pointer hover:bg-[#edeeef] transition-colors">
+                Tüm İşlemleri Gör
+              </div>
             )}
           </Card>
         </div>
       </div>
+
+      {/* Modal for All History */}
+      {showHistoryModal && (
+        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-[#191c1d]/40 backdrop-blur-sm">
+          <div className="bg-white rounded-[32px] shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
+            <div className="p-6 border-b border-[#dbc2b0]/20 flex justify-between items-center bg-[#f8f9fa]">
+              <div>
+                <h3 className="text-xl font-heading font-bold text-[#8c5000]">Tüm İşlem Geçmişi</h3>
+                <p className="text-xs text-[#554336] mt-1">Geçmişte yaptığınız tüm alım ve satım kayıtları.</p>
+              </div>
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full bg-white shadow-sm border border-[#dbc2b0]/30 hover:bg-rose-50 hover:text-rose-500" onClick={() => setShowHistoryModal(false)}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="p-6 overflow-y-auto flex-1 divide-y divide-[#dbc2b0]/10">
+              {history.map((log: any) => (
+                <div key={log.id} className="py-4 hover:bg-[#f8f9fa] transition-colors flex justify-between items-center group first:pt-0 last:pb-0">
+                  <div className="flex items-center gap-4">
+                    <div className={cn("w-10 h-10 rounded-2xl flex items-center justify-center", log.transactionType === "SELL" ? "bg-rose-50 text-rose-600" : "bg-emerald-50 text-emerald-600")}>
+                      {log.transactionType === "SELL" ? <ArrowUpRight className="h-5 w-5" /> : <ArrowDownRight className="h-5 w-5" />}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-[#8c5000]">{log.symbol}</span>
+                        <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-full uppercase", log.transactionType === "SELL" ? "bg-rose-100 text-rose-700" : "bg-emerald-100 text-emerald-700")}>
+                          {log.transactionType === "SELL" ? "SATIŞ" : "ALIŞ"}
+                        </span>
+                      </div>
+                      <p className="text-[10px] font-medium text-[#554336] mt-1">
+                        {new Date(log.createdAt).toLocaleDateString("tr-TR")} {new Date(log.createdAt).toLocaleTimeString("tr-TR", { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-bold text-[#8c5000]">{log.quantity.toLocaleString("tr-TR")} Adet</div>
+                    <div className="text-xs font-medium text-[#554336] opacity-60 mt-1">Fiyat: {(log.transactionType === "BUY" ? (log.purchasePrice || 0) : (log.soldPrice || 0)).toLocaleString("tr-TR")} ₺</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -3,14 +3,15 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { UserButton } from "@clerk/nextjs";
-import { 
-  LayoutDashboard, 
-  Settings, 
-  Wallet, 
+import {
+  LayoutDashboard,
+  Settings,
   TrendingUp,
   ChevronLeft,
   ChevronRight,
-  BarChart3
+  Sun,
+  Moon,
+  ArrowRightLeft
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -29,6 +30,12 @@ const routes = [
     color: "text-[#666000]",
   },
   {
+    label: "Gelir - Gider",
+    icon: ArrowRightLeft,
+    href: "/dashboard/income-expense",
+    color: "text-[#36684d]",
+  },
+  {
     label: "Bilgileri Düzenle",
     icon: Settings,
     href: "/dashboard/settings",
@@ -40,9 +47,11 @@ interface SidebarProps {
   isCollapsed: boolean;
   onToggle: () => void;
   hideToggle?: boolean;
+  theme?: "light" | "dark";
+  onToggleTheme?: () => void;
 }
 
-export function Sidebar({ isCollapsed, onToggle, hideToggle }: SidebarProps) {
+export function Sidebar({ isCollapsed, onToggle, hideToggle, theme, onToggleTheme }: SidebarProps) {
   const pathname = usePathname();
 
   return (
@@ -82,8 +91,8 @@ export function Sidebar({ isCollapsed, onToggle, hideToggle }: SidebarProps) {
               href={route.href}
               className={cn(
                 "text-sm group flex p-3 w-full justify-start font-medium cursor-pointer rounded-xl transition-all duration-200",
-                pathname === route.href 
-                  ? "bg-[#f3f4f5] text-[#8c5000] shadow-ambient-low" 
+                pathname === route.href
+                  ? "bg-[#f3f4f5] text-[#8c5000] shadow-ambient-low"
                   : "text-[#554336] hover:bg-[#f8f9fa] hover:text-[#8c5000]",
                 isCollapsed && "justify-center"
               )}
@@ -105,7 +114,7 @@ export function Sidebar({ isCollapsed, onToggle, hideToggle }: SidebarProps) {
         isCollapsed ? "justify-center" : "justify-between px-6 bg-[#f8f9fa]/30"
       )}>
         <div className="flex items-center gap-3 overflow-hidden">
-          <UserButton 
+          <UserButton
             appearance={{
               elements: {
                 userButtonAvatarBox: "h-9 w-9 ring-2 ring-[#efe440]/20"
@@ -119,6 +128,17 @@ export function Sidebar({ isCollapsed, onToggle, hideToggle }: SidebarProps) {
             </div>
           )}
         </div>
+
+        {theme && onToggleTheme && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onToggleTheme}
+            className="rounded-full h-8 w-8 text-[#8c5000] hover:bg-[#8c5000]/10 flex-shrink-0"
+          >
+            {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </Button>
+        )}
       </div>
     </div>
   );
