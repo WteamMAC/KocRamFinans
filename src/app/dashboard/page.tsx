@@ -65,7 +65,7 @@ export default async function DashboardPage() {
   const totalProfit = portfolioMetrics.totalProfit;
   const profitPercent = portfolioMetrics.profitPercent;
   
-  const netWorth = totalInvestment + totalFixedAssets + (totalIncome - totalExpense) - totalDebt;
+  const netWorth = totalInvestment + (totalIncome - totalExpense) - totalDebt;
   const savingsRate = totalIncome > 0 ? ((totalIncome - totalExpense) / totalIncome) * 100 : 0;
 
   return (
@@ -203,29 +203,20 @@ export default async function DashboardPage() {
         </CardContent>
       </Card>
 
-      {/* Fixed Assets Section */}
-      <Card className="bg-white border-[#dbc2b0]/20 shadow-ambient-medium rounded-[32px] overflow-hidden">
-        <CardHeader className="bg-[#f8f9fa] border-b border-[#dbc2b0]/10 py-6 px-8">
-          <CardTitle className="text-xl font-heading font-bold text-[#8c5000] flex items-center gap-2">
-            <PieChart className="h-5 w-5 text-[#efe440] fill-[#efe440]" /> Sabit Varlık Dağılımı
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-8">
-          <FixedAssetsSummary fixedAssets={user.fixedAssets} />
-        </CardContent>
-      </Card>
-
-      {/* Investment Section */}
+      {/* Assets Section */}
       <Card className="bg-white border-[#dbc2b0]/20 shadow-ambient-medium rounded-[32px] overflow-hidden">
         <CardHeader className="bg-[#8c5000] py-6 px-8 flex flex-row items-center justify-between">
-          <CardTitle className="text-xl font-heading font-bold text-white">Yatırım Dağılımı ve Portföy</CardTitle>
+          <CardTitle className="text-xl font-heading font-bold text-white">Varlık Dağılımı</CardTitle>
           <div className="flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full">
              <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></div>
              <span className="text-[10px] font-bold text-white/80 uppercase tracking-widest">Canlı Piyasa</span>
           </div>
         </CardHeader>
         <CardContent className="p-8">
-          <InvestmentSummary investments={portfolioMetrics.assets} />
+          <InvestmentSummary 
+            investments={portfolioMetrics.assets} 
+            fixedAssets={user.fixedAssets} 
+          />
         </CardContent>
       </Card>
 
