@@ -9,11 +9,27 @@ import { getLivePrices } from "@/lib/price-service";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
+// Basit Bellek İçi Kullanıcı İstek Sınırlandırması (Rate Limiting)
+const userRateLimit = new Map<string, { count: number; resetTime: number }>();
 
 export async function POST(req: Request) {
   try {
     const { userId: clerkId } = await auth();
     if (!clerkId) return new Response("Yetkisiz erişim.", { status: 401 });
+
+    // Rate Limiting Kontrolü (Dakikada maks 20 istek)
+    const now = Date.now();
+    const userLimit = userRateLimit.get(clerkId) || { count: 0, resetTime: now + 60000 };
+    if (now > userLimit.resetTime) {
+      userLimit.count = 1;
+      userLimit.resetTime = now + 60000;
+    } else {
+      userLimit.count++;
+      if (userLimit.count > 20) {
+        return new Response(JSON.stringify({ error: "Sistem güvenliği: Kısa sürede çok fazla mesaj gönderdiniz. Lütfen biraz bekleyin." }), { status: 429, headers: { "Content-Type": "application/json" } });
+      }
+    }
+    userRateLimit.set(clerkId, userLimit);
 
     const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
     if (!apiKey) return new Response("GEMINI_API_KEY eksik", { status: 500 });

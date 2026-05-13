@@ -53,6 +53,7 @@ export function AssetList({ assets, allInvestments }: AssetListProps) {
   const [expandedSymbol, setExpandedSymbol] = useState<string | null>(null);
   const [filterQuery, setFilterQuery] = useState("");
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
 
   const [formData, setFormData] = useState({
     type: "BIST" as string,
@@ -581,7 +582,7 @@ export function AssetList({ assets, allInvestments }: AssetListProps) {
               {history.length === 0 ? (
                 <div className="p-12 text-center text-[#434750] opacity-60">Kayıtlı işlem bulunamadı.</div>
               ) : (
-                history.map((log: any) => (
+                history.slice(0, 5).map((log: any) => (
                   <div key={log.id} className="p-6 hover:bg-[#f8f9fa] transition-colors flex justify-between items-center group">
                     <div className="flex items-center gap-4">
                       <div className={cn(
@@ -617,13 +618,56 @@ export function AssetList({ assets, allInvestments }: AssetListProps) {
               )}
             </div>
             {history.length > 5 && (
-              <div className="p-4 bg-[#f8f9fa] border-t border-[#dbc2b0]/10 text-center text-xs font-bold text-[#8c5000] cursor-pointer hover:bg-[#edeeef] transition-colors">
+              <div onClick={() => setShowHistoryModal(true)} className="p-4 bg-[#f8f9fa] border-t border-[#dbc2b0]/10 text-center text-xs font-bold text-[#8c5000] cursor-pointer hover:bg-[#edeeef] transition-colors">
                 Tüm İşlemleri Gör
               </div>
             )}
           </Card>
         </div>
       </div>
+
+      {/* Modal for All History */}
+      {showHistoryModal && (
+        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-[#191c1d]/40 backdrop-blur-sm">
+          <div className="bg-white rounded-[32px] shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
+            <div className="p-6 border-b border-[#dbc2b0]/20 flex justify-between items-center bg-[#f8f9fa]">
+              <div>
+                <h3 className="text-xl font-heading font-bold text-[#8c5000]">Tüm İşlem Geçmişi</h3>
+                <p className="text-xs text-[#554336] mt-1">Geçmişte yaptığınız tüm alım ve satım kayıtları.</p>
+              </div>
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full bg-white shadow-sm border border-[#dbc2b0]/30 hover:bg-rose-50 hover:text-rose-500" onClick={() => setShowHistoryModal(false)}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="p-6 overflow-y-auto flex-1 divide-y divide-[#dbc2b0]/10">
+              {history.map((log: any) => (
+                <div key={log.id} className="py-4 hover:bg-[#f8f9fa] transition-colors flex justify-between items-center group first:pt-0 last:pb-0">
+                  <div className="flex items-center gap-4">
+                    <div className={cn("w-10 h-10 rounded-2xl flex items-center justify-center", log.transactionType === "SELL" ? "bg-rose-50 text-rose-600" : "bg-emerald-50 text-emerald-600")}>
+                      {log.transactionType === "SELL" ? <ArrowUpRight className="h-5 w-5" /> : <ArrowDownRight className="h-5 w-5" />}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-[#8c5000]">{log.symbol}</span>
+                        <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-full uppercase", log.transactionType === "SELL" ? "bg-rose-100 text-rose-700" : "bg-emerald-100 text-emerald-700")}>
+                          {log.transactionType === "SELL" ? "SATIŞ" : "ALIŞ"}
+                        </span>
+                      </div>
+                      <p className="text-[10px] font-medium text-[#554336] mt-1">
+                        {new Date(log.createdAt).toLocaleDateString("tr-TR")} {new Date(log.createdAt).toLocaleTimeString("tr-TR", { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-bold text-[#8c5000]">{log.quantity.toLocaleString("tr-TR")} Adet</div>
+                    <div className="text-xs font-medium text-[#554336] opacity-60 mt-1">Fiyat: {(log.transactionType === "BUY" ? (log.purchasePrice || 0) : (log.soldPrice || 0)).toLocaleString("tr-TR")} ₺</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

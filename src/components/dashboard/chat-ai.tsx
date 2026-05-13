@@ -16,6 +16,7 @@ import {
   Maximize2,
   TrendingUp,
   Paperclip,
+  Mic,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -31,6 +32,7 @@ export function ChatAI() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [messages, setMessages] = useState<{ id: string; role: "user" | "assistant"; content: string; image?: string }[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isListening, setIsListening] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInput(e.target.value);
@@ -40,11 +42,52 @@ export function ChatAI() {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setSelectedImage(reader.result as string);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          const MAX_WIDTH = 800;
+          const MAX_HEIGHT = 800;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height && width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          } else if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          ctx?.drawImage(img, 0, 0, width, height);
+
+          setSelectedImage(canvas.toDataURL("image/jpeg", 0.7));
+        };
+        img.src = event.target?.result as string;
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const startListening = () => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Tarayıcınız bu cihazda sesli komut desteklemiyor.");
+      return;
+    }
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'tr-TR';
+    recognition.onstart = () => setIsListening(true);
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      setInput((prev) => prev + (prev ? " " : "") + transcript);
+    };
+    recognition.onerror = () => setIsListening(false);
+    recognition.onend = () => setIsListening(false);
+    recognition.start();
   };
 
   const handleSubmit = async (e?: React.FormEvent) => {
@@ -283,6 +326,15 @@ export function ChatAI() {
                         onClick={() => fileInputRef.current?.click()}
                       >
                         <Paperclip className="h-5 w-5" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className={cn("h-10 w-10 shrink-0 rounded-xl transition-colors", isListening ? "text-red-500 bg-red-50 animate-pulse shadow-sm" : "text-[#8c5000] hover:bg-[#8c5000]/10")}
+                        onClick={startListening}
+                      >
+                        <Mic className="h-5 w-5" />
                       </Button>
                       <Input
                         value={input}
