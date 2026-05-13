@@ -101,10 +101,21 @@ export function ChatAI() {
 
     } catch (error: any) {
       console.error("Chat Hatası:", error);
-      // Hata oluştuğunda UI'da yeni bir baloncuk açmak yerine boş olan mesajı güncelliyoruz
+      let displayError = "Bağlantı koptu, lütfen tekrar deneyin.";
+      try {
+        // Sunucudan gelen hata mesajı '{"error":"mesaj"}' formatında bir JSON string'i olabilir.
+        const parsedError = JSON.parse(error.message);
+        if (parsedError && parsedError.error) {
+          displayError = parsedError.error;
+        }
+      } catch (e) {
+        // Eğer parse edilemezse, düz bir metin hatasıdır.
+        displayError = error.message || displayError;
+      }
+
       setMessages(prev => prev.map(msg =>
         msg.role === "assistant" && msg.content === ""
-          ? { ...msg, content: error.message || "Bağlantı koptu, lütfen tekrar deneyin." }
+          ? { ...msg, content: displayError }
           : msg
       ));
     } finally {

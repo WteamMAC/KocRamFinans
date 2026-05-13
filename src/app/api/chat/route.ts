@@ -68,7 +68,7 @@ export async function POST(req: Request) {
     // Temiz AI Başlatımı
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash", // En stabil ve aracı çağırabilen model
+      model: "gemini-2.5-flash", // Yeni nesil güncel ve stabil model
       systemInstruction: systemPrompt,
       tools: [
         {
@@ -245,8 +245,11 @@ export async function POST(req: Request) {
     });
 
   } catch (error: any) {
-    console.error(`[AI-CHAT] 🚨 SİSTEM HATASI:`, error.message);
-    return new Response(JSON.stringify({ error: "**[Sistem Uyarısı]:** Sunucu tarafında beklenmeyen bir hata oluştu." }), {
+    console.error(`[AI-CHAT] 🚨 SİSTEM HATASI:`, error.message, error.stack);
+    const errorMessage = process.env.NODE_ENV === 'development'
+      ? `Sunucu Hatası: ${error.message}`
+      : "**[Sistem Uyarısı]:** Sunucu tarafında beklenmeyen bir hata oluştu.";
+    return new Response(JSON.stringify({ error: errorMessage }), {
       status: 500, headers: { "Content-Type": "application/json" }
     });
   }
