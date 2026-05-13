@@ -23,7 +23,9 @@ export async function POST(req: Request) {
     if (!allMessages.length) return new Response("Geçersiz mesaj formatı.", { status: 400 });
 
     const messages = allMessages.slice(-6);
-    const lastMessage = messages[messages.length - 1].content?.trim() || "Merhaba";
+    const lastMessageObj = messages[messages.length - 1];
+    // Eğer metin yoksa ve sadece resim atıldıysa varsayılan bir talimat veriyoruz
+    const lastMessageText = lastMessageObj.content?.trim() || (lastMessageObj.image ? "Bu fişi/faturayı analiz edip doğrudan giderlerime kaydeder misin?" : "Merhaba");
 
     const user = await prisma.user.findUnique({
       where: { clerkUserId: clerkId },
@@ -41,7 +43,8 @@ export async function POST(req: Request) {
     const financialContext = await getFinancialContext(user);
     const systemPrompt = MASTER_PROMPT
       .replace("{CURRENT_DATE}", new Date().toLocaleDateString("tr-TR"))
-      .replace("{USER_DATA}", financialContext);
+      .replace("{USER_DATA}", financialContext) +
+      `\n\nÖNEMLİ TALİMAT: Eğer kullanıcı mesajında bir resim/görsel (fiş, fatura vb.) gönderirse, KESİNLİKLE ONAY BEKLEME veya SORU SORMA. Doğrudan görseldeki toplam tutarı, tarihi ve kategoriyi (market, yakıt vb.) belirle ve "addFinancialRecord" aracını (tool) çağırarak gider (expense) olarak VERİTABANINA KAYDET. İşlemi bitirince kullanıcıya "Fişinizi ... TL olarak ... kategorisine kaydettim" şeklinde bilgi ver.`;
 
     const formattedHistory: Content[] = [];
     const rawHistory = messages.slice(0, -1);
@@ -75,6 +78,17 @@ export async function POST(req: Request) {
 
     if (formattedHistory.length > 0 && formattedHistory[formattedHistory.length - 1].role === "user") {
       formattedHistory.push({ role: "model", parts: [{ text: "Anladım, dinliyorum." }] });
+    }
+
+    // Son mesajı, varsa içindeki görselle birlikte API'ye hazırlıyoruz
+    const lastMessageParts: Part[] = [{ text: lastMessageText }];
+    if (lastMessageObj.image) {
+      const match = lastMessageObj.image.match(/^data:(image\/\w+);base64,(.*)$/);
+      if (match) {
+        lastMessageParts.push({
+          inlineData: { mimeType: match[1], data: match[2] }
+        });
+      }
     }
 
     // AI Modelleri Öncelik Sıralaması (Fallback Stratejisi)
@@ -161,7 +175,7 @@ export async function POST(req: Request) {
         });
 
         const chat = model.startChat({ history: formattedHistory });
-        initialStreamResponse = await chat.sendMessageStream(lastMessage);
+        initialStreamResponse = await chat.sendMessageStream(lastMessageParts);
 
         activeChat = chat;
         usedModel = modelName;
