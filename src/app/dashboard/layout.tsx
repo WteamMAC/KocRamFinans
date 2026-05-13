@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { cn } from "@/lib/utils";
-import { Menu, X, BarChart3 } from "lucide-react";
+import { Menu, X, BarChart3, Sun, Moon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -16,6 +16,30 @@ export default function DashboardLayout({
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const pathname = usePathname();
+  const [theme, setThemeState] = useState<"light" | "dark">("light");
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    if (document.documentElement.classList.contains("dark")) {
+      setThemeState("dark");
+    } else if (localStorage.getItem("theme") === "dark") {
+      setThemeState("dark");
+      document.documentElement.classList.add("dark");
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    const newTheme = theme === "dark" ? "light" : "dark";
+    setThemeState(newTheme);
+    if (newTheme === "dark") {
+      document.documentElement.classList.add("dark");
+      localStorage.setItem("theme", "dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+      localStorage.setItem("theme", "light");
+    }
+  };
 
   // Sayfa değiştiğinde mobil menüyü kapat
   useEffect(() => {
@@ -30,14 +54,26 @@ export default function DashboardLayout({
           <img src="/mascot.png" alt="Logo" className="h-12 w-12 object-contain" />
           <span className="text-xl font-heading font-bold text-[#8c5000]">Koç Ram Finans</span>
         </Link>
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          onClick={() => setIsMobileOpen(true)}
-          className="text-[#8c5000]"
-        >
-          <Menu className="h-6 w-6" />
-        </Button>
+        <div className="flex items-center gap-2">
+          {mounted && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleTheme}
+              className="text-[#8c5000]"
+            >
+              {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            </Button>
+          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsMobileOpen(true)}
+            className="text-[#8c5000]"
+          >
+            <Menu className="h-6 w-6" />
+          </Button>
+        </div>
       </div>
 
       {/* Desktop Sidebar */}
@@ -45,13 +81,18 @@ export default function DashboardLayout({
         "hidden md:flex h-full md:flex-col md:fixed md:inset-y-0 z-[80] bg-white transition-all duration-300 ease-in-out shadow-ambient-low",
         isCollapsed ? "md:w-20" : "md:w-72"
       )}>
-        <Sidebar isCollapsed={isCollapsed} onToggle={() => setIsCollapsed(!isCollapsed)} />
+        <Sidebar
+          isCollapsed={isCollapsed}
+          onToggle={() => setIsCollapsed(!isCollapsed)}
+          theme={theme}
+          onToggleTheme={toggleTheme}
+        />
       </div>
 
       {/* Mobile Sidebar Overlay */}
       {isMobileOpen && (
-        <div 
-          className="fixed inset-0 bg-black/50 z-[110] md:hidden animate-in fade-in duration-300" 
+        <div
+          className="fixed inset-0 bg-black/50 z-[110] md:hidden animate-in fade-in duration-300"
           onClick={() => setIsMobileOpen(false)}
         />
       )}
@@ -66,7 +107,13 @@ export default function DashboardLayout({
             <X className="h-6 w-6 text-[#8c5000]" />
           </Button>
         </div>
-        <Sidebar isCollapsed={false} onToggle={() => setIsMobileOpen(false)} hideToggle />
+        <Sidebar
+          isCollapsed={false}
+          onToggle={() => setIsMobileOpen(false)}
+          hideToggle
+          theme={theme}
+          onToggleTheme={toggleTheme}
+        />
       </div>
 
       {/* Main Content */}
