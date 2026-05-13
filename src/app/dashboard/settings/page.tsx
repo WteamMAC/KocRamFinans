@@ -19,7 +19,8 @@ export default async function SettingsPage() {
       debts: true,
       investments: true,
       children: true,
-    },
+      fixedAssets: true,
+    } as any,
   }) as any;
 
   if (!user) {
@@ -55,6 +56,11 @@ export default async function SettingsPage() {
       purchasePrice: inv.purchasePrice || 0,
       currentValuation: inv.currentValuation || undefined,
       description: inv.description || undefined 
+    })),
+    fixedAssets: user.fixedAssets.map((asset: any) => ({
+      name: asset.name,
+      type: asset.type,
+      value: asset.value
     })),
   };
 
