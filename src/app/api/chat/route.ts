@@ -10,8 +10,8 @@ export const maxDuration = 60;
 
 // 404 hatalarından kaçınmak için genel kullanıma açılmış güncel ve stabil modeller
 const MODELS = [
-  "gemini-2.5-flash",       // Stabil
-  "gemini-1.5-flash"        // Son çare
+  "gemini-2.0-flash",       // Güncel
+  "gemini-1.5-flash"        // Stabil Fallback
 ] as const;
 
 
@@ -125,14 +125,16 @@ export async function POST(req: Request) {
         console.log(`[AI-CHAT] ✅ Model başarıyla bağlandı: ${modelName}`);
         break; // İlk başarılı API çağrısında döngüden çık
       } catch (err: any) {
-        console.warn(`[AI-CHAT] ⚠️ Model başarısız (${modelName}):`, err.message);
+        // Terminalde gerçek hatayı görmek için error'u yazdırıyoruz
+        console.error(`[AI-CHAT] ❌ Model başarısız (${modelName}):`, err.message);
       }
     }
 
     // Hiçbir model başarılı olamadıysa
     if (!initialStreamResponse || !chat) {
+      console.error("[AI-CHAT] 🚨 Tüm denemeler başarısız oldu. API cevap vermedi.");
       return new Response(
-        "**[Sistem Uyarısı]:** Servis şu anda yoğun veya kotalar doldu. Lütfen 1 dakika bekleyip tekrar deneyin.",
+        "**[Sistem Uyarısı]:** Yapay zeka ile bağlantı kurulamadı. Dakikalık işlem (15 RPM) sınırını aşmış olabilirsiniz, lütfen 1 dakika bekleyin.",
         { status: 503, headers: { "Content-Type": "text/plain; charset=utf-8" } }
       );
     }
