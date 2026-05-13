@@ -49,6 +49,17 @@ export async function POST(req: Request) {
     for (const m of rawHistory) {
       const role = m.role === "assistant" || m.role === "model" ? "model" : "user";
       const text = m.content?.trim() ? m.content : "[Boş mesaj]";
+      const parts: Part[] = [{ text }];
+
+      // Eğer mesajın içinde bir görsel (image) Base64 string'i varsa bunu parçalara ekle
+      if ((m as any).image) {
+        const match = (m as any).image.match(/^data:(image\/\w+);base64,(.*)$/);
+        if (match) {
+          parts.push({
+            inlineData: { mimeType: match[1], data: match[2] }
+          });
+        }
+      }
 
       if (formattedHistory.length === 0 && role === "model") {
         formattedHistory.push({ role: "user", parts: [{ text: "Merhaba" }] });
@@ -56,8 +67,9 @@ export async function POST(req: Request) {
 
       if (formattedHistory.length > 0 && formattedHistory[formattedHistory.length - 1].role === role) {
         formattedHistory[formattedHistory.length - 1].parts[0].text += `\n${text}`;
+        if (parts.length > 1) formattedHistory[formattedHistory.length - 1].parts.push(parts[1]);
       } else {
-        formattedHistory.push({ role, parts: [{ text }] });
+        formattedHistory.push({ role, parts });
       }
     }
 
@@ -87,7 +99,7 @@ export async function POST(req: Request) {
           },
           {
             name: "addFinancialRecord",
-            description: "Yeni bir gelir, gider, borç veya yatırım kaydı oluşturur.",
+            description: "Yeni bir gelir, gider, borç veya yatırım kaydı oluşturur. Kullanıcı bir fiş veya fatura resmi yüklediyse, bu araçla oradaki tutarı okuyup gider olarak kaydedebilirsin.",
             parameters: {
               type: SchemaType.OBJECT,
               properties: {

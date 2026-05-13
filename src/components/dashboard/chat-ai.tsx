@@ -15,6 +15,7 @@ import {
   Minimize2,
   Maximize2,
   TrendingUp,
+  Paperclip,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -24,23 +25,37 @@ export function ChatAI() {
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [input, setInput] = useState("");
-  const [messages, setMessages] = useState<{ id: string; role: "user" | "assistant"; content: string }[]>([]);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [messages, setMessages] = useState<{ id: string; role: "user" | "assistant"; content: string; image?: string }[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInput(e.target.value);
   };
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setSelectedImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
-    if (!input.trim() || isLoading) return;
+    if ((!input.trim() && !selectedImage) || isLoading) return;
 
-    const userMsg = { id: Date.now().toString(), role: "user" as const, content: input };
+    const userMsg = { id: Date.now().toString(), role: "user" as const, content: input, image: selectedImage || undefined };
     const newMessages = [...messages, userMsg];
     setMessages(newMessages);
     setInput("");
+    setSelectedImage(null);
     setIsLoading(true);
 
     try {
@@ -189,7 +204,7 @@ export function ChatAI() {
                       </p>
                     </div>
                   )}
-                  {messages.map((m: { id: string; role: "user" | "assistant"; content: string }) => (
+                  {messages.map((m: { id: string; role: "user" | "assistant"; content: string; image?: string }) => (
                     <div key={m.id} className={cn("flex gap-3", m.role === "assistant" ? "justify-start" : "justify-end animate-in fade-in slide-in-from-bottom-2 duration-300")}>
                       {m.role === "assistant" && (
                         <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#8c5000] to-[#d4821a] flex items-center justify-center flex-shrink-0 shadow-sm">
@@ -202,6 +217,11 @@ export function ChatAI() {
                           ? "bg-white border border-[#dbc2b0]/40 shadow-sm text-[#191c1d] rounded-tl-sm"
                           : "bg-gradient-to-br from-[#8c5000] to-[#6e3f00] text-white shadow-md rounded-tr-sm"
                       )}>
+                        {m.image && (
+                          <div className="mb-2 rounded-lg overflow-hidden border border-white/20">
+                            <img src={m.image} alt="Upload preview" className="max-w-full h-auto max-h-32 object-cover" />
+                          </div>
+                        )}
                         {m.content ? (
                           m.role === "assistant" ? (
                             <div className="prose-sm max-w-none [>p]:mb-2 [>p:last-child]:mb-0 [>ul]:list-disc [>ul]:pl-4 [>ul]:mb-2 [>li]:mb-1 [>strong]:text-[#8c5000] [>strong]:font-bold [>ol]:list-decimal [>ol]:pl-4">
@@ -231,25 +251,55 @@ export function ChatAI() {
                 </div>
 
                 <CardFooter className="p-4 bg-white/50 backdrop-blur-sm border-t border-[#dbc2b0]/20">
-                  <form
-                    onSubmit={handleSubmit}
-                    className="w-full flex items-end gap-2 bg-[#f8f9fa] p-1.5 rounded-2xl border border-[#dbc2b0]/40 shadow-inner"
-                  >
-                    <Input
-                      value={input}
-                      onChange={handleInputChange}
-                      placeholder="Sorunuzu buraya yazın..."
-                      className="flex-1 bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0 px-3 py-3 shadow-none text-sm placeholder:text-[#554336]/50"
-                    />
-                    <Button
-                      type="submit"
-                      disabled={isLoading || !input.trim()}
-                      className="h-10 w-10 shrink-0 bg-[#8c5000] hover:bg-[#6e3f00] text-white rounded-xl shadow-md transition-all disabled:opacity-50 disabled:hover:bg-[#8c5000]"
-                      size="icon"
+                  <div className="w-full flex flex-col gap-2">
+                    {selectedImage && (
+                      <div className="relative self-start inline-block">
+                        <img src={selectedImage} alt="Preview" className="h-16 w-16 object-cover rounded-lg border border-[#dbc2b0]/40 shadow-sm" />
+                        <button
+                          type="button"
+                          onClick={() => setSelectedImage(null)}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5 shadow-md hover:scale-110 transition-transform"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    )}
+                    <form
+                      onSubmit={handleSubmit}
+                      className="w-full flex items-center gap-2 bg-[#f8f9fa] p-1.5 rounded-2xl border border-[#dbc2b0]/40 shadow-inner"
                     >
-                      <Send className="h-4 w-4" />
-                    </Button>
-                  </form>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        ref={fileInputRef}
+                        onChange={handleImageUpload}
+                        className="hidden"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-10 w-10 shrink-0 text-[#8c5000] hover:bg-[#8c5000]/10 rounded-xl transition-colors"
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        <Paperclip className="h-5 w-5" />
+                      </Button>
+                      <Input
+                        value={input}
+                        onChange={handleInputChange}
+                        placeholder="Sorunuzu buraya yazın..."
+                        className="flex-1 bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0 px-3 py-3 shadow-none text-sm placeholder:text-[#554336]/50"
+                      />
+                      <Button
+                        type="submit"
+                        disabled={isLoading || (!input.trim() && !selectedImage)}
+                        className="h-10 w-10 shrink-0 bg-[#8c5000] hover:bg-[#6e3f00] text-white rounded-xl shadow-md transition-all disabled:opacity-50 disabled:hover:bg-[#8c5000]"
+                        size="icon"
+                      >
+                        <Send className="h-4 w-4" />
+                      </Button>
+                    </form>
+                  </div>
                 </CardFooter>
               </>
             )}
