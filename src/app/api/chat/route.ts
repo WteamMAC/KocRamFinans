@@ -4,15 +4,10 @@ import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 import { MASTER_PROMPT, getFinancialContext } from "@/lib/gemini";
 import { standardizeInvestmentType } from "@/lib/utils";
+import { getLivePrices } from "@/lib/price-service";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
-
-// 404 hatalarından kaçınmak için genel kullanıma açılmış güncel ve stabil modeller
-const MODELS = [
-  "gemini-2.0-flash",       // Güncel
-  "gemini-1.5-flash"        // Stabil Fallback
-] as const;
 
 
 export async function POST(req: Request) {
@@ -27,11 +22,9 @@ export async function POST(req: Request) {
     const allMessages = body.messages || [];
     if (!allMessages.length) return new Response("Geçersiz mesaj formatı.", { status: 400 });
 
-    // History Bloat (Geçmiş Şişmesi) engellemek için sadece son 6 mesajı baz al
     const messages = allMessages.slice(-6);
     const lastMessage = messages[messages.length - 1].content?.trim() || "Merhaba";
 
-    // Tüm finansal veriyi tek sorguda çekiyoruz
     const user = await prisma.user.findUnique({
       where: { clerkUserId: clerkId },
       include: {
@@ -50,7 +43,6 @@ export async function POST(req: Request) {
       .replace("{CURRENT_DATE}", new Date().toLocaleDateString("tr-TR"))
       .replace("{USER_DATA}", financialContext);
 
-    // Mesaj geçmişini Gemini SDK standartlarına uygun formata dönüştürüyoruz
     const formattedHistory: Content[] = [];
     const rawHistory = messages.slice(0, -1);
 
@@ -58,7 +50,6 @@ export async function POST(req: Request) {
       const role = m.role === "assistant" || m.role === "model" ? "model" : "user";
       const text = m.content?.trim() ? m.content : "[Boş mesaj]";
 
-      // Gemini asla model ile başlayamaz
       if (formattedHistory.length === 0 && role === "model") {
         formattedHistory.push({ role: "user", parts: [{ text: "Merhaba" }] });
       }
@@ -70,111 +61,103 @@ export async function POST(req: Request) {
       }
     }
 
-    // Yeni mesaj atmadan önce history'nin kesinlikle "model" ile bitmesi gereklidir
     if (formattedHistory.length > 0 && formattedHistory[formattedHistory.length - 1].role === "user") {
       formattedHistory.push({ role: "model", parts: [{ text: "Anladım, dinliyorum." }] });
     }
 
-    // Fallback/Yedek Model Seçim Sistemi
-    let chat;
-    let initialStreamResponse;
-    let selectedModelName;
+    // Temiz AI Başlatımı
     const genAI = new GoogleGenerativeAI(apiKey);
-
-    for (const modelName of MODELS) {
-      try {
-        const model = genAI.getGenerativeModel({
-          model: modelName,
-          systemInstruction: systemPrompt,
-          tools: [
+    const model = genAI.getGenerativeModel({
+      model: "gemini-1.5-flash", // En stabil ve aracı çağırabilen model
+      systemInstruction: systemPrompt,
+      tools: [
+        {
+          functionDeclarations: [
             {
-              functionDeclarations: [
-                {
-                  name: "getFinancialHistory",
-                  description: "Kullanıcının mevcut finansal özetini ve geçmiş verilerini getirir.",
-                  parameters: {
-                    type: SchemaType.OBJECT,
-                    properties: { category: { type: SchemaType.STRING, description: "all, incomes, expenses, debts, investments" } },
-                    required: ["category"]
+              name: "getFinancialHistory",
+              description: "Kullanıcının mevcut kayıtlarını getirir. Silinecek verinin ID'sini bulmak için de kullanılır.",
+              parameters: {
+                type: SchemaType.OBJECT,
+                properties: { category: { type: SchemaType.STRING, description: "all, incomes, expenses, debts, investments" } },
+                required: ["category"]
+              }
+            },
+            {
+              name: "addFinancialRecord",
+              description: "Yeni bir gelir, gider, borç veya yatırım kaydı oluşturur.",
+              parameters: {
+                type: SchemaType.OBJECT,
+                properties: {
+                  type: { type: SchemaType.STRING, description: "income, expense, debt, investment" },
+                  amount: { type: SchemaType.NUMBER, description: "Tutar" },
+                  category: { type: SchemaType.STRING, description: "Kategori (örn: Market, Maaş, BIST)" },
+                  description: { type: SchemaType.STRING, description: "Açıklama veya Hisse Kodu" },
+                  quantity: { type: SchemaType.NUMBER, description: "Yatırımlar için miktar" },
+                  purchasePrice: { type: SchemaType.NUMBER, description: "Yatırımlar için alış fiyatı" }
+                },
+                required: ["type", "amount", "category"]
+              }
+            },
+            {
+              name: "deleteFinancialRecord",
+              description: "Önceden eklenmiş hatalı veya eski bir finansal kaydı veritabanından kalıcı olarak siler.",
+              parameters: {
+                type: SchemaType.OBJECT,
+                properties: {
+                  type: { type: SchemaType.STRING, description: "income, expense, debt, investment" },
+                  recordId: { type: SchemaType.STRING, description: "Silinecek kaydın benzersiz ID'si" }
+                },
+                required: ["type", "recordId"]
+              }
+            },
+            {
+              name: "getMarketPrice",
+              description: "İnternetten hisse senedi, emtia (altın), döviz veya kripto fiyatlarını canlı olarak arar.",
+              parameters: {
+                type: SchemaType.OBJECT,
+                properties: {
+                  symbols: {
+                    type: SchemaType.ARRAY,
+                    items: { type: SchemaType.STRING },
+                    description: "Yahoo Finance sembolleri (Örn: AAPL, BTC-USD, TRY=X, THYAO.IS, GC=F)"
                   }
                 },
-                {
-                  name: "addFinancialRecord",
-                  description: "Yeni bir gelir, gider, borç veya yatırım kaydı oluşturur.",
-                  parameters: {
-                    type: SchemaType.OBJECT,
-                    properties: {
-                      type: { type: SchemaType.STRING, description: "income, expense, debt, investment" },
-                      amount: { type: SchemaType.NUMBER, description: "Tutar" },
-                      category: { type: SchemaType.STRING, description: "Kategori (örn: Market, Maaş)" },
-                      description: { type: SchemaType.STRING, description: "Açıklama" },
-                      quantity: { type: SchemaType.NUMBER, description: "Yatırımlar için miktar" },
-                      purchasePrice: { type: SchemaType.NUMBER, description: "Yatırımlar için alış fiyatı" }
-                    },
-                    required: ["type", "amount", "category"]
-                  }
-                }
-              ]
+                required: ["symbols"]
+              }
             }
           ]
-        });
+        }
+      ]
+    });
 
-        chat = model.startChat({ history: formattedHistory });
-        initialStreamResponse = await chat.sendMessageStream(lastMessage);
-        selectedModelName = modelName;
-        console.log(`[AI-CHAT] ✅ Model başarıyla bağlandı: ${modelName}`);
-        break; // İlk başarılı API çağrısında döngüden çık
-      } catch (err: any) {
-        // Terminalde gerçek hatayı görmek için error'u yazdırıyoruz
-        console.error(`[AI-CHAT] ❌ Model başarısız (${modelName}):`, err.message);
-      }
-    }
+    const chat = model.startChat({ history: formattedHistory });
+    const initialStreamResponse = await chat.sendMessageStream(lastMessage);
 
-    // Hiçbir model başarılı olamadıysa
-    if (!initialStreamResponse || !chat) {
-      console.error("[AI-CHAT] 🚨 Tüm denemeler başarısız oldu. API cevap vermedi.");
-      return new Response(
-        "**[Sistem Uyarısı]:** Yapay zeka ile bağlantı kurulamadı. Dakikalık işlem (15 RPM) sınırını aşmış olabilirsiniz, lütfen 1 dakika bekleyin.",
-        { status: 503, headers: { "Content-Type": "text/plain; charset=utf-8" } }
-      );
-    }
-
-    // Frontend'deki useChat entegrasyonuna uyumlu manuel Stream
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       async start(controller) {
+        const sendText = (text: string) => controller.enqueue(encoder.encode(`0:${JSON.stringify(text)}\n`));
+        const sendError = (text: string) => controller.enqueue(encoder.encode(`0:${JSON.stringify(`\n\n*[Sistem Uyarısı]: ${text}*`)}\n`));
+
         try {
           let currentStream = initialStreamResponse;
           let toolCallCount = 0;
+          const MAX_STEPS = 6; // Özerk düşünme sınırı
 
-          while (true) {
+          while (toolCallCount < MAX_STEPS) {
             let toolCalls: any[] = [];
 
-            // iterator.next() yerine for-await-of ile okuma (kilitlemeleri ve RAM şişmesini önler)
             for await (const chunk of currentStream.stream) {
               const calls = chunk.functionCalls();
-              if (calls && calls.length > 0) {
-                toolCalls.push(...calls);
-              }
+              if (calls && calls.length > 0) toolCalls.push(...calls);
 
               const text = chunk.text();
-              if (text) {
-                // Frontend'de useChat kullanıyorsanız bunu Vercel Data Protocol formatına zorlamalıyız (0:"metin"\n)
-                const escapedText = JSON.stringify(text);
-                controller.enqueue(encoder.encode(`0:${escapedText}\n`));
-              }
+              if (text) sendText(text);
             }
 
-            // Hiç tool çağrılmadıysa doğal metin akışı bitmiştir
-            if (toolCalls.length === 0) {
-              break;
-            }
+            if (toolCalls.length === 0) break; // AI'nin işi bitti, normal yanıt verdi
 
             toolCallCount++;
-            if (toolCallCount > 5) {
-              controller.enqueue(encoder.encode(`0:${JSON.stringify("\n\n*[Sistem Uyarısı]: İşlem çok uzun sürdüğü için durduruldu.*")}\n`));
-              break;
-            }
 
             const functionResponses: Part[] = [];
             for (const call of toolCalls) {
@@ -182,53 +165,55 @@ export async function POST(req: Request) {
               let apiResponse: any = {};
 
               try {
+                const args = call.args as any;
+
                 if (call.name === "getFinancialHistory") {
-                  const category = (call.args as any).category;
-                  const cat = String(category).toLowerCase();
+                  const cat = String(args.category).toLowerCase();
 
                   const dataMap: Record<string, any> = {
-                    incomes: user.incomes.slice(-5),
-                    expenses: user.expenses.slice(-5),
-                    debts: user.debts.slice(-5),
-                    investments: user.investments.slice(-5)
+                    incomes: user.incomes.slice(-10),
+                    expenses: user.expenses.slice(-10),
+                    debts: user.debts.slice(-10),
+                    investments: user.investments.slice(-10)
                   };
 
-                  let selectedData: any[] = [];
-                  if (cat.includes("income") || cat.includes("gelir")) selectedData = dataMap.incomes;
-                  else if (cat.includes("expense") || cat.includes("gider")) selectedData = dataMap.expenses;
-                  else if (cat.includes("debt") || cat.includes("borç")) selectedData = dataMap.debts;
-                  else if (cat.includes("investment") || cat.includes("yatırım")) selectedData = dataMap.investments;
-
-                  apiResponse = (cat === "all" || cat === "hepsi") ? dataMap : { data: selectedData };
+                  apiResponse = (cat === "all" || cat === "hepsi") ? dataMap : { data: dataMap[cat as keyof typeof dataMap] || dataMap };
                 } else if (call.name === "addFinancialRecord") {
-                  const { type, amount, category, description, quantity, purchasePrice } = call.args as any;
+                  const { type, amount, category, description, quantity, purchasePrice } = args;
 
                   const safeAmount = Number(amount) || 0;
                   if (safeAmount <= 0) throw new Error("Tutar 0'dan büyük olmalıdır.");
 
                   const baseData = { userId: user.id, amount: safeAmount, description: description || "", type: category };
 
-                  switch (type) {
-                    case "income": await prisma.income.create({ data: baseData }); break;
-                    case "expense": await prisma.expense.create({ data: baseData }); break;
-                    case "debt": await prisma.debt.create({ data: baseData }); break;
-                    case "investment":
-                      const q = Number(quantity) > 0 ? Number(quantity) : 1;
-                      const amt = Number(amount) > 0 ? Number(amount) : 0;
-                      const p = Number(purchasePrice) > 0 ? Number(purchasePrice) : (amt > 0 ? amt / q : 0);
-                      const finalAmt = amt > 0 ? amt : (q * p);
+                  if (type === "income") await prisma.income.create({ data: baseData });
+                  else if (type === "expense") await prisma.expense.create({ data: baseData });
+                  else if (type === "debt") await prisma.debt.create({ data: baseData });
+                  else if (type === "investment") {
+                    const q = Number(quantity) > 0 ? Number(quantity) : 1;
+                    const p = Number(purchasePrice) > 0 ? Number(purchasePrice) : (safeAmount > 0 ? safeAmount / q : 0);
+                    const finalAmt = safeAmount > 0 ? safeAmount : (q * p);
 
-                      await prisma.investment.create({
-                        data: {
-                          userId: user.id, type: standardizeInvestmentType(category),
-                          symbol: description || category, quantity: q, purchasePrice: p, amount: finalAmt,
-                          description: description || null, status: "OPEN", transactionType: "BUY",
-                        }
-                      });
-                      break;
-                    default: throw new Error("Geçersiz işlem tipi");
+                    await prisma.investment.create({
+                      data: {
+                        userId: user.id, type: standardizeInvestmentType(category),
+                        symbol: description || category, quantity: q, purchasePrice: p, amount: finalAmt,
+                        description: description || null, status: "OPEN", transactionType: "BUY",
+                      }
+                    });
                   }
                   apiResponse = { success: true, message: "Kayıt başarıyla eklendi." };
+                } else if (call.name === "deleteFinancialRecord") {
+                  const { type, recordId } = args;
+                  if (type === "income") await prisma.income.delete({ where: { id: recordId } });
+                  else if (type === "expense") await prisma.expense.delete({ where: { id: recordId } });
+                  else if (type === "debt") await prisma.debt.delete({ where: { id: recordId } });
+                  else if (type === "investment") await prisma.investment.delete({ where: { id: recordId } });
+                  apiResponse = { success: true, message: "Kayıt veritabanından kalıcı olarak silindi." };
+                } else if (call.name === "getMarketPrice") {
+                  const symbols = Array.isArray(args.symbols) ? args.symbols : [args.symbols];
+                  const resultsMap = await getLivePrices(symbols);
+                  apiResponse = { data: Object.fromEntries(resultsMap) };
                 }
               } catch (e: any) {
                 console.error(`[TOOL] ❌ Hata:`, e.message);
@@ -238,20 +223,18 @@ export async function POST(req: Request) {
               functionResponses.push({ functionResponse: { name: call.name, response: apiResponse } });
             }
 
-            // Tool yanıtlarını Gemini'ye ilet ve yeni akışı dinle
             currentStream = await chat.sendMessageStream(functionResponses);
           }
 
           controller.close();
         } catch (err: any) {
           console.error("[AI-CHAT] ❌ Stream İşleme Hatası:", err.message);
-          controller.enqueue(encoder.encode(`0:${JSON.stringify(`\n\n*[Sistem Uyarısı]: Ağ bağlantısında anlık bir kopma yaşandı (${err.message}). İşleminiz yapılmış olabilir.*`)}\n`));
+          sendError(`İşlem sırasında beklenmeyen bir ağ hatası oluştu: ${err.message}`);
           controller.close();
         }
       }
     });
 
-    // useChat entegrasyonu için HTTP Response (Vercel Data Protocol formatına tam uyumlu)
     return new Response(stream, {
       headers: {
         "Content-Type": "text/plain; charset=utf-8",
