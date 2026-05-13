@@ -33,6 +33,7 @@ export function ChatAI() {
   const [messages, setMessages] = useState<{ id: string; role: "user" | "assistant"; content: string; image?: string }[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef<any>(null);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInput(e.target.value);
@@ -72,22 +73,39 @@ export function ChatAI() {
     }
   };
 
-  const startListening = () => {
+  const toggleListening = () => {
+    if (isListening && recognitionRef.current) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+      return;
+    }
+
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
       alert("Tarayıcınız bu cihazda sesli komut desteklemiyor.");
       return;
     }
-    const recognition = new SpeechRecognition();
-    recognition.lang = 'tr-TR';
-    recognition.onstart = () => setIsListening(true);
-    recognition.onresult = (event: any) => {
-      const transcript = event.results[0][0].transcript;
-      setInput((prev) => prev + (prev ? " " : "") + transcript);
-    };
-    recognition.onerror = () => setIsListening(false);
-    recognition.onend = () => setIsListening(false);
-    recognition.start();
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'tr-TR';
+      recognition.onstart = () => setIsListening(true);
+      recognition.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        setInput((prev) => prev + (prev ? " " : "") + transcript);
+      };
+      recognition.onerror = (event: any) => {
+        console.error("Ses tanıma hatası:", event.error);
+        setIsListening(false);
+      };
+      recognition.onend = () => setIsListening(false);
+
+      recognitionRef.current = recognition;
+      recognition.start();
+    } catch (error) {
+      console.error("Ses tanıma başlatılamadı:", error);
+      setIsListening(false);
+    }
   };
 
   const handleSubmit = async (e?: React.FormEvent) => {
@@ -332,7 +350,7 @@ export function ChatAI() {
                         variant="ghost"
                         size="icon"
                         className={cn("h-10 w-10 shrink-0 rounded-xl transition-colors", isListening ? "text-red-500 bg-red-50 animate-pulse shadow-sm" : "text-[#8c5000] hover:bg-[#8c5000]/10")}
-                        onClick={startListening}
+                        onClick={toggleListening}
                       >
                         <Mic className="h-5 w-5" />
                       </Button>

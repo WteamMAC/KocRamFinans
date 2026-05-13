@@ -12,7 +12,8 @@ import {
   ChevronRight,
   BarChart3,
   Sun,
-  Moon
+  Moon,
+  ArrowRightLeft
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -29,6 +30,12 @@ const routes = [
     icon: TrendingUp,
     href: "/dashboard/assets",
     color: "text-[#666000]",
+  },
+  {
+    label: "Gelir - Gider",
+    icon: ArrowRightLeft,
+    href: "/dashboard/income-expense",
+    color: "text-[#36684d]",
   },
   {
     label: "Bilgileri Düzenle",
