@@ -29,7 +29,9 @@ import {
   Wallet,
   ArrowRight,
   Download,
-  RefreshCw
+  RefreshCw,
+  Moon,
+  Sun
 } from "lucide-react";
 import { addAsset, deleteAsset, sellAsset } from "@/app/actions/assets";
 import { useRouter } from "next/navigation";
@@ -54,6 +56,8 @@ export function AssetList({ assets, allInvestments }: AssetListProps) {
   const [filterQuery, setFilterQuery] = useState("");
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [theme, setThemeState] = useState<"light" | "dark">("light");
+  const [mounted, setMounted] = useState(false);
 
   const [formData, setFormData] = useState({
     type: "BIST" as string,
@@ -85,6 +89,29 @@ export function AssetList({ assets, allInvestments }: AssetListProps) {
       window.removeEventListener("resize", updateRect);
     };
   }, [showSearch]);
+
+  useEffect(() => {
+    setMounted(true);
+    // Sayfa yüklendiğinde önceden seçili temayı kontrol et
+    if (document.documentElement.classList.contains("dark")) {
+      setThemeState("dark");
+    } else if (localStorage.getItem("theme") === "dark") {
+      setThemeState("dark");
+      document.documentElement.classList.add("dark");
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    const newTheme = theme === "dark" ? "light" : "dark";
+    setThemeState(newTheme);
+    if (newTheme === "dark") {
+      document.documentElement.classList.add("dark");
+      localStorage.setItem("theme", "dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+      localStorage.setItem("theme", "light");
+    }
+  };
 
   const groupedAssets = assets.reduce((acc: any, asset: any) => {
     const symbol = asset.symbol || "Diğer";
@@ -220,6 +247,16 @@ export function AssetList({ assets, allInvestments }: AssetListProps) {
           <p className="text-[#554336] mt-1">Yatırımlarınızı profesyonel bir bakış açısıyla yönetin.</p>
         </div>
         <div className="flex flex-wrap items-center gap-3 mt-4 md:mt-0">
+          {mounted && (
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={toggleTheme}
+              className="rounded-full w-12 h-12 shrink-0 text-[#8c5000] border-[#dbc2b0]/30 hover:bg-[#8c5000]/5 bg-white shadow-ambient-low transition-colors"
+            >
+              {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            </Button>
+          )}
           <Button
             variant="outline"
             onClick={handleExportCSV}
