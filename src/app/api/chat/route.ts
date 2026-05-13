@@ -65,73 +65,110 @@ export async function POST(req: Request) {
       formattedHistory.push({ role: "model", parts: [{ text: "Anladım, dinliyorum." }] });
     }
 
-    // Temiz AI Başlatımı
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({
-      model: "gemini-2.5-flash", // Yeni nesil güncel ve stabil model
-      systemInstruction: systemPrompt,
-      tools: [
-        {
-          functionDeclarations: [
-            {
-              name: "getFinancialHistory",
-              description: "Kullanıcının mevcut kayıtlarını getirir. Silinecek verinin ID'sini bulmak için de kullanılır.",
-              parameters: {
-                type: SchemaType.OBJECT,
-                properties: { category: { type: SchemaType.STRING, description: "all, incomes, expenses, debts, investments" } },
-                required: ["category"]
-              }
-            },
-            {
-              name: "addFinancialRecord",
-              description: "Yeni bir gelir, gider, borç veya yatırım kaydı oluşturur.",
-              parameters: {
-                type: SchemaType.OBJECT,
-                properties: {
-                  type: { type: SchemaType.STRING, description: "income, expense, debt, investment" },
-                  amount: { type: SchemaType.NUMBER, description: "Tutar" },
-                  category: { type: SchemaType.STRING, description: "Kategori (örn: Market, Maaş, BIST)" },
-                  description: { type: SchemaType.STRING, description: "Açıklama veya Hisse Kodu" },
-                  quantity: { type: SchemaType.NUMBER, description: "Yatırımlar için miktar" },
-                  purchasePrice: { type: SchemaType.NUMBER, description: "Yatırımlar için alış fiyatı" }
-                },
-                required: ["type", "amount", "category"]
-              }
-            },
-            {
-              name: "deleteFinancialRecord",
-              description: "Önceden eklenmiş hatalı veya eski bir finansal kaydı veritabanından kalıcı olarak siler.",
-              parameters: {
-                type: SchemaType.OBJECT,
-                properties: {
-                  type: { type: SchemaType.STRING, description: "income, expense, debt, investment" },
-                  recordId: { type: SchemaType.STRING, description: "Silinecek kaydın benzersiz ID'si" }
-                },
-                required: ["type", "recordId"]
-              }
-            },
-            {
-              name: "getMarketPrice",
-              description: "İnternetten hisse senedi, emtia (altın), döviz veya kripto fiyatlarını canlı olarak arar.",
-              parameters: {
-                type: SchemaType.OBJECT,
-                properties: {
-                  symbols: {
-                    type: SchemaType.ARRAY,
-                    items: { type: SchemaType.STRING },
-                    description: "Yahoo Finance sembolleri (Örn: AAPL, BTC-USD, TRY=X, THYAO.IS, GC=F)"
-                  }
-                },
-                required: ["symbols"]
-              }
-            }
-          ]
-        }
-      ]
-    });
+    // AI Modelleri Öncelik Sıralaması (Fallback Stratejisi)
+    const FALLBACK_MODELS = [
+      "gemini-2.5-flash",
+      "gemini-3.1-flash-lite-preview",
+      "gemini-2.5-flash-lite"
+    ];
 
-    const chat = model.startChat({ history: formattedHistory });
-    const initialStreamResponse = await chat.sendMessageStream(lastMessage);
+    // Tool (Araç) Konfigürasyonunu döngüde yeniden kullanmak üzere ayırıyoruz
+    const toolsConfig: any[] = [
+      {
+        functionDeclarations: [
+          {
+            name: "getFinancialHistory",
+            description: "Kullanıcının mevcut kayıtlarını getirir. Silinecek verinin ID'sini bulmak için de kullanılır.",
+            parameters: {
+              type: SchemaType.OBJECT,
+              properties: { category: { type: SchemaType.STRING, description: "all, incomes, expenses, debts, investments" } },
+              required: ["category"]
+            }
+          },
+          {
+            name: "addFinancialRecord",
+            description: "Yeni bir gelir, gider, borç veya yatırım kaydı oluşturur.",
+            parameters: {
+              type: SchemaType.OBJECT,
+              properties: {
+                type: { type: SchemaType.STRING, description: "income, expense, debt, investment" },
+                amount: { type: SchemaType.NUMBER, description: "Tutar" },
+                category: { type: SchemaType.STRING, description: "Kategori (örn: Market, Maaş, BIST)" },
+                description: { type: SchemaType.STRING, description: "Açıklama veya Hisse Kodu" },
+                quantity: { type: SchemaType.NUMBER, description: "Yatırımlar için miktar" },
+                purchasePrice: { type: SchemaType.NUMBER, description: "Yatırımlar için alış fiyatı" }
+              },
+              required: ["type", "amount", "category"]
+            }
+          },
+          {
+            name: "deleteFinancialRecord",
+            description: "Önceden eklenmiş hatalı veya eski bir finansal kaydı veritabanından kalıcı olarak siler.",
+            parameters: {
+              type: SchemaType.OBJECT,
+              properties: {
+                type: { type: SchemaType.STRING, description: "income, expense, debt, investment" },
+                recordId: { type: SchemaType.STRING, description: "Silinecek kaydın benzersiz ID'si" }
+              },
+              required: ["type", "recordId"]
+            }
+          },
+          {
+            name: "getMarketPrice",
+            description: "İnternetten hisse senedi, emtia (altın), döviz veya kripto fiyatlarını canlı olarak arar.",
+            parameters: {
+              type: SchemaType.OBJECT,
+              properties: {
+                symbols: {
+                  type: SchemaType.ARRAY,
+                  items: { type: SchemaType.STRING },
+                  description: "Yahoo Finance sembolleri (Örn: AAPL, BTC-USD, TRY=X, THYAO.IS, GC=F)"
+                }
+              },
+              required: ["symbols"]
+            }
+          }
+        ]
+      }
+    ];
+
+    const genAI = new GoogleGenerativeAI(apiKey);
+    let activeChat: any = null;
+    let initialStreamResponse: any = null;
+    let usedModel: string = "";
+    let lastError: any = null;
+
+    // Belirlenen modelleri sırasıyla dener, biri çalışırsa döngüden çıkar.
+    for (const modelName of FALLBACK_MODELS) {
+      try {
+        console.log(`[AI-CHAT] Model bağlantısı deneniyor: ${modelName}`);
+        const model = genAI.getGenerativeModel({
+          model: modelName,
+          systemInstruction: systemPrompt,
+          tools: toolsConfig
+        });
+
+        const chat = model.startChat({ history: formattedHistory });
+        initialStreamResponse = await chat.sendMessageStream(lastMessage);
+
+        activeChat = chat;
+        usedModel = modelName;
+        console.log(`[AI-CHAT] Başarılı! Kullanılan model: ${modelName}`);
+        break; // İlk başarılı modelde döngüden güvenle çıkıyoruz.
+      } catch (error: any) {
+        console.warn(`[AI-CHAT] Uyarı - Model başarısız (${modelName}):`, error.message);
+        lastError = error;
+        // Hata alınırsa (Limit aşıldı 429 vb.) bir sonraki yedek modele geçmeye devam edecek.
+      }
+    }
+
+    // Eğer hiçbir model yanıt vermediyse sistemi zarifçe kapatıp arayüze bilgi verelim.
+    if (!activeChat || !initialStreamResponse) {
+      console.error("[AI-CHAT] Tüm modeller başarısız oldu:", lastError?.message);
+      return new Response(JSON.stringify({
+        error: "Sistem yoğunluğu nedeniyle asistan şu anda yanıt veremiyor. Modellerimiz limitine ulaştı, lütfen birkaç dakika sonra tekrar deneyin."
+      }), { status: 503, headers: { "Content-Type": "application/json" } });
+    }
 
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
@@ -151,8 +188,12 @@ export async function POST(req: Request) {
               const calls = chunk.functionCalls();
               if (calls && calls.length > 0) toolCalls.push(...calls);
 
-              const text = chunk.text();
-              if (text) sendText(text);
+              try {
+                const text = chunk.text();
+                if (text) sendText(text);
+              } catch (err) {
+                // Model sadece tool çağırdığında text olmadığı için hata fırlatabilir, yoksayıyoruz.
+              }
             }
 
             if (toolCalls.length === 0) break; // AI'nin işi bitti, normal yanıt verdi
@@ -223,7 +264,24 @@ export async function POST(req: Request) {
               functionResponses.push({ functionResponse: { name: call.name, response: apiResponse } });
             }
 
-            currentStream = await chat.sendMessageStream(functionResponses);
+            // Tool yanıtını gönderirken anlık rate limitlere/kopmalara karşı "Exponential Backoff" (Gecikmeli Yeniden Deneme)
+            let retryCount = 0;
+            const maxRetries = 2;
+            let toolSuccess = false;
+
+            while (retryCount <= maxRetries && !toolSuccess) {
+              try {
+                currentStream = await activeChat.sendMessageStream(functionResponses);
+                toolSuccess = true;
+              } catch (err: any) {
+                retryCount++;
+                console.warn(`[AI-CHAT] Ara işlem gönderilirken ağ hatası (${usedModel}), Deneme ${retryCount}/${maxRetries}:`, err.message);
+                if (retryCount > maxRetries) {
+                  throw new Error(`Asistan arka planda işlemi yaparken engellendi (Model: ${usedModel}). Lütfen soruyu tekrar sorun.`);
+                }
+                await new Promise(r => setTimeout(r, 1000 * retryCount)); // 1. saniye, sonra 2. saniye bekle
+              }
+            }
           }
 
           controller.close();
