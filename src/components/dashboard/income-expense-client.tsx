@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { 
   TrendingUp, 
@@ -9,13 +8,21 @@ import {
   ArrowUpRight, 
   ArrowDownRight, 
   Wallet, 
-  Clock, 
   RefreshCw, 
-  Moon, 
-  Sun 
+  Moon,
+  Sun,
+  Download,
+  Plus,
+  ShoppingCart,
+  Utensils,
+  Receipt,
+  Car,
+  Home,
+  ArrowRight
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
+import { ChatAI } from "./chat-ai";
 
 interface Transaction {
   id: string;
@@ -80,20 +87,20 @@ export function IncomeExpenseClient({
   };
 
   return (
-    <div className="space-y-8 pb-20">
+    <div className="space-y-8 pb-20 max-w-[1440px] mx-auto">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div>
-          <h2 className="text-3xl font-heading font-bold text-[#8c5000]">Gelir & Gider Yönetimi</h2>
-          <p className="text-[#554336] mt-1">Nakit akışınızı ve harcamalarınızı analiz edin.</p>
+      <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
+        <div className="animate-in fade-in slide-in-from-left-4 duration-500">
+          <h1 className="text-3xl md:text-4xl font-heading font-bold text-[#8c5000] mb-1">Gelir - Gider Analizi</h1>
+          <p className="text-[#554336] text-base">Nakit akışınızı ve harcama alışkanlıklarınızı takip edin.</p>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap gap-3 animate-in fade-in slide-in-from-right-4 duration-500">
           {mounted && (
             <Button
               variant="outline"
               size="icon"
               onClick={toggleTheme}
-              className="rounded-full w-12 h-12 shrink-0 text-[#8c5000] border-[#dbc2b0]/30 hover:bg-[#8c5000]/5 bg-white shadow-ambient-low"
+              className="rounded-xl w-10 h-10 shrink-0 text-[#554336] border-[#dbc2b0]/30 hover:bg-[#f3f4f5] bg-white"
             >
               {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             </Button>
@@ -102,220 +109,286 @@ export function IncomeExpenseClient({
             variant="outline"
             onClick={handleRefresh}
             disabled={isRefreshing}
-            className="rounded-full px-4 py-2 h-12 text-sm font-semibold text-[#8c5000] border-[#dbc2b0]/30 hover:bg-[#8c5000]/5 bg-white shadow-ambient-low"
+            className="rounded-xl px-4 py-2 h-10 text-sm font-semibold text-[#554336] border-[#dbc2b0]/30 hover:bg-[#f3f4f5] bg-white"
           >
             <RefreshCw className={cn("mr-2 h-4 w-4", isRefreshing && "animate-spin")} />
             Yenile
           </Button>
+          <Button variant="outline" className="px-5 py-2 h-10 rounded-xl border-[#dbc2b0]/30 text-[#554336] hover:bg-[#f3f4f5] bg-white transition-colors">
+            <Download className="w-4 h-4 mr-2" /> Dışa Aktar
+          </Button>
+          <Button className="px-5 py-2 h-10 rounded-xl bg-[#8c5000] text-white shadow-lg shadow-[#8c5000]/20 hover:opacity-90 transition-all font-semibold">
+            <Plus className="w-4 h-4 mr-2" /> İşlem Ekle
+          </Button>
         </div>
-      </div>
+      </header>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <Card className="p-6 bg-white border-[#dbc2b0]/30 shadow-ambient-medium rounded-[32px] relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-100/30 rounded-full -mr-10 -mt-10 pointer-events-none" />
+      <section className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">
+        <div className="bg-white p-8 rounded-2xl shadow-ambient-low border border-white/50 relative overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-[#36684d]/5 rounded-full -mr-8 -mt-8"></div>
           <div className="flex items-center gap-3 mb-4 relative z-10">
-            <div className="p-3 bg-emerald-50 rounded-2xl text-emerald-600">
-              <TrendingUp className="h-6 w-6" />
+            <span className="text-[11px] font-bold text-[#554336] uppercase tracking-widest opacity-70">Toplam Gelir</span>
+            <div className="bg-[#36684d]/10 p-2 rounded-xl">
+              <TrendingUp className="w-5 h-5 text-[#36684d]" />
             </div>
-            <h3 className="text-xs font-bold text-[#554336] uppercase tracking-widest opacity-70">Toplam Gelir</h3>
           </div>
-          <div className="text-3xl font-heading font-bold text-[#8c5000] relative z-10">
-            {totalIncome.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} ₺
+          <div className="flex items-baseline gap-2">
+            <span className="text-3xl font-heading font-bold text-[#191c1d]">₺{totalIncome.toLocaleString('tr-TR')}</span>
           </div>
-        </Card>
+          <p className="text-[#36684d] text-[13px] font-semibold mt-4 flex items-center gap-1">
+            <ArrowUpRight className="w-4 h-4" /> Pozitif nakit akışı
+          </p>
+        </div>
 
-        <Card className="p-6 bg-white border-[#dbc2b0]/30 shadow-ambient-medium rounded-[32px] relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-rose-100/30 rounded-full -mr-10 -mt-10 pointer-events-none" />
+        <div className="bg-white p-8 rounded-2xl shadow-ambient-low border border-white/50 relative overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-[#ba1a1a]/5 rounded-full -mr-8 -mt-8"></div>
           <div className="flex items-center gap-3 mb-4 relative z-10">
-            <div className="p-3 bg-rose-50 rounded-2xl text-rose-600">
-              <TrendingDown className="h-6 w-6" />
+            <span className="text-[11px] font-bold text-[#554336] uppercase tracking-widest opacity-70">Toplam Gider</span>
+            <div className="bg-[#ba1a1a]/10 p-2 rounded-xl">
+              <TrendingDown className="w-5 h-5 text-[#ba1a1a]" />
             </div>
-            <h3 className="text-xs font-bold text-[#554336] uppercase tracking-widest opacity-70">Toplam Gider</h3>
           </div>
-          <div className="text-3xl font-heading font-bold text-[#8c5000] relative z-10">
-            {totalExpense.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} ₺
+          <div className="flex items-baseline gap-2">
+            <span className="text-3xl font-heading font-bold text-[#191c1d]">₺{totalExpense.toLocaleString('tr-TR')}</span>
           </div>
-        </Card>
+          <p className="text-[#ba1a1a] text-[13px] font-semibold mt-4 flex items-center gap-1">
+            <ArrowDownRight className="w-4 h-4" /> Bütçe takibi
+          </p>
+        </div>
 
-        <Card className={cn(
-          "p-6 border-[#dbc2b0]/30 shadow-ambient-medium rounded-[32px] relative overflow-hidden text-white transition-colors duration-500",
-          netBalance >= 0 ? "bg-[#8c5000]" : "bg-rose-600"
-        )}>
-          <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -mr-12 -mt-12 pointer-events-none" />
+        <div className="bg-white p-8 rounded-2xl shadow-ambient-low border border-white/50 relative overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 delay-300">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-[#8c5000]/5 rounded-full -mr-8 -mt-8"></div>
           <div className="flex items-center gap-3 mb-4 relative z-10">
-            <div className="p-3 bg-white/20 rounded-2xl text-white">
-              <Wallet className="h-6 w-6" />
+            <span className="text-[11px] font-bold text-[#554336] uppercase tracking-widest opacity-70">Net Durum</span>
+            <div className="bg-[#8c5000]/10 p-2 rounded-xl">
+              <Wallet className="w-5 h-5 text-[#8c5000]" />
             </div>
-            <h3 className="text-xs font-bold uppercase tracking-widest opacity-90">Net Bakiye</h3>
           </div>
-          <div className="text-3xl font-heading font-bold relative z-10">
-            {netBalance.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} ₺
+          <div className="flex items-baseline gap-2">
+            <span className="text-3xl font-heading font-bold text-[#191c1d]">₺{netBalance.toLocaleString('tr-TR')}</span>
           </div>
-        </Card>
-      </div>
+          <p className="text-[#8c5000] text-[13px] font-semibold mt-4">Genel finansal denge</p>
+        </div>
+      </section>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-in fade-in slide-in-from-bottom-6 duration-700">
+      {/* Main Analytics Grid */}
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 mb-8">
         {/* Monthly Cash Flow Chart */}
-        <Card className="p-6 bg-white border-[#dbc2b0]/30 shadow-ambient-medium rounded-[32px]">
-          <h3 className="text-xl font-heading font-bold text-[#8c5000] mb-6">Aylık Nakit Akışı</h3>
-          <div className="h-64 flex items-end justify-between gap-3 mt-4 pt-4 border-t border-[#dbc2b0]/10">
-            {monthlyData.map((d, i) => {
-              const incHeight = maxMonthly > 0 ? Math.max((d.income / maxMonthly) * 100, d.income > 0 ? 2 : 0) : 0;
-              const expHeight = maxMonthly > 0 ? Math.max((d.expense / maxMonthly) * 100, d.expense > 0 ? 2 : 0) : 0;
-              
-              return (
-                <div key={i} className="flex flex-col items-center flex-1 gap-2 group">
-                  <div className="w-full flex justify-center items-end gap-1.5 h-48">
-                    <div 
-                      className="w-full max-w-[16px] bg-emerald-400 rounded-t-md transition-all duration-500 group-hover:bg-emerald-500 relative" 
-                      style={{ height: `${incHeight}%` }}
-                    >
-                      {d.income > 0 && (
-                        <span className="absolute -top-8 left-1/2 -translate-x-1/2 text-[10px] font-bold text-emerald-700 opacity-0 group-hover:opacity-100 transition-opacity bg-emerald-50 px-2 py-0.5 rounded-md whitespace-nowrap shadow-sm z-10">
-                          {d.income >= 1000 ? `${(d.income/1000).toFixed(1)}k` : d.income}
-                        </span>
-                      )}
+        <div className="xl:col-span-8 space-y-8">
+          {/* Comparison Chart */}
+          <div className="bg-white p-8 rounded-2xl shadow-ambient-low border border-white/50 animate-in fade-in zoom-in-95 duration-700">
+            <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-10 gap-4">
+              <h3 className="text-xl font-heading font-bold text-[#191c1d]">Gelir & Gider Karşılaştırması</h3>
+              <div className="flex gap-4">
+                <span className="flex items-center gap-2 text-sm font-semibold text-[#554336]">
+                  <span className="w-3 h-3 rounded-full bg-[#36684d]"></span> Gelir
+                </span>
+                <span className="flex items-center gap-2 text-sm font-semibold text-[#554336]">
+                  <span className="w-3 h-3 rounded-full bg-[#8c5000]"></span> Gider
+                </span>
+              </div>
+            </div>
+            <div className="h-72 flex items-end justify-between gap-2 sm:gap-6 px-2 sm:px-4 border-b border-[#dbc2b0]/20 pb-4">
+              {monthlyData.slice().reverse().map((d, i) => {
+                const incHeight = maxMonthly > 0 ? Math.max((d.income / maxMonthly) * 100, d.income > 0 ? 5 : 0) : 0;
+                const expHeight = maxMonthly > 0 ? Math.max((d.expense / maxMonthly) * 100, d.expense > 0 ? 5 : 0) : 0;
+                const isCurrentMonth = i === monthlyData.length - 1;
+
+                return (
+                  <div key={i} className="flex-1 flex flex-col items-center gap-4 group">
+                    <div className="w-full flex gap-1 sm:gap-1.5 items-end h-48 relative">
+                      <div className={cn("flex-1 rounded-t-md transition-all duration-500", isCurrentMonth ? "bg-[#36684d] shadow-lg shadow-[#36684d]/20" : "bg-[#36684d]/40 group-hover:bg-[#36684d]/60")} style={{ height: `${incHeight}%` }}></div>
+                      <div className={cn("flex-1 rounded-t-md transition-all duration-500", isCurrentMonth ? "bg-[#8c5000] shadow-lg shadow-[#8c5000]/20" : "bg-[#f18d02]/40 group-hover:bg-[#f18d02]/60")} style={{ height: `${expHeight}%` }}></div>
+                      
+                      {/* Tooltip */}
+                      <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-white px-3 py-2 rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 whitespace-nowrap text-xs font-bold flex flex-col gap-1 border border-[#dbc2b0]/30">
+                        <span className="text-[#36684d]">Gelir: ₺{d.income.toLocaleString('tr-TR')}</span>
+                        <span className="text-[#8c5000]">Gider: ₺{d.expense.toLocaleString('tr-TR')}</span>
+                      </div>
                     </div>
-                    <div 
-                      className="w-full max-w-[16px] bg-rose-400 rounded-t-md transition-all duration-500 group-hover:bg-rose-500 relative" 
-                      style={{ height: `${expHeight}%` }}
-                    >
-                      {d.expense > 0 && (
-                        <span className="absolute -top-8 left-1/2 -translate-x-1/2 text-[10px] font-bold text-rose-700 opacity-0 group-hover:opacity-100 transition-opacity bg-rose-50 px-2 py-0.5 rounded-md whitespace-nowrap shadow-sm z-10">
-                          {d.expense >= 1000 ? `${(d.expense/1000).toFixed(1)}k` : d.expense}
-                        </span>
-                      )}
+                    <span className={cn("text-xs", isCurrentMonth ? "font-bold text-[#191c1d]" : "font-semibold text-[#554336]")}>{d.month}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Timeline Section */}
+          <div className="bg-white p-8 rounded-2xl shadow-ambient-low border border-white/50 animate-in fade-in slide-in-from-bottom-6 duration-700">
+            <h3 className="text-xl font-heading font-bold text-[#191c1d] mb-8">Zaman Çizelgesi</h3>
+            <div className="space-y-6">
+              {recentTransactions.slice(0, 3).map((tx, idx) => (
+                <div key={tx.id} className="flex gap-6 items-start group">
+                  <div className="flex flex-col items-center">
+                    <div className={cn("w-4 h-4 rounded-full border-4 border-white ring-1 transition-transform group-hover:scale-125", tx.type === 'income' ? "bg-[#36684d] ring-[#36684d]/20" : "bg-[#8c5000] ring-[#8c5000]/20")}></div>
+                    {idx !== Math.min(recentTransactions.length, 3) - 1 && (
+                      <div className="w-0.5 h-16 bg-[#dbc2b0]/30 mt-1"></div>
+                    )}
+                  </div>
+                  <div className={cn("flex-1 bg-[#f8f9fa] p-5 rounded-2xl border border-[#dbc2b0]/20 transition-colors cursor-default", tx.type === 'income' ? "hover:border-[#36684d]/30" : "hover:border-[#8c5000]/30")}>
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <p className="font-semibold text-[#191c1d]">{tx.description || tx.category}</p>
+                        <p className="text-[13px] text-[#554336] mt-1">{tx.category}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className={cn("font-bold text-lg", tx.type === 'income' ? "text-[#36684d]" : "text-[#8c5000]")}>
+                          {tx.type === 'income' ? '+' : '-'}₺{tx.amount.toLocaleString('tr-TR')}
+                        </p>
+                        <p className="text-[11px] text-[#554336] uppercase tracking-wide mt-1">
+                          {new Date(tx.createdAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                  <span className="text-[10px] font-bold text-[#554336] uppercase">{d.month}</span>
                 </div>
-              );
-            })}
-          </div>
-          <div className="flex justify-center gap-8 mt-6 pt-4 border-t border-[#dbc2b0]/10">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-emerald-400 shadow-sm"></div>
-              <span className="text-xs font-bold text-[#554336]">Gelir</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-rose-400 shadow-sm"></div>
-              <span className="text-xs font-bold text-[#554336]">Gider</span>
+              ))}
+              {recentTransactions.length === 0 && (
+                <div className="text-[#554336] opacity-70 italic">Henüz işlem bulunmuyor.</div>
+              )}
             </div>
           </div>
-        </Card>
+        </div>
 
         {/* Category Breakdown */}
-        <Card className="p-6 bg-white border-[#dbc2b0]/30 shadow-ambient-medium rounded-[32px]">
-          <h3 className="text-xl font-heading font-bold text-[#8c5000] mb-6">Kategori Dağılımı</h3>
-          <div className="space-y-8">
-            <div>
-              <h4 className="text-[10px] font-bold text-[#554336] mb-4 uppercase tracking-widest opacity-70">Gider Kategorileri</h4>
-              <div className="space-y-4">
-                {Object.entries(expenseCategoryMap).length === 0 ? (
-                  <p className="text-sm text-[#554336] opacity-60">Gider kaydı bulunmuyor.</p>
-                ) : (
-                  Object.entries(expenseCategoryMap)
-                    .sort(([,a], [,b]) => b - a)
-                    .slice(0, 4)
-                    .map(([cat, amount]) => (
-                      <div key={cat} className="space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <span className="font-bold text-[#8c5000] capitalize">{cat}</span>
-                          <span className="text-[#554336] font-medium">{amount.toLocaleString("tr-TR")} ₺</span>
-                        </div>
-                        <div className="h-2.5 w-full bg-[#f8f9fa] border border-[#dbc2b0]/20 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-rose-400 rounded-full transition-all duration-1000"
-                            style={{ width: `${(amount / totalExpense) * 100}%` }}
-                          />
-                        </div>
-                      </div>
-                    ))
-                )}
+        <div className="xl:col-span-4 flex flex-col gap-8">
+          {/* Breakdown Card */}
+          <div className="bg-white p-8 rounded-2xl shadow-ambient-low border border-white/50 h-full animate-in fade-in slide-in-from-right-6 duration-700">
+            <h3 className="text-xl font-heading font-bold text-[#191c1d] mb-10">Harcama Kategorileri</h3>
+            
+            <div className="relative w-56 h-56 mx-auto mb-12 flex items-center justify-center group">
+              <svg className="w-full h-full transform -rotate-90 transition-transform duration-1000 group-hover:scale-105" viewBox="0 0 36 36">
+                {(() => {
+                  const entries = Object.entries(expenseCategoryMap).sort(([,a], [,b]) => (b as number) - (a as number));
+                  const total = totalExpense || 1;
+                  let offset = 0;
+                  const colors = ["#8c5000", "#36684d", "#efe440", "#dbc2b0", "#ba1a1a"];
+                  
+                  if (entries.length === 0) {
+                    return <path className="text-[#dbc2b0]/30" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeDasharray="100, 100" strokeWidth="4" />
+                  }
+
+                  return entries.slice(0, 4).map(([cat, amt], idx) => {
+                    const pct = (amt / total) * 100;
+                    const dasharray = `${pct}, 100`;
+                    const currentOffset = offset;
+                    offset -= pct;
+                    return (
+                      <path key={cat} stroke={colors[idx % colors.length]} d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" strokeDasharray={dasharray} strokeDashoffset={currentOffset} strokeWidth="4" className="transition-all duration-1000 ease-out" />
+                    );
+                  });
+                })()}
+              </svg>
+              <div className="absolute text-center">
+                <p className="text-2xl font-heading font-bold text-[#191c1d]">₺{totalExpense >= 1000 ? (totalExpense/1000).toFixed(1) + 'K' : totalExpense}</p>
+                <p className="text-[12px] text-[#554336] uppercase tracking-widest mt-1">Toplam</p>
               </div>
             </div>
 
-            <div className="pt-6 border-t border-[#dbc2b0]/10">
-              <h4 className="text-[10px] font-bold text-[#554336] mb-4 uppercase tracking-widest opacity-70">Gelir Kategorileri</h4>
-              <div className="space-y-4">
-                {Object.entries(incomeCategoryMap).length === 0 ? (
-                  <p className="text-sm text-[#554336] opacity-60">Gelir kaydı bulunmuyor.</p>
-                ) : (
-                  Object.entries(incomeCategoryMap)
-                    .sort(([,a], [,b]) => b - a)
-                    .slice(0, 3)
-                    .map(([cat, amount]) => (
-                      <div key={cat} className="space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <span className="font-bold text-[#8c5000] capitalize">{cat}</span>
-                          <span className="text-[#554336] font-medium">{amount.toLocaleString("tr-TR")} ₺</span>
-                        </div>
-                        <div className="h-2.5 w-full bg-[#f8f9fa] border border-[#dbc2b0]/20 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-emerald-400 rounded-full transition-all duration-1000"
-                            style={{ width: `${(amount / totalIncome) * 100}%` }}
-                          />
-                        </div>
-                      </div>
-                    ))
-                )}
-              </div>
+            <ul className="space-y-6">
+              {Object.entries(expenseCategoryMap).sort(([,a], [,b]) => (b as number) - (a as number)).slice(0, 4).map(([cat, amt], idx) => {
+                const colors = ["bg-[#8c5000]", "bg-[#36684d]", "bg-[#efe440]", "bg-[#dbc2b0]"];
+                const pct = totalExpense > 0 ? Math.round((amt / totalExpense) * 100) : 0;
+                return (
+                  <li key={cat} className="flex justify-between items-center group cursor-default">
+                    <div className="flex items-center gap-4">
+                      <span className={cn("w-3 h-3 rounded-full", colors[idx % colors.length])}></span>
+                      <span className="text-sm font-semibold text-[#554336] group-hover:text-[#191c1d] transition-colors">{cat}</span>
+                    </div>
+                    <span className="font-bold text-[#191c1d]">%{pct}</span>
+                  </li>
+                );
+              })}
+              {Object.keys(expenseCategoryMap).length === 0 && (
+                <li className="text-sm text-[#554336] text-center opacity-70">Henüz harcama yok.</li>
+              )}
+            </ul>
+          </div>
+
+          {/* Mascot Info Card */}
+          <div className="bg-[#8c5000]/5 p-6 rounded-2xl border border-[#8c5000]/20 relative overflow-hidden group mt-auto animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <div className="relative z-10">
+              <p className="font-bold text-[#191c1d] text-lg mb-2">Merhaba!</p>
+              <p className="text-[13px] text-[#554336] leading-relaxed">
+                {netBalance >= 0 ? "Bu ay gelirlerin giderlerinden fazla. Harikasın! Finansal koçun seninle gurur duyuyor." : "Bu ay giderlerin biraz artmış gibi görünüyor. Bütçeni tekrar gözden geçirelim mi?"}
+              </p>
+            </div>
+            <div className="absolute -bottom-6 -right-6 opacity-30 group-hover:scale-105 group-hover:opacity-50 transition-all duration-700">
+              <img alt="Ram Mascot" className="w-32 h-32 object-contain" src="/mascot.png" />
             </div>
           </div>
-        </Card>
+        </div>
       </div>
 
       {/* Recent Transactions List */}
-      <Card className="bg-white border-[#dbc2b0]/30 shadow-ambient-medium rounded-[32px] overflow-hidden animate-in fade-in slide-in-from-bottom-8 duration-700">
-        <div className="p-6 border-b border-[#dbc2b0]/10 flex items-center gap-3 bg-[#f8f9fa]/50">
-          <div className="p-2 bg-[#8c5000]/10 rounded-lg">
-            <Clock className="h-5 w-5 text-[#8c5000]" />
-          </div>
-          <h3 className="text-xl font-heading font-bold text-[#8c5000]">Son İşlemler</h3>
+      <section className="bg-white rounded-2xl shadow-ambient-low border border-white/50 overflow-hidden mb-12 animate-in fade-in slide-in-from-bottom-8 duration-700">
+        <div className="p-8 border-b border-[#dbc2b0]/20 flex justify-between items-center">
+          <h3 className="text-xl font-heading font-bold text-[#191c1d]">Tüm İşlemler</h3>
+          <button className="text-[#8c5000] font-bold text-[13px] hover:underline flex items-center gap-1">
+            Filtrele <ArrowRight className="w-4 h-4" />
+          </button>
         </div>
-        <div className="divide-y divide-[#dbc2b0]/10">
-          {recentTransactions.length === 0 ? (
-            <div className="p-12 text-center text-[#554336] opacity-60">
-              Henüz bir gelir veya gider işlemi bulunmuyor. Asistan üzerinden ekleyebilirsiniz!
-            </div>
-          ) : (
-            recentTransactions.map((tx) => (
-              <div key={tx.id} className="p-6 hover:bg-[#f8f9fa] transition-colors flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 group">
-                <div className="flex items-center gap-4">
-                  <div className={cn(
-                    "w-12 h-12 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 shrink-0",
-                    tx.type === "expense" ? "bg-rose-50 text-rose-600" : "bg-emerald-50 text-emerald-600"
-                  )}>
-                    {tx.type === "expense" ? <ArrowUpRight className="h-6 w-6" /> : <ArrowDownRight className="h-6 w-6" />}
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-[#8c5000] line-clamp-1">{tx.description}</span>
-                      <span className={cn(
-                        "text-[10px] font-bold px-2 py-0.5 rounded-full uppercase shrink-0",
-                        tx.type === "expense" ? "bg-rose-100 text-rose-700" : "bg-emerald-100 text-emerald-700"
-                      )}>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="bg-[#f8f9fa]">
+                <th className="px-8 py-5 text-[11px] font-bold text-[#554336] uppercase tracking-widest">İşlem</th>
+                <th className="px-8 py-5 text-[11px] font-bold text-[#554336] uppercase tracking-widest">Kategori</th>
+                <th className="px-8 py-5 text-[11px] font-bold text-[#554336] uppercase tracking-widest">Tarih</th>
+                <th className="px-8 py-5 text-[11px] font-bold text-[#554336] uppercase tracking-widest text-right">Tutar</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#dbc2b0]/20">
+              {recentTransactions.map((tx) => {
+                const isIncome = tx.type === 'income';
+                let Icon = isIncome ? Wallet : Receipt;
+                
+                if (!isIncome) {
+                  const cat = tx.category.toLowerCase();
+                  if (cat.includes('market') || cat.includes('alışveriş')) Icon = ShoppingCart;
+                  else if (cat.includes('yemek') || cat.includes('restoran') || cat.includes('gıda')) Icon = Utensils;
+                  else if (cat.includes('ulaşım') || cat.includes('benzin') || cat.includes('araba')) Icon = Car;
+                  else if (cat.includes('kira') || cat.includes('konut') || cat.includes('ev')) Icon = Home;
+                }
+
+                return (
+                  <tr key={tx.id} className="hover:bg-[#f8f9fa]/80 transition-colors group">
+                    <td className="px-8 py-6">
+                      <div className="flex items-center gap-4">
+                        <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm", isIncome ? "bg-[#36684d]/10 text-[#36684d]" : "bg-[#8c5000]/10 text-[#8c5000]")}>
+                          <Icon className="w-5 h-5" />
+                        </div>
+                        <span className="font-bold text-[#191c1d]">{tx.description || tx.category}</span>
+                      </div>
+                    </td>
+                    <td className="px-8 py-6">
+                      <span className={cn("px-3 py-1.5 rounded-full text-[12px] font-bold shadow-sm", isIncome ? "bg-[#36684d]/10 text-[#36684d]" : "bg-[#e7e8e9] text-[#554336]")}>
                         {tx.category}
                       </span>
-                    </div>
-                    <p className="text-[10px] font-medium text-[#554336] flex items-center gap-1 mt-1 opacity-70">
-                      <Clock className="h-3 w-3" />
-                      {new Date(tx.createdAt).toLocaleDateString("tr-TR")} {new Date(tx.createdAt).toLocaleTimeString("tr-TR", { hour: '2-digit', minute: '2-digit' })}
-                    </p>
-                  </div>
-                </div>
-                <div className={cn(
-                  "font-bold text-xl sm:text-right",
-                  tx.type === "expense" ? "text-rose-600" : "text-emerald-600"
-                )}>
-                  {tx.type === "expense" ? "-" : "+"}{tx.amount.toLocaleString("tr-TR")} ₺
-                </div>
-              </div>
-            ))
-          )}
+                    </td>
+                    <td className="px-8 py-6 text-[13px] text-[#554336] font-semibold">
+                      {new Date(tx.createdAt).toLocaleDateString('tr-TR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                    </td>
+                    <td className={cn("px-8 py-6 text-right font-bold text-lg", isIncome ? "text-[#36684d]" : "text-[#8c5000]")}>
+                      {isIncome ? '+' : '-'}₺{tx.amount.toLocaleString('tr-TR')}
+                    </td>
+                  </tr>
+                );
+              })}
+              {recentTransactions.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="px-8 py-12 text-center text-[#554336] opacity-70">
+                    Henüz işlem kaydınız bulunmuyor.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
-      </Card>
+      </section>
+
+      <ChatAI />
     </div>
   );
 }

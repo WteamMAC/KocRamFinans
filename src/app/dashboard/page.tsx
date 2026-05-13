@@ -5,7 +5,7 @@ import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowDownRight, ArrowUpRight, Banknote, Calendar, PieChart, Wallet, TrendingUp } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Calendar, PieChart, TrendingUp } from "lucide-react";
 import { BudgetOverview } from "@/components/dashboard/budget-overview";
 import { UpcomingPayments } from "@/components/dashboard/upcoming-payments";
 import { InvestmentSummary } from "@/components/dashboard/investment-summary";
@@ -13,7 +13,6 @@ import { PerformanceChart } from "@/components/dashboard/performance-chart";
 import { ChatAI } from "@/components/dashboard/chat-ai";
 import { cn } from "@/lib/utils";
 import { getLivePrices, calculatePortfolioMetrics } from "@/lib/price-service";
-import { fixCategories } from "@/app/actions/assets";
 
 export default async function DashboardPage() {
   await cookies();

@@ -15,18 +15,13 @@ import { searchSymbolsAction } from "@/app/actions/market";
 import { 
   Plus, 
   Trash2, 
-  Wallet, 
-  CreditCard, 
-  TrendingUp, 
   Users, 
   ChevronRight, 
   ChevronLeft, 
   Check,
   Search,
   ArrowUpRight,
-  BarChart3,
   AlertCircle,
-  Heart,
   Baby,
   Calendar
 } from "lucide-react";
