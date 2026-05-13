@@ -19,7 +19,8 @@ export default async function AssetsPage() {
     where: { clerkUserId: userId as string },
     include: {
       investments: true,
-    },
+      fixedAssets: true,
+    } as any,
   }) as any;
 
   if (!user) {
@@ -55,7 +56,7 @@ export default async function AssetsPage() {
           <h2 className="text-4xl font-heading font-bold text-[#8c5000] tracking-tight">
             Varlık Portföyüm
           </h2>
-          <p className="text-[#554336] mt-1 font-medium opacity-80">BIST, NASDAQ ve Kripto varlıklarınızı profesyonelce yönetin.</p>
+          <p className="text-[#554336] mt-1 font-medium opacity-80">BIST, NASDAQ, Kripto ve Sabit varlıklarınızı profesyonelce yönetin.</p>
         </div>
       </div>
 
@@ -123,7 +124,10 @@ export default async function AssetsPage() {
             <CardTitle className="text-xl font-heading font-bold text-[#8c5000]">Varlık Dağılımı (Anlık Değer)</CardTitle>
           </CardHeader>
           <CardContent className="p-8">
-            <InvestmentSummary investments={metrics.assets} />
+            <InvestmentSummary 
+              investments={metrics.assets} 
+              fixedAssets={user.fixedAssets}
+            />
           </CardContent>
         </Card>
       </div>
