@@ -266,7 +266,11 @@ export default async function DashboardPage() {
         </Card>
         
         <div className="col-span-3 h-full">
-           <InvestmentProjection currentValue={totalInvestment} />
+           <InvestmentProjection 
+             currentValue={totalInvestment} 
+             investments={portfolioMetrics.assets}
+             fixedAssets={user.fixedAssets}
+           />
         </div>
       </div>
 
