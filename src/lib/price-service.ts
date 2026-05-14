@@ -155,19 +155,23 @@ export async function searchSymbols(query: string, category: string) {
   }
 }
 
-export function calculatePortfolioMetrics(investments: any[], livePrices: Map<string, PriceResult>) {
+export function calculatePortfolioMetrics(investments: any[], livePrices: Map<string, PriceResult>, incomes?: any[]) {
   let totalCost = 0;
   let totalCurrentValue = 0;
   let totalRealizedProfit = 0;
   let totalDividends = 0;
 
-  const detailedAssets = (investments || []).map(inv => {
-    const div = inv.dividends || 0;
-    totalDividends += div;
+  // Temettü gelirlerini (Yatırım Geliri) hesapla
+  if (incomes && incomes.length > 0) {
+    totalDividends = incomes
+      .filter(inc => inc.type === "Yatırım Geliri")
+      .reduce((acc, curr) => acc + (curr.amount || 0), 0);
+  }
 
+  const detailedAssets = (investments || []).map(inv => {
     if (inv.status === "CLOSED") {
       const sellValue = (inv.soldPrice || 0) * (inv.quantity || 1);
-      const profit = sellValue - (inv.amount || 0) + div;
+      const profit = sellValue - (inv.amount || 0);
       totalRealizedProfit += profit;
       return {
         ...inv,
@@ -187,7 +191,7 @@ export function calculatePortfolioMetrics(investments: any[], livePrices: Map<st
 
       totalCost += cost;
       totalCurrentValue += currentValue;
-      const profit = currentValue - cost + div;
+      const profit = currentValue - cost;
 
       return {
         ...inv,

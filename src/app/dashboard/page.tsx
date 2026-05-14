@@ -52,10 +52,10 @@ export default async function DashboardPage() {
     ));
 
     livePrices = await getLivePrices(symbols);
-    portfolioMetrics = calculatePortfolioMetrics(user.investments, livePrices);
+    portfolioMetrics = calculatePortfolioMetrics(user.investments, livePrices, user.incomes);
   } catch (error) {
     console.error("Dashboard Data Fetch Error:", error);
-    portfolioMetrics = calculatePortfolioMetrics(user.investments, new Map());
+    portfolioMetrics = calculatePortfolioMetrics(user.investments, new Map(), user.incomes);
   }
 
   const totalIncome = (user.incomes as any[]).reduce((acc: number, inc: any) => acc + inc.amount, 0);
