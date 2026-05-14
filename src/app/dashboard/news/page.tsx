@@ -37,13 +37,27 @@ async function getEconomicNews(): Promise<NewsItem[]> {
         const xml = await res.text();
 
         const items: NewsItem[] = [];
-        const itemRegex = /<item>([\s\S]*?)<\/item>/g;
+        // NTV feed uses <entry> instead of <item> (Atom vs RSS)
+        const itemRegex = /<(?:item|entry)>([\s\S]*?)<\/(?:item|entry)>/gi;
         let match;
 
         // XML içinden belirli etiketleri güvenli çıkarmak için Regex fonksiyonu
-        const extractTag = (xmlStr: string, tag: string) => {
-            const regex = new RegExp(`<${tag}[^>]*>(?:<!\\[CDATA\\[)?([\\s\\S]*?)(?:\\]\\]>)?<\\/${tag}>`, 'i');
-            const m = xmlStr.match(regex);
+        const extractTag = (xmlStr: string, tag: string, altTag?: string) => {
+            let regex = new RegExp(`<${tag}[^>]*>(?:<!\\[CDATA\\[)?([\\s\\S]*?)(?:\\]\\]>)?<\\/${tag}>`, 'i');
+            let m = xmlStr.match(regex);
+            if (!m && altTag) {
+                regex = new RegExp(`<${altTag}[^>]*>(?:<!\\[CDATA\\[)?([\\s\\S]*?)(?:\\]\\]>)?<\\/${altTag}>`, 'i');
+                m = xmlStr.match(regex);
+            }
+            return m ? m[1].trim() : '';
+        };
+
+        const extractLink = (xmlStr: string) => {
+            // First try Atom link <link href="...">
+            let m = xmlStr.match(/<link[^>]*href="([^"]+)"/i);
+            if (m) return m[1].trim();
+            // Then try standard RSS link
+            m = xmlStr.match(/<link[^>]*>(?:<!\\[CDATA\\[)?([^<]+)(?:\\]\\]>)?<\/link>/i);
             return m ? m[1].trim() : '';
         };
 
@@ -62,16 +76,24 @@ async function getEconomicNews(): Promise<NewsItem[]> {
         while ((match = itemRegex.exec(xml)) !== null && items.length < 30) {
             const itemXml = match[1];
             const title = extractTag(itemXml, 'title');
-            const link = extractTag(itemXml, 'link');
-            let pubDate = extractTag(itemXml, 'pubDate');
-            const rawDesc = extractTag(itemXml, 'description');
-            const description = rawDesc.replace(/<[^>]+>/g, '').substring(0, 120) + "...";
-            const imageUrl = extractImage(itemXml);
+            const link = extractLink(itemXml);
+            let pubDate = extractTag(itemXml, 'pubDate', 'published');
+            const rawDesc = extractTag(itemXml, 'description', 'summary');
             
+            let description = rawDesc.replace(/<[^>]+>/g, '').trim();
+            if (description.length > 120) {
+                description = description.substring(0, 120) + "...";
+            }
+            
+            const imageUrl = extractImage(itemXml);
             const tag = determineTag(title, rawDesc.replace(/<[^>]+>/g, ''));
 
             if (pubDate) {
-                pubDate = new Date(pubDate).toLocaleTimeString("tr-TR", { hour: '2-digit', minute: '2-digit' }) + " - " + new Date(pubDate).toLocaleDateString("tr-TR");
+                const dateObj = new Date(pubDate);
+                // check if date is valid
+                if (!isNaN(dateObj.getTime())) {
+                    pubDate = dateObj.toLocaleTimeString("tr-TR", { hour: '2-digit', minute: '2-digit' }) + " - " + dateObj.toLocaleDateString("tr-TR");
+                }
             }
 
             if (title && link) {
