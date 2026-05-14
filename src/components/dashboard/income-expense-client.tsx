@@ -87,6 +87,7 @@ export function IncomeExpenseClient({
     remainingInstallments: "",
     isRecurring: false,
   });
+  const [filterCategory, setFilterCategory] = useState("Tümü");
   const { theme, setTheme } = useTheme();
 
   useEffect(() => {
@@ -526,9 +527,16 @@ export function IncomeExpenseClient({
       <section className="bg-card rounded-2xl shadow-ambient-low border border-border/20 overflow-hidden mb-12 animate-in fade-in slide-in-from-bottom-8 duration-700">
         <div className="p-8 border-b border-border/20 flex justify-between items-center">
           <h3 className="text-xl font-heading font-bold text-foreground">Tüm İşlemler</h3>
-          <button className="text-primary font-bold text-[13px] hover:underline flex items-center gap-1">
-            Filtrele <ArrowRight className="w-4 h-4" />
-          </button>
+          <Select value={filterCategory} onValueChange={(val) => setFilterCategory(val || "Tümü")}>
+            <SelectTrigger className="w-[180px] bg-muted border-border/30 rounded-xl">
+              <SelectValue placeholder="Kategori Filtresi" />
+            </SelectTrigger>
+            <SelectContent className="rounded-xl bg-card">
+              {["Tümü", ...Array.from(new Set(recentTransactions.map(t => t.category)))].map(cat => (
+                <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left">
@@ -541,7 +549,7 @@ export function IncomeExpenseClient({
               </tr>
             </thead>
             <tbody className="divide-y divide-border/20">
-              {recentTransactions.map((tx) => {
+              {recentTransactions.filter(t => filterCategory === "Tümü" || t.category === filterCategory).map((tx) => {
                 const isIncome = tx.type === 'income';
                 let Icon = isIncome ? Wallet : Receipt;
                 
@@ -577,7 +585,7 @@ export function IncomeExpenseClient({
                   </tr>
                 );
               })}
-              {recentTransactions.length === 0 && (
+              {recentTransactions.filter(t => filterCategory === "Tümü" || t.category === filterCategory).length === 0 && (
                 <tr>
                   <td colSpan={4} className="px-8 py-12 text-center text-muted-foreground opacity-70">
                     Henüz işlem kaydınız bulunmuyor.
