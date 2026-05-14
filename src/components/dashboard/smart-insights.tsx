@@ -13,11 +13,15 @@ export function SmartInsights({ financialData }: SmartInsightsProps) {
   const [insights, setInsights] = useState<{ type: string; message: string }[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
     async function fetchInsights() {
       const res = await generateSmartInsights(financialData);
       if (res.success && res.data) {
         setInsights(res.data);
+      } else {
+        setError(res.error || "Bilinmeyen bir hata oluştu.");
       }
       setLoading(false);
     }
@@ -29,6 +33,15 @@ export function SmartInsights({ financialData }: SmartInsightsProps) {
       <div className="flex items-center gap-3 p-4 bg-primary/5 border border-primary/20 rounded-2xl animate-pulse">
         <Loader2 className="h-5 w-5 text-primary animate-spin" />
         <span className="text-sm font-medium text-primary">Yapay Zeka finansal verilerinizi analiz ediyor...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center gap-3 p-4 bg-destructive/10 border border-destructive/20 rounded-2xl">
+        <AlertTriangle className="h-5 w-5 text-destructive" />
+        <span className="text-sm font-medium text-destructive">{error}</span>
       </div>
     );
   }
