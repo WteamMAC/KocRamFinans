@@ -3,22 +3,28 @@
 import { SignIn, SignUp } from "@clerk/nextjs";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePathname, useRouter } from "next/navigation";
-import { BarChart3 } from "lucide-react";
+import { BarChart3, Sun, Moon } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useTheme } from "next-themes";
 
 export default function SlidingAuth() {
   const pathname = usePathname();
   const router = useRouter();
   const isLogin = pathname.includes("sign-in");
   const [isLargeScreen, setIsLargeScreen] = useState(false);
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     const checkScreen = () => setIsLargeScreen(window.innerWidth >= 1024);
     checkScreen();
     window.addEventListener("resize", checkScreen);
+    setMounted(true);
     return () => window.removeEventListener("resize", checkScreen);
   }, []);
+
+  const toggleTheme = () => setTheme(theme === "dark" ? "light" : "dark");
 
   const toggleAuth = () => {
     const newPath = isLogin ? "/sign-up" : "/sign-in";
@@ -26,7 +32,16 @@ export default function SlidingAuth() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-0 md:p-6 overflow-hidden">
+    <div className="min-h-screen bg-background flex items-center justify-center p-0 md:p-6 overflow-hidden relative">
+      {mounted && (
+        <button
+          onClick={toggleTheme}
+          className="absolute top-6 right-6 z-50 p-3 rounded-xl bg-background/80 backdrop-blur-md border border-border text-foreground hover:bg-muted transition-all shadow-sm"
+          aria-label="Tema Değiştir"
+        >
+          {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+        </button>
+      )}
       <main className="w-full h-screen md:h-[calc(100vh-48px)] max-h-[900px] flex max-w-[1200px] mx-auto bg-card md:rounded-[32px] md:shadow-ambient-high overflow-hidden relative">
         
         {/* Form Container */}
@@ -129,15 +144,15 @@ export default function SlidingAuth() {
 
         {/* Overlay Panel (Mascot Side) */}
         <motion.div 
-          className="hidden lg:flex absolute inset-y-0 right-0 w-1/2 bg-primary z-20 items-center justify-center p-12 overflow-hidden shadow-2xl"
+          className="hidden lg:flex absolute inset-y-0 right-0 w-1/2 bg-primary dark:bg-primary-foreground z-20 items-center justify-center p-12 overflow-hidden shadow-2xl"
           animate={{ x: isLogin ? "-100%" : "0%" }}
           transition={{ type: "spring", stiffness: 260, damping: 28 }}
         >
           {/* Background Decorative Circles */}
-          <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-[500px] h-[500px] bg-primary-foreground/10 rounded-full blur-3xl"></div>
+          <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-[500px] h-[500px] bg-primary-foreground/10 dark:bg-primary/10 rounded-full blur-3xl"></div>
           <div className="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-black/10 rounded-full blur-3xl"></div>
           
-          <div className="relative z-10 text-center text-primary-foreground max-w-xl flex flex-col items-center">
+          <div className="relative z-10 text-center text-primary-foreground dark:text-primary max-w-xl flex flex-col items-center">
             <motion.div
               animate={{ 
                 rotate: isLogin ? [0, -3, 3, 0] : [0, 3, -3, 0],
@@ -147,8 +162,8 @@ export default function SlidingAuth() {
               className="mb-10"
             >
               <div className="relative w-[360px] h-[360px] mx-auto">
-                <div className="absolute inset-0 bg-primary-foreground/10 rounded-full blur-2xl transform scale-110"></div>
-                <div className="w-full h-full bg-card rounded-full border-[12px] border-primary-foreground/20 shadow-[0_30px_60px_rgba(0,0,0,0.4)] relative z-10 flex items-center justify-center overflow-hidden">
+                <div className="absolute inset-0 bg-primary-foreground/10 dark:bg-primary/10 rounded-full blur-2xl transform scale-110"></div>
+                <div className="w-full h-full bg-card rounded-full border-[12px] border-primary-foreground/20 dark:border-primary/20 shadow-[0_30px_60px_rgba(0,0,0,0.4)] relative z-10 flex items-center justify-center overflow-hidden">
                   <img 
                     alt="Koç Ram Finans Mascot" 
                     className="w-full h-full object-contain drop-shadow-xl transform scale-[1.8]" 
@@ -193,11 +208,11 @@ export default function SlidingAuth() {
             <div className="mt-10 flex justify-center gap-4">
               <motion.div 
                 animate={{ scale: isLogin ? 1.2 : 1, opacity: isLogin ? 1 : 0.4 }}
-                className="w-3 h-3 rounded-full bg-primary-foreground"
+                className="w-3 h-3 rounded-full bg-primary-foreground dark:bg-primary"
               ></motion.div>
               <motion.div 
                 animate={{ scale: !isLogin ? 1.2 : 1, opacity: !isLogin ? 1 : 0.4 }}
-                className="w-3 h-3 rounded-full bg-primary-foreground"
+                className="w-3 h-3 rounded-full bg-primary-foreground dark:bg-primary"
               ></motion.div>
             </div>
           </div>
