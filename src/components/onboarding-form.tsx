@@ -172,7 +172,7 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
 
   const nextStep = async () => {
     const isValid = await canContinue();
-    if (isValid) setStep((s) => Math.min(s + 1, 5));
+    if (isValid) setStep((s) => Math.min(s + 1, isSettings ? 1 : 5));
   };
 
   const prevStep = () => setStep((s) => Math.max(s - 1, 1));
@@ -670,17 +670,19 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
         </form>
       </CardContent>
       
-      <CardFooter className="flex justify-between p-10 bg-muted/20 border-t border-border/10">
-        <Button
-          type="button"
-          variant="ghost"
-          onClick={prevStep}
-          disabled={step === 1 || loading}
-          className="h-12 px-8 rounded-xl font-bold text-foreground"
-        >
-          <ChevronLeft className="w-5 h-5 mr-2" /> Geri
-        </Button>
-        {step < 5 ? (
+      <CardFooter className={cn("flex p-10 bg-muted/20 border-t border-border/10", isSettings ? "justify-end" : "justify-between")}>
+        {!isSettings && (
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={prevStep}
+            disabled={step === 1 || loading}
+            className="h-12 px-8 rounded-xl font-bold text-foreground"
+          >
+            <ChevronLeft className="w-5 h-5 mr-2" /> Geri
+          </Button>
+        )}
+        {step < (isSettings ? 1 : 5) ? (
           <Button type="button" onClick={nextStep} className="h-12 px-8 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 font-bold shadow-lg shadow-primary/10">
             Devam Et <ChevronRight className="w-5 h-5 ml-2" />
           </Button>
