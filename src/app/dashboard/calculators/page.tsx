@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Calculator, TrendingUp, PiggyBank, Coins, ArrowRight, Sparkles, ChevronRight } from "lucide-react";
-import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from "recharts";
+import { Calculator, TrendingUp, PiggyBank, Coins, ArrowRight, Sparkles, ZoomOut } from "lucide-react";
+import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid, ReferenceArea } from "recharts";
 import { cn } from "@/lib/utils";
 
 export default function CalculatorsPage() {
@@ -34,6 +34,17 @@ export default function CalculatorsPage() {
   };
 
   const interestRes = calculateInterest();
+
+  // --- Zoom States Interest ---
+  const [intRefLeft, setIntRefLeft] = useState<string | null>(null);
+  const [intRefRight, setIntRefRight] = useState<string | null>(null);
+  const [intZoomData, setIntZoomData] = useState<any[] | null>(null);
+
+  useEffect(() => {
+    setIntZoomData(null);
+  }, [interestData]);
+
+  const intDataToShow = intZoomData || interestRes.chartData;
 
   // --- BES Hesaplama State ---
   const [besData, setBesData] = useState({
@@ -75,6 +86,17 @@ export default function CalculatorsPage() {
   };
 
   const besRes = calculateBes();
+
+  // --- Zoom States BES ---
+  const [besRefLeft, setBesRefLeft] = useState<string | null>(null);
+  const [besRefRight, setBesRefRight] = useState<string | null>(null);
+  const [besZoomData, setBesZoomData] = useState<any[] | null>(null);
+
+  useEffect(() => {
+    setBesZoomData(null);
+  }, [besData]);
+
+  const besDataToShow = besZoomData || besRes.chartData;
 
   return (
     <div className="flex-1 space-y-8 p-8 pt-10 bg-background min-h-screen pb-20">
@@ -126,32 +148,37 @@ export default function CalculatorsPage() {
                 <CardHeader className="bg-primary/5 border-b border-border/10">
                   <CardTitle className="text-lg">Hesaplama Parametreleri</CardTitle>
                 </CardHeader>
-                <CardContent className="p-6 space-y-6">
-                  <div className="space-y-2">
-                    <Label>Anapara (₺)</Label>
-                    <Input 
-                      type="number" 
-                      value={interestData.principal} 
-                      onChange={e => setInterestData(p => ({...p, principal: Number(e.target.value)}))}
-                      className="h-12 rounded-xl bg-muted border-none font-bold text-lg"
-                    />
+                <CardContent className="p-8 space-y-8">
+                  <div className="space-y-3">
+                    <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Anapara (₺)</Label>
+                    <div>
+                      <Input 
+                        type="number" 
+                        value={interestData.principal || ""} 
+                        onChange={e => setInterestData(p => ({...p, principal: Number(e.target.value)}))}
+                        className="h-14 rounded-2xl bg-muted/30 border border-border/50 font-bold text-2xl text-primary transition-all focus-visible:ring-1 focus-visible:ring-primary"
+                      />
+                      <div className="text-sm font-bold text-emerald-600 mt-2 ml-2 flex items-center gap-1">
+                        <ArrowRight className="h-3 w-3" /> {interestData.principal.toLocaleString("tr-TR")} ₺
+                      </div>
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label>Yıllık Faiz Oranı (%)</Label>
+                  <div className="space-y-3">
+                    <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Yıllık Faiz Oranı (%)</Label>
                     <Input 
                       type="number" 
-                      value={interestData.rate} 
+                      value={interestData.rate || ""} 
                       onChange={e => setInterestData(p => ({...p, rate: Number(e.target.value)}))}
-                      className="h-12 rounded-xl bg-muted border-none font-bold text-lg"
+                      className="h-14 rounded-2xl bg-muted/30 border border-border/50 font-bold text-xl text-primary transition-all focus-visible:ring-1 focus-visible:ring-primary"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label>Vade (Ay)</Label>
+                  <div className="space-y-3">
+                    <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Vade (Ay)</Label>
                     <Input 
                       type="number" 
-                      value={interestData.term} 
+                      value={interestData.term || ""} 
                       onChange={e => setInterestData(p => ({...p, term: Number(e.target.value)}))}
-                      className="h-12 rounded-xl bg-muted border-none font-bold text-lg"
+                      className="h-14 rounded-2xl bg-muted/30 border border-border/50 font-bold text-xl text-primary transition-all focus-visible:ring-1 focus-visible:ring-primary"
                     />
                   </div>
                 </CardContent>
@@ -171,12 +198,33 @@ export default function CalculatorsPage() {
                 </div>
 
                 <Card className="p-8 border-border/30 shadow-ambient-medium rounded-[32px] bg-card overflow-hidden">
-                  <CardTitle className="text-lg mb-8 flex items-center gap-2">
-                     <Sparkles className="h-5 w-5 text-accent" /> Birikim Gelişimi
+                  <CardTitle className="text-lg mb-8 flex items-center justify-between">
+                     <div className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-accent" /> Birikim Gelişimi</div>
+                     {intZoomData && (
+                        <Button variant="outline" size="sm" onClick={() => setIntZoomData(null)} className="h-8 rounded-full text-xs">
+                          <ZoomOut className="h-3 w-3 mr-1" /> Yakınlaştırmayı Sıfırla
+                        </Button>
+                     )}
                   </CardTitle>
-                  <div className="h-[300px] w-full">
+                  <div className="h-[300px] w-full pr-4 select-none">
                     <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={interestRes.chartData}>
+                      <AreaChart 
+                        data={intDataToShow}
+                        onMouseDown={e => e?.activeLabel && setIntRefLeft(String(e.activeLabel))}
+                        onMouseMove={e => e?.activeLabel && intRefLeft && setIntRefRight(String(e.activeLabel))}
+                        onMouseUp={() => {
+                          if (intRefLeft && intRefRight && intRefLeft !== intRefRight) {
+                             const idx1 = intDataToShow.findIndex(d => d.ay === intRefLeft);
+                             const idx2 = intDataToShow.findIndex(d => d.ay === intRefRight);
+                             if (idx1 !== -1 && idx2 !== -1) {
+                               const [min, max] = [idx1, idx2].sort((a,b) => a - b);
+                               setIntZoomData(intDataToShow.slice(min, max + 1));
+                             }
+                          }
+                          setIntRefLeft(null);
+                          setIntRefRight(null);
+                        }}
+                      >
                         <defs>
                           <linearGradient id="colorInt" x1="0" y1="0" x2="0" y2="1">
                             <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
@@ -185,11 +233,15 @@ export default function CalculatorsPage() {
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} strokeOpacity={0.1} />
                         <XAxis dataKey="ay" axisLine={false} tickLine={false} tick={{fontSize: 10}} dy={10} />
+                        <YAxis axisLine={false} tickLine={false} tick={{fontSize: 10}} tickFormatter={(val: any) => new Intl.NumberFormat("tr-TR", { notation: "compact" }).format(val)} dx={-10} />
                         <Tooltip 
                           contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 40px -10px rgba(0,0,0,0.1)' }}
                           formatter={(val: any) => [`${Number(val).toLocaleString("tr-TR")} ₺`, "Bakiye"]}
                         />
                         <Area type="monotone" dataKey="tutar" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorInt)" />
+                        {intRefLeft && intRefRight ? (
+                          <ReferenceArea x1={intRefLeft} x2={intRefRight} strokeOpacity={0.3} fill="#3b82f6" fillOpacity={0.2} />
+                        ) : null}
                       </AreaChart>
                     </ResponsiveContainer>
                   </div>
@@ -206,41 +258,46 @@ export default function CalculatorsPage() {
                 <CardHeader className="bg-emerald-500/5 border-b border-border/10">
                   <CardTitle className="text-lg">BES Planı Parametreleri</CardTitle>
                 </CardHeader>
-                <CardContent className="p-6 space-y-6">
-                  <div className="space-y-2">
-                    <Label>Aylık Katkı Payı (₺)</Label>
-                    <Input 
-                      type="number" 
-                      value={besData.monthly} 
-                      onChange={e => setBesData(p => ({...p, monthly: Number(e.target.value)}))}
-                      className="h-12 rounded-xl bg-muted border-none font-bold text-lg"
-                    />
+                <CardContent className="p-8 space-y-8">
+                  <div className="space-y-3">
+                    <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Aylık Katkı Payı (₺)</Label>
+                    <div>
+                      <Input 
+                        type="number" 
+                        value={besData.monthly || ""} 
+                        onChange={e => setBesData(p => ({...p, monthly: Number(e.target.value)}))}
+                        className="h-14 rounded-2xl bg-muted/30 border border-border/50 font-bold text-2xl text-primary transition-all focus-visible:ring-1 focus-visible:ring-primary"
+                      />
+                      <div className="text-sm font-bold text-emerald-600 mt-2 ml-2 flex items-center gap-1">
+                        <ArrowRight className="h-3 w-3" /> {besData.monthly.toLocaleString("tr-TR")} ₺
+                      </div>
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label>Devlet Katkısı Oranı (%)</Label>
+                  <div className="space-y-3">
+                    <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Devlet Katkısı Oranı (%)</Label>
                     <Input 
                       type="number" 
-                      value={besData.contribution} 
-                      className="h-12 rounded-xl bg-muted border-none font-bold text-lg opacity-60"
+                      value={besData.contribution || ""} 
+                      className="h-14 rounded-2xl bg-muted border-none font-bold text-xl text-primary opacity-60"
                       disabled
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label>Tahmini Yıllık Fon Getirisi (%)</Label>
+                  <div className="space-y-3">
+                    <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Tahmini Yıllık Fon Getirisi (%)</Label>
                     <Input 
                       type="number" 
-                      value={besData.annualReturn} 
+                      value={besData.annualReturn || ""} 
                       onChange={e => setBesData(p => ({...p, annualReturn: Number(e.target.value)}))}
-                      className="h-12 rounded-xl bg-muted border-none font-bold text-lg"
+                      className="h-14 rounded-2xl bg-muted/30 border border-border/50 font-bold text-xl text-primary transition-all focus-visible:ring-1 focus-visible:ring-primary"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label>Süre (Yıl)</Label>
+                  <div className="space-y-3">
+                    <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Süre (Yıl)</Label>
                     <Input 
                       type="number" 
-                      value={besData.years} 
+                      value={besData.years || ""} 
                       onChange={e => setBesData(p => ({...p, years: Number(e.target.value)}))}
-                      className="h-12 rounded-xl bg-muted border-none font-bold text-lg"
+                      className="h-14 rounded-2xl bg-muted/30 border border-border/50 font-bold text-xl text-primary transition-all focus-visible:ring-1 focus-visible:ring-primary"
                     />
                   </div>
                 </CardContent>
@@ -263,18 +320,45 @@ export default function CalculatorsPage() {
                 </div>
 
                 <Card className="p-8 border-border/30 shadow-ambient-medium rounded-[32px] bg-card overflow-hidden">
-                  <CardTitle className="text-lg mb-8">Uzun Vadeli BES Gelişimi</CardTitle>
-                  <div className="h-[300px] w-full">
+                  <CardTitle className="text-lg mb-8 flex items-center justify-between">
+                     Uzun Vadeli BES Gelişimi
+                     {besZoomData && (
+                        <Button variant="outline" size="sm" onClick={() => setBesZoomData(null)} className="h-8 rounded-full text-xs">
+                          <ZoomOut className="h-3 w-3 mr-1" /> Yakınlaştırmayı Sıfırla
+                        </Button>
+                     )}
+                  </CardTitle>
+                  <div className="h-[300px] w-full pr-4 select-none">
                     <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={besRes.chartData}>
+                      <AreaChart 
+                        data={besDataToShow}
+                        onMouseDown={e => e?.activeLabel && setBesRefLeft(String(e.activeLabel))}
+                        onMouseMove={e => e?.activeLabel && besRefLeft && setBesRefRight(String(e.activeLabel))}
+                        onMouseUp={() => {
+                          if (besRefLeft && besRefRight && besRefLeft !== besRefRight) {
+                             const idx1 = besDataToShow.findIndex(d => d.yil === besRefLeft);
+                             const idx2 = besDataToShow.findIndex(d => d.yil === besRefRight);
+                             if (idx1 !== -1 && idx2 !== -1) {
+                               const [min, max] = [idx1, idx2].sort((a,b) => a - b);
+                               setBesZoomData(besDataToShow.slice(min, max + 1));
+                             }
+                          }
+                          setBesRefLeft(null);
+                          setBesRefRight(null);
+                        }}
+                      >
                         <CartesianGrid strokeDasharray="3 3" vertical={false} strokeOpacity={0.1} />
                         <XAxis dataKey="yil" axisLine={false} tickLine={false} tick={{fontSize: 10}} dy={10} />
+                        <YAxis axisLine={false} tickLine={false} tick={{fontSize: 10}} tickFormatter={(val: any) => new Intl.NumberFormat("tr-TR", { notation: "compact" }).format(val)} dx={-10} />
                         <Tooltip 
                            contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 40px -10px rgba(0,0,0,0.1)' }}
                            formatter={(val: any) => [`${Number(val).toLocaleString("tr-TR")} ₺`, "Toplam"]}
                         />
                         <Area type="monotone" dataKey="birikim" stroke="#10b981" strokeWidth={3} fillOpacity={0.2} fill="#10b981" />
                         <Area type="monotone" dataKey="anaPara" stroke="#3b82f6" strokeWidth={2} fillOpacity={0.1} fill="#3b82f6" strokeDasharray="5 5" />
+                        {besRefLeft && besRefRight ? (
+                          <ReferenceArea x1={besRefLeft} x2={besRefRight} strokeOpacity={0.3} fill="#10b981" fillOpacity={0.2} />
+                        ) : null}
                       </AreaChart>
                     </ResponsiveContainer>
                   </div>

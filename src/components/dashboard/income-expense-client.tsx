@@ -27,7 +27,6 @@ import { cn } from "@/lib/utils";
 import { useTheme } from "next-themes";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useRouter } from "next/navigation";
-import { ChatAI } from "./chat-ai";
 import { addIncome, addExpense } from "@/app/actions/income-expense";
 import { payDebtInstallment, addDebt } from "@/app/actions/debts";
 import { 
@@ -589,8 +588,6 @@ export function IncomeExpenseClient({
           </table>
         </div>
       </section>
-
-      <ChatAI />
     </div>
   );
 }

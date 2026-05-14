@@ -11,7 +11,6 @@ import { UpcomingPayments } from "@/components/dashboard/upcoming-payments";
 import { InvestmentSummary } from "@/components/dashboard/investment-summary";
 import { FixedAssetsSummary } from "@/components/dashboard/fixed-assets-summary";
 import { PerformanceChart } from "@/components/dashboard/performance-chart";
-import { ChatAI } from "@/components/dashboard/chat-ai";
 import { SmartInsights } from "@/components/dashboard/smart-insights";
 import { FinancialCalendar } from "@/components/dashboard/financial-calendar";
 import { InvestmentProjection } from "@/components/dashboard/investment-projection";
@@ -288,8 +287,6 @@ export default async function DashboardPage() {
           <FixedAssetsSummary fixedAssets={user.fixedAssets} />
         </CardContent>
       </Card>
-
-      <ChatAI />
     </div>
   );
 }
