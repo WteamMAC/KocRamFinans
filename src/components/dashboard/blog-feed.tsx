@@ -52,7 +52,7 @@ function Avatar({ src, name, id, size = "md" }: { src: string; name: string; id:
 }
 
 // ─── Create Post Box ──────────────────────────────────────────────────
-function CreatePostBox() {
+function CreatePostBox({ currentUserId }: { currentUserId: string }) {
   const { user } = useUser();
   const router = useRouter();
   const [content, setContent] = useState("");
@@ -82,7 +82,7 @@ function CreatePostBox() {
       focused ? "border-primary/30 shadow-ambient-high" : "border-border/20"
     )}>
       <div className="flex gap-3 items-start">
-        {user && <Avatar src={user.imageUrl} name={user.firstName || "K"} id={user.id} />}
+        {user && <Avatar src={user.imageUrl} name={user.firstName || "K"} id={currentUserId} />}
         <div className="flex-1 space-y-2">
           <textarea
             value={content}
@@ -235,7 +235,7 @@ function CommentSection({ post }: { post: Post }) {
 }
 
 // ─── Post Card ────────────────────────────────────────────────────────
-function PostCard({ post }: { post: Post }) {
+function PostCard({ post, currentUserId }: { post: Post; currentUserId: string }) {
   const router = useRouter();
   const [liked, setLiked] = useState(post.isLikedByMe);
   const [likeCount, setLikeCount] = useState(post.likeCount);
@@ -280,19 +280,35 @@ function PostCard({ post }: { post: Post }) {
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
           <Avatar src={post.authorImage} name={post.authorName} id={post.authorId} />
-          <div>
-            <Link href={`/dashboard/profile/${post.authorId}`} className="font-bold text-sm text-foreground hover:text-primary transition-colors">
-              {post.authorName}
-            </Link>
+          <div className="flex flex-col">
+            <div className="flex items-center gap-2">
+              <Link href={`/dashboard/profile/${post.authorId}`} className="font-bold text-sm text-foreground hover:text-primary transition-colors">
+                {post.authorName}
+              </Link>
+              {post.authorId !== currentUserId && (
+                <span className="text-[10px] text-primary bg-primary/10 px-1.5 py-0.5 rounded-md font-bold">
+                  Topluluk
+                </span>
+              )}
+            </div>
             <p className="text-[11px] text-muted-foreground opacity-60">{formatTimeAgo(post.createdAt)}</p>
           </div>
         </div>
-        {post.isMyPost && (
-          <button onClick={handleDelete} disabled={isPending}
-            className="p-2 rounded-xl text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 transition-all duration-200">
-            <Trash2 className="h-4 w-4" />
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+           {!post.isMyPost && (
+            <Link href={`/dashboard/profile/${post.authorId}`}>
+              <Button variant="ghost" size="sm" className="h-8 rounded-xl text-[11px] font-bold text-primary hover:bg-primary/10">
+                Profili Gör
+              </Button>
+            </Link>
+          )}
+          {post.isMyPost && (
+            <button onClick={handleDelete} disabled={isPending}
+              className="p-2 rounded-xl text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 transition-all duration-200">
+              <Trash2 className="h-4 w-4" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* İçerik */}
@@ -435,7 +451,7 @@ export function BlogFeed({
     <div className="space-y-5">
       {mode === "feed" && (
         <>
-          <CreatePostBox />
+          <CreatePostBox currentUserId={currentUserId} />
 
           {/* Feed Tipi Seçimi */}
           <div className="flex p-1 bg-muted/30 rounded-2xl border border-border/20">
@@ -508,7 +524,7 @@ export function BlogFeed({
         </div>
       ) : (
         <div className={cn("space-y-4 transition-opacity", isLoadingMore && posts.length === 0 ? "opacity-50" : "opacity-100")}>
-          {filtered.map((post) => <PostCard key={post.id} post={post} />)}
+          {filtered.map((post) => <PostCard key={post.id} post={post} currentUserId={currentUserId} />)}
         </div>
       )}
 

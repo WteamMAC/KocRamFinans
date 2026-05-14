@@ -27,7 +27,8 @@ import {
   Calculator,
   Shield,
   Landmark,
-  Rss
+  Rss,
+  User
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -38,6 +39,12 @@ const routes = [
     icon: Rss,
     href: "/dashboard/blog",
     color: "text-pink-500",
+  },
+  {
+    label: "Profilim",
+    icon: User,
+    href: "/dashboard/profile",
+    color: "text-purple-500",
   },
   {
     label: "Finansal Özet",

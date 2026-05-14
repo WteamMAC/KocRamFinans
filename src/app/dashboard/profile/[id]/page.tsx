@@ -5,11 +5,11 @@ import { ProfileHeader } from "@/components/dashboard/profile-header";
 import { BlogFeed } from "@/components/dashboard/blog-feed";
 
 interface ProfilePageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 export default async function ProfilePage({ params }: ProfilePageProps) {
-  const { id } = params;
+  const { id } = await params;
   const { userId: clerkUserId } = await auth();
   if (!clerkUserId) redirect("/");
 
