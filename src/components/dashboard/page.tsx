@@ -22,18 +22,18 @@ async function getEconomicNews() {
 
         // XML içinden belirli etiketleri güvenli çıkarmak için Regex fonksiyonu
         const extractTag = (xmlStr: string, tag: string) => {
-            const regex = new RegExp(`<${tag}[^>]*>(?:<!\\[CDATA\\[)?(.*?)(?:\\]\\]>)?<\\/${tag}>`, 'is');
+            const regex = new RegExp(`<${tag}[^>]*>(?:<!\\[CDATA\\[)?([\\s\\S]*?)(?:\\]\\]>)?<\\/${tag}>`, 'i');
             const m = xmlStr.match(regex);
             return m ? m[1].trim() : '';
         };
 
         // Görselleri ayıklamak için
         const extractImage = (xmlStr: string) => {
-            const encMatch = xmlStr.match(/<enclosure[^>]*url="(.*?)"/is);
+            const encMatch = xmlStr.match(/<enclosure[^>]*url="([^"]*)"/i);
             if (encMatch) return encMatch[1];
-            const mediaMatch = xmlStr.match(/<media:content[^>]*url="(.*?)"/is);
+            const mediaMatch = xmlStr.match(/<media:content[^>]*url="([^"]*)"/i);
             if (mediaMatch) return mediaMatch[1];
-            const descImgMatch = xmlStr.match(/<img[^>]*src="(.*?)"/is);
+            const descImgMatch = xmlStr.match(/<img[^>]*src="([^"]*)"/i);
             if (descImgMatch) return descImgMatch[1];
             return null;
         };

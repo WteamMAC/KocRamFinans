@@ -1,4 +1,4 @@
-ha/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import YahooFinanceClass from 'yahoo-finance2';
 
 // Next.js/Turbopack ortamında kütüphanenin doğru başlatılması için instance oluşturuyoruz
