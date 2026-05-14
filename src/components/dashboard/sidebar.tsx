@@ -22,7 +22,8 @@ import {
   ChevronDown,
   PlusCircle,
   MinusCircle,
-  History
+  History,
+  Newspaper
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -65,6 +66,12 @@ const routes = [
     icon: CreditCard,
     href: "/dashboard/debts",
     color: "text-[#ba1a1a]",
+  },
+  {
+    label: "Haberler",
+    icon: Newspaper,
+    href: "/dashboard/news",
+    color: "text-[#026b9c]",
   },
   {
     label: "Bilgileri Düzenle",
