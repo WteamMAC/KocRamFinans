@@ -22,6 +22,11 @@ model User {
   investments Investment[]
   fixedAssets FixedAsset[]
 
+  // Blog ilişkileri
+  blogPosts    BlogPost[]    @relation("BlogPosts")
+  blogLikes    BlogLike[]    @relation("BlogLikes")
+  blogComments BlogComment[] @relation("BlogComments")
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
@@ -106,4 +111,49 @@ model Investment {
 
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
+}
+
+// ============================================================
+// BLOG MODÜLÜ
+// ============================================================
+
+model BlogPost {
+  id        String   @id @default(cuid())
+  authorId  String
+  author    User     @relation("BlogPosts", fields: [authorId], references: [id], onDelete: Cascade)
+
+  content   String
+  imageUrl  String?
+  tags      String[]
+
+  likes     BlogLike[]
+  comments  BlogComment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model BlogLike {
+  id        String   @id @default(cuid())
+  postId    String
+  post      BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation("BlogLikes", fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([postId, userId])
+}
+
+model BlogComment {
+  id        String   @id @default(cuid())
+  postId    String
+  post      BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation("BlogComments", fields: [authorId], references: [id], onDelete: Cascade)
+
+  content   String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
