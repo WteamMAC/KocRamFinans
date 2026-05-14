@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from "recharts";
 import { cn } from "@/lib/utils";
-import { deleteAsset, addAsset } from "@/app/actions/assets";
+import { deleteAsset, addAsset, fixMisclassifiedBesFaiz } from "@/app/actions/assets";
 
 interface InvestmentItem {
   id: string;
@@ -43,6 +43,8 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
   const router = useRouter();
   const [isAdding, setIsAdding] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [fixLoading, setFixLoading] = useState(false);
+  const [fixMessage, setFixMessage] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [projYears, setProjYears] = useState(10);
   const [projMonthly, setProjMonthly] = useState(0); // only for BES
@@ -148,6 +150,27 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
     }
   }
 
+  async function handleFixOldRecords() {
+    setFixLoading(true);
+    setFixMessage(null);
+    try {
+      const result = await fixMisclassifiedBesFaiz();
+      setFixMessage(
+        result.fixedCount > 0
+          ? `✅ ${result.fixedCount} eski kayıt düzeltildi! Sayfa yenileniyor...`
+          : "ℹ️ Düzeltilecek eski kayıt bulunamadı."
+      );
+      if (result.fixedCount > 0) {
+        setTimeout(() => router.refresh(), 1500);
+      }
+    } catch (err) {
+      setFixMessage("❌ Düzeltme sırasında hata oluştu.");
+      console.error(err);
+    } finally {
+      setFixLoading(false);
+    }
+  }
+
   const isBES = type === "BES";
   const accentColor = isBES ? "text-teal-500" : "text-yellow-500";
   const accentBg = isBES ? "bg-teal-500/10" : "bg-yellow-500/10";
@@ -170,7 +193,13 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
             </p>
           </div>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
+          {!isBES && (
+            <Button variant="outline" size="sm" onClick={handleFixOldRecords} disabled={fixLoading} className="rounded-xl border-yellow-500/40 text-yellow-600 hover:bg-yellow-50">
+              <RefreshCw className={cn("h-4 w-4 mr-2", fixLoading && "animate-spin")} />
+              {fixLoading ? "Düzeltiliyor..." : "Eski Kayıtları Düzelt"}
+            </Button>
+          )}
           <Button variant="outline" size="sm" onClick={() => router.refresh()} className="rounded-xl border-border/30">
             <RefreshCw className="h-4 w-4 mr-2" /> Yenile
           </Button>
@@ -179,6 +208,13 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
           </Button>
         </div>
       </div>
+
+      {/* Fix message toast */}
+      {fixMessage && (
+        <div className="px-4 py-3 rounded-xl bg-muted/60 border border-border/20 text-sm font-medium text-foreground animate-in slide-in-from-top-2 duration-300">
+          {fixMessage}
+        </div>
+      )}
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
