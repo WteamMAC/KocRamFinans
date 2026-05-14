@@ -179,6 +179,36 @@
   .shadow-ambient-high {
     box-shadow: 0 10px 30px rgba(84, 94, 118, 0.12);
   }
+  
+  .glass-card {
+    @apply bg-card/60 backdrop-blur-2xl border border-white/10 dark:border-white/5 shadow-2xl;
+  }
+  
+  .premium-gradient {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-container) 100%);
+  }
+  
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary-container;
+  }
+}
+
+/* Custom Scrollbar for Premium Feel */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-muted-foreground/20 rounded-full hover:bg-muted-foreground/40 transition-colors;
+}
+
+::selection {
+  @apply bg-primary/30 text-primary-foreground;
 }
 
 @layer base {
