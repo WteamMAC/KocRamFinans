@@ -8,19 +8,19 @@ export const fetchCache = 'force-no-store';
 function determineTag(title: string, description: string): string {
     const text = (title + " " + description).toLowerCase();
     
-    if (text.includes("kripto") || text.includes("bitcoin") || text.includes("btc") || text.includes("ethereum") || text.includes("binance") || text.includes("coin")) {
+    if (text.includes("kripto") || text.includes("bitcoin") || text.includes("btc") || text.includes("ethereum") || text.includes("binance") || text.includes("coin") || text.includes("crypto")) {
         return "Kripto";
     }
     if (text.includes("bist") || text.includes("borsa istanbul") || text.includes("spk") || text.includes("hisse") || text.includes("endeks") || text.includes("koç") || text.includes("sabancı")) {
         return "BIST";
     }
-    if (text.includes("nasdaq") || text.includes("s&p") || text.includes("dow jones") || text.includes("fed") || text.includes("abd borsası") || text.includes("wall street") || text.includes("faiz kararı") || text.includes("küresel")) {
+    if (text.includes("nasdaq") || text.includes("s&p") || text.includes("dow jones") || text.includes("fed") || text.includes("abd borsası") || text.includes("wall street") || text.includes("faiz kararı") || text.includes("küresel") || text.includes("global") || text.includes("us stocks") || text.includes("markets") || text.includes("treasury") || text.includes("interest rate") || text.includes("fomc")) {
         return "Küresel / ABD";
     }
-    if (text.includes("altın") || text.includes("gram") || text.includes("ons") || text.includes("gümüş") || text.includes("petrol") || text.includes("emtia") || text.includes("brent")) {
+    if (text.includes("altın") || text.includes("gram") || text.includes("ons") || text.includes("gümüş") || text.includes("petrol") || text.includes("emtia") || text.includes("brent") || text.includes("gold") || text.includes("silver") || text.includes("oil") || text.includes("commodity")) {
         return "Emtia / Altın";
     }
-    if (text.includes("dolar") || text.includes("euro") || text.includes("tcmb") || text.includes("faiz") || text.includes("enflasyon") || text.includes("döviz") || text.includes("kur") || text.includes("merkez bankası") || text.includes("ekonomi")) {
+    if (text.includes("dolar") || text.includes("euro") || text.includes("tcmb") || text.includes("faiz") || text.includes("enflasyon") || text.includes("döviz") || text.includes("kur") || text.includes("merkez bankası") || text.includes("ekonomi") || text.includes("dollar") || text.includes("inflation") || text.includes("currency") || text.includes("central bank") || text.includes("economy") || text.includes("cpi")) {
         return "Döviz / Makro";
     }
     return "Genel Ekonomi";
@@ -31,10 +31,14 @@ const SOURCES = [
     { name: "TRT Haber", url: "https://www.trthaber.com/ekonomi_articles.rss" },
     { name: "Habertürk", url: "https://www.haberturk.com/rss/ekonomi.xml" },
     { name: "Bloomberg HT", url: "https://www.bloomberght.com/rss" },
-    { name: "Investing.com", url: "https://tr.investing.com/rss/news_285.rss" },
+    { name: "Investing.com TR", url: "https://tr.investing.com/rss/news_285.rss" },
     { name: "Dünya Gazetesi", url: "https://www.dunya.com/rss" },
     { name: "CNBC-e", url: "https://www.cnbce.com/rss" },
-    { name: "BBC Türkçe", url: "https://feeds.bbci.co.uk/turkce/rss.xml" }
+    { name: "BBC Türkçe", url: "https://feeds.bbci.co.uk/turkce/rss.xml" },
+    { name: "Yahoo Finance", url: "https://finance.yahoo.com/news/rssindex" },
+    { name: "CNBC Global", url: "https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=10000664" },
+    { name: "Investing.com", url: "https://www.investing.com/rss/news_285.rss" },
+    { name: "CoinTelegraph", url: "https://cointelegraph.com/rss" }
 ];
 
 async function fetchFeed(source: { name: string, url: string }): Promise<NewsItem[]> {
@@ -84,7 +88,7 @@ async function fetchFeed(source: { name: string, url: string }): Promise<NewsIte
             return null;
         };
 
-        while ((match = itemRegex.exec(xml)) !== null && items.length < 25) {
+        while ((match = itemRegex.exec(xml)) !== null && items.length < 50) {
             const itemXml = match[1];
             const title = extractTag(itemXml, 'title');
             const link = extractLink(itemXml);
@@ -139,8 +143,8 @@ async function getEconomicNews(): Promise<NewsItem[]> {
     // Sort by descending timestamp (newest first)
     allNews.sort((a, b) => (b as any).timestamp - (a as any).timestamp);
     
-    // Return max 120 items so we don't overload the client but have plenty of news
-    return allNews.slice(0, 120);
+    // Return max 300 items so we don't overload the client but have plenty of news
+    return allNews.slice(0, 300);
 }
 
 export default async function NewsPage() {
