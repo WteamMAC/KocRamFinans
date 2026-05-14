@@ -155,42 +155,60 @@ export async function searchSymbols(query: string, category: string) {
   }
 }
 
-/**
- * Portföy değerini ve kar/zarar durumunu hesaplar
- */
 export function calculatePortfolioMetrics(investments: any[], livePrices: Map<string, PriceResult>) {
   let totalCost = 0;
   let totalCurrentValue = 0;
+  let totalRealizedProfit = 0;
+  let totalDividends = 0;
 
-  const activeInvestments = (investments || []).filter(inv => !inv.status || inv.status === "OPEN");
+  const detailedAssets = (investments || []).map(inv => {
+    const div = inv.dividends || 0;
+    totalDividends += div;
 
-  const detailedAssets = activeInvestments.map(inv => {
-    const live = inv.symbol ? livePrices.get(inv.symbol) : null;
+    if (inv.status === "CLOSED") {
+      const sellValue = (inv.soldPrice || 0) * (inv.quantity || 1);
+      const profit = sellValue - (inv.amount || 0) + div;
+      totalRealizedProfit += profit;
+      return {
+        ...inv,
+        currentPrice: inv.soldPrice,
+        currentValue: sellValue,
+        profit,
+        profitPercent: inv.amount > 0 ? (profit / inv.amount) * 100 : 0
+      };
+    } else {
+      const live = inv.symbol ? livePrices.get(inv.symbol) : null;
+      const currentPrice = (live && live.price > 0)
+        ? live.price
+        : (inv.purchasePrice || (inv.amount / (inv.quantity || 1)));
 
-    const currentPrice = (live && live.price > 0)
-      ? live.price
-      : (inv.purchasePrice || (inv.amount / (inv.quantity || 1)));
+      const currentValue = (inv.quantity || 1) * currentPrice;
+      const cost = inv.amount || 0;
 
-    const currentValue = (inv.quantity || 1) * currentPrice;
-    const cost = inv.amount || 0;
+      totalCost += cost;
+      totalCurrentValue += currentValue;
+      const profit = currentValue - cost + div;
 
-    totalCost += cost;
-    totalCurrentValue += currentValue;
-
-    return {
-      ...inv,
-      currentPrice,
-      currentValue,
-      profit: currentValue - cost,
-      profitPercent: cost > 0 ? ((currentValue - cost) / cost) * 100 : 0
-    };
+      return {
+        ...inv,
+        currentPrice,
+        currentValue,
+        profit,
+        profitPercent: cost > 0 ? (profit / cost) * 100 : 0
+      };
+    }
   });
+
+  const totalUnrealizedProfit = totalCurrentValue - totalCost;
 
   return {
     totalCost,
     totalCurrentValue,
-    totalProfit: totalCurrentValue - totalCost,
-    profitPercent: totalCost > 0 ? ((totalCurrentValue - totalCost) / totalCost) * 100 : 0,
+    totalRealizedProfit,
+    totalUnrealizedProfit,
+    totalDividends,
+    totalProfit: totalUnrealizedProfit + totalRealizedProfit + totalDividends,
+    profitPercent: totalCost > 0 ? (totalUnrealizedProfit / totalCost) * 100 : 0,
     assets: detailedAssets
   };
 }

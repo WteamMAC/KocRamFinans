@@ -12,6 +12,7 @@ import { InvestmentSummary } from "@/components/dashboard/investment-summary";
 import { FixedAssetsSummary } from "@/components/dashboard/fixed-assets-summary";
 import { PerformanceChart } from "@/components/dashboard/performance-chart";
 import { ChatAI } from "@/components/dashboard/chat-ai";
+import { SmartInsights } from "@/components/dashboard/smart-insights";
 import { cn } from "@/lib/utils";
 import { getLivePrices, calculatePortfolioMetrics } from "@/lib/price-service";
 
@@ -64,9 +65,23 @@ export default async function DashboardPage() {
   const totalFixedAssets = (user.fixedAssets as any[]).reduce((acc: number, asset: any) => acc + asset.value, 0);
   const totalProfit = portfolioMetrics.totalProfit;
   const profitPercent = portfolioMetrics.profitPercent;
+  const totalRealizedProfit = (portfolioMetrics as any).totalRealizedProfit || 0;
+  const totalUnrealizedProfit = (portfolioMetrics as any).totalUnrealizedProfit || 0;
+  const totalDividends = (portfolioMetrics as any).totalDividends || 0;
   
   const netWorth = totalInvestment + (totalIncome - totalExpense) + totalFixedAssets - totalDebt;
   const savingsRate = totalIncome > 0 ? ((totalIncome - totalExpense) / totalIncome) * 100 : 0;
+
+  const financialDataForAI = {
+    totalIncome,
+    totalExpense,
+    totalDebt,
+    totalInvestment,
+    netWorth,
+    savingsRate,
+    recentExpenses: user.expenses.slice(0, 5).map((e: any) => ({ type: e.type, amount: e.amount })),
+    recentIncomes: user.incomes.slice(0, 5).map((i: any) => ({ type: i.type, amount: i.amount }))
+  };
 
   return (
     <div className="flex-1 space-y-10 p-8 pt-10 bg-background min-h-screen">
@@ -95,6 +110,9 @@ export default async function DashboardPage() {
         </div>
       </div>
       
+      {/* Smart Insights */}
+      <SmartInsights financialData={financialDataForAI} />
+
       {/* Stats Grid */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <Card className="relative overflow-hidden bg-card border-border/20 shadow-ambient-medium hover:shadow-ambient-high transition-all duration-300 group rounded-[24px]">
@@ -157,6 +175,24 @@ export default async function DashboardPage() {
             )}>
               {totalProfit >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
               %{profitPercent.toFixed(2)} Getiri
+            </div>
+            <div className="mt-4 pt-3 border-t border-primary-foreground/10 space-y-1">
+               <div className="flex justify-between items-center text-[10px]">
+                 <span className="text-primary-foreground/70">Gerçekleşen Kar:</span>
+                 <span className="text-emerald-400 font-bold">+{totalRealizedProfit.toLocaleString('tr-TR')} ₺</span>
+               </div>
+               <div className="flex justify-between items-center text-[10px]">
+                 <span className="text-primary-foreground/70">Bekleyen Kar:</span>
+                 <span className={totalUnrealizedProfit >= 0 ? "text-emerald-400 font-bold" : "text-rose-400 font-bold"}>
+                   {totalUnrealizedProfit > 0 ? "+" : ""}{totalUnrealizedProfit.toLocaleString('tr-TR')} ₺
+                 </span>
+               </div>
+               {totalDividends > 0 && (
+                 <div className="flex justify-between items-center text-[10px]">
+                   <span className="text-primary-foreground/70">Temettü Geliri:</span>
+                   <span className="text-accent font-bold">+{totalDividends.toLocaleString('tr-TR')} ₺</span>
+                 </div>
+               )}
             </div>
           </CardContent>
         </Card>

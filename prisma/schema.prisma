@@ -103,6 +103,8 @@ model Investment {
   transactionType  String   @default("BUY")     // "BUY" | "SELL"
   soldPrice        Float?   // Satış birim fiyatı
   soldAt           DateTime? // Satış tarihi
+  
+  dividends        Float    @default(0)         // Alınan toplam temettü tutarı
 
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt

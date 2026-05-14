@@ -15,7 +15,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { addIncome, addExpense } from "@/app/actions/income-expense";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, TrendingUp, TrendingDown } from "lucide-react";
+import { ArrowLeft, TrendingUp, TrendingDown, Camera, Loader2 } from "lucide-react";
+import { processReceiptWithAI } from "@/app/actions/ocr";
 import Link from "next/link";
 
 interface AddTransactionFormProps {
@@ -32,6 +33,7 @@ export function AddTransactionForm({ type }: AddTransactionFormProps) {
     description: "",
     isRecurring: false,
   });
+  const [isScanning, setIsScanning] = useState(false);
 
   const categories = type === "income" 
     ? ["Maaş", "Kira Geliri", "Yatırım Geliri", "Freelance", "Diğer"]
@@ -69,6 +71,38 @@ export function AddTransactionForm({ type }: AddTransactionFormProps) {
     }
   };
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsScanning(true);
+    setError(null);
+
+    try {
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const base64String = (reader.result as string).split(',')[1];
+        const res = await processReceiptWithAI(base64String, file.type);
+        
+        if (res.success && res.data) {
+          setFormData(prev => ({
+            ...prev,
+            amount: res.data.amount.toString(),
+            category: categories.includes(res.data.category) ? res.data.category : "Diğer",
+            description: res.data.description || "Fiş/Fatura Taraması"
+          }));
+        } else {
+          setError(res.error || "Fiş okunamadı.");
+        }
+        setIsScanning(false);
+      };
+      reader.readAsDataURL(file);
+    } catch (err) {
+      setError("Dosya işlenirken hata oluştu.");
+      setIsScanning(false);
+    }
+  };
+
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div className="flex items-center gap-4 mb-8">
@@ -84,14 +118,27 @@ export function AddTransactionForm({ type }: AddTransactionFormProps) {
 
       <Card className="border-border/30 shadow-ambient-medium rounded-[32px] overflow-hidden bg-card">
         <CardHeader className={type === "income" ? "bg-emerald-500/10" : "bg-rose-500/10"}>
-            <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-xl ${type === "income" ? "bg-emerald-500/20 text-emerald-600" : "bg-rose-500/20 text-rose-600"}`}>
-                    {type === "income" ? <TrendingUp className="h-6 w-6" /> : <TrendingDown className="h-6 w-6" />}
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-xl ${type === "income" ? "bg-emerald-500/20 text-emerald-600" : "bg-rose-500/20 text-rose-600"}`}>
+                        {type === "income" ? <TrendingUp className="h-6 w-6" /> : <TrendingDown className="h-6 w-6" />}
+                    </div>
+                    <div>
+                        <CardTitle className="text-lg text-foreground">İşlem Detayları</CardTitle>
+                        <p className="text-xs text-muted-foreground opacity-60">Lütfen aşağıdaki bilgileri eksiksiz doldurun.</p>
+                    </div>
                 </div>
-                <div>
-                    <CardTitle className="text-lg text-foreground">İşlem Detayları</CardTitle>
-                    <p className="text-xs text-muted-foreground opacity-60">Lütfen aşağıdaki bilgileri eksiksiz doldurun.</p>
-                </div>
+                {type === "expense" && (
+                  <div>
+                    <input type="file" accept="image/*" id="receipt-upload" className="hidden" onChange={handleFileUpload} />
+                    <Label htmlFor="receipt-upload" className="cursor-pointer">
+                      <div className="flex items-center gap-2 bg-primary/10 hover:bg-primary/20 text-primary px-4 py-2 rounded-xl transition-colors">
+                        {isScanning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
+                        <span className="text-sm font-bold">{isScanning ? "Taranıyor..." : "Fiş Tara"}</span>
+                      </div>
+                    </Label>
+                  </div>
+                )}
             </div>
         </CardHeader>
         <CardContent className="p-8 space-y-6">
