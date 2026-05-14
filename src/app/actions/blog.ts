@@ -76,10 +76,13 @@ export async function deleteComment(commentId: string) {
   revalidatePath("/dashboard/blog");
 }
 
-export async function getPosts(currentInternalUserId?: string) {
+export async function getPosts(currentInternalUserId?: string, cursor?: string) {
+  const PAGE_SIZE = 10;
+
   const posts = await prisma.blogPost.findMany({
     orderBy: { createdAt: "desc" },
-    take: 50,
+    take: PAGE_SIZE + 1, // 1 fazla çek → daha fazlası var mı anlamak için
+    ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
     include: {
       author: { select: { id: true, clerkUserId: true } },
       likes: { select: { id: true, userId: true } },
@@ -90,19 +93,25 @@ export async function getPosts(currentInternalUserId?: string) {
     },
   });
 
-  // Tüm benzersiz Clerk kullanıcı ID'lerini topla
+  const hasMore = posts.length > PAGE_SIZE;
+  const pagePosts = hasMore ? posts.slice(0, PAGE_SIZE) : posts;
+
   const clerkUserIds = [
     ...new Set([
-      ...posts.map((p) => p.author.clerkUserId),
-      ...posts.flatMap((p) => p.comments.map((c) => c.author.clerkUserId)),
+      ...pagePosts.map((p: any) => p.author.clerkUserId),
+      ...pagePosts.flatMap((p: any) => p.comments.map((c: any) => c.author.clerkUserId)),
     ]),
   ];
 
   const clerk = await clerkClient();
-  const clerkUserList = await clerk.users.getUserList({ userId: clerkUserIds, limit: 100 });
-  const userMap = new Map(clerkUserList.data.map((u) => [u.id, u]));
+  let userMap = new Map();
+  
+  if (clerkUserIds.length > 0) {
+    const clerkUserList = await clerk.users.getUserList({ userId: clerkUserIds, limit: 100 });
+    userMap = new Map(clerkUserList.data.map((u) => [u.id, u]));
+  }
 
-  return posts.map((post) => {
+  const enrichedPosts = pagePosts.map((post: any) => {
     const clerkUser = userMap.get(post.author.clerkUserId);
     return {
       id: post.id,
@@ -118,10 +127,10 @@ export async function getPosts(currentInternalUserId?: string) {
       authorImage: clerkUser?.imageUrl || "",
       likeCount: post.likes.length,
       isLikedByMe: currentInternalUserId
-        ? post.likes.some((l) => l.userId === currentInternalUserId)
+        ? post.likes.some((l: any) => l.userId === currentInternalUserId)
         : false,
       isMyPost: currentInternalUserId ? post.author.id === currentInternalUserId : false,
-      comments: post.comments.map((comment) => {
+      comments: post.comments.map((comment: any) => {
         const commentUser = userMap.get(comment.author.clerkUserId);
         return {
           id: comment.id,
@@ -140,4 +149,10 @@ export async function getPosts(currentInternalUserId?: string) {
       }),
     };
   });
+
+  return {
+    posts: enrichedPosts,
+    nextCursor: hasMore ? pagePosts[pagePosts.length - 1].id : null,
+  };
 }
+

@@ -104,7 +104,7 @@ export function CompactCurrencyCalculator() {
       </div>
       
       {/* From Currency Select */}
-      <Select value={fromCurrency} onValueChange={setFromCurrency}>
+      <Select value={fromCurrency} onValueChange={(val) => setFromCurrency(val || "USD")}>
         <SelectTrigger className="w-[50px] h-8 bg-transparent border-none focus:ring-0 text-[10px] font-black p-0 flex justify-center hover:text-primary transition-colors z-10">
           <SelectValue />
         </SelectTrigger>
@@ -129,7 +129,7 @@ export function CompactCurrencyCalculator() {
       </Button>
 
       {/* To Currency Select */}
-      <Select value={toCurrency} onValueChange={setToCurrency}>
+      <Select value={toCurrency} onValueChange={(val) => setToCurrency(val || "TRY")}>
         <SelectTrigger className="w-[50px] h-8 bg-transparent border-none focus:ring-0 text-[10px] font-black p-0 flex justify-center hover:text-primary transition-colors z-10">
           <SelectValue />
         </SelectTrigger>

@@ -15,7 +15,7 @@ export default async function BlogPage() {
 
   if (!user) redirect("/onboarding");
 
-  const posts = await getPosts(user.id);
+  const { posts, nextCursor } = await getPosts(user.id);
 
   return (
     <div className="flex-1 p-6 pt-10 bg-background min-h-screen">
@@ -26,8 +26,9 @@ export default async function BlogPage() {
             Finansal deneyimlerinizi paylaşın, birbirinden öğrenin.
           </p>
         </div>
-        <BlogFeed initialPosts={posts} currentUserId={user.id} />
+        <BlogFeed initialPosts={posts} initialNextCursor={nextCursor} currentUserId={user.id} />
       </div>
     </div>
   );
+
 }
