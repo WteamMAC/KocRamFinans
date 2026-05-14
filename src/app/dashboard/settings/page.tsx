@@ -36,13 +36,15 @@ export default async function SettingsPage() {
     hasChildren: user.hasChildren,
     children: user.children.map((c: any) => ({ birthDate: c.birthDate.toISOString().split("T")[0] })),
     incomes: user.incomes.map((i: any) => ({ type: i.type, amount: i.amount, description: i.description || undefined })),
-    expenses: user.expenses.map((e: any) => ({ 
-      type: e.type, 
-      amount: e.amount, 
-      dueDate: e.dueDate || undefined, 
-      isRecurring: e.isRecurring,
-      description: e.description || undefined 
-    })),
+    expenses: user.expenses
+      .filter((e: any) => e.isRecurring)
+      .map((e: any) => ({ 
+        type: e.type, 
+        amount: e.amount, 
+        dueDate: e.dueDate || undefined, 
+        isRecurring: e.isRecurring,
+        description: e.description || undefined 
+      })),
     debts: user.debts.map((d: any) => ({ 
       type: d.type, 
       amount: d.amount, 

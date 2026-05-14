@@ -1,173 +1,114 @@
-import { auth } from "@clerk/nextjs/server";
-import { prisma } from "@/lib/prisma";
-import { redirect } from "next/navigation";
 import { Card } from "@/components/ui/card";
-import { ArrowDownRight, ArrowUpRight, TrendingUp, TrendingDown, Wallet, Clock, Receipt } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Newspaper, Clock, ArrowUpRight, TrendingUp, AlertCircle } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
-export default async function IncomeExpensePage() {
+/**
+ * İnternetten canlı haber çeken fonksiyon (NTV Ekonomi RSS üzerinden)
+ * Next.js sunucu tarafında çalışır ve dış paket (rss-parser vb.) gerektirmez.
+ */
+async function getEconomicNews() {
     try {
-        const { userId } = await auth();
-        if (!userId) redirect("/sign-in");
-
-        const user = await prisma.user.findUnique({
-            where: { clerkUserId: userId },
-            include: {
-                incomes: true, // Veritabanı çökmesini önlemek için sıralamayı JS ile yapacağız
-                expenses: true
-            }
+        // Haberleri her 5 dakikada bir yeniden doğrula (revalidate)
+        const res = await fetch("https://www.ntv.com.tr/ekonomi.rss", {
+            next: { revalidate: 300 }
         });
+        const xml = await res.text();
 
-        if (!user) redirect("/onboarding");
+        const items: any[] = [];
+        const itemRegex = /<item>([\s\S]*?)<\/item>/g;
+        let match;
 
-        // Tarihe göre sıralamayı güvenli bir şekilde JS tarafında yapıyoruz
-        const sortedIncomes = (user.incomes || []).sort((a, b) => new Date(b.createdAt || Date.now()).getTime() - new Date(a.createdAt || Date.now()).getTime());
-        const sortedExpenses = (user.expenses || []).sort((a, b) => new Date(b.createdAt || Date.now()).getTime() - new Date(a.createdAt || Date.now()).getTime());
+        // XML içinden belirli etiketleri güvenli çıkarmak için Regex fonksiyonu
+        const extractTag = (xmlStr: string, tag: string) => {
+            const regex = new RegExp(`<${tag}[^>]*>(?:<!\\[CDATA\\[)?(.*?)(?:\\]\\]>)?<\\/${tag}>`, 'is');
+            const m = xmlStr.match(regex);
+            return m ? m[1].trim() : '';
+        };
 
-        const totalIncome = sortedIncomes.reduce((sum, item) => sum + (item.amount || 0), 0);
-        const totalExpense = sortedExpenses.reduce((sum, item) => sum + (item.amount || 0), 0);
-        const netBalance = totalIncome - totalExpense;
+        // Görselleri ayıklamak için
+        const extractImage = (xmlStr: string) => {
+            const encMatch = xmlStr.match(/<enclosure[^>]*url="(.*?)"/is);
+            if (encMatch) return encMatch[1];
+            const mediaMatch = xmlStr.match(/<media:content[^>]*url="(.*?)"/is);
+            if (mediaMatch) return mediaMatch[1];
+            const descImgMatch = xmlStr.match(/<img[^>]*src="(.*?)"/is);
+            if (descImgMatch) return descImgMatch[1];
+            return null;
+        };
 
-        return (
-            <div className="space-y-8 p-6 md:p-8 pb-20 max-w-7xl mx-auto animate-in fade-in duration-500">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                    <div>
-                        <h2 className="text-3xl font-heading font-bold text-[#8c5000]">Gelir ve Giderler</h2>
-                        <p className="text-[#554336] mt-1">Nakit akışınızı ve harcama detaylarınızı buradan takip edin.</p>
-                    </div>
-                </div>
+        // Sadece en güncel 12 haberi alıyoruz
+        while ((match = itemRegex.exec(xml)) !== null && items.length < 12) {
+            const itemXml = match[1];
+            const title = extractTag(itemXml, 'title');
+            const link = extractTag(itemXml, 'link');
+            let pubDate = extractTag(itemXml, 'pubDate');
+            const rawDesc = extractTag(itemXml, 'description');
+            const description = rawDesc.replace(/<[^>]+>/g, '').substring(0, 120) + "...";
+            const imageUrl = extractImage(itemXml);
 
-                {/* Özet Kartları */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <Card className="p-6 bg-white border-[#dbc2b0]/30 shadow-ambient-medium rounded-[32px] flex flex-col justify-center relative overflow-hidden">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full -mr-10 -mt-10 pointer-events-none" />
-                        <h3 className="text-[10px] font-bold text-[#554336] uppercase tracking-widest mb-2 opacity-70 relative z-10">Toplam Gelir</h3>
-                        <div className="text-3xl font-heading font-bold text-emerald-600 mb-2 relative z-10">
-                            +{totalIncome.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} ₺
-                        </div>
-                    </Card>
+            if (pubDate) {
+                pubDate = new Date(pubDate).toLocaleTimeString("tr-TR", { hour: '2-digit', minute: '2-digit' }) + " - " + new Date(pubDate).toLocaleDateString("tr-TR");
+            }
 
-                    <Card className="p-6 bg-white border-[#dbc2b0]/30 shadow-ambient-medium rounded-[32px] flex flex-col justify-center relative overflow-hidden">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/10 rounded-full -mr-10 -mt-10 pointer-events-none" />
-                        <h3 className="text-[10px] font-bold text-[#554336] uppercase tracking-widest mb-2 opacity-70 relative z-10">Toplam Gider</h3>
-                        <div className="text-3xl font-heading font-bold text-rose-600 mb-2 relative z-10">
-                            -{totalExpense.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} ₺
-                        </div>
-                    </Card>
-
-                    <Card className="p-6 bg-white border-[#dbc2b0]/30 shadow-ambient-medium rounded-[32px] flex flex-col justify-center relative overflow-hidden">
-                        <div className={cn("absolute top-0 right-0 w-32 h-32 rounded-full -mr-10 -mt-10 pointer-events-none", netBalance >= 0 ? "bg-[#8c5000]/10" : "bg-rose-500/10")} />
-                        <h3 className="text-[10px] font-bold text-[#554336] uppercase tracking-widest mb-2 opacity-70 relative z-10">Net Durum</h3>
-                        <div className={cn("text-3xl font-heading font-bold mb-2 relative z-10", netBalance >= 0 ? "text-[#8c5000]" : "text-rose-600")}>
-                            {netBalance >= 0 ? "+" : ""}{netBalance.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} ₺
-                        </div>
-                        <div className={cn("inline-flex items-center px-3 py-1.5 rounded-xl w-fit font-bold relative z-10 text-xs", netBalance >= 0 ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700")}>
-                            {netBalance >= 0 ? <TrendingUp className="h-4 w-4 mr-1" /> : <TrendingDown className="h-4 w-4 mr-1" />}
-                            {netBalance >= 0 ? "Pozitif Nakit Akışı" : "Negatif Nakit Akışı"}
-                        </div>
-                    </Card>
-                </div>
-
-                {/* Listeler */}
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                    {/* Gelirler Listesi */}
-                    <div className="space-y-6">
-                        <div className="flex items-center gap-3 px-2">
-                            <div className="p-2 bg-emerald-500/10 rounded-lg">
-                                <ArrowDownRight className="h-5 w-5 text-emerald-600" />
-                            </div>
-                            <h3 className="text-xl font-heading font-bold text-emerald-700">Gelir Detayları</h3>
-                        </div>
-                        <Card className="bg-white border-[#dbc2b0]/20 shadow-ambient-medium rounded-[32px] overflow-hidden">
-                            <div className="divide-y divide-[#dbc2b0]/10">
-                                {sortedIncomes.length === 0 ? (
-                                    <div className="p-12 text-center text-[#434750] opacity-60">Kayıtlı gelir bulunamadı.</div>
-                                ) : (
-                                    sortedIncomes.map((inc: any) => (
-                                        <div key={inc.id} className="p-6 hover:bg-[#f8f9fa] transition-colors flex justify-between items-center group">
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-emerald-50 text-emerald-600 transition-transform group-hover:scale-110">
-                                                    <Wallet className="h-6 w-6" />
-                                                </div>
-                                                <div>
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="font-bold text-[#191c1d]">{inc.type}</span>
-                                                    </div>
-                                                    <p className="text-[10px] font-medium text-[#554336] flex items-center gap-1 mt-1 opacity-80">
-                                                        <Clock className="h-3 w-3" />
-                                                        {new Date(inc.createdAt || Date.now()).toLocaleDateString("tr-TR")}
-                                                    </p>
-                                                    {inc.description && <p className="text-xs text-[#554336] mt-1 line-clamp-1">{inc.description}</p>}
-                                                </div>
-                                            </div>
-                                            <div className="text-right">
-                                                <div className="font-bold text-emerald-600 text-lg">+{inc.amount?.toLocaleString("tr-TR")} ₺</div>
-                                            </div>
-                                        </div>
-                                    ))
-                                )}
-                            </div>
-                        </Card>
-                    </div>
-
-                    {/* Giderler Listesi */}
-                    <div className="space-y-6">
-                        <div className="flex items-center gap-3 px-2">
-                            <div className="p-2 bg-rose-500/10 rounded-lg">
-                                <ArrowUpRight className="h-5 w-5 text-rose-600" />
-                            </div>
-                            <h3 className="text-xl font-heading font-bold text-rose-700">Gider Detayları</h3>
-                        </div>
-                        <Card className="bg-white border-[#dbc2b0]/20 shadow-ambient-medium rounded-[32px] overflow-hidden">
-                            <div className="divide-y divide-[#dbc2b0]/10">
-                                {sortedExpenses.length === 0 ? (
-                                    <div className="p-12 text-center text-[#434750] opacity-60">Kayıtlı gider bulunamadı.</div>
-                                ) : (
-                                    sortedExpenses.map((exp: any) => (
-                                        <div key={exp.id} className="p-6 hover:bg-[#f8f9fa] transition-colors flex justify-between items-center group">
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-rose-50 text-rose-600 transition-transform group-hover:scale-110">
-                                                    <Receipt className="h-6 w-6" />
-                                                </div>
-                                                <div>
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="font-bold text-[#191c1d]">{exp.type}</span>
-                                                        {exp.isRecurring && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 uppercase">DÜZENLİ</span>}
-                                                    </div>
-                                                    <p className="text-[10px] font-medium text-[#554336] flex items-center gap-1 mt-1 opacity-80">
-                                                        <Clock className="h-3 w-3" />
-                                                        {new Date(exp.createdAt || Date.now()).toLocaleDateString("tr-TR")}
-                                                        {exp.dueDate && ` (Ayın ${exp.dueDate}. günü)`}
-                                                    </p>
-                                                    {exp.description && <p className="text-xs text-[#554336] mt-1 line-clamp-1">{exp.description}</p>}
-                                                </div>
-                                            </div>
-                                            <div className="text-right">
-                                                <div className="font-bold text-rose-600 text-lg">-{exp.amount?.toLocaleString("tr-TR")} ₺</div>
-                                            </div>
-                                        </div>
-                                    ))
-                                )}
-                            </div>
-                        </Card>
-                    </div>
-                </div>
-            </div>
-        );
-    } catch (error: any) {
-        console.error("Gelir-Gider sayfası yükleme hatası:", error);
-        return (
-            <div className="p-8 max-w-7xl mx-auto flex flex-col items-center justify-center min-h-[50vh] text-center">
-                <div className="bg-rose-50 text-rose-600 p-6 rounded-3xl border border-rose-100 max-w-xl shadow-ambient-medium">
-                    <h2 className="text-2xl font-bold mb-2">Sayfa Yüklenirken Bir Hata Oluştu</h2>
-                    <p className="text-sm opacity-80 mb-4">Veritabanı bağlantısında veya verilerde bir uyumsuzluk yaşandı.</p>
-                    <code className="text-xs font-mono bg-white/50 p-4 rounded-xl block text-left overflow-auto border border-rose-200">
-                        {error?.message || "Bilinmeyen sunucu hatası"}
-                    </code>
-                </div>
-            </div>
-        );
+            if (title && link) {
+                items.push({ title, link, pubDate, description, imageUrl });
+            }
+        }
+        return items;
+    } catch (err) {
+        console.error("Haberleri çekerken hata oluştu:", err);
+        return [];
     }
+}
+
+export default async function NewsPage() {
+    const news = await getEconomicNews();
+
+    return (
+        <div className="space-y-8 p-6 md:p-8 pb-20 max-w-7xl mx-auto animate-in fade-in duration-500">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div>
+                    <h2 className="text-3xl font-heading font-bold text-[#8c5000] flex items-center gap-3">
+                        <Newspaper className="h-8 w-8" /> Canlı Ekonomi Haberleri
+                    </h2>
+                    <p className="text-[#554336] mt-1">Piyasalardaki en güncel gelişmeleri anlık olarak takip edin.</p>
+                </div>
+            </div>
+
+            {news.length === 0 ? (
+                <div className="flex flex-col items-center justify-center p-12 bg-white rounded-[32px] border border-[#dbc2b0]/30 shadow-ambient-low text-center">
+                    <AlertCircle className="h-12 w-12 text-[#554336] opacity-30 mb-4" />
+                    <h3 className="text-lg font-bold text-[#8c5000]">Haberler Yüklenemedi</h3>
+                    <p className="text-[#554336] opacity-70 mt-2">Şu anda haber kaynağına ulaşılamıyor. Lütfen daha sonra tekrar deneyin.</p>
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {news.map((item, idx) => (
+                        <a key={idx} href={item.link} target="_blank" rel="noopener noreferrer" className="group h-full flex">
+                            <Card className="flex flex-col w-full overflow-hidden bg-white border-[#dbc2b0]/30 shadow-ambient-low hover:shadow-ambient-medium hover:border-[#8c5000]/40 transition-all duration-300 rounded-[24px]">
+                                {item.imageUrl && (
+                                    <div className="w-full h-48 overflow-hidden bg-[#f8f9fa] relative">
+                                        <img src={item.imageUrl} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                    </div>
+                                )}
+                                <div className="p-6 flex flex-col flex-1">
+                                    <div className="flex items-center gap-2 text-[#8c5000] text-xs font-bold uppercase tracking-wider mb-3">
+                                        <TrendingUp className="h-4 w-4" /> Piyasa
+                                    </div>
+                                    <h3 className="font-heading font-bold text-lg text-[#191c1d] group-hover:text-[#8c5000] transition-colors line-clamp-3 mb-2">{item.title}</h3>
+                                    <p className="text-[#554336] text-sm opacity-80 line-clamp-2 flex-1">{item.description}</p>
+
+                                    <div className="mt-6 pt-4 border-t border-[#dbc2b0]/20 flex items-center justify-between text-xs text-[#554336] font-medium opacity-60">
+                                        <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {item.pubDate}</span>
+                                        <span className="flex items-center gap-1 group-hover:text-[#8c5000] transition-colors">Habere Git <ArrowUpRight className="h-3 w-3" /></span>
+                                    </div>
+                                </div>
+                            </Card>
+                        </a>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
 }

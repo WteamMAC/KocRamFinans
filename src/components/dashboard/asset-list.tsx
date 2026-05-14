@@ -65,6 +65,7 @@ interface InvestmentLog {
   soldPrice?: number;
   transactionType: "BUY" | "SELL";
   createdAt: Date | string;
+  description?: string | null;
 }
 
 interface AssetListProps {
@@ -862,6 +863,11 @@ export function AssetList({ assets, allInvestments, fixedAssets, metrics, defaul
                           <Clock className="h-3 w-3" />
                           {new Date(log.createdAt).toLocaleDateString("tr-TR")} {new Date(log.createdAt).toLocaleTimeString("tr-TR", { hour: '2-digit', minute: '2-digit' })}
                         </p>
+                        {log.description && (
+                          <p className="text-[10px] text-[#554336] opacity-80 mt-1 italic">
+                            &quot;{log.description}&quot;
+                          </p>
+                        )}
                       </div>
                     </div>
                     <div className="text-right">
@@ -913,6 +919,11 @@ export function AssetList({ assets, allInvestments, fixedAssets, metrics, defaul
                       <p className="text-[10px] font-medium text-[#554336] mt-1">
                         {new Date(log.createdAt).toLocaleDateString("tr-TR")} {new Date(log.createdAt).toLocaleTimeString("tr-TR", { hour: '2-digit', minute: '2-digit' })}
                       </p>
+                      {log.description && (
+                        <p className="text-[10px] text-[#554336] opacity-80 mt-1 italic">
+                          &quot;{log.description}&quot;
+                        </p>
+                      )}
                     </div>
                   </div>
                   <div className="text-right">
