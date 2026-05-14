@@ -28,11 +28,14 @@ export async function getExchangeRatesAction() {
     const symbols = ["TRY=X", "EURTRY=X", "GBPTRY=X", "GC=F"]; // USD, EUR, GBP, Gold
     const results = await getLivePrices(symbols);
     
+    const usdRate = results.get("TRY=X")?.price || 0;
+    const goldUsdPerOunce = results.get("GC=F")?.price || 0;
+    
     return {
-      USD: results.get("TRY=X")?.price || 0,
+      USD: usdRate,
       EUR: results.get("EURTRY=X")?.price || 0,
       GBP: results.get("GBPTRY=X")?.price || 0,
-      XAU: (results.get("GC=F")?.price || 0) / 31.1035, // Convert Ounce to Gram
+      XAU: (goldUsdPerOunce / 31.1035) * usdRate, // Convert USD/Ounce to TRY/Gram
     };
   } catch (error) {
     console.error("Exchange Rates Error:", error);
