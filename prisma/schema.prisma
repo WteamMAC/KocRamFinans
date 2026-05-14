@@ -26,6 +26,11 @@ model User {
   blogPosts    BlogPost[]    @relation("BlogPosts")
   blogLikes    BlogLike[]    @relation("BlogLikes")
   blogComments BlogComment[] @relation("BlogComments")
+  
+  // Takipçi Sistemi
+  followers    Follow[] @relation("following")
+  following    Follow[] @relation("follower")
+
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -145,6 +150,7 @@ model BlogLike {
   @@unique([postId, userId])
 }
 
+
 model BlogComment {
   id        String   @id @default(cuid())
   postId    String
@@ -156,4 +162,16 @@ model BlogComment {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String   // Takip eden kullanıcı
+  follower    User     @relation("follower", fields: [followerId], references: [id], onDelete: Cascade)
+  followingId String   // Takip edilen kullanıcı
+  following   User     @relation("following", fields: [followingId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime @default(now())
+
+  @@unique([followerId, followingId])
 }

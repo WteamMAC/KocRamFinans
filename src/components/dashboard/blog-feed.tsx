@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Heart, MessageCircle, Trash2, Send, X, ChevronDown, Filter } from "lucide-react";
-import { createPost, toggleLike, addComment, deletePost, deleteComment, getPosts } from "@/app/actions/blog";
+import { createPost, toggleLike, addComment, deletePost, deleteComment, getPosts, getProfilePosts } from "@/app/actions/blog";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useUser } from "@clerk/nextjs";
+import Link from "next/link";
 
 const ALL_TAGS = ["#yatırım", "#kripto", "#hisse", "#tasarruf", "#borç", "#bes", "#faiz", "#altın", "#bütçe"];
 const MAX_CHARS = 500;
@@ -32,16 +33,21 @@ function formatTimeAgo(date: Date): string {
   return new Date(date).toLocaleDateString("tr-TR");
 }
 
-function Avatar({ src, name, size = "md" }: { src: string; name: string; size?: "sm" | "md" }) {
+function Avatar({ src, name, id, size = "md" }: { src: string; name: string; id: string; size?: "sm" | "md" }) {
   const sz = size === "sm" ? "w-7 h-7 text-[10px]" : "w-10 h-10 text-sm";
-  if (src) return (
+  const content = src ? (
     // eslint-disable-next-line @next/next/no-img-element
     <img src={src} alt={name} className={cn("rounded-full object-cover ring-2 ring-border/30 flex-shrink-0", sz)} />
-  );
-  return (
+  ) : (
     <div className={cn("rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 font-bold text-primary", sz)}>
       {name?.[0] || "?"}
     </div>
+  );
+
+  return (
+    <Link href={`/dashboard/profile/${id}`} className="hover:opacity-80 transition-opacity">
+      {content}
+    </Link>
   );
 }
 
@@ -76,7 +82,7 @@ function CreatePostBox() {
       focused ? "border-primary/30 shadow-ambient-high" : "border-border/20"
     )}>
       <div className="flex gap-3 items-start">
-        <Avatar src={user?.imageUrl || ""} name={user?.firstName || "K"} />
+        {user && <Avatar src={user.imageUrl} name={user.firstName || "K"} id={user.id} />}
         <div className="flex-1 space-y-2">
           <textarea
             value={content}
@@ -191,10 +197,12 @@ function CommentSection({ post }: { post: Post }) {
       )}
       {post.comments.map((c) => (
         <div key={c.id} className="flex gap-2 items-start group">
-          <Avatar src={c.authorImage} name={c.authorName} size="sm" />
+          <Avatar src={c.authorImage} name={c.authorName} id={c.authorId} size="sm" />
           <div className="flex-1 bg-muted/30 rounded-xl px-3 py-2">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold text-primary">{c.authorName}</span>
+              <Link href={`/dashboard/profile/${c.authorId}`} className="text-[11px] font-bold text-primary hover:underline">
+                {c.authorName}
+              </Link>
               <div className="flex items-center gap-1">
                 <span className="text-[10px] text-muted-foreground opacity-50">{formatTimeAgo(c.createdAt)}</span>
                 {c.isMyComment && (
@@ -271,9 +279,11 @@ function PostCard({ post }: { post: Post }) {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
-          <Avatar src={post.authorImage} name={post.authorName} />
+          <Avatar src={post.authorImage} name={post.authorName} id={post.authorId} />
           <div>
-            <p className="font-bold text-sm text-foreground">{post.authorName}</p>
+            <Link href={`/dashboard/profile/${post.authorId}`} className="font-bold text-sm text-foreground hover:text-primary transition-colors">
+              {post.authorName}
+            </Link>
             <p className="text-[11px] text-muted-foreground opacity-60">{formatTimeAgo(post.createdAt)}</p>
           </div>
         </div>
@@ -331,21 +341,80 @@ export function BlogFeed({
   initialPosts,
   initialNextCursor,
   currentUserId,
+  mode = "feed",
+  profileId,
 }: {
   initialPosts: Post[];
   initialNextCursor: string | null;
   currentUserId: string;
+  mode?: "feed" | "profile";
+  profileId?: string;
 }) {
   const [posts, setPosts] = useState<Post[]>(initialPosts);
   const [nextCursor, setNextCursor] = useState<string | null>(initialNextCursor);
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoadingMore, startLoadMore] = useTransition();
+  const [feedType, setFeedType] = useState<"explore" | "following">("explore");
+
+  // Fast Polling - Arka planda yeni postları kontrol et (Her 30 saniyede bir)
+  useEffect(() => {
+    // Profil sayfasındaysak veya arama yapılıyorsa otomatik yenileme yapmayabiliriz
+    // Ama genel akışta (Keşfet/Takip) yeni postları çekmek iyidir.
+    const pollInterval = setInterval(async () => {
+      try {
+        let result;
+        if (mode === "profile" && profileId) {
+          result = await getProfilePosts(profileId);
+        } else {
+          result = await getPosts(currentUserId, undefined, feedType);
+        }
+
+        if (result.posts && result.posts.length > 0) {
+          setPosts((prev) => {
+            // Sadece gerçekten yeni olanları (id'si bizde olmayanları) ekle
+            const existingIds = new Set(prev.map(p => p.id));
+            const newPosts = result.posts.filter((p: Post) => !existingIds.has(p.id));
+            
+            if (newPosts.length === 0) return prev;
+            
+            // Yeni postları listenin başına ekle ve tarihleri düzelt
+            const formattedNewPosts = newPosts.map((p: Post) => ({
+              ...p,
+              createdAt: new Date(p.createdAt)
+            }));
+            
+            return [...formattedNewPosts, ...prev];
+          });
+        }
+      } catch (error) {
+        console.error("Polling error:", error);
+      }
+    }, 30000); // 30 saniye
+
+    return () => clearInterval(pollInterval);
+  }, [currentUserId, feedType, mode, profileId]);
+
+  // Feed tipi değiştiğinde veriyi sıfırla ve yeniden çek
+  const switchFeed = (type: "explore" | "following") => {
+    if (type === feedType) return;
+    setFeedType(type);
+    startLoadMore(async () => {
+      const result = await getPosts(currentUserId, undefined, type);
+      setPosts(result.posts);
+      setNextCursor(result.nextCursor);
+    });
+  };
 
   const handleLoadMore = () => {
     if (!nextCursor) return;
     startLoadMore(async () => {
-      const result = await getPosts(currentUserId, nextCursor);
+      let result;
+      if (mode === "profile" && profileId) {
+        result = await getProfilePosts(profileId, nextCursor);
+      } else {
+        result = await getPosts(currentUserId, nextCursor, feedType);
+      }
       setPosts((prev) => [...prev, ...result.posts]);
       setNextCursor(result.nextCursor);
     });
@@ -364,7 +433,33 @@ export function BlogFeed({
 
   return (
     <div className="space-y-5">
-      <CreatePostBox />
+      {mode === "feed" && (
+        <>
+          <CreatePostBox />
+
+          {/* Feed Tipi Seçimi */}
+          <div className="flex p-1 bg-muted/30 rounded-2xl border border-border/20">
+            <button
+              onClick={() => switchFeed("explore")}
+              className={cn(
+                "flex-1 py-2 text-sm font-bold rounded-xl transition-all",
+                feedType === "explore" ? "bg-card text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              Keşfet
+            </button>
+            <button
+              onClick={() => switchFeed("following")}
+              className={cn(
+                "flex-1 py-2 text-sm font-bold rounded-xl transition-all",
+                feedType === "following" ? "bg-card text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              Takip Ettiklerim
+            </button>
+          </div>
+        </>
+      )}
 
       {/* Arama */}
       <div className="relative">
@@ -397,20 +492,22 @@ export function BlogFeed({
       )}
 
       {/* Gönderiler */}
-      {filtered.length === 0 ? (
+      {filtered.length === 0 && !isLoadingMore ? (
         <div className="text-center py-16 bg-card border border-dashed border-border/30 rounded-[24px] animate-in fade-in duration-500">
-          <p className="text-5xl mb-4">{activeTag || searchQuery ? "🔍" : "💬"}</p>
+          <p className="text-5xl mb-4">{activeTag || searchQuery || feedType === "following" ? "🔍" : "💬"}</p>
           <p className="font-bold text-foreground text-lg">
-            {activeTag || searchQuery ? "Sonuç bulunamadı" : "Henüz paylaşım yok"}
+            {feedType === "following" && posts.length === 0 
+              ? "Henüz kimseyi takip etmiyorsun" 
+              : (activeTag || searchQuery ? "Sonuç bulunamadı" : "Henüz paylaşım yok")}
           </p>
           <p className="text-sm text-muted-foreground mt-1">
-            {activeTag || searchQuery
-              ? "Farklı filtre veya arama terimi deneyin."
-              : "Topluluğa katıl, ilk paylaşımı sen yap!"}
+            {feedType === "following" && posts.length === 0
+              ? "Yeni kişiler keşfederek akışını canlandır!"
+              : (activeTag || searchQuery ? "Farklı filtre veya arama terimi deneyin." : "Topluluğa katıl, ilk paylaşımı sen yap!")}
           </p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className={cn("space-y-4 transition-opacity", isLoadingMore && posts.length === 0 ? "opacity-50" : "opacity-100")}>
           {filtered.map((post) => <PostCard key={post.id} post={post} />)}
         </div>
       )}

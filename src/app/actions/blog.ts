@@ -17,8 +17,10 @@ export async function createPost(content: string, tags: string[]) {
   await prisma.blogPost.create({
     data: { authorId: user.id, content, tags },
   });
+
   revalidatePath("/dashboard/blog");
 }
+
 
 export async function deletePost(postId: string) {
   const { userId } = await auth();
@@ -76,10 +78,22 @@ export async function deleteComment(commentId: string) {
   revalidatePath("/dashboard/blog");
 }
 
-export async function getPosts(currentInternalUserId?: string, cursor?: string) {
+export async function getPosts(currentInternalUserId?: string, cursor?: string, type: "explore" | "following" = "explore") {
   const PAGE_SIZE = 10;
 
+  let whereClause = {};
+
+  if (type === "following" && currentInternalUserId) {
+    const following = await prisma.follow.findMany({
+      where: { followerId: currentInternalUserId },
+      select: { followingId: true },
+    });
+    const followingIds = following.map((f) => f.followingId);
+    whereClause = { authorId: { in: followingIds } };
+  }
+
   const posts = await prisma.blogPost.findMany({
+    where: whereClause,
     orderBy: { createdAt: "desc" },
     take: PAGE_SIZE + 1, // 1 fazla çek → daha fazlası var mı anlamak için
     ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
@@ -145,6 +159,161 @@ export async function getPosts(currentInternalUserId?: string, cursor?: string) 
           isMyComment: currentInternalUserId
             ? comment.author.id === currentInternalUserId
             : false,
+        };
+      }),
+    };
+  });
+
+  return {
+    posts: enrichedPosts,
+    nextCursor: hasMore ? pagePosts[pagePosts.length - 1].id : null,
+  };
+}
+
+export async function toggleFollow(targetInternalUserId: string) {
+  const { userId: clerkUserId } = await auth();
+  if (!clerkUserId) throw new Error("Unauthorized");
+  const me = await getInternalUser(clerkUserId);
+  if (!me) throw new Error("User not found");
+
+  if (me.id === targetInternalUserId) throw new Error("Kendini takip edemezsin");
+
+  const existing = await prisma.follow.findUnique({
+    where: {
+      followerId_followingId: {
+        followerId: me.id,
+        followingId: targetInternalUserId,
+      },
+    },
+  });
+
+  if (existing) {
+    await prisma.follow.delete({ where: { id: existing.id } });
+  } else {
+    await prisma.follow.create({
+      data: {
+        followerId: me.id,
+        followingId: targetInternalUserId,
+      },
+    });
+  }
+  revalidatePath("/dashboard/blog");
+}
+
+export async function getFollowStatus(targetInternalUserId: string) {
+  const { userId: clerkUserId } = await auth();
+  if (!clerkUserId) return false;
+  const me = await getInternalUser(clerkUserId);
+  if (!me) return false;
+
+  const follow = await prisma.follow.findUnique({
+    where: {
+      followerId_followingId: {
+        followerId: me.id,
+        followingId: targetInternalUserId,
+      },
+    },
+  });
+
+  return !!follow;
+}
+
+export async function getUserProfile(targetInternalUserId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: targetInternalUserId },
+    include: {
+      _count: {
+        select: { followers: true, following: true, blogPosts: true },
+      },
+    },
+  });
+
+  if (!user) return null;
+
+  const clerk = await clerkClient();
+  const clerkUser = await clerk.users.getUser(user.clerkUserId);
+
+  return {
+    id: user.id,
+    name: `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim() || "Kullanıcı",
+    imageUrl: clerkUser.imageUrl,
+    followerCount: user._count.followers,
+    followingCount: user._count.following,
+    postCount: user._count.blogPosts,
+    isMe: (await auth()).userId === user.clerkUserId,
+  };
+}
+
+export async function getProfilePosts(targetInternalUserId: string, cursor?: string) {
+  const PAGE_SIZE = 10;
+
+  const posts = await prisma.blogPost.findMany({
+    where: { authorId: targetInternalUserId },
+    orderBy: { createdAt: "desc" },
+    take: PAGE_SIZE + 1,
+    ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+    include: {
+      author: { select: { id: true, clerkUserId: true } },
+      likes: { select: { id: true, userId: true } },
+      comments: {
+        orderBy: { createdAt: "asc" },
+        include: { author: { select: { id: true, clerkUserId: true } } },
+      },
+    },
+  });
+
+  const hasMore = posts.length > PAGE_SIZE;
+  const pagePosts = hasMore ? posts.slice(0, PAGE_SIZE) : posts;
+
+  // Profil sayfasında olduğumuz için tüm postların yazarı zaten belli, 
+  // sadece yorum yapanları getirmemiz yeterli.
+  const clerkUserIds = [
+    ...new Set([
+      pagePosts[0]?.author.clerkUserId,
+      ...pagePosts.flatMap((p: any) => p.comments.map((c: any) => c.author.clerkUserId)),
+    ]),
+  ].filter(Boolean) as string[];
+
+  const clerk = await clerkClient();
+  let userMap = new Map();
+  if (clerkUserIds.length > 0) {
+    const clerkUserList = await clerk.users.getUserList({ userId: clerkUserIds, limit: 100 });
+    userMap = new Map(clerkUserList.data.map((u) => [u.id, u]));
+  }
+
+  const { userId: myClerkId } = await auth();
+  const me = myClerkId ? await getInternalUser(myClerkId) : null;
+
+  const enrichedPosts = pagePosts.map((post: any) => {
+    const clerkUser = userMap.get(post.author.clerkUserId);
+    return {
+      id: post.id,
+      content: post.content,
+      tags: post.tags,
+      imageUrl: post.imageUrl,
+      createdAt: post.createdAt,
+      authorId: post.author.id,
+      authorName:
+        clerkUser
+          ? `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim() || "Kullanıcı"
+          : "Kullanıcı",
+      authorImage: clerkUser?.imageUrl || "",
+      likeCount: post.likes.length,
+      isLikedByMe: me ? post.likes.some((l: any) => l.userId === me.id) : false,
+      isMyPost: me ? post.author.id === me.id : false,
+      comments: post.comments.map((comment: any) => {
+        const commentUser = userMap.get(comment.author.clerkUserId);
+        return {
+          id: comment.id,
+          content: comment.content,
+          createdAt: comment.createdAt,
+          authorId: comment.author.id,
+          authorName:
+            commentUser
+              ? `${commentUser.firstName || ""} ${commentUser.lastName || ""}`.trim() || "Kullanıcı"
+              : "Kullanıcı",
+          authorImage: commentUser?.imageUrl || "",
+          isMyComment: me ? comment.author.id === me.id : false,
         };
       }),
     };
