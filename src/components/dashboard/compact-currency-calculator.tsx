@@ -79,7 +79,7 @@ export function CompactCurrencyCalculator() {
     <motion.div
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="hidden lg:flex items-center gap-0 bg-card/60 backdrop-blur-2xl border border-primary/20 rounded-2xl px-2.5 py-1.5 shadow-2xl hover:shadow-primary/20 hover:border-primary/40 transition-all duration-500 group relative overflow-hidden"
+      className="hidden lg:flex items-center gap-3 bg-card/60 backdrop-blur-2xl border border-primary/20 rounded-2xl px-4 py-2 shadow-2xl hover:shadow-primary/20 hover:border-primary/40 transition-all duration-500 group relative overflow-hidden min-w-[500px]"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -95,20 +95,20 @@ export function CompactCurrencyCalculator() {
       </div>
 
       {/* Amount Input Section */}
-      <div className="relative group/input z-10 flex flex-col justify-center">
+      <div className="relative group/input z-10 flex flex-col justify-center min-w-[100px]">
         <Input
           type="number"
           value={amount === 0 ? "" : amount}
           onChange={(e) => setAmount(parseFloat(e.target.value) || 0)}
-          className="w-20 h-8 bg-transparent border-none focus-visible:ring-0 text-sm font-black p-0 text-center placeholder:opacity-40 transition-all group-hover/input:scale-105"
-          placeholder="1"
+          className="w-full h-8 bg-transparent border-none focus-visible:ring-0 text-base font-black p-0 text-center placeholder:opacity-40 transition-all group-hover/input:scale-105"
+          placeholder="1.00"
         />
         <div className="h-[2px] w-0 bg-primary group-hover/input:w-full transition-all duration-500 mx-auto rounded-full opacity-50" />
       </div>
 
       {/* From Currency Select */}
       <Select value={fromCurrency} onValueChange={(val: any) => setFromCurrency(val || "USD")}>
-        <SelectTrigger className="w-[75px] h-8 bg-transparent border-none focus:ring-0 text-[11px] font-black p-0 flex justify-center items-center hover:text-primary transition-all z-10 gap-1">
+        <SelectTrigger className="w-[90px] h-9 bg-primary/5 border-none focus:ring-0 text-xs font-black px-3 flex justify-between items-center hover:bg-primary/10 transition-all z-10 rounded-xl">
           <SelectValue />
         </SelectTrigger>
         <SelectContent className="rounded-2xl border-primary/10 bg-card/95 backdrop-blur-2xl shadow-2xl">
@@ -133,7 +133,7 @@ export function CompactCurrencyCalculator() {
 
       {/* To Currency Select */}
       <Select value={toCurrency} onValueChange={(val: any) => setToCurrency(val || "TRY")}>
-        <SelectTrigger className="w-[75px] h-8 bg-transparent border-none focus:ring-0 text-[11px] font-black p-0 flex justify-center items-center hover:text-primary transition-all z-10 gap-1">
+        <SelectTrigger className="w-[90px] h-9 bg-primary/5 border-none focus:ring-0 text-xs font-black px-3 flex justify-between items-center hover:bg-primary/10 transition-all z-10 rounded-xl">
           <SelectValue />
         </SelectTrigger>
         <SelectContent className="rounded-2xl border-primary/10 bg-card/95 backdrop-blur-2xl shadow-2xl">
@@ -150,7 +150,7 @@ export function CompactCurrencyCalculator() {
       <div className="h-6 w-[1.5px] bg-gradient-to-b from-transparent via-primary/20 to-transparent mx-3 z-10" />
 
       {/* Result Display with Sparkle */}
-      <div className="flex flex-col items-end justify-center min-w-[90px] pr-2 z-10">
+      <div className="flex flex-col items-center justify-center min-w-[140px] px-4 py-1.5 bg-primary/5 rounded-2xl z-10 border border-primary/10 group-hover:border-primary/30 transition-all">
         <AnimatePresence mode="wait">
           <motion.div
             key={`${result}-${toCurrency}`}
