@@ -24,7 +24,9 @@ import {
   MinusCircle,
   History,
   Newspaper,
-  Calculator
+  Calculator,
+  Shield,
+  Landmark
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -53,6 +55,8 @@ const routes = [
       { label: "BIST (Hisse)", icon: TrendingUp, href: "/dashboard/assets/bist", color: "text-emerald-500" },
       { label: "NASDAQ (Hisse)", icon: Globe, href: "/dashboard/assets/nasdaq", color: "text-blue-500" },
       { label: "Altın & Emtia", icon: Coins, href: "/dashboard/assets/gold", color: "text-amber-500" },
+      { label: "BES", icon: Shield, href: "/dashboard/assets/bes", color: "text-teal-500" },
+      { label: "Faiz", icon: Landmark, href: "/dashboard/assets/faiz", color: "text-yellow-500" },
       { label: "Sabit Varlıklar", icon: Home, href: "/dashboard/assets/fixed", color: "text-indigo-500" },
     ]
   },
