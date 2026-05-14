@@ -418,6 +418,8 @@ export function AssetList({ assets, allInvestments, fixedAssets, defaultTab = "f
                     <SelectItem value="NASDAQ">NASDAQ (Hisse)</SelectItem>
                     <SelectItem value="CRYPTO">Kripto Para</SelectItem>
                     <SelectItem value="GOLD">Altın/Emtia</SelectItem>
+                    <SelectItem value="BES">BES (Bireysel Emeklilik)</SelectItem>
+                    <SelectItem value="FAIZ">Vadeli Mevduat (Faiz)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

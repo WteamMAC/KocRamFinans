@@ -23,7 +23,8 @@ import {
   PlusCircle,
   MinusCircle,
   History,
-  Newspaper
+  Newspaper,
+  Calculator
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -34,6 +35,12 @@ const routes = [
     icon: LayoutDashboard,
     href: "/dashboard",
     color: "text-primary",
+  },
+  {
+    label: "Hesaplayıcılar",
+    icon: Calculator,
+    href: "/dashboard/calculators",
+    color: "text-emerald-500",
   },
   {
     label: "Varlıklarım",
