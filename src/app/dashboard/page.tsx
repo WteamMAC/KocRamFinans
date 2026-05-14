@@ -202,19 +202,12 @@ export default async function DashboardPage() {
 
       {/* Performance & Budget Chart */}
       <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="col-span-4 bg-card border-border/20 shadow-ambient-medium rounded-[32px] overflow-hidden">
-          <CardHeader className="bg-muted/30 border-b border-border/10 py-6">
-            <CardTitle className="text-xl font-heading font-bold text-primary flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-accent" /> Gelişim Grafiği (Son 30 Gün)
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-8">
-            <PerformanceChart 
-              incomes={user.incomes} 
-              expenses={user.expenses} 
-              investments={user.investments} 
-            />
-          </CardContent>
+        <Card className="col-span-4 bg-card border-border/20 shadow-ambient-medium rounded-[32px] overflow-hidden flex flex-col">
+          <PerformanceChart 
+            incomes={user.incomes} 
+            expenses={user.expenses} 
+            investments={user.investments} 
+          />
         </Card>
 
         <Card className="col-span-3 bg-card border-border/20 shadow-ambient-medium rounded-[32px] overflow-hidden">
