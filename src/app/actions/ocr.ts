@@ -41,6 +41,7 @@ Sadece aşağıdaki JSON formatında geçerli bir çıktı ver. JSON içine ASLA
     // Clean markdown if present
     responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
     
+    try {
       const parsedData = JSON.parse(responseText);
       return { success: true, data: parsedData };
     } catch (parseError) {
