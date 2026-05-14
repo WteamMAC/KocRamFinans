@@ -35,11 +35,16 @@ export async function getLivePrices(symbols: string[]): Promise<Map<string, Pric
 
   symbols.forEach(s => {
     const symbolUpper = s.toUpperCase();
-    const cached = priceCache.get(symbolUpper);
-    if (cached && (now - cached.timestamp < CACHE_TTL)) {
-      results.set(symbolUpper, cached.data);
+    // TRY (Türk Lirası) için özel durum. Fiyatı her zaman 1'dir.
+    if (symbolUpper === 'TRY') {
+      results.set('TRY', { symbol: 'TRY', price: 1 });
     } else {
-      symbolsToFetch.push(s);
+      const cached = priceCache.get(symbolUpper);
+      if (cached && (now - cached.timestamp < CACHE_TTL)) {
+        results.set(symbolUpper, cached.data);
+      } else {
+        symbolsToFetch.push(s);
+      }
     }
   });
 
@@ -48,12 +53,30 @@ export async function getLivePrices(symbols: string[]): Promise<Map<string, Pric
   console.log("Fetching live prices from Yahoo for:", symbolsToFetch);
 
   try {
-    const quotes = await yahooFinance.quote(symbolsToFetch);
+    let fetchWithCurrency = [...symbolsToFetch];
+    // Kurları çevirmek için USD/TRY paritesini de mutlaka çekelim
+    if (!fetchWithCurrency.includes("TRY=X")) {
+      fetchWithCurrency.push("TRY=X");
+    }
+
+    const quotes = await yahooFinance.quote(fetchWithCurrency);
     const quotesArray = Array.isArray(quotes) ? quotes : [quotes];
+
+    // Güncel USD/TRY kurunu bulalım
+    let usdToTryRate = 34; // Kaba varsayılan
+    const usdTryQuote = quotesArray.find((q: any) => q.symbol === "TRY=X");
+    if (usdTryQuote && usdTryQuote.regularMarketPrice) {
+      usdToTryRate = usdTryQuote.regularMarketPrice;
+    }
 
     quotesArray.forEach((quote: any) => {
       if (quote && quote.symbol) {
-        const currentPrice = quote.regularMarketPrice || quote.postMarketPrice || quote.preMarketPrice || 0;
+        let currentPrice = quote.regularMarketPrice || quote.postMarketPrice || quote.preMarketPrice || 0;
+
+        // Yabancı para birimi kontrolü (Eğer USD ise TL'ye çevir)
+        if (quote.currency === "USD" && quote.symbol !== "TRY=X") {
+          currentPrice = currentPrice * usdToTryRate;
+        }
 
         const priceData = {
           symbol: quote.symbol,
@@ -61,8 +84,10 @@ export async function getLivePrices(symbols: string[]): Promise<Map<string, Pric
           changePercent: quote.regularMarketChangePercent
         };
 
-        results.set(quote.symbol.toUpperCase(), priceData);
-        priceCache.set(quote.symbol.toUpperCase(), { data: priceData, timestamp: now });
+        if (symbolsToFetch.includes(quote.symbol.toUpperCase())) {
+          results.set(quote.symbol.toUpperCase(), priceData);
+          priceCache.set(quote.symbol.toUpperCase(), { data: priceData, timestamp: now });
+        }
       }
     });
 

@@ -33,6 +33,7 @@ export async function addAsset(data: {
 
     let finalPrice = Number(data.purchasePrice) || 0;
     const trimmedSymbol = data.symbol?.trim().toUpperCase() || null;
+    const standardizedType = standardizeInvestmentType(data.type);
 
     // Eğer güncel fiyat seçildiyse Yahoo'dan çek
     if (data.useCurrentPrice && trimmedSymbol) {
@@ -45,9 +46,31 @@ export async function addAsset(data: {
       } catch (err) {
         console.error("Live price fetch error:", err);
       }
-    }
+    } else if (!data.useCurrentPrice && finalPrice > 0 && trimmedSymbol) {
+      // Kullanıcı manuel fiyat girdiğinde USD mi yoksa TRY mi girdiğini tespit etme (Akıllı Kur Çevirimi)
+      try {
+        const prices = await getLivePrices([trimmedSymbol, "TRY=X"]);
+        const livePrice = prices.get(trimmedSymbol);
+        const usdTry = prices.get("TRY=X")?.price || 34;
 
-    const standardizedType = standardizeInvestmentType(data.type);
+        if (livePrice && livePrice.price > 0) {
+          const priceAsTry = finalPrice;
+          const priceAsUsdConvertedToTry = finalPrice * usdTry;
+
+          const diffIfTry = Math.abs(priceAsTry - livePrice.price);
+          const diffIfUsd = Math.abs(priceAsUsdConvertedToTry - livePrice.price);
+
+          // Eğer kullanıcının girdiği fiyat USD olarak varsayılıp TRY'ye çevrildiğinde
+          // güncel TRY piyasa fiyatına daha yakın oluyorsa, kullanıcı büyük ihtimalle USD girmiştir.
+          const isCryptoOrUs = standardizedType === "CRYPTO" || standardizedType === "NASDAQ";
+          if (isCryptoOrUs && diffIfUsd < diffIfTry) {
+            finalPrice = priceAsUsdConvertedToTry;
+          }
+        }
+      } catch (err) {
+        console.error("Currency check error:", err);
+      }
+    }
 
     await prisma.investment.create({
       data: {
@@ -114,6 +137,10 @@ export async function sellAsset(id: string, postSellAction?: "KEEP_TL" | "KEEP_U
 
     const totalSoldAmount = investment.quantity * sellPrice;
 
+    if (totalSoldAmount <= 0) {
+      throw new Error("Satış tutarı hesaplanamadı veya geçersiz.");
+    }
+
     if (postSellAction === "KEEP_TL") {
       await prisma.investment.create({
         data: {
@@ -129,7 +156,7 @@ export async function sellAsset(id: string, postSellAction?: "KEEP_TL" | "KEEP_U
         }
       });
     } else if (postSellAction === "KEEP_USDT") {
-      let usdtPrice = 33; // Kur anlık çekilemezse diye kaba bir varsayılan değer
+      let usdtPrice = 34; // Kur anlık çekilemezse diye kaba bir varsayılan değer
       try {
         const prices = await getLivePrices(["USDT-TRY", "TRY=X"]);
         const liveUsdt = prices.get("USDT-TRY") || prices.get("TRY=X");

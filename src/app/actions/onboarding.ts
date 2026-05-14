@@ -62,31 +62,56 @@ export async function completeOnboarding(formData: {
       prisma.child.deleteMany({ where: { userId: user.id } }),
   
       prisma.income.createMany({
-        data: formData.incomes.map((inc) => ({ ...inc, userId: user.id })),
-      }),
-      prisma.expense.createMany({
-        data: formData.expenses.map((exp) => ({ ...exp, userId: user.id })),
-      }),
-      prisma.debt.createMany({
-        data: formData.debts.map((debt) => ({ ...debt, userId: user.id })),
-      }),
-      prisma.investment.createMany({
-        data: formData.investments.map((inv) => ({
-          ...inv,
-          userId: user.id,
-          amount: inv.quantity * inv.purchasePrice
+        data: formData.incomes.map((inc) => ({
+          type: inc.type,
+          amount: Number(inc.amount),
+          description: inc.description,
+          userId: user.id
         })),
       }),
-      prisma.fixedAsset.createMany({
-        data: formData.fixedAssets.map((asset) => ({
-          ...asset,
-          userId: user.id,
+      prisma.expense.createMany({
+        data: formData.expenses.map((exp) => ({
+          type: exp.type,
+          amount: Number(exp.amount),
+          dueDate: exp.dueDate,
+          isRecurring: exp.isRecurring,
+          description: exp.description,
+          userId: user.id
+        })),
+      }),
+      prisma.debt.createMany({
+        data: formData.debts.map((debt) => ({
+          type: debt.type,
+          amount: Number(debt.amount),
+          remainingInstallments: debt.remainingInstallments,
+          description: debt.description,
+          userId: user.id
         })),
       }),
       prisma.child.createMany({
         data: (formData.children || []).map((child) => ({
-          userId: user.id,
           birthDate: new Date(child.birthDate),
+          userId: user.id
+        })),
+      }),
+      prisma.investment.createMany({
+        data: formData.investments.map((inv) => ({
+          type: inv.type,
+          symbol: inv.symbol,
+          quantity: Number(inv.quantity),
+          purchasePrice: Number(inv.purchasePrice),
+          currentValuation: inv.currentValuation ? Number(inv.currentValuation) : null,
+          description: inv.description,
+          amount: Number(inv.quantity) * Number(inv.purchasePrice),
+          userId: user.id,
+        })),
+      }),
+      prisma.fixedAsset.createMany({
+        data: formData.fixedAssets.map((asset) => ({
+          name: asset.name,
+          type: asset.type,
+          value: Number(asset.value),
+          userId: user.id,
         })),
       }),
     ]);
