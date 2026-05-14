@@ -106,7 +106,7 @@ export function NewsClient({ initialNews }: NewsClientProps) {
                         <a key={idx} href={item.link} target="_blank" rel="noopener noreferrer" className="group h-full flex">
                             <Card className="flex flex-col w-full overflow-hidden bg-card border-border/30 shadow-ambient-low hover:shadow-ambient-medium hover:border-primary/40 transition-all duration-300 rounded-[24px]">
                                 {item.imageUrl && (
-                                    <div className="w-full h-48 overflow-hidden bg-[#f8f9fa] relative">
+                                    <div className="w-full h-48 overflow-hidden bg-[#f8f9fa] relative group-image-container">
                                         <div className="absolute top-4 left-4 z-10">
                                             <span className={cn("px-3 py-1 rounded-full text-xs font-bold border backdrop-blur-sm shadow-sm", TAG_COLORS[item.tag] || TAG_COLORS["Genel Ekonomi"])}>
                                                 {item.tag}
@@ -115,21 +115,33 @@ export function NewsClient({ initialNews }: NewsClientProps) {
                                                 {item.source}
                                             </span>
                                         </div>
-                                        <img src={item.imageUrl} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                        <img 
+                                            src={item.imageUrl} 
+                                            alt={item.title} 
+                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                                            onError={(e) => {
+                                                const target = e.currentTarget as HTMLImageElement;
+                                                const container = target.closest('.group-image-container') as HTMLElement;
+                                                if (container) container.style.display = 'none';
+                                                
+                                                // Make the fallback tags visible by finding the sibling element
+                                                const card = target.closest('.group') as HTMLElement;
+                                                const fallbackTags = card?.querySelector('.fallback-tags') as HTMLElement;
+                                                if (fallbackTags) fallbackTags.style.display = 'flex';
+                                            }}
+                                        />
                                     </div>
                                 )}
                                 <div className="p-6 flex flex-col flex-1 relative">
-                                    {/* If no image, show tags here instead */}
-                                    {!item.imageUrl && (
-                                        <div className="mb-3 flex gap-2">
-                                            <span className={cn("px-3 py-1 rounded-full text-xs font-bold border shadow-sm", TAG_COLORS[item.tag] || TAG_COLORS["Genel Ekonomi"])}>
-                                                {item.tag}
-                                            </span>
-                                            <span className="px-3 py-1 rounded-full text-xs font-bold border shadow-sm bg-gray-100 text-gray-700 border-gray-200">
-                                                {item.source}
-                                            </span>
-                                        </div>
-                                    )}
+                                    {/* If no image or image failed, show tags here instead */}
+                                    <div className="mb-3 flex gap-2 fallback-tags" style={{ display: item.imageUrl ? 'none' : 'flex' }}>
+                                        <span className={cn("px-3 py-1 rounded-full text-xs font-bold border shadow-sm", TAG_COLORS[item.tag] || TAG_COLORS["Genel Ekonomi"])}>
+                                            {item.tag}
+                                        </span>
+                                        <span className="px-3 py-1 rounded-full text-xs font-bold border shadow-sm bg-gray-100 text-gray-700 border-gray-200">
+                                            {item.source}
+                                        </span>
+                                    </div>
                                     <h3 className="font-heading font-bold text-lg text-foreground group-hover:text-primary transition-colors line-clamp-3 mb-2">{item.title}</h3>
                                     <p className="text-muted-foreground text-sm opacity-80 line-clamp-2 flex-1">{item.description}</p>
 

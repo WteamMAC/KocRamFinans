@@ -35,13 +35,36 @@ const SOURCES = [
     { name: "Dünya Gazetesi", url: "https://www.dunya.com/rss" },
     { name: "CNBC-e", url: "https://www.cnbce.com/rss" },
     { name: "BBC Türkçe", url: "https://feeds.bbci.co.uk/turkce/rss.xml" },
-    { name: "Yahoo Finance", url: "https://finance.yahoo.com/news/rssindex" },
-    { name: "CNBC Global", url: "https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=10000664" },
-    { name: "Investing.com", url: "https://www.investing.com/rss/news_285.rss" },
-    { name: "CoinTelegraph", url: "https://cointelegraph.com/rss" }
+    { name: "Yahoo Finance", url: "https://finance.yahoo.com/news/rssindex", isEnglish: true },
+    { name: "CNBC Global", url: "https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=10000664", isEnglish: true },
+    { name: "Investing.com", url: "https://www.investing.com/rss/news_285.rss", isEnglish: true },
+    { name: "CoinTelegraph", url: "https://cointelegraph.com/rss", isEnglish: true }
 ];
 
-async function fetchFeed(source: { name: string, url: string }): Promise<NewsItem[]> {
+async function translateText(text: string): Promise<string> {
+    if (!text) return text;
+    try {
+        const res = await fetch('https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=tr&dt=t&q=' + encodeURIComponent(text));
+        const json = await res.json();
+        return json[0].map((x: any) => x[0]).join('');
+    } catch (e) {
+        return text;
+    }
+}
+
+function decodeEntities(text: string) {
+    return text
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/&#039;/g, "'")
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&apos;/g, "'");
+}
+
+async function fetchFeed(source: { name: string, url: string, isEnglish?: boolean }): Promise<NewsItem[]> {
     try {
         // Cache bypass to fetch latest instantly
         const res = await fetch(source.url, { 
@@ -88,20 +111,31 @@ async function fetchFeed(source: { name: string, url: string }): Promise<NewsIte
             return null;
         };
 
-        while ((match = itemRegex.exec(xml)) !== null && items.length < 50) {
+        const limit = source.isEnglish ? 15 : 50; // Translate fewer items to avoid rate limit
+
+        while ((match = itemRegex.exec(xml)) !== null && items.length < limit) {
             const itemXml = match[1];
-            const title = extractTag(itemXml, 'title');
+            let title = extractTag(itemXml, 'title');
             const link = extractLink(itemXml);
             let pubDate = extractTag(itemXml, 'pubDate', 'published');
             const rawDesc = extractTag(itemXml, 'description', 'summary');
             
-            let description = rawDesc.replace(/<[^>]+>/g, '').trim();
+            title = decodeEntities(title);
+            let description = decodeEntities(rawDesc.replace(/<[^>]+>/g, '').trim());
+            
+            if (source.isEnglish) {
+                title = await translateText(title);
+                if (description) {
+                    description = await translateText(description.substring(0, 200)); // Translate max 200 chars to save time
+                }
+            }
+
             if (description.length > 120) {
                 description = description.substring(0, 120) + "...";
             }
             
             const imageUrl = extractImage(itemXml);
-            const tag = determineTag(title, rawDesc.replace(/<[^>]+>/g, ''));
+            const tag = determineTag(title, description);
             let timestamp = Date.now();
 
             if (pubDate) {
@@ -112,6 +146,11 @@ async function fetchFeed(source: { name: string, url: string }): Promise<NewsIte
                 }
             }
 
+            // Filter out non-finance news from general sources
+            if ((source.name === "BBC Türkçe" || source.name === "Dünya Gazetesi") && tag === "Genel Ekonomi") {
+                continue;
+            }
+
             if (title && link && !title.includes("Haber başlığı bulunamadı")) {
                 items.push({ title, link, pubDate, description, imageUrl, tag, source: source.name, timestamp });
             }
@@ -119,17 +158,7 @@ async function fetchFeed(source: { name: string, url: string }): Promise<NewsIte
         return items;
     } catch (err: any) {
         console.error(`${source.name} beslemesi çekilemedi:`, err);
-        // HATA AYIKLAMA İÇİN: Ekrana hatayı haber olarak basalım
-        return [{
-            title: `HATA: ${source.name} çekilemedi`,
-            link: "#",
-            pubDate: new Date().toLocaleTimeString(),
-            description: `Sistem hatası: ${err.message || err.toString()}`,
-            imageUrl: null,
-            tag: "Genel Ekonomi",
-            source: source.name,
-            timestamp: Date.now()
-        }];
+        return [];
     }
 }
 
