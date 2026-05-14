@@ -105,16 +105,30 @@ export async function completeOnboarding(formData: {
         })),
       }),
       prisma.investment.createMany({
-        data: formData.investments.map((inv) => ({
-          type: inv.type,
-          symbol: inv.symbol,
-          quantity: Number(inv.quantity),
-          purchasePrice: Number(inv.purchasePrice),
-          currentValuation: inv.currentValuation ? Number(inv.currentValuation) : null,
-          description: inv.description,
-          amount: Number(inv.quantity) * Number(inv.purchasePrice),
-          userId: user.id,
-        })),
+        data: formData.investments.map((inv) => {
+          let finalPurchasePrice = Number(inv.purchasePrice);
+          let finalAmount = Number(inv.quantity) * finalPurchasePrice;
+          let finalDescription = inv.description;
+
+          if (inv.type === "BES" || inv.type === "FAIZ") {
+            const originalDesc = inv.description || "";
+            const rate = Number(inv.purchasePrice) || 0;
+            finalDescription = JSON.stringify({ rate, originalDescription: originalDesc });
+            finalPurchasePrice = 1;
+            finalAmount = Number(inv.quantity);
+          }
+
+          return {
+            type: inv.type,
+            symbol: inv.symbol,
+            quantity: Number(inv.quantity),
+            purchasePrice: finalPurchasePrice,
+            currentValuation: inv.currentValuation ? Number(inv.currentValuation) : null,
+            description: finalDescription,
+            amount: finalAmount,
+            userId: user.id,
+          };
+        }),
       }),
       prisma.fixedAsset.createMany({
         data: formData.fixedAssets.map((asset) => ({
