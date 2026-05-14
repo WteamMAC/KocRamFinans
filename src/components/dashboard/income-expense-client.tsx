@@ -527,7 +527,7 @@ export function IncomeExpenseClient({
       <section className="bg-card rounded-2xl shadow-ambient-low border border-border/20 overflow-hidden mb-12 animate-in fade-in slide-in-from-bottom-8 duration-700">
         <div className="p-8 border-b border-border/20 flex justify-between items-center">
           <h3 className="text-xl font-heading font-bold text-foreground">Tüm İşlemler</h3>
-          <Select value={filterCategory} onValueChange={(val) => setFilterCategory(val || "Tümü")}>
+          <Select value={filterCategory} onValueChange={(val: any) => setFilterCategory(val || "Tümü")}>
             <SelectTrigger className="w-[180px] bg-muted border-border/30 rounded-xl">
               <SelectValue placeholder="Kategori Filtresi" />
             </SelectTrigger>
