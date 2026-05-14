@@ -43,10 +43,15 @@ async function fetchFeed(source: { name: string, url: string }): Promise<NewsIte
         const res = await fetch(source.url, { 
             cache: "no-store",
             headers: {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+                "Accept": "application/rss+xml, application/xml, text/xml, */*"
             }
         });
         const xml = await res.text();
+        
+        if (!xml.includes('<rss') && !xml.includes('<feed') && !xml.includes('<channel')) {
+             throw new Error(`Geçersiz RSS formatı: HTTP ${res.status}`);
+        }
 
         const items: NewsItem[] = [];
         const itemRegex = /<(?:item|entry)>([\s\S]*?)<\/(?:item|entry)>/gi;
@@ -108,9 +113,19 @@ async function fetchFeed(source: { name: string, url: string }): Promise<NewsIte
             }
         }
         return items;
-    } catch (err) {
+    } catch (err: any) {
         console.error(`${source.name} beslemesi çekilemedi:`, err);
-        return [];
+        // HATA AYIKLAMA İÇİN: Ekrana hatayı haber olarak basalım
+        return [{
+            title: `HATA: ${source.name} çekilemedi`,
+            link: "#",
+            pubDate: new Date().toLocaleTimeString(),
+            description: `Sistem hatası: ${err.message || err.toString()}`,
+            imageUrl: null,
+            tag: "Genel Ekonomi",
+            source: source.name,
+            timestamp: Date.now()
+        }];
     }
 }
 
