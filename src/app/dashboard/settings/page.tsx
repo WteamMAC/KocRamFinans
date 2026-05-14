@@ -55,14 +55,25 @@ export default async function SettingsPage() {
     })),
     investments: user.investments
       .filter((inv: any) => inv.status === "OPEN")
-      .map((inv: any) => ({ 
-        type: inv.type, 
-        symbol: inv.symbol || "",
-        quantity: inv.quantity,
-        purchasePrice: inv.purchasePrice || 0,
-        currentValuation: inv.currentValuation || undefined,
-        description: inv.description || undefined 
-      })),
+      .map((inv: any) => {
+        let pPrice = inv.purchasePrice || 0;
+        let desc = inv.description || undefined;
+        if (inv.type === "BES" || inv.type === "FAIZ") {
+          try {
+            const meta = JSON.parse(inv.description || "{}");
+            pPrice = meta.rate || 0;
+            desc = meta.originalDescription || undefined;
+          } catch(e) {}
+        }
+        return { 
+          type: inv.type, 
+          symbol: inv.symbol || "",
+          quantity: inv.quantity,
+          purchasePrice: pPrice,
+          currentValuation: inv.currentValuation || undefined,
+          description: desc 
+        }
+      }),
     fixedAssets: user.fixedAssets.map((asset: any) => ({
       name: asset.name,
       type: asset.type,

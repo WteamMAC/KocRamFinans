@@ -577,7 +577,11 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
                       </div>
 
                       <div className="space-y-2">
-                        <Label className="text-[9px] font-bold text-[#747781] uppercase px-1">Adet / Miktar</Label>
+                        <Label className="text-[9px] font-bold text-[#747781] uppercase px-1">
+                          {form.getValues(`investments.${index}.type`) === "BES" ? "İlk Giriş Tutarı (₺)" :
+                           form.getValues(`investments.${index}.type`) === "FAIZ" ? "Ana Para Tutarı (₺)" :
+                           "Adet / Miktar"}
+                        </Label>
                         <Input 
                           type="number" 
                           step="any"
@@ -587,7 +591,11 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
                       </div>
 
                       <div className="space-y-2">
-                        <Label className="text-[9px] font-bold text-[#747781] uppercase px-1">Birim Alış Fiyatı (₺)</Label>
+                        <Label className="text-[9px] font-bold text-[#747781] uppercase px-1">
+                          {form.getValues(`investments.${index}.type`) === "BES" ? "Devlet Katkı Payı (%)" :
+                           form.getValues(`investments.${index}.type`) === "FAIZ" ? "Faiz Oranı (%)" :
+                           "Birim Alış Fiyatı (₺)"} <span className="text-rose-500">*</span>
+                        </Label>
                         <Input 
                           type="number" 
                           step="any"
@@ -602,7 +610,9 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
                        <div className="mt-4 p-4 bg-[#001b44]/5 rounded-2xl flex items-center justify-between border border-[#001b44]/10">
                           <span className="text-[10px] font-bold text-[#001b44] uppercase tracking-wider">Toplam Yatırım Tutarı:</span>
                           <span className="text-lg font-bold text-[#001b44]">
-                             {(form.watch(`investments.${index}.quantity`) * form.watch(`investments.${index}.purchasePrice`)).toLocaleString('tr-TR')} ₺
+                             {form.getValues(`investments.${index}.type`) === "BES" || form.getValues(`investments.${index}.type`) === "FAIZ"
+                               ? form.watch(`investments.${index}.quantity`).toLocaleString('tr-TR')
+                               : (form.watch(`investments.${index}.quantity`) * form.watch(`investments.${index}.purchasePrice`)).toLocaleString('tr-TR')} ₺
                           </span>
                        </div>
                     )}
