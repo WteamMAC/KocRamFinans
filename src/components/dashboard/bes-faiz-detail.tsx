@@ -558,7 +558,7 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
                         <td className="px-4 py-3 text-right text-muted-foreground">{row.anaPara.toLocaleString("tr-TR")} ₺</td>
                         <td className={cn("px-4 py-3 text-right font-bold", accentColor)}>{row.toplam.toLocaleString("tr-TR")} ₺</td>
                         <td className="px-4 py-3 text-right text-emerald-500 font-bold">
-                          +{Math.max(0, ("faizKazanci" in row ? row.faizKazanci : row.toplam - row.anaPara)).toLocaleString("tr-TR")} ₺
+                          +{Math.max(0, row.faizKazanci ?? (row.toplam - row.anaPara)).toLocaleString("tr-TR")} ₺
                         </td>
                       </tr>
                     ))}
