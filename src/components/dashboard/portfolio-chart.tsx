@@ -23,16 +23,24 @@ export function PortfolioChart({ assets }: PortfolioChartProps) {
         setIsMounted(true);
     }, []);
 
-    // Varlıkları tiplerine göre gruplayalım (Kripto, Hisse, Altın vb.)
+    // Benzersiz tip sayısına bak. Eğer sadece 1 tip varsa (örneğin sadece Kripto sayfasındaysak),
+    // o zaman grafiği kendi içinde (sembol bazında) grupla.
+    const uniqueTypes = new Set(assets.map(a => a.type));
+    const groupBySymbol = uniqueTypes.size === 1;
+
     const groupedData = assets.reduce((acc, asset) => {
-        const existing = acc.find((a) => a.name === asset.type);
+        const key = groupBySymbol ? asset.symbol : asset.type;
+        const existing = acc.find((a) => a.name === key);
         if (existing) {
             existing.value += asset.currentValue;
         } else {
-            acc.push({ name: asset.type, value: asset.currentValue });
+            acc.push({ name: key, value: asset.currentValue });
         }
         return acc;
     }, [] as { name: string; value: number }[]);
+
+    // Değerine göre büyükten küçüğe sıralayalım (grafik daha güzel görünür)
+    groupedData.sort((a, b) => b.value - a.value);
 
     // Eğer veri yoksa boş bir görünüm döndür
     if (!groupedData || groupedData.length === 0) {
@@ -49,13 +57,19 @@ export function PortfolioChart({ assets }: PortfolioChartProps) {
     }
 
     // Kategorilere göre özel renkler
-    const COLORS: Record<string, string> = {
+    const TYPE_COLORS: Record<string, string> = {
         "CRYPTO": "#f59e0b", // Amber
         "BIST": "#10b981", // Emerald
         "NASDAQ": "#3b82f6", // Blue
         "GOLD": "#eab308", // Yellow
         "CASH": "#64748b", // Slate
     };
+
+    // Semboller için kullanılacak şık renk paleti (random yerine)
+    const SYMBOL_COLORS = [
+        "#f18d02", "#36684d", "#efe440", "#7cb191", "#ba1a1a", "#666000", "#8c5000",
+        "#f59e0b", "#10b981", "#3b82f6", "#ec4899", "#8b5cf6", "#14b8a6", "#f43f5e"
+    ];
 
     return (
         <div className="h-[300px] w-full">
@@ -73,7 +87,7 @@ export function PortfolioChart({ assets }: PortfolioChartProps) {
                         {groupedData.map((entry, index) => (
                             <Cell
                                 key={`cell-${index}`}
-                                fill={COLORS[entry.name] || "#" + Math.floor(Math.random() * 16777215).toString(16)}
+                                fill={groupBySymbol ? SYMBOL_COLORS[index % SYMBOL_COLORS.length] : (TYPE_COLORS[entry.name] || SYMBOL_COLORS[index % SYMBOL_COLORS.length])}
                             />
                         ))}
                     </Pie>
