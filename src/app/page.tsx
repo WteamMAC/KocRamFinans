@@ -242,16 +242,16 @@ export default async function LandingPage() {
         {/* CTA Section */}
         <section className="py-32 px-6 md:px-8 bg-background">
           <div className="max-w-[1200px] mx-auto">
-            <div className="bg-primary text-primary-foreground rounded-[48px] p-12 md:p-20 text-center relative overflow-hidden shadow-ambient-high group">
-              <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-96 h-96 bg-primary-foreground/10 rounded-full blur-[100px] group-hover:scale-125 transition-transform duration-1000"></div>
+            <div className="bg-primary text-primary-foreground dark:bg-primary-foreground dark:text-primary rounded-[48px] p-12 md:p-20 text-center relative overflow-hidden shadow-ambient-high group dark:border dark:border-primary/20">
+              <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-96 h-96 bg-primary-foreground/10 dark:bg-primary/10 rounded-full blur-[100px] group-hover:scale-125 transition-transform duration-1000"></div>
               <div className="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/4 w-96 h-96 bg-black/10 rounded-full blur-[100px] group-hover:scale-125 transition-transform duration-1000"></div>
               
               <div className="relative z-10 max-w-2xl mx-auto">
                 <h2 className="font-heading text-4xl md:text-5xl font-bold mb-8 tracking-tight">Finansal Stresi Geride Bırakmaya Hazır mısınız?</h2>
-                <p className="text-xl mb-12 text-primary-foreground/90 leading-relaxed font-medium italic opacity-90">
+                <p className="text-xl mb-12 text-primary-foreground/90 dark:text-primary/90 leading-relaxed font-medium italic opacity-90">
                   İlk görüşmemiz tamamen ücretsizdir. Hedeflerinizi konuşalım ve size nasıl yardımcı olabileceğimizi birlikte keşfedelim.
                 </p>
-                <Link href="/sign-up" className="bg-accent text-accent-foreground font-bold px-10 py-5 rounded-2xl hover:bg-card hover:text-foreground transition-all shadow-ambient-medium hover:shadow-ambient-high scale-100 active:scale-95 flex items-center justify-center gap-3 mx-auto text-lg">
+                <Link href="/sign-up" className="bg-accent text-accent-foreground dark:bg-primary dark:text-primary-foreground font-bold px-10 py-5 rounded-2xl hover:bg-card hover:text-foreground transition-all shadow-ambient-medium hover:shadow-ambient-high scale-100 active:scale-95 flex items-center justify-center gap-3 mx-auto text-lg">
                   Hemen Randevu Oluştur
                   <Calendar className="h-6 w-6" />
                 </Link>

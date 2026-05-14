@@ -26,12 +26,12 @@ export default function SlidingAuth() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8f9fa] flex items-center justify-center p-0 md:p-6 overflow-hidden">
-      <main className="w-full h-screen md:h-[calc(100vh-48px)] max-h-[900px] flex max-w-[1200px] mx-auto bg-white md:rounded-[32px] md:shadow-ambient-high overflow-hidden relative">
+    <div className="min-h-screen bg-background flex items-center justify-center p-0 md:p-6 overflow-hidden">
+      <main className="w-full h-screen md:h-[calc(100vh-48px)] max-h-[900px] flex max-w-[1200px] mx-auto bg-card md:rounded-[32px] md:shadow-ambient-high overflow-hidden relative">
         
         {/* Form Container */}
         <motion.div 
-          className="absolute inset-y-0 left-0 w-full lg:w-1/2 bg-white z-10 overflow-y-auto"
+          className="absolute inset-y-0 left-0 w-full lg:w-1/2 bg-card z-10 overflow-y-auto"
           animate={{ x: (isLargeScreen && isLogin) ? "100%" : "0%" }}
           transition={{ type: "spring", stiffness: 260, damping: 28 }}
         >
@@ -39,7 +39,7 @@ export default function SlidingAuth() {
             <div className="lg:hidden mb-8 text-center">
               <Link href="/" className="flex items-center gap-2 justify-center">
                 <img src="/mascot.png" alt="Logo" className="h-14 w-14 object-contain" />
-                <span className="text-3xl font-heading font-bold text-[#8c5000]">Koç Ram Finans</span>
+                <span className="text-3xl font-heading font-bold text-primary">Koç Ram Finans</span>
               </Link>
             </div>
 
@@ -61,21 +61,22 @@ export default function SlidingAuth() {
                       elements: {
                         rootBox: "w-full",
                         card: "shadow-none border-none p-0 w-full bg-transparent",
-                        headerTitle: "text-3xl font-heading font-bold text-[#191c1d] mb-2",
-                        headerSubtitle: "text-[#554336] font-medium mb-8",
-                        socialButtonsBlockButton: "rounded-xl border-[#dbc2b0]/30 hover:bg-[#f8f9fa] h-12",
-                        formButtonPrimary: "h-12 rounded-xl text-base font-bold bg-[#8c5000] hover:bg-[#a65f00]",
-                        formFieldInput: "h-12 rounded-xl",
+                        headerTitle: "text-3xl font-heading font-bold text-foreground mb-2",
+                        headerSubtitle: "text-muted-foreground font-medium mb-8",
+                        socialButtonsBlockButton: "rounded-xl border-border/30 hover:bg-muted h-12 text-foreground",
+                        formButtonPrimary: "h-12 rounded-xl text-base font-bold bg-primary hover:brightness-110 text-primary-foreground",
+                        formFieldInput: "h-12 rounded-xl bg-background border-border text-foreground",
+                        formFieldLabel: "text-foreground",
                         footer: "hidden",
                       }
                     }}
                   />
                   <div className="mt-8 text-center">
-                    <p className="text-[#554336] font-medium">
+                    <p className="text-muted-foreground font-medium">
                       Henüz hesabınız yok mu?{" "}
                       <button 
                         onClick={toggleAuth}
-                        className="text-[#8c5000] font-bold hover:underline"
+                        className="text-primary font-bold hover:underline"
                       >
                         Kayıt Ol
                       </button>
@@ -99,21 +100,22 @@ export default function SlidingAuth() {
                       elements: {
                         rootBox: "w-full",
                         card: "shadow-none border-none p-0 w-full bg-transparent",
-                        headerTitle: "text-3xl font-heading font-bold text-[#191c1d] mb-2",
-                        headerSubtitle: "text-[#554336] font-medium mb-8",
-                        socialButtonsBlockButton: "rounded-xl border-[#dbc2b0]/30 hover:bg-[#f8f9fa] h-12",
-                        formButtonPrimary: "h-12 rounded-xl text-base font-bold bg-[#8c5000] hover:bg-[#a65f00]",
-                        formFieldInput: "h-12 rounded-xl",
+                        headerTitle: "text-3xl font-heading font-bold text-foreground mb-2",
+                        headerSubtitle: "text-muted-foreground font-medium mb-8",
+                        socialButtonsBlockButton: "rounded-xl border-border/30 hover:bg-muted h-12 text-foreground",
+                        formButtonPrimary: "h-12 rounded-xl text-base font-bold bg-primary hover:brightness-110 text-primary-foreground",
+                        formFieldInput: "h-12 rounded-xl bg-background border-border text-foreground",
+                        formFieldLabel: "text-foreground",
                         footer: "hidden",
                       }
                     }}
                   />
                   <div className="mt-8 text-center">
-                    <p className="text-[#554336] font-medium">
+                    <p className="text-muted-foreground font-medium">
                       Zaten hesabınız var mı?{" "}
                       <button 
                         onClick={toggleAuth}
-                        className="text-[#8c5000] font-bold hover:underline"
+                        className="text-primary font-bold hover:underline"
                       >
                         Giriş Yap
                       </button>
@@ -127,15 +129,15 @@ export default function SlidingAuth() {
 
         {/* Overlay Panel (Mascot Side) */}
         <motion.div 
-          className="hidden lg:flex absolute inset-y-0 right-0 w-1/2 bg-[#8c5000] z-20 items-center justify-center p-12 overflow-hidden shadow-2xl"
+          className="hidden lg:flex absolute inset-y-0 right-0 w-1/2 bg-primary z-20 items-center justify-center p-12 overflow-hidden shadow-2xl"
           animate={{ x: isLogin ? "-100%" : "0%" }}
           transition={{ type: "spring", stiffness: 260, damping: 28 }}
         >
           {/* Background Decorative Circles */}
-          <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-[500px] h-[500px] bg-white/10 rounded-full blur-3xl"></div>
+          <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-[500px] h-[500px] bg-primary-foreground/10 rounded-full blur-3xl"></div>
           <div className="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-black/10 rounded-full blur-3xl"></div>
           
-          <div className="relative z-10 text-center text-white max-w-xl flex flex-col items-center">
+          <div className="relative z-10 text-center text-primary-foreground max-w-xl flex flex-col items-center">
             <motion.div
               animate={{ 
                 rotate: isLogin ? [0, -3, 3, 0] : [0, 3, -3, 0],
@@ -145,8 +147,8 @@ export default function SlidingAuth() {
               className="mb-10"
             >
               <div className="relative w-[360px] h-[360px] mx-auto">
-                <div className="absolute inset-0 bg-white/10 rounded-full blur-2xl transform scale-110"></div>
-                <div className="w-full h-full bg-white rounded-full border-[12px] border-white/20 shadow-[0_30px_60px_rgba(0,0,0,0.4)] relative z-10 flex items-center justify-center">
+                <div className="absolute inset-0 bg-primary-foreground/10 rounded-full blur-2xl transform scale-110"></div>
+                <div className="w-full h-full bg-card rounded-full border-[12px] border-primary-foreground/20 shadow-[0_30px_60px_rgba(0,0,0,0.4)] relative z-10 flex items-center justify-center overflow-hidden">
                   <img 
                     alt="Koç Ram Finans Mascot" 
                     className="w-full h-full object-contain drop-shadow-xl transform scale-[1.8]" 
@@ -191,11 +193,11 @@ export default function SlidingAuth() {
             <div className="mt-10 flex justify-center gap-4">
               <motion.div 
                 animate={{ scale: isLogin ? 1.2 : 1, opacity: isLogin ? 1 : 0.4 }}
-                className="w-3 h-3 rounded-full bg-white"
+                className="w-3 h-3 rounded-full bg-primary-foreground"
               ></motion.div>
               <motion.div 
                 animate={{ scale: !isLogin ? 1.2 : 1, opacity: !isLogin ? 1 : 0.4 }}
-                className="w-3 h-3 rounded-full bg-white"
+                className="w-3 h-3 rounded-full bg-primary-foreground"
               ></motion.div>
             </div>
           </div>
