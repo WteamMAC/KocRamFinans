@@ -625,7 +625,11 @@ export function AssetList({ assets, allInvestments, fixedAssets, defaultTab = "f
 
           <Card className="lg:col-span-2 p-6 bg-card border-border/30 shadow-ambient-medium rounded-[32px] flex flex-col">
             <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-4 opacity-70">
-              {activeTab === "financial" ? "Portföy Dağılımı (Kategori Bazlı)" : "Sabit Varlık Dağılımı"}
+              {activeTab === "financial" ? (
+                assets.length > 0 && new Set(assets.map(a => a.type)).size === 1
+                  ? `${assets[0].type} Portföy Dağılımı (Sembol Bazlı)`
+                  : "Portföy Dağılımı (Kategori Bazlı)"
+              ) : "Sabit Varlık Dağılımı"}
             </h3>
             <div className="flex-1 min-h-[250px] -ml-4">
               <PortfolioChart assets={activeTab === "financial"
