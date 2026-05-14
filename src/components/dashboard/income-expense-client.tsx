@@ -23,6 +23,7 @@ import {
   CreditCard
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useRouter } from "next/navigation";
 import { ChatAI } from "./chat-ai";
 import { addIncome, addExpense } from "@/app/actions/income-expense";
@@ -85,6 +86,7 @@ export function IncomeExpenseClient({
     description: "",
     debtId: "",
     remainingInstallments: "",
+    isRecurring: false,
   });
 
   useEffect(() => {
@@ -128,7 +130,7 @@ export function IncomeExpenseClient({
             await addExpense({
                 type: formData.type || "Diğer",
                 amount: Number(formData.amount),
-                isRecurring: false,
+                isRecurring: formData.isRecurring,
                 description: formData.description
             });
         } else if (transactionType === "debt_payment") {
@@ -142,7 +144,7 @@ export function IncomeExpenseClient({
             });
         }
         setIsModalOpen(false);
-        setFormData({ type: "", amount: "", description: "", debtId: "", remainingInstallments: "" });
+        setFormData({ type: "", amount: "", description: "", debtId: "", remainingInstallments: "", isRecurring: false });
         router.refresh();
     } catch (err) {
         console.error(err);
@@ -307,6 +309,20 @@ export function IncomeExpenseClient({
                             className="bg-[#f8f9fa] border-[#dbc2b0]/30 h-12 rounded-xl"
                         />
                     </div>
+
+                    {transactionType === "expense" && (
+                        <div className="flex items-center space-x-3 bg-[#f8f9fa]/50 p-4 rounded-2xl border border-[#dbc2b0]/20 transition-all hover:bg-[#f8f9fa]">
+                            <Checkbox 
+                                id="isRecurring" 
+                                checked={formData.isRecurring} 
+                                onCheckedChange={(checked) => setFormData(p => ({ ...p, isRecurring: !!checked }))}
+                                className="border-[#8c5000] data-[state=checked]:bg-[#8c5000]"
+                            />
+                            <Label htmlFor="isRecurring" className="text-sm font-semibold text-[#554336] cursor-pointer select-none">
+                                Düzenli (Her Ay Tekrarlanan) Gider
+                            </Label>
+                        </div>
+                    )}
                 </div>
               </div>
               <DialogFooter>

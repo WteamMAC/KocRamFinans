@@ -137,6 +137,7 @@ export async function POST(req: Request) {
                 amount: { type: SchemaType.NUMBER, description: "Tutar" },
                 category: { type: SchemaType.STRING, description: "Kategori (örn: Market, Maaş, BIST)" },
                 description: { type: SchemaType.STRING, description: "Açıklama veya Hisse Kodu" },
+                isRecurring: { type: SchemaType.BOOLEAN, description: "Giderin her ay tekrarlanıp tekrarlanmayacağı. Market, fatura gibi harcamalar için false yapın. Varsayılan: false" },
                 quantity: { type: SchemaType.NUMBER, description: "Yatırımlar için miktar" },
                 purchasePrice: { type: SchemaType.NUMBER, description: "Yatırımlar için alış fiyatı" }
               },
@@ -262,7 +263,7 @@ export async function POST(req: Request) {
 
                   apiResponse = (cat === "all" || cat === "hepsi") ? dataMap : { data: dataMap[cat as keyof typeof dataMap] || dataMap };
                 } else if (call.name === "addFinancialRecord") {
-                  const { type, amount, category, description, quantity, purchasePrice } = args;
+                  const { type, amount, category, description, quantity, purchasePrice, isRecurring } = args;
 
                   const safeAmount = Number(amount) || 0;
                   if (safeAmount <= 0) throw new Error("Tutar 0'dan büyük olmalıdır.");
@@ -270,7 +271,12 @@ export async function POST(req: Request) {
                   const baseData = { userId: user.id, amount: safeAmount, description: description || "", type: category };
 
                   if (type === "income") await prisma.income.create({ data: baseData });
-                  else if (type === "expense") await prisma.expense.create({ data: baseData });
+                  else if (type === "expense") await prisma.expense.create({
+                    data: {
+                      ...baseData,
+                      isRecurring: isRecurring === undefined ? false : Boolean(isRecurring)
+                    }
+                  });
                   else if (type === "debt") await prisma.debt.create({ data: baseData });
                   else if (type === "investment") {
                     const q = Number(quantity) > 0 ? Number(quantity) : 1;
