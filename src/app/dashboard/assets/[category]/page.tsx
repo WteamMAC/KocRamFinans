@@ -49,6 +49,12 @@ export default async function AssetCategoryPage({ params }: CategoryPageProps) {
   } else if (category === "nasdaq") {
     filteredInvestments = user.investments.filter(inv => inv.type === "NASDAQ" || inv.type === "Nasdaq");
     filteredFixedAssets = [];
+  } else if (category === "bes") {
+    filteredInvestments = user.investments.filter(inv => inv.type === "BES");
+    filteredFixedAssets = [];
+  } else if (category === "faiz") {
+    filteredInvestments = user.investments.filter(inv => inv.type === "FAIZ");
+    filteredFixedAssets = [];
   }
 
   let metrics = { totalCurrentValue: 0, totalCost: 0, totalProfit: 0, profitPercent: 0, assets: [] as any[] };
@@ -72,7 +78,9 @@ export default async function AssetCategoryPage({ params }: CategoryPageProps) {
     bist: "BIST Hisse Portföyü",
     nasdaq: "NASDAQ Hisse Portföyü",
     gold: "Altın & Emtia Portföyü",
-    fixed: "Sabit Varlıklarım"
+    fixed: "Sabit Varlıklarım",
+    bes: "Bireysel Emeklilik (BES)",
+    faiz: "Vadeli Mevduat Hesapları"
   };
 
   return (

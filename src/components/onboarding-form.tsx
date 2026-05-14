@@ -172,7 +172,7 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
 
   const nextStep = async () => {
     const isValid = await canContinue();
-    if (isValid) setStep((s) => Math.min(s + 1, 5));
+    if (isValid) setStep((s) => Math.min(s + 1, isSettings ? 1 : 5));
   };
 
   const prevStep = () => setStep((s) => Math.max(s - 1, 1));
@@ -285,6 +285,7 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
                       <Input 
                         type="date" 
                         {...form.register("marriageDate")} 
+                        max={new Date().toISOString().split("T")[0]}
                         className="pl-12 bg-[#faf9f6] border-[#c4c6d2]/30 h-12 rounded-xl focus:ring-[#001b44]"
                       />
                     </div>
@@ -322,6 +323,7 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
                           <Input 
                             type="date" 
                             {...form.register(`children.${index}.birthDate`)} 
+                            max={new Date().toISOString().split("T")[0]}
                             className="bg-[#faf9f6] border-[#c4c6d2]/30 h-12 rounded-xl pr-12"
                           />
                           <Button 
@@ -575,7 +577,11 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
                       </div>
 
                       <div className="space-y-2">
-                        <Label className="text-[9px] font-bold text-[#747781] uppercase px-1">Adet / Miktar</Label>
+                        <Label className="text-[9px] font-bold text-[#747781] uppercase px-1">
+                          {form.getValues(`investments.${index}.type`) === "BES" ? "İlk Giriş Tutarı (₺)" :
+                           form.getValues(`investments.${index}.type`) === "FAIZ" ? "Ana Para Tutarı (₺)" :
+                           "Adet / Miktar"}
+                        </Label>
                         <Input 
                           type="number" 
                           step="any"
@@ -585,7 +591,11 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
                       </div>
 
                       <div className="space-y-2">
-                        <Label className="text-[9px] font-bold text-[#747781] uppercase px-1">Birim Alış Fiyatı (₺)</Label>
+                        <Label className="text-[9px] font-bold text-[#747781] uppercase px-1">
+                          {form.getValues(`investments.${index}.type`) === "BES" ? "Devlet Katkı Payı (%)" :
+                           form.getValues(`investments.${index}.type`) === "FAIZ" ? "Faiz Oranı (%)" :
+                           "Birim Alış Fiyatı (₺)"} <span className="text-rose-500">*</span>
+                        </Label>
                         <Input 
                           type="number" 
                           step="any"
@@ -600,7 +610,9 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
                        <div className="mt-4 p-4 bg-[#001b44]/5 rounded-2xl flex items-center justify-between border border-[#001b44]/10">
                           <span className="text-[10px] font-bold text-[#001b44] uppercase tracking-wider">Toplam Yatırım Tutarı:</span>
                           <span className="text-lg font-bold text-[#001b44]">
-                             {(form.watch(`investments.${index}.quantity`) * form.watch(`investments.${index}.purchasePrice`)).toLocaleString('tr-TR')} ₺
+                             {form.getValues(`investments.${index}.type`) === "BES" || form.getValues(`investments.${index}.type`) === "FAIZ"
+                               ? form.watch(`investments.${index}.quantity`).toLocaleString('tr-TR')
+                               : (form.watch(`investments.${index}.quantity`) * form.watch(`investments.${index}.purchasePrice`)).toLocaleString('tr-TR')} ₺
                           </span>
                        </div>
                     )}
@@ -684,17 +696,19 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
         </form>
       </CardContent>
       
-      <CardFooter className="flex justify-between p-10 bg-muted/20 border-t border-border/10">
-        <Button
-          type="button"
-          variant="ghost"
-          onClick={prevStep}
-          disabled={step === 1 || loading}
-          className="h-12 px-8 rounded-xl font-bold text-foreground"
-        >
-          <ChevronLeft className="w-5 h-5 mr-2" /> Geri
-        </Button>
-        {step < 5 ? (
+      <CardFooter className={cn("flex p-10 bg-muted/20 border-t border-border/10", isSettings ? "justify-end" : "justify-between")}>
+        {!isSettings && (
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={prevStep}
+            disabled={step === 1 || loading}
+            className="h-12 px-8 rounded-xl font-bold text-foreground"
+          >
+            <ChevronLeft className="w-5 h-5 mr-2" /> Geri
+          </Button>
+        )}
+        {step < (isSettings ? 1 : 5) ? (
           <Button type="button" onClick={nextStep} className="h-12 px-8 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 font-bold shadow-lg shadow-primary/10">
             Devam Et <ChevronRight className="w-5 h-5 ml-2" />
           </Button>

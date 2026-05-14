@@ -54,10 +54,20 @@ export async function completeOnboarding(formData: {
   
     // 2. Mevcut verileri temizle ve yeniden oluştur
     await prisma.$transaction([
-      prisma.income.deleteMany({ where: { userId: user.id } }),
+      prisma.income.deleteMany({ 
+        where: { 
+          userId: user.id, 
+          type: { notIn: ["Yatırım Satışı", "Yatırım Çekimi"] },
+          NOT: {
+            description: {
+              contains: "satış geliri"
+            }
+          }
+        } 
+      }),
       prisma.expense.deleteMany({ where: { userId: user.id, isRecurring: true } }),
       prisma.debt.deleteMany({ where: { userId: user.id } }),
-      prisma.investment.deleteMany({ where: { userId: user.id } }),
+      prisma.investment.deleteMany({ where: { userId: user.id, status: "OPEN" } }),
       prisma.fixedAsset.deleteMany({ where: { userId: user.id } }),
       prisma.child.deleteMany({ where: { userId: user.id } }),
   
@@ -95,16 +105,30 @@ export async function completeOnboarding(formData: {
         })),
       }),
       prisma.investment.createMany({
-        data: formData.investments.map((inv) => ({
-          type: inv.type,
-          symbol: inv.symbol,
-          quantity: Number(inv.quantity),
-          purchasePrice: Number(inv.purchasePrice),
-          currentValuation: inv.currentValuation ? Number(inv.currentValuation) : null,
-          description: inv.description,
-          amount: Number(inv.quantity) * Number(inv.purchasePrice),
-          userId: user.id,
-        })),
+        data: formData.investments.map((inv) => {
+          let finalPurchasePrice = Number(inv.purchasePrice);
+          let finalAmount = Number(inv.quantity) * finalPurchasePrice;
+          let finalDescription = inv.description;
+
+          if (inv.type === "BES" || inv.type === "FAIZ") {
+            const originalDesc = inv.description || "";
+            const rate = Number(inv.purchasePrice) || 0;
+            finalDescription = JSON.stringify({ rate, originalDescription: originalDesc });
+            finalPurchasePrice = 1;
+            finalAmount = Number(inv.quantity);
+          }
+
+          return {
+            type: inv.type,
+            symbol: inv.symbol,
+            quantity: Number(inv.quantity),
+            purchasePrice: finalPurchasePrice,
+            currentValuation: inv.currentValuation ? Number(inv.currentValuation) : null,
+            description: finalDescription,
+            amount: finalAmount,
+            userId: user.id,
+          };
+        }),
       }),
       prisma.fixedAsset.createMany({
         data: formData.fixedAssets.map((asset) => ({

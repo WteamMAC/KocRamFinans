@@ -13,9 +13,10 @@ interface FinancialCalendarProps {
   expenses: any[];
   debts: any[];
   userChildren?: any[];
+  marriageDate?: Date | null;
 }
 
-export function FinancialCalendar({ incomes, expenses, debts, userChildren = [] }: FinancialCalendarProps) {
+export function FinancialCalendar({ incomes, expenses, debts, userChildren = [], marriageDate }: FinancialCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
 
   const monthStart = startOfMonth(currentDate);
@@ -23,16 +24,20 @@ export function FinancialCalendar({ incomes, expenses, debts, userChildren = [] 
   const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
   // Map events to specific dates
-  const eventsByDate = new Map<string, { incomes: any[], expenses: any[], debts: any[], birthdays: any[] }>();
+  const eventsByDate = new Map<string, { incomes: any[], expenses: any[], debts: any[], birthdays: any[], anniversary: boolean }>();
 
   // Helper to normalize dates for comparison (ignoring time)
   const getDateKey = (date: Date) => format(date, "yyyy-MM-dd");
 
-  const addEvent = (dateStr: string, type: 'incomes' | 'expenses' | 'debts' | 'birthdays', event: any) => {
+  const addEvent = (dateStr: string, type: 'incomes' | 'expenses' | 'debts' | 'birthdays' | 'anniversary', event: any) => {
     if (!eventsByDate.has(dateStr)) {
-      eventsByDate.set(dateStr, { incomes: [], expenses: [], debts: [], birthdays: [] });
+      eventsByDate.set(dateStr, { incomes: [], expenses: [], debts: [], birthdays: [], anniversary: false });
     }
-    eventsByDate.get(dateStr)![type].push(event);
+    if (type === 'anniversary') {
+      eventsByDate.get(dateStr)!.anniversary = true;
+    } else {
+      (eventsByDate.get(dateStr)![type] as any[]).push(event);
+    }
   };
 
   // Add all transactions to the map
@@ -60,6 +65,14 @@ export function FinancialCalendar({ incomes, expenses, debts, userChildren = [] 
     const key = getDateKey(birthdayThisYear);
     addEvent(key, 'birthdays', child);
   });
+
+  // Add anniversary to the current year
+  if (marriageDate) {
+    const marriageD = new Date(marriageDate);
+    const anniversaryThisYear = new Date(currentDate.getFullYear(), marriageD.getMonth(), marriageD.getDate());
+    const key = getDateKey(anniversaryThisYear);
+    addEvent(key, 'anniversary', true);
+  }
 
   const nextMonth = () => setCurrentDate(addMonths(currentDate, 1));
   const prevMonth = () => setCurrentDate(subMonths(currentDate, 1));
@@ -137,6 +150,7 @@ export function FinancialCalendar({ incomes, expenses, debts, userChildren = [] 
                     {events.expenses.length > 0 && <span className={cn("w-1.5 h-1.5 rounded-full bg-rose-500", isSelected && "bg-white")} />}
                     {events.debts.length > 0 && <span className={cn("w-1.5 h-1.5 rounded-full bg-orange-500", isSelected && "bg-white")} />}
                     {events.birthdays.length > 0 && <span className={cn("w-1.5 h-1.5 rounded-full bg-purple-500", isSelected && "bg-white")} />}
+                    {events.anniversary && <span className={cn("w-1.5 h-1.5 rounded-full bg-pink-500", isSelected && "bg-white")} />}
                   </div>
                 )}
               </button>
@@ -152,7 +166,7 @@ export function FinancialCalendar({ incomes, expenses, debts, userChildren = [] 
                 {format(selectedDate, "d MMMM yyyy, EEEE", { locale: tr })}
               </h4>
               
-              {!selectedEvents || (selectedEvents.incomes.length === 0 && selectedEvents.expenses.length === 0 && selectedEvents.debts.length === 0 && selectedEvents.birthdays.length === 0) ? (
+              {!selectedEvents || (selectedEvents.incomes.length === 0 && selectedEvents.expenses.length === 0 && selectedEvents.debts.length === 0 && selectedEvents.birthdays.length === 0 && !selectedEvents.anniversary) ? (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground opacity-70">
                   <Info className="h-4 w-4" />
                   Bu tarihte herhangi bir işlem veya ödeme bulunmuyor.
@@ -198,6 +212,15 @@ export function FinancialCalendar({ incomes, expenses, debts, userChildren = [] 
                       </div>
                     );
                   })}
+                  {selectedEvents.anniversary && (
+                    <div className="flex justify-between items-center text-sm">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-pink-500" />
+                        <span className="font-medium text-foreground">Evlilik Yıl Dönümü</span>
+                      </div>
+                      <span className="font-bold text-pink-600 text-lg leading-none">💑</span>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

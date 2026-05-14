@@ -73,15 +73,32 @@ export async function addAsset(data: {
       }
     }
 
+    let finalQuantity = quantity;
+    let desc = data.description || null;
+
+    if (standardizedType === "BES" || standardizedType === "FAIZ") {
+      // For BES and FAIZ, purchasePrice acts as the Rate (Contribution or Interest Rate),
+      // and quantity acts as the Principal Amount.
+      // But we want the database `amount` and `currentValuation` to just be the Principal initially.
+      const rate = finalPrice; 
+      finalPrice = 1; 
+
+      const metadata = {
+        rate: rate,
+        originalDescription: desc
+      };
+      desc = JSON.stringify(metadata);
+    }
+
     await prisma.investment.create({
       data: {
         userId: user.id,
         type: standardizedType,
         symbol: trimmedSymbol,
-        quantity: quantity,
+        quantity: finalQuantity,
         purchasePrice: finalPrice,
-        amount: quantity * finalPrice,
-        description: data.description || null,
+        amount: finalQuantity * finalPrice,
+        description: desc,
         status: "OPEN",
         transactionType: "BUY",
       }

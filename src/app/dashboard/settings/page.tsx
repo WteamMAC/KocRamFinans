@@ -35,7 +35,9 @@ export default async function SettingsPage() {
     marriageDate: user.marriageDate ? user.marriageDate.toISOString().split("T")[0] : undefined,
     hasChildren: user.hasChildren,
     children: user.children.map((c: any) => ({ birthDate: c.birthDate.toISOString().split("T")[0] })),
-    incomes: user.incomes.map((i: any) => ({ type: i.type, amount: i.amount, description: i.description || undefined })),
+    incomes: user.incomes
+      .filter((i: any) => i.type !== "Yatırım Satışı" && i.type !== "Yatırım Çekimi" && i.description !== "Varlık satışından TL" && !i.description?.includes("satış geliri"))
+      .map((i: any) => ({ type: i.type, amount: i.amount, description: i.description || undefined })),
     expenses: user.expenses
       .filter((e: any) => e.isRecurring)
       .map((e: any) => ({ 
@@ -51,14 +53,27 @@ export default async function SettingsPage() {
       remainingInstallments: d.remainingInstallments || undefined,
       description: d.description || undefined 
     })),
-    investments: user.investments.map((inv: any) => ({ 
-      type: inv.type, 
-      symbol: inv.symbol || "",
-      quantity: inv.quantity,
-      purchasePrice: inv.purchasePrice || 0,
-      currentValuation: inv.currentValuation || undefined,
-      description: inv.description || undefined 
-    })),
+    investments: user.investments
+      .filter((inv: any) => inv.status === "OPEN")
+      .map((inv: any) => {
+        let pPrice = inv.purchasePrice || 0;
+        let desc = inv.description || undefined;
+        if (inv.type === "BES" || inv.type === "FAIZ") {
+          try {
+            const meta = JSON.parse(inv.description || "{}");
+            pPrice = meta.rate || 0;
+            desc = meta.originalDescription || undefined;
+          } catch(e) {}
+        }
+        return { 
+          type: inv.type, 
+          symbol: inv.symbol || "",
+          quantity: inv.quantity,
+          purchasePrice: pPrice,
+          currentValuation: inv.currentValuation || undefined,
+          description: desc 
+        }
+      }),
     fixedAssets: user.fixedAssets.map((asset: any) => ({
       name: asset.name,
       type: asset.type,
