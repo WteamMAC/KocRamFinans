@@ -55,7 +55,7 @@ export function NewsClient({ initialNews }: NewsClientProps) {
                     <h2 className="text-3xl font-heading font-bold text-primary flex items-center gap-3">
                         <Newspaper className="h-8 w-8" /> Canlı Ekonomi Haberleri
                     </h2>
-                    <p className="text-[#554336] mt-1">
+                    <p className="text-muted-foreground mt-1">
                         Piyasalardaki en güncel gelişmeleri anlık olarak takip edin ve filtrelenmiş olarak görün. 
                         <span className="font-bold ml-1 text-primary">({filteredNews.length} haber listeleniyor)</span>
                     </p>
@@ -65,7 +65,7 @@ export function NewsClient({ initialNews }: NewsClientProps) {
             {/* Filters */}
             {initialNews.length > 0 && (
                 <div className="flex flex-wrap items-center gap-2 pb-2">
-                    <div className="flex items-center gap-2 mr-2 text-[#554336] font-medium text-sm">
+                    <div className="flex items-center gap-2 mr-2 text-muted-foreground font-medium text-sm">
                         <Filter className="h-4 w-4" /> Filtrele:
                     </div>
                     {ALL_TAGS.map((tag) => (
@@ -75,8 +75,8 @@ export function NewsClient({ initialNews }: NewsClientProps) {
                             className={cn(
                                 "px-4 py-2 rounded-full text-sm font-semibold transition-all duration-300 border",
                                 selectedTag === tag
-                                    ? "bg-[#8c5000] text-white border-[#8c5000] shadow-md"
-                                    : "bg-white text-[#554336] border-[#dbc2b0]/40 hover:bg-[#f8f9fa] hover:border-[#8c5000]/30"
+                                    ? "bg-primary text-primary-foreground border-primary shadow-md"
+                                    : "bg-card text-muted-foreground border-border/40 hover:bg-muted hover:text-foreground hover:border-primary/30"
                             )}
                         >
                             {tag}
@@ -86,17 +86,17 @@ export function NewsClient({ initialNews }: NewsClientProps) {
             )}
 
             {initialNews.length === 0 ? (
-                <div className="flex flex-col items-center justify-center p-12 bg-white rounded-[32px] border border-[#dbc2b0]/30 shadow-ambient-low text-center">
-                    <AlertCircle className="h-12 w-12 text-[#554336] opacity-30 mb-4" />
-                    <h3 className="text-lg font-bold text-[#8c5000]">Haberler Yüklenemedi</h3>
-                    <p className="text-[#554336] opacity-70 mt-2">Şu anda haber kaynağına ulaşılamıyor. Lütfen daha sonra tekrar deneyin.</p>
+                <div className="flex flex-col items-center justify-center p-12 bg-card rounded-[32px] border border-border/30 shadow-ambient-low text-center">
+                    <AlertCircle className="h-12 w-12 text-muted-foreground opacity-30 mb-4" />
+                    <h3 className="text-lg font-bold text-primary">Haberler Yüklenemedi</h3>
+                    <p className="text-muted-foreground opacity-70 mt-2">Şu anda haber kaynağına ulaşılamıyor. Lütfen daha sonra tekrar deneyin.</p>
                 </div>
             ) : filteredNews.length === 0 ? (
-                <div className="flex flex-col items-center justify-center p-12 bg-white rounded-[32px] border border-[#dbc2b0]/30 shadow-ambient-low text-center">
-                    <Filter className="h-12 w-12 text-[#554336] opacity-30 mb-4" />
-                    <h3 className="text-lg font-bold text-[#8c5000]">Sonuç Bulunamadı</h3>
-                    <p className="text-[#554336] opacity-70 mt-2">Seçtiğiniz kategoriye (<b>{selectedTag}</b>) ait güncel haber bulunmamaktadır.</p>
-                    <button onClick={() => setSelectedTag("Tümü")} className="mt-4 px-4 py-2 bg-[#8c5000]/10 text-[#8c5000] rounded-full font-semibold text-sm hover:bg-[#8c5000]/20 transition-colors">
+                <div className="flex flex-col items-center justify-center p-12 bg-card rounded-[32px] border border-border/30 shadow-ambient-low text-center">
+                    <Filter className="h-12 w-12 text-muted-foreground opacity-30 mb-4" />
+                    <h3 className="text-lg font-bold text-primary">Sonuç Bulunamadı</h3>
+                    <p className="text-muted-foreground opacity-70 mt-2">Seçtiğiniz kategoriye (<b>{selectedTag}</b>) ait güncel haber bulunmamaktadır.</p>
+                    <button onClick={() => setSelectedTag("Tümü")} className="mt-4 px-4 py-2 bg-primary/10 text-primary rounded-full font-semibold text-sm hover:bg-primary/20 transition-colors">
                         Tüm Haberleri Göster
                     </button>
                 </div>
@@ -106,12 +106,12 @@ export function NewsClient({ initialNews }: NewsClientProps) {
                         <a key={idx} href={item.link} target="_blank" rel="noopener noreferrer" className="group h-full flex">
                             <Card className="flex flex-col w-full overflow-hidden bg-card border-border/30 shadow-ambient-low hover:shadow-ambient-medium hover:border-primary/40 transition-all duration-300 rounded-[24px]">
                                 {item.imageUrl && (
-                                    <div className="w-full h-48 overflow-hidden bg-[#f8f9fa] relative group-image-container">
+                                    <div className="w-full h-48 overflow-hidden bg-muted relative group-image-container">
                                         <div className="absolute top-4 left-4 z-10">
                                             <span className={cn("px-3 py-1 rounded-full text-xs font-bold border backdrop-blur-sm shadow-sm", TAG_COLORS[item.tag] || TAG_COLORS["Genel Ekonomi"])}>
                                                 {item.tag}
                                             </span>
-                                            <span className="px-3 py-1 rounded-full text-xs font-bold border backdrop-blur-sm shadow-sm bg-black/60 text-white border-white/20">
+                                            <span className="px-3 py-1 rounded-full text-xs font-bold border backdrop-blur-sm shadow-sm bg-black/60 text-white border-white/20 ml-2">
                                                 {item.source}
                                             </span>
                                         </div>
@@ -138,7 +138,7 @@ export function NewsClient({ initialNews }: NewsClientProps) {
                                         <span className={cn("px-3 py-1 rounded-full text-xs font-bold border shadow-sm", TAG_COLORS[item.tag] || TAG_COLORS["Genel Ekonomi"])}>
                                             {item.tag}
                                         </span>
-                                        <span className="px-3 py-1 rounded-full text-xs font-bold border shadow-sm bg-gray-100 text-gray-700 border-gray-200">
+                                        <span className="px-3 py-1 rounded-full text-xs font-bold border shadow-sm bg-muted text-muted-foreground border-border">
                                             {item.source}
                                         </span>
                                     </div>
