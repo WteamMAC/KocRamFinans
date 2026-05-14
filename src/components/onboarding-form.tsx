@@ -285,6 +285,7 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
                       <Input 
                         type="date" 
                         {...form.register("marriageDate")} 
+                        max={new Date().toISOString().split("T")[0]}
                         className="pl-12 bg-[#faf9f6] border-[#c4c6d2]/30 h-12 rounded-xl focus:ring-[#001b44]"
                       />
                     </div>
@@ -322,6 +323,7 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
                           <Input 
                             type="date" 
                             {...form.register(`children.${index}.birthDate`)} 
+                            max={new Date().toISOString().split("T")[0]}
                             className="bg-[#faf9f6] border-[#c4c6d2]/30 h-12 rounded-xl pr-12"
                           />
                           <Button 
