@@ -38,6 +38,7 @@ import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { searchSymbolsAction } from "@/app/actions/market";
 import { PortfolioChart } from "./portfolio-chart";
+import { CompactCurrencyCalculator } from "./compact-currency-calculator";
 
 interface Asset {
   id: string;
@@ -372,6 +373,9 @@ export function AssetList({ assets, allInvestments, fixedAssets, defaultTab = "f
               : "Ev, araba ve diğer somut varlıklarınızı buradan takip edin."}
           </p>
         </div>
+
+        <CompactCurrencyCalculator />
+
         <div className="flex flex-wrap items-center gap-3 mt-4 md:mt-0">
           <Button
             variant="outline"
