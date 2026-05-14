@@ -76,7 +76,7 @@ export function CompactCurrencyCalculator() {
   const result = calculateResult();
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       className="hidden lg:flex items-center gap-0 bg-card/40 backdrop-blur-xl border border-primary/10 rounded-2xl px-2 py-1 shadow-ambient-medium hover:shadow-primary/20 hover:border-primary/30 transition-all duration-500 group relative overflow-hidden"
@@ -85,7 +85,7 @@ export function CompactCurrencyCalculator() {
     >
       {/* Premium Glow Effect */}
       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-      
+
       {/* Icon/Indicator */}
       <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-primary/5 group-hover:bg-primary/10 transition-colors mr-2 relative z-10">
         <TrendingUp className="h-4 w-4 text-primary" />
@@ -102,9 +102,9 @@ export function CompactCurrencyCalculator() {
         />
         <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-0 h-[1.5px] bg-primary group-hover/input:w-6 transition-all duration-300 rounded-full" />
       </div>
-      
+
       {/* From Currency Select */}
-      <Select value={fromCurrency} onValueChange={(val) => setFromCurrency(val || "USD")}>
+      <Select value={fromCurrency} onValueChange={setFromCurrency}>
         <SelectTrigger className="w-[50px] h-8 bg-transparent border-none focus:ring-0 text-[10px] font-black p-0 flex justify-center hover:text-primary transition-colors z-10">
           <SelectValue />
         </SelectTrigger>
@@ -129,7 +129,7 @@ export function CompactCurrencyCalculator() {
       </Button>
 
       {/* To Currency Select */}
-      <Select value={toCurrency} onValueChange={(val) => setToCurrency(val || "TRY")}>
+      <Select value={toCurrency} onValueChange={setToCurrency}>
         <SelectTrigger className="w-[50px] h-8 bg-transparent border-none focus:ring-0 text-[10px] font-black p-0 flex justify-center hover:text-primary transition-colors z-10">
           <SelectValue />
         </SelectTrigger>
@@ -158,9 +158,9 @@ export function CompactCurrencyCalculator() {
             className="flex items-baseline gap-1"
           >
             <span className="text-sm font-black text-primary tracking-tight">
-              {result.toLocaleString("tr-TR", { 
-                minimumFractionDigits: 2, 
-                maximumFractionDigits: result < 1 ? 4 : 2 
+              {result.toLocaleString("tr-TR", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: result < 1 ? 4 : 2
               })}
             </span>
             <span className="text-[8px] font-bold text-muted-foreground uppercase opacity-70">
@@ -171,10 +171,10 @@ export function CompactCurrencyCalculator() {
       </div>
 
       {/* Refresh Button */}
-      <Button 
-        variant="ghost" 
-        size="icon" 
-        onClick={fetchRates} 
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={fetchRates}
         disabled={loading}
         className="h-8 w-8 rounded-xl hover:bg-primary/10 text-muted-foreground/60 hover:text-primary transition-all z-10"
       >
