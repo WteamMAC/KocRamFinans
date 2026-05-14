@@ -72,9 +72,10 @@ interface AssetListProps {
   allInvestments: InvestmentLog[];
   fixedAssets?: FixedAsset[];
   metrics?: any;
+  defaultTab?: "financial" | "fixed";
 }
 
-export function AssetList({ assets, allInvestments, fixedAssets, metrics }: AssetListProps) {
+export function AssetList({ assets, allInvestments, fixedAssets, metrics, defaultTab = "financial" }: AssetListProps) {
   const router = useRouter();
   const [isAdding, setIsAdding] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -88,7 +89,7 @@ export function AssetList({ assets, allInvestments, fixedAssets, metrics }: Asse
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [theme, setThemeState] = useState<"light" | "dark">("light");
   const [mounted, setMounted] = useState(false);
-  const [activeTab, setActiveTab] = useState<"financial" | "fixed">("financial");
+  const [activeTab, setActiveTab] = useState<"financial" | "fixed">(defaultTab);
   const [sellModalState, setSellModalState] = useState<{ assetId: string | null }>({ assetId: null });
 
   const [fixedAssetFormData, setFixedAssetFormData] = useState({
