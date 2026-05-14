@@ -179,10 +179,10 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
 
   return (
     <Card className={cn(
-      "w-full max-w-4xl mx-auto border-[#c4c6d2]/20 shadow-2xl bg-white rounded-[32px] overflow-hidden",
+      "w-full max-w-4xl mx-auto border-border/20 shadow-2xl bg-card rounded-[32px] overflow-hidden",
       isSettings ? "mt-4" : "animate-in fade-in zoom-in-95 duration-700"
     )}>
-      <CardHeader className="text-center pt-10 pb-6 bg-[#faf9f6]/50 border-b border-[#c4c6d2]/10">
+      <CardHeader className="text-center pt-10 pb-6 bg-muted/30 border-b border-border/10">
         {!isSettings && (
           <div className="flex justify-center mb-8">
             <div className="flex items-center gap-3">
@@ -191,8 +191,8 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
                   <div
                     className={cn(
                       "w-10 h-10 rounded-full flex items-center justify-center font-bold transition-all duration-500",
-                      step === i ? "bg-[#001b44] text-white scale-110 shadow-lg" : 
-                      step > i ? "bg-emerald-500 text-white" : "bg-[#e3e2e0] text-[#747781]"
+                      step === i ? "bg-primary text-primary-foreground scale-110 shadow-lg" : 
+                      step > i ? "bg-emerald-500 text-white" : "bg-muted text-muted-foreground"
                     )}
                   >
                     {step > i ? <Check className="w-5 h-5" /> : i}
@@ -200,7 +200,7 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
                   {i < 5 && (
                     <div className={cn(
                       "w-8 h-1 mx-2 rounded-full transition-colors duration-500",
-                      step > i ? "bg-emerald-500" : "bg-[#e3e2e0]"
+                      step > i ? "bg-emerald-500" : "bg-muted"
                     )} />
                   )}
                 </div>
@@ -210,16 +210,16 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
         )}
         <div className="flex items-center justify-center gap-3 mb-2">
            <img src="/mascot.png" alt="Logo" className="h-12 w-12 object-contain" />
-           <span className="text-[10px] font-bold text-[#735c00] uppercase tracking-[0.2em]">Koç Ram Finans</span>
+           <span className="text-[10px] font-bold text-primary uppercase tracking-[0.2em]">Koç Ram Finans</span>
         </div>
-        <CardTitle className="text-4xl font-heading font-bold text-[#001b44] tracking-tight">
+        <CardTitle className="text-4xl font-heading font-bold text-foreground tracking-tight">
           {step === 1 && (isSettings ? "Profil Düzenleme" : "Hoş Geldiniz")}
           {step === 2 && "Giderler"}
           {step === 3 && "Borç Durumu"}
           {step === 4 && "Varlık Portföyü"}
           {step === 5 && "Sabit Varlıklar"}
         </CardTitle>
-        <CardDescription className="text-[#434750] mt-2 font-medium">
+        <CardDescription className="text-muted-foreground mt-2 font-medium">
           {step === 4 ? "Elinizdeki varlıkların adet ve alış fiyatlarını girerek maliyet takibini başlatın." : 
            step === 5 ? "Araba, ev, elektronik eşya gibi somut varlıklarınızı ekleyerek toplam servetinizi görün." :
            "Yıldız (*) ile işaretli alanlar zorunludur."}
@@ -231,17 +231,17 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
           {step === 1 && (
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div className="space-y-3">
-                <Label className="text-[10px] font-bold text-[#747781] uppercase tracking-widest px-1">
-                   Aile Kişi Sayısı <span className="text-rose-500">*</span>
+                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">
+                   Aile Kişi Sayısı <span className="text-destructive">*</span>
                 </Label>
                 <div className="relative">
-                  <Users className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-[#434750] opacity-50" />
+                  <Users className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground opacity-50" />
                   <Input 
                     type="number" 
                     {...form.register("familyCount")} 
                     className={cn(
-                      "pl-12 bg-[#faf9f6] border-[#c4c6d2]/30 h-12 rounded-xl focus:ring-[#001b44]",
-                      form.formState.errors.familyCount && "border-rose-300 ring-rose-100"
+                      "pl-12 bg-muted/50 border-border/30 h-12 rounded-xl focus:ring-primary",
+                      form.formState.errors.familyCount && "border-destructive/30 ring-destructive/10"
                     )}
                   />
                 </div>
@@ -253,15 +253,15 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-3">
-                  <Label className="text-[10px] font-bold text-[#747781] uppercase tracking-widest px-1">
-                     Medeni Durum <span className="text-rose-500">*</span>
+                  <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">
+                     Medeni Durum <span className="text-destructive">*</span>
                   </Label>
                   <Controller
                     name="maritalStatus"
                     control={form.control}
                     render={({ field }) => (
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <SelectTrigger className="bg-[#faf9f6] border-[#c4c6d2]/30 h-12 rounded-xl">
+                        <SelectTrigger className="bg-muted/50 border-border/30 h-12 rounded-xl">
                           <SelectValue placeholder="Seçiniz" />
                         </SelectTrigger>
                         <SelectContent className="rounded-xl">
@@ -293,14 +293,14 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
               </div>
 
               <div className="space-y-4">
-                <div className="flex items-center gap-3 p-4 bg-[#faf9f6] border border-[#c4c6d2]/20 rounded-2xl">
+                <div className="flex items-center gap-3 p-4 bg-muted/50 border border-border/20 rounded-2xl">
                   <input 
                     type="checkbox" 
                     id="hasChildren"
                     {...form.register("hasChildren")} 
-                    className="w-5 h-5 rounded border-[#c4c6d2] text-[#001b44] focus:ring-[#001b44]" 
+                    className="w-5 h-5 rounded border-border text-primary focus:ring-primary" 
                   />
-                  <Label htmlFor="hasChildren" className="text-sm font-bold text-[#001b44] cursor-pointer flex items-center gap-2">
+                  <Label htmlFor="hasChildren" className="text-sm font-bold text-foreground cursor-pointer flex items-center gap-2">
                     <Baby className="h-4 w-4" /> Çocuk Var mı?
                   </Label>
                 </div>
@@ -670,26 +670,26 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
         </form>
       </CardContent>
       
-      <CardFooter className="flex justify-between p-10 bg-[#faf9f6]/30 border-t border-[#c4c6d2]/10">
+      <CardFooter className="flex justify-between p-10 bg-muted/20 border-t border-border/10">
         <Button
           type="button"
           variant="ghost"
           onClick={prevStep}
           disabled={step === 1 || loading}
-          className="h-12 px-8 rounded-xl font-bold text-[#001b44]"
+          className="h-12 px-8 rounded-xl font-bold text-foreground"
         >
           <ChevronLeft className="w-5 h-5 mr-2" /> Geri
         </Button>
         {step < 5 ? (
-          <Button type="button" onClick={nextStep} className="h-12 px-8 rounded-xl bg-[#001b44] text-white hover:bg-[#002f6c] font-bold shadow-lg shadow-[#001b44]/10">
+          <Button type="button" onClick={nextStep} className="h-12 px-8 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 font-bold shadow-lg shadow-primary/10">
             Devam Et <ChevronRight className="w-5 h-5 ml-2" />
           </Button>
         ) : (
           <Button 
             type="button" 
             onClick={form.handleSubmit(onSubmit)} 
-            disabled={loading}
-            className="h-12 px-10 rounded-xl bg-gradient-to-r from-[#001b44] to-[#003482] text-white font-bold shadow-xl hover:scale-[1.02] transition-transform"
+            disabled={loading} 
+            className="h-12 px-10 rounded-xl bg-primary text-primary-foreground font-bold shadow-xl hover:scale-[1.02] transition-transform"
           >
             {loading ? "Kaydediliyor..." : isSettings ? "Değişiklikleri Kaydet" : "Kurulumu Tamamla"}
             {!loading && <Check className="w-5 h-5 ml-2" />}

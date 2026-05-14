@@ -2,6 +2,7 @@
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import { useState, useEffect } from "react";
+import { useTheme } from "next-themes";
 
 interface Asset {
     id: string;
@@ -16,6 +17,7 @@ interface PortfolioChartProps {
 
 export function PortfolioChart({ assets }: PortfolioChartProps) {
     const [isMounted, setIsMounted] = useState(false);
+    const { theme } = useTheme();
 
     useEffect(() => {
         setIsMounted(true);
@@ -35,15 +37,15 @@ export function PortfolioChart({ assets }: PortfolioChartProps) {
     // Eğer veri yoksa boş bir görünüm döndür
     if (!groupedData || groupedData.length === 0) {
         return (
-            <div className="h-[300px] w-full flex items-center justify-center border border-dashed rounded-xl border-slate-200">
-                <p className="text-sm text-slate-500">Henüz portföyünüzde varlık bulunmuyor.</p>
+            <div className="h-[300px] w-full flex items-center justify-center border border-dashed rounded-xl border-border">
+                <p className="text-sm text-muted-foreground">Henüz portföyünüzde varlık bulunmuyor.</p>
             </div>
         );
     }
 
     // Component sadece istemcide (client) yüklendikten sonra Recharts'ı göster
     if (!isMounted) {
-        return <div className="h-[300px] w-full animate-pulse bg-slate-50/50 rounded-xl" />;
+        return <div className="h-[300px] w-full animate-pulse bg-muted rounded-xl" />;
     }
 
     // Kategorilere göre özel renkler
@@ -79,7 +81,13 @@ export function PortfolioChart({ assets }: PortfolioChartProps) {
                         formatter={(value: any) =>
                             new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(Number(value))
                         }
-                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                        contentStyle={{ 
+                            borderRadius: '16px', 
+                            border: theme === "dark" ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.05)', 
+                            boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
+                            backgroundColor: theme === "dark" ? "#1e293b" : "#ffffff",
+                            color: theme === "dark" ? "#f1f5f9" : "#1e293b"
+                        }}
                     />
                     <Legend
                         verticalAlign="bottom"

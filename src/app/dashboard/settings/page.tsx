@@ -67,10 +67,10 @@ export default async function SettingsPage() {
   };
 
   return (
-    <div className="p-8 pt-6 min-h-screen bg-slate-50/50">
+    <div className="p-8 pt-6 min-h-screen bg-background">
       <div className="max-w-4xl mx-auto space-y-6">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
+          <h2 className="text-3xl font-bold tracking-tight text-primary">
             Bilgileri Düzenle
           </h2>
           <p className="text-muted-foreground mt-1">

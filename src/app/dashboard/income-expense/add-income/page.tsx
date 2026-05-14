@@ -7,7 +7,7 @@ export default async function AddIncomePage() {
   if (!userId) redirect("/");
 
   return (
-    <div className="flex-1 p-8 pt-10 bg-[#f8f9fa] min-h-screen">
+    <div className="flex-1 p-8 pt-10 bg-background min-h-screen">
       <AddTransactionForm type="income" />
     </div>
   );

@@ -77,32 +77,32 @@ export function AddTransactionForm({ type }: AddTransactionFormProps) {
                 <ArrowLeft className="h-5 w-5" />
             </Button>
         </Link>
-        <h1 className="text-3xl font-heading font-bold text-[#8c5000]">
+        <h1 className="text-3xl font-heading font-bold text-primary">
             {type === "income" ? "Yeni Gelir Ekle" : "Yeni Gider Ekle"}
         </h1>
       </div>
 
-      <Card className="border-[#dbc2b0]/30 shadow-ambient-medium rounded-[32px] overflow-hidden">
-        <CardHeader className={type === "income" ? "bg-emerald-50/50" : "bg-rose-50/50"}>
+      <Card className="border-border/30 shadow-ambient-medium rounded-[32px] overflow-hidden bg-card">
+        <CardHeader className={type === "income" ? "bg-emerald-500/10" : "bg-rose-500/10"}>
             <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-xl ${type === "income" ? "bg-emerald-100 text-emerald-600" : "bg-rose-100 text-rose-600"}`}>
+                <div className={`p-2 rounded-xl ${type === "income" ? "bg-emerald-500/20 text-emerald-600" : "bg-rose-500/20 text-rose-600"}`}>
                     {type === "income" ? <TrendingUp className="h-6 w-6" /> : <TrendingDown className="h-6 w-6" />}
                 </div>
                 <div>
-                    <CardTitle className="text-lg text-[#554336]">İşlem Detayları</CardTitle>
-                    <p className="text-xs text-[#554336] opacity-60">Lütfen aşağıdaki bilgileri eksiksiz doldurun.</p>
+                    <CardTitle className="text-lg text-foreground">İşlem Detayları</CardTitle>
+                    <p className="text-xs text-muted-foreground opacity-60">Lütfen aşağıdaki bilgileri eksiksiz doldurun.</p>
                 </div>
             </div>
         </CardHeader>
         <CardContent className="p-8 space-y-6">
-          {error && <div className="p-4 bg-red-50 text-red-600 rounded-xl text-sm font-medium border border-red-100">{error}</div>}
+          {error && <div className="p-4 bg-red-500/10 text-red-600 rounded-xl text-sm font-medium border border-red-500/20">{error}</div>}
           <div className="space-y-3">
-            <Label className="text-[10px] font-bold text-[#554336] uppercase tracking-widest px-1">Kategori</Label>
+            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Kategori</Label>
             <Select onValueChange={(v: string | null) => setFormData(p => ({ ...p, category: v ?? "" }))}>
-              <SelectTrigger className="bg-[#f8f9fa] border-[#dbc2b0]/30 h-14 rounded-2xl text-base">
+              <SelectTrigger className="bg-muted border-border/30 h-14 rounded-2xl text-base">
                 <SelectValue placeholder="Kategori Seçin" />
               </SelectTrigger>
-              <SelectContent className="rounded-2xl border-[#dbc2b0]/30">
+              <SelectContent className="rounded-2xl border-border/30 bg-card">
                 {categories.map(cat => (
                   <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                 ))}
@@ -111,35 +111,35 @@ export function AddTransactionForm({ type }: AddTransactionFormProps) {
           </div>
 
           <div className="space-y-3">
-            <Label className="text-[10px] font-bold text-[#554336] uppercase tracking-widest px-1">Tutar (₺)</Label>
+            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Tutar (₺)</Label>
             <Input
               type="number"
               placeholder="0.00"
               value={formData.amount}
               onChange={(e) => setFormData(p => ({ ...p, amount: e.target.value }))}
-              className="bg-[#f8f9fa] border-[#dbc2b0]/30 h-14 rounded-2xl text-xl font-bold text-[#8c5000]"
+              className="bg-muted border-border/30 h-14 rounded-2xl text-xl font-bold text-primary"
             />
           </div>
 
           <div className="space-y-3">
-            <Label className="text-[10px] font-bold text-[#554336] uppercase tracking-widest px-1">Açıklama</Label>
+            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Açıklama</Label>
             <Input
               placeholder="İşlem detayları (opsiyonel)..."
               value={formData.description}
               onChange={(e) => setFormData(p => ({ ...p, description: e.target.value }))}
-              className="bg-[#f8f9fa] border-[#dbc2b0]/30 h-14 rounded-2xl"
+              className="bg-muted border-border/30 h-14 rounded-2xl"
             />
           </div>
 
           {type === "expense" && (
-            <div className="flex items-center space-x-3 bg-[#f8f9fa]/50 p-4 rounded-2xl border border-[#dbc2b0]/20">
+            <div className="flex items-center space-x-3 bg-muted/50 p-4 rounded-2xl border border-border/20">
               <Checkbox
                 id="isRecurring"
                 checked={formData.isRecurring}
                 onCheckedChange={(checked) => setFormData(p => ({ ...p, isRecurring: !!checked }))}
-                className="border-[#8c5000] data-[state=checked]:bg-[#8c5000]"
+                className="border-primary data-[state=checked]:bg-primary"
               />
-              <Label htmlFor="isRecurring" className="text-sm font-semibold text-[#554336] cursor-pointer">
+              <Label htmlFor="isRecurring" className="text-sm font-semibold text-muted-foreground cursor-pointer">
                 Düzenli (Her Ay Tekrarlanan) Gider
               </Label>
             </div>
@@ -151,8 +151,8 @@ export function AddTransactionForm({ type }: AddTransactionFormProps) {
               disabled={loading}
               className={`w-full h-14 rounded-2xl text-lg font-bold shadow-lg transition-all active:scale-95 ${
                 type === "income" 
-                  ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-200" 
-                  : "bg-rose-600 hover:bg-rose-700 text-white shadow-rose-200"
+                  ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-500/20" 
+                  : "bg-rose-600 hover:bg-rose-700 text-white shadow-rose-500/20"
               }`}
             >
               {loading ? "Kaydediliyor..." : `${type === "income" ? "Geliri" : "Gideri"} Kaydet`}

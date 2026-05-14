@@ -45,7 +45,7 @@ export default async function AssetsPage() {
   }
 
   return (
-    <div className="flex-1 space-y-10 p-8 pt-10 bg-[#f8f9fa] min-h-screen">
+    <div className="flex-1 space-y-10 p-8 pt-10 bg-background min-h-screen">
       <AssetList 
         assets={metrics.assets} 
         allInvestments={user.investments} 

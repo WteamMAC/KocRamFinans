@@ -11,8 +11,10 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
-import { format, subDays, isAfter, startOfDay } from "date-fns";
+import { format, subDays, startOfDay, isAfter } from "date-fns";
 import { tr } from "date-fns/locale";
+import { useTheme } from "next-themes";
+import { useState, useEffect } from "react";
 
 interface PerformanceChartProps {
   incomes: any[];
@@ -21,6 +23,12 @@ interface PerformanceChartProps {
 }
 
 export function PerformanceChart({ incomes, expenses, investments }: PerformanceChartProps) {
+  const { theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   const chartData = useMemo(() => {
     const days = 30;
     const data = [];
@@ -54,6 +62,16 @@ export function PerformanceChart({ incomes, expenses, investments }: Performance
     return data;
   }, [incomes, expenses, investments]);
 
+  if (!mounted) return <div className="h-[300px] w-full" />;
+
+  const isDark = theme === "dark";
+  const primaryColor = isDark ? "#c084fc" : "#8c5000";
+  const accentColor = isDark ? "#fbbf24" : "#efe440";
+  const textColor = isDark ? "#94a3b8" : "#554336";
+  const gridColor = isDark ? "rgba(255, 255, 255, 0.05)" : "rgba(140, 80, 0, 0.05)";
+  const tooltipBg = isDark ? "#1e293b" : "#ffffff";
+  const tooltipBorder = isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(140, 80, 0, 0.1)";
+
   return (
     <div className="h-[300px] w-full">
       <ResponsiveContainer width="100%" height="100%">
@@ -68,38 +86,39 @@ export function PerformanceChart({ incomes, expenses, investments }: Performance
         >
           <defs>
             <linearGradient id="colorBakiye" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#8c5000" stopOpacity={0.1}/>
-              <stop offset="95%" stopColor="#8c5000" stopOpacity={0}/>
+              <stop offset="5%" stopColor={primaryColor} stopOpacity={0.1}/>
+              <stop offset="95%" stopColor={primaryColor} stopOpacity={0}/>
             </linearGradient>
             <linearGradient id="colorYatirim" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#efe440" stopOpacity={0.2}/>
-              <stop offset="95%" stopColor="#efe440" stopOpacity={0}/>
+              <stop offset="5%" stopColor={accentColor} stopOpacity={0.2}/>
+              <stop offset="95%" stopColor={accentColor} stopOpacity={0}/>
             </linearGradient>
           </defs>
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#dbc2b0" opacity={0.2} />
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={gridColor} />
           <XAxis 
             dataKey="name" 
             axisLine={false}
             tickLine={false}
-            tick={{ fontSize: 10, fill: "#554336", fontWeight: "bold" }}
+            tick={{ fontSize: 10, fill: textColor, fontWeight: "bold" }}
             dy={10}
           />
           <YAxis 
             axisLine={false}
             tickLine={false}
-            tick={{ fontSize: 10, fill: "#554336", fontWeight: "bold" }}
+            tick={{ fontSize: 10, fill: textColor, fontWeight: "bold" }}
             tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
           />
           <Tooltip 
             contentStyle={{ 
-              backgroundColor: "#fff", 
+              backgroundColor: tooltipBg, 
               borderRadius: "16px", 
-              border: "1px solid #dbc2b033",
+              border: `1px solid ${tooltipBorder}`,
               boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)",
-              padding: "12px"
+              padding: "12px",
+              color: textColor
             }}
             itemStyle={{ fontSize: "12px", fontWeight: "bold" }}
-            labelStyle={{ color: "#8c5000", fontWeight: "bold", marginBottom: "4px" }}
+            labelStyle={{ color: primaryColor, fontWeight: "bold", marginBottom: "4px" }}
           />
           <Legend 
             verticalAlign="top" 
@@ -110,7 +129,7 @@ export function PerformanceChart({ incomes, expenses, investments }: Performance
           <Area
             type="monotone"
             dataKey="Bakiye"
-            stroke="#8c5000"
+            stroke={primaryColor}
             strokeWidth={3}
             fillOpacity={1}
             fill="url(#colorBakiye)"
@@ -119,7 +138,7 @@ export function PerformanceChart({ incomes, expenses, investments }: Performance
           <Area
             type="monotone"
             dataKey="Yatırım"
-            stroke="#efe440"
+            stroke={accentColor}
             strokeWidth={3}
             fillOpacity={1}
             fill="url(#colorYatirim)"

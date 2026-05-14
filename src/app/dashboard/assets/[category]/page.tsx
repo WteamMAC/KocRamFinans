@@ -76,10 +76,10 @@ export default async function AssetCategoryPage({ params }: CategoryPageProps) {
   };
 
   return (
-    <div className="flex-1 space-y-10 p-8 pt-10 bg-[#f8f9fa] min-h-screen">
+    <div className="flex-1 space-y-10 p-8 pt-10 bg-background min-h-screen">
       <div className="mb-8">
-        <h1 className="text-3xl font-heading font-bold text-[#8c5000]">{categoryTitles[category] || "Varlık Detayları"}</h1>
-        <p className="text-[#554336] opacity-70">Seçili varlık kategorisine ait detaylı analiz ve listeleme.</p>
+        <h1 className="text-3xl font-heading font-bold text-primary">{categoryTitles[category] || "Varlık Detayları"}</h1>
+        <p className="text-muted-foreground opacity-70">Seçili varlık kategorisine ait detaylı analiz ve listeleme.</p>
       </div>
       <AssetList 
         assets={metrics.assets} 

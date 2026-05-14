@@ -208,7 +208,7 @@ export function ChatAI() {
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0, opacity: 0 }}
             onClick={() => setIsOpen(true)}
-            className="w-14 h-14 sm:w-16 sm:h-16 bg-[#8c5000] text-white rounded-full shadow-ambient-high flex items-center justify-center hover:scale-110 transition-transform group relative overflow-hidden"
+            className="w-14 h-14 sm:w-16 sm:h-16 bg-primary text-primary-foreground rounded-full shadow-ambient-high flex items-center justify-center hover:scale-110 transition-transform group relative overflow-hidden"
           >
             <div className="absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
             <Sparkles className="h-7 w-7 animate-pulse" />
@@ -223,13 +223,13 @@ export function ChatAI() {
             animate={{ y: 0, opacity: 1, scale: 1 }}
             exit={{ y: 20, opacity: 0, scale: 0.95 }}
             className={cn(
-              "bg-white/95 backdrop-blur-2xl border border-[#dbc2b0]/40 shadow-2xl rounded-3xl overflow-hidden flex flex-col transition-all duration-300",
+              "bg-card/95 backdrop-blur-2xl border border-border/40 shadow-2xl rounded-3xl overflow-hidden flex flex-col transition-all duration-300",
               isMinimized ? "h-20 w-[calc(100vw-2rem)] sm:w-72" : "h-[600px] max-h-[80vh] w-[calc(100vw-2rem)] sm:w-[400px] md:w-[450px]"
             )}
           >
-            <CardHeader className="p-6 bg-[#8c5000] text-white flex flex-row items-center justify-between space-y-0">
+            <CardHeader className="p-6 bg-primary text-primary-foreground flex flex-row items-center justify-between space-y-0">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                <div className="w-10 h-10 bg-primary-foreground/20 rounded-xl flex items-center justify-center">
                   <Bot className="h-6 w-6" />
                 </div>
                 <div>
@@ -241,10 +241,10 @@ export function ChatAI() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-white/10 text-white" onClick={() => setIsMinimized(!isMinimized)}>
+                <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-white/10 text-primary-foreground" onClick={() => setIsMinimized(!isMinimized)}>
                   {isMinimized ? <Maximize2 className="h-4 w-4" /> : <Minimize2 className="h-4 w-4" />}
                 </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-white/10 text-white" onClick={() => setIsOpen(false)}>
+                <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-white/10 text-primary-foreground" onClick={() => setIsOpen(false)}>
                   <X className="h-4 w-4" />
                 </Button>
               </div>
@@ -252,14 +252,14 @@ export function ChatAI() {
 
             {!isMinimized && (
               <>
-                <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-[#dbc2b0]/50 [&::-webkit-scrollbar-thumb]:rounded-full">
+                <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-border/50 [&::-webkit-scrollbar-thumb]:rounded-full">
                   {messages.length === 0 && (
                     <div className="flex flex-col items-center justify-center py-12 text-center">
-                      <div className="w-16 h-16 bg-[#8c5000]/5 rounded-3xl flex items-center justify-center mb-4">
-                        <TrendingUp className="h-8 w-8 text-[#8c5000]" />
+                      <div className="w-16 h-16 bg-primary/5 rounded-3xl flex items-center justify-center mb-4">
+                        <TrendingUp className="h-8 w-8 text-primary" />
                       </div>
-                      <h4 className="font-bold text-[#8c5000] mb-2">Nasıl yardımcı olabilirim?</h4>
-                      <p className="text-xs text-[#554336] opacity-60 max-w-[200px]">
+                      <h4 className="font-bold text-primary mb-2">Nasıl yardımcı olabilirim?</h4>
+                      <p className="text-xs text-muted-foreground opacity-60 max-w-[200px]">
                         Finansal durumunu analiz edebilir, harcama ekleyebilir veya piyasaları sorabilirsin.
                       </p>
                     </div>
@@ -267,15 +267,15 @@ export function ChatAI() {
                   {messages.map((m: { id: string; role: "user" | "assistant"; content: string; image?: string }) => (
                     <div key={m.id} className={cn("flex gap-3", m.role === "assistant" ? "justify-start" : "justify-end animate-in fade-in slide-in-from-bottom-2 duration-300")}>
                       {m.role === "assistant" && (
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#8c5000] to-[#d4821a] flex items-center justify-center flex-shrink-0 shadow-sm">
-                          <Bot className="h-4 w-4 text-white" />
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-primary to-primary/80 flex items-center justify-center flex-shrink-0 shadow-sm">
+                          <Bot className="h-4 w-4 text-primary-foreground" />
                         </div>
                       )}
                       <div className={cn(
                         "max-w-[85%] p-4 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap",
                         m.role === "assistant"
-                          ? "bg-white border border-[#dbc2b0]/40 shadow-sm text-[#191c1d] rounded-tl-sm"
-                          : "bg-gradient-to-br from-[#8c5000] to-[#6e3f00] text-white shadow-md rounded-tr-sm"
+                          ? "bg-card border border-border/40 shadow-sm text-foreground rounded-tl-sm"
+                          : "bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-md rounded-tr-sm"
                       )}>
                         {m.image && (
                           <div className="mb-2 rounded-lg overflow-hidden border border-white/20">
@@ -284,7 +284,7 @@ export function ChatAI() {
                         )}
                         {m.content ? (
                           m.role === "assistant" ? (
-                            <div className="prose-sm max-w-none [>p]:mb-2 [>p:last-child]:mb-0 [>ul]:list-disc [>ul]:pl-4 [>ul]:mb-2 [>li]:mb-1 [>strong]:text-[#8c5000] [>strong]:font-bold [>ol]:list-decimal [>ol]:pl-4">
+                            <div className="prose-sm max-w-none [>p]:mb-2 [>p:last-child]:mb-0 [>ul]:list-disc [>ul]:pl-4 [>ul]:mb-2 [>li]:mb-1 [>strong]:text-primary [>strong]:font-bold [>ol]:list-decimal [>ol]:pl-4 dark:prose-invert">
                               <ReactMarkdown>
                                 {m.content || ""}
                               </ReactMarkdown>
@@ -294,15 +294,15 @@ export function ChatAI() {
                           )
                         ) : (isLoading && m.role === "assistant" ? (
                           <div className="flex items-center gap-1.5 h-5 px-2">
-                            <div className="w-2 h-2 bg-[#8c5000]/60 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                            <div className="w-2 h-2 bg-[#8c5000]/60 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                            <div className="w-2 h-2 bg-[#8c5000]/60 rounded-full animate-bounce"></div>
+                            <div className="w-2 h-2 bg-primary/60 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                            <div className="w-2 h-2 bg-primary/60 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                            <div className="w-2 h-2 bg-primary/60 rounded-full animate-bounce"></div>
                           </div>
                         ) : null)}
                       </div>
                       {m.role === "user" && (
-                        <div className="w-8 h-8 rounded-full bg-[#191c1d] flex items-center justify-center flex-shrink-0 shadow-sm">
-                          <User className="h-4 w-4 text-white" />
+                        <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0 shadow-sm">
+                          <User className="h-4 w-4 text-muted-foreground" />
                         </div>
                       )}
                     </div>
@@ -310,11 +310,11 @@ export function ChatAI() {
                   <div ref={messagesEndRef} className="h-1" />
                 </div>
 
-                <CardFooter className="p-4 bg-white/50 backdrop-blur-sm border-t border-[#dbc2b0]/20">
+                <CardFooter className="p-4 bg-card/50 backdrop-blur-sm border-t border-border/20">
                   <div className="w-full flex flex-col gap-2">
                     {selectedImage && (
                       <div className="relative self-start inline-block">
-                        <img src={selectedImage} alt="Preview" className="h-16 w-16 object-cover rounded-lg border border-[#dbc2b0]/40 shadow-sm" />
+                        <img src={selectedImage} alt="Preview" className="h-16 w-16 object-cover rounded-lg border border-border/40 shadow-sm" />
                         <button
                           type="button"
                           onClick={() => setSelectedImage(null)}
@@ -326,7 +326,7 @@ export function ChatAI() {
                     )}
                     <form
                       onSubmit={handleSubmit}
-                      className="w-full flex items-center gap-2 bg-[#f8f9fa] p-1.5 rounded-2xl border border-[#dbc2b0]/40 shadow-inner"
+                      className="w-full flex items-center gap-2 bg-muted p-1.5 rounded-2xl border border-border/40 shadow-inner"
                     >
                       <input
                         type="file"
@@ -339,7 +339,7 @@ export function ChatAI() {
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="h-10 w-10 shrink-0 text-[#8c5000] hover:bg-[#8c5000]/10 rounded-xl transition-colors"
+                        className="h-10 w-10 shrink-0 text-primary hover:bg-primary/10 rounded-xl transition-colors"
                         onClick={() => fileInputRef.current?.click()}
                       >
                         <Paperclip className="h-5 w-5" />
@@ -348,7 +348,7 @@ export function ChatAI() {
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className={cn("h-10 w-10 shrink-0 rounded-xl transition-colors", isListening ? "text-red-500 bg-red-50 animate-pulse shadow-sm" : "text-[#8c5000] hover:bg-[#8c5000]/10")}
+                        className={cn("h-10 w-10 shrink-0 rounded-xl transition-colors", isListening ? "text-red-500 bg-red-500/10 animate-pulse shadow-sm" : "text-primary hover:bg-primary/10")}
                         onClick={toggleListening}
                       >
                         <Mic className="h-5 w-5" />
@@ -357,12 +357,12 @@ export function ChatAI() {
                         value={input}
                         onChange={handleInputChange}
                         placeholder="Sorunuzu buraya yazın..."
-                        className="flex-1 bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0 px-3 py-3 shadow-none text-sm placeholder:text-[#554336]/50"
+                        className="flex-1 bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0 px-3 py-3 shadow-none text-sm placeholder:text-muted-foreground/50"
                       />
                       <Button
                         type="submit"
                         disabled={isLoading || (!input.trim() && !selectedImage)}
-                        className="h-10 w-10 shrink-0 bg-[#8c5000] hover:bg-[#6e3f00] text-white rounded-xl shadow-md transition-all disabled:opacity-50 disabled:hover:bg-[#8c5000]"
+                        className="h-10 w-10 shrink-0 bg-primary hover:bg-primary/80 text-primary-foreground rounded-xl shadow-md transition-all disabled:opacity-50 disabled:hover:bg-primary"
                         size="icon"
                       >
                         <Send className="h-4 w-4" />

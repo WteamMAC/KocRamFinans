@@ -144,6 +144,29 @@
   --sidebar-foreground: #f8f9fa;
   --sidebar-primary: #ffb874;
   --sidebar-primary-foreground: #2d1600;
+  --sidebar-accent: #3d4041;
+  --sidebar-accent-foreground: #ffb874;
+  --sidebar-border: #444748;
+  --sidebar-ring: #ffb874;
+
+  /* Brand Colors Dark */
+  --primary-container: #5a3100;
+  --on-primary-container: #ffb874;
+  --secondary-container: #6a6500;
+  --on-secondary-container: #efe440;
+  --tertiary: #b8efcc;
+  --on-tertiary: #003824;
+  --tertiary-container: #1c5036;
+  --on-tertiary-container: #b8efcc;
+  --tertiary-fixed: #1c5036;
+  --on-tertiary-fixed-variant: #b8efcc;
+  --surface-container-lowest: #0c0f10;
+  --surface-container-low: #191c1d;
+  --surface-container: #1d2021;
+  --surface-container-high: #282a2b;
+  --surface-container-highest: #333536;
+  --on-surface-variant: #dbc2b0;
+  --outline-variant: #887364;
 }
 
 @layer utilities {

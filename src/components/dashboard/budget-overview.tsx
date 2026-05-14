@@ -2,6 +2,7 @@
 
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Cell } from "recharts";
 import { useEffect, useState } from "react";
+import { useTheme } from "next-themes";
 
 interface BudgetOverviewProps {
   incomes: any[];
@@ -10,6 +11,7 @@ interface BudgetOverviewProps {
 
 export function BudgetOverview({ incomes, expenses }: BudgetOverviewProps) {
   const [isMounted, setIsMounted] = useState(false);
+  const { theme } = useTheme();
 
   useEffect(() => {
     setIsMounted(true);
@@ -24,7 +26,7 @@ export function BudgetOverview({ incomes, expenses }: BudgetOverviewProps) {
   ];
 
   if (!isMounted) {
-    return <div className="h-[300px] w-full bg-[#f8f9fa] animate-pulse rounded-3xl" />;
+    return <div className="h-[300px] w-full bg-muted animate-pulse rounded-3xl" />;
   }
 
   return (
@@ -32,18 +34,20 @@ export function BudgetOverview({ incomes, expenses }: BudgetOverviewProps) {
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data}>
           <defs>
+          <defs>
             <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#8c5000" stopOpacity={1}/>
-              <stop offset="95%" stopColor="#8c5000" stopOpacity={0.6}/>
+              <stop offset="5%" stopColor={theme === "dark" ? "#c084fc" : "#8c5000"} stopOpacity={1}/>
+              <stop offset="95%" stopColor={theme === "dark" ? "#c084fc" : "#8c5000"} stopOpacity={0.6}/>
             </linearGradient>
             <linearGradient id="colorExpense" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#efe440" stopOpacity={1}/>
-              <stop offset="95%" stopColor="#efe440" stopOpacity={0.6}/>
+              <stop offset="5%" stopColor={theme === "dark" ? "#fbbf24" : "#efe440"} stopOpacity={1}/>
+              <stop offset="95%" stopColor={theme === "dark" ? "#fbbf24" : "#efe440"} stopOpacity={0.6}/>
             </linearGradient>
+          </defs>
           </defs>
           <XAxis
             dataKey="name"
-            stroke="#554336"
+            stroke={theme === "dark" ? "#94a3b8" : "#554336"}
             fontSize={11}
             fontWeight={600}
             tickLine={false}
@@ -51,7 +55,7 @@ export function BudgetOverview({ incomes, expenses }: BudgetOverviewProps) {
             dy={10}
           />
           <YAxis
-            stroke="#554336"
+            stroke={theme === "dark" ? "#94a3b8" : "#554336"}
             fontSize={11}
             fontWeight={600}
             tickLine={false}
@@ -59,14 +63,14 @@ export function BudgetOverview({ incomes, expenses }: BudgetOverviewProps) {
             tickFormatter={(value) => `${value}₺`}
           />
           <Tooltip 
-            cursor={{ fill: '#edeeef', radius: 12 }}
+            cursor={{ fill: theme === "dark" ? "rgba(255, 255, 255, 0.1)" : "#edeeef", radius: 12 }}
             content={({ active, payload }) => {
               if (active && payload && payload.length) {
                 const item = payload[0].payload;
                 return (
-                  <div className="bg-white/95 backdrop-blur-md p-4 border border-[#dbc2b0]/30 rounded-2xl shadow-ambient-high">
-                    <p className="text-[10px] font-bold text-[#554336] uppercase tracking-widest mb-1">{item.name}</p>
-                    <p className="text-xl font-heading font-bold text-[#8c5000]">
+                  <div className="bg-card/95 backdrop-blur-md p-4 border border-border/30 rounded-2xl shadow-ambient-high">
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">{item.name}</p>
+                    <p className="text-xl font-heading font-bold text-primary">
                       {payload[0]?.value?.toLocaleString('tr-TR')} ₺
                     </p>
                   </div>

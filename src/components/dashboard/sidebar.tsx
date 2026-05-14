@@ -33,13 +33,13 @@ const routes = [
     label: "Finansal Özet",
     icon: LayoutDashboard,
     href: "/dashboard",
-    color: "text-[#8c5000]",
+    color: "text-primary",
   },
   {
     label: "Varlıklarım",
     icon: TrendingUp,
     href: "/dashboard/assets",
-    color: "text-[#666000]",
+    color: "text-primary",
     isExpandable: true,
     subRoutes: [
       { label: "Kripto Para", icon: Bitcoin, href: "/dashboard/assets/crypto", color: "text-orange-500" },
@@ -53,31 +53,31 @@ const routes = [
     label: "Gelir - Gider",
     icon: ArrowRightLeft,
     href: "/dashboard/income-expense",
-    color: "text-[#36684d]",
+    color: "text-primary",
     isExpandable: true,
     subRoutes: [
-      { label: "Gelir Ekle", icon: PlusCircle, href: "/dashboard/income-expense/add-income", color: "text-emerald-500" },
-      { label: "Gider Ekle", icon: MinusCircle, href: "/dashboard/income-expense/add-expense", color: "text-rose-500" },
-      { label: "Gelir Gider Göster", icon: History, href: "/dashboard/income-expense/history", color: "text-[#36684d]" },
+        { label: "Gelir Ekle", icon: PlusCircle, href: "/dashboard/income-expense/add-income", color: "text-emerald-500" },
+        { label: "Gider Ekle", icon: MinusCircle, href: "/dashboard/income-expense/add-expense", color: "text-rose-500" },
+        { label: "Gelir Gider Göster", icon: History, href: "/dashboard/income-expense/history", color: "text-primary" },
     ]
   },
   {
     label: "Borç ve Krediler",
     icon: CreditCard,
     href: "/dashboard/debts",
-    color: "text-[#ba1a1a]",
+    color: "text-destructive",
   },
   {
     label: "Haberler",
     icon: Newspaper,
     href: "/dashboard/news",
-    color: "text-[#026b9c]",
+    color: "text-blue-500",
   },
   {
     label: "Bilgileri Düzenle",
     icon: Settings,
     href: "/dashboard/settings",
-    color: "text-[#554336]",
+    color: "text-muted-foreground",
   },
 ];
 
@@ -112,7 +112,7 @@ export function Sidebar({ isCollapsed, onToggle, hideToggle, theme, onToggleThem
 
   return (
     <div className={cn(
-      "relative space-y-4 py-4 flex flex-col h-full bg-white border-r border-[#dbc2b0]/30 transition-all duration-300 shadow-ambient-low",
+      "relative space-y-4 py-4 flex flex-col h-full bg-card border-r border-border/30 transition-all duration-300 shadow-ambient-low",
       isCollapsed ? "w-20" : "w-72"
     )}>
       {/* Toggle Button */}
@@ -121,9 +121,9 @@ export function Sidebar({ isCollapsed, onToggle, hideToggle, theme, onToggleThem
           onClick={onToggle}
           variant="ghost"
           size="icon"
-          className="absolute -right-3 top-10 h-6 w-6 rounded-full border border-[#dbc2b0]/30 bg-white shadow-ambient-low z-50 hover:bg-[#f8f9fa]"
+          className="absolute -right-3 top-10 h-6 w-6 rounded-full border border-border/30 bg-card shadow-ambient-low z-50 hover:bg-muted"
         >
-          {isCollapsed ? <ChevronRight className="h-4 w-4 text-[#8c5000]" /> : <ChevronLeft className="h-4 w-4 text-[#8c5000]" />}
+          {isCollapsed ? <ChevronRight className="h-4 w-4 text-primary" /> : <ChevronLeft className="h-4 w-4 text-primary" />}
         </Button>
       )}
 
@@ -134,7 +134,7 @@ export function Sidebar({ isCollapsed, onToggle, hideToggle, theme, onToggleThem
         )}>
           <img src="/mascot.png" alt="Logo" className="h-14 w-14 object-contain" />
           {!isCollapsed && (
-            <h1 className="text-xl font-heading font-bold text-[#8c5000] ml-3 truncate">
+            <h1 className="text-xl font-heading font-bold text-primary ml-3 truncate">
               Koç Ram Finans
             </h1>
           )}
@@ -150,10 +150,10 @@ export function Sidebar({ isCollapsed, onToggle, hideToggle, theme, onToggleThem
                     className={cn(
                       "text-sm flex p-3 flex-1 font-medium cursor-pointer rounded-l-xl transition-all duration-200",
                       pathname === route.href
-                        ? "bg-[#f3f4f5] text-[#8c5000] shadow-ambient-low"
+                        ? "bg-muted text-primary shadow-ambient-low"
                         : pathname.startsWith(route.href)
-                          ? "bg-[#f3f4f5]/30 text-[#8c5000]"
-                          : "text-[#554336] hover:bg-[#f8f9fa] hover:text-[#8c5000]"
+                          ? "bg-muted/30 text-primary"
+                          : "text-muted-foreground hover:bg-muted/50 hover:text-primary"
                     )}
                   >
                     <div className="flex items-center flex-1">
@@ -168,8 +168,8 @@ export function Sidebar({ isCollapsed, onToggle, hideToggle, theme, onToggleThem
                       toggleSubMenu(route.label);
                     }}
                     className={cn(
-                      "p-3 rounded-r-xl transition-all duration-200 border-l border-transparent hover:bg-[#f8f9fa]",
-                      pathname.startsWith(route.href) && "bg-[#f3f4f5]/30"
+                      "p-3 rounded-r-xl transition-all duration-200 border-l border-transparent hover:bg-muted/50",
+                      pathname.startsWith(route.href) && "bg-muted/30"
                     )}
                   >
                     <ChevronDown className={cn("h-4 w-4 transition-transform duration-200 opacity-50", openSubMenus[route.label] && "rotate-180")} />
@@ -181,8 +181,8 @@ export function Sidebar({ isCollapsed, onToggle, hideToggle, theme, onToggleThem
                   className={cn(
                     "text-sm group flex p-3 w-full justify-start font-medium cursor-pointer rounded-xl transition-all duration-200",
                     pathname === route.href
-                      ? "bg-[#f3f4f5] text-[#8c5000] shadow-ambient-low"
-                      : "text-[#554336] hover:bg-[#f8f9fa] hover:text-[#8c5000]",
+                      ? "bg-muted text-primary shadow-ambient-low"
+                      : "text-muted-foreground hover:bg-muted/50 hover:text-primary",
                     isCollapsed && "justify-center"
                   )}
                 >
@@ -206,8 +206,8 @@ export function Sidebar({ isCollapsed, onToggle, hideToggle, theme, onToggleThem
                       className={cn(
                         "text-[13px] group flex p-2.5 w-full justify-start font-bold cursor-pointer rounded-xl transition-all duration-200",
                         pathname === sub.href
-                          ? "bg-[#efe440]/10 text-[#8c5000]"
-                          : "text-[#554336]/70 hover:bg-[#f8f9fa] hover:text-[#8c5000]"
+                          ? "bg-primary/10 text-primary"
+                          : "text-muted-foreground/70 hover:bg-muted/50 hover:text-primary"
                       )}
                     >
                       <div className="flex items-center flex-1">
@@ -224,21 +224,21 @@ export function Sidebar({ isCollapsed, onToggle, hideToggle, theme, onToggleThem
       </div>
 
       <div className={cn(
-        "px-3 py-6 border-t border-[#dbc2b0]/20 flex items-center transition-all duration-300",
-        isCollapsed ? "justify-center" : "justify-between px-6 bg-[#f8f9fa]/30"
+        "px-3 py-6 border-t border-border/20 flex items-center transition-all duration-300",
+        isCollapsed ? "justify-center" : "justify-between px-6 bg-muted/30"
       )}>
         <div className="flex items-center gap-3 overflow-hidden">
           <UserButton
             appearance={{
               elements: {
-                userButtonAvatarBox: "h-9 w-9 ring-2 ring-[#efe440]/20"
+                userButtonAvatarBox: "h-9 w-9 ring-2 ring-primary/20"
               }
             }}
           />
           {!isCollapsed && (
             <div className="flex flex-col truncate">
-              <p className="text-sm font-semibold text-[#191c1d] truncate">Hesabım</p>
-              <p className="text-[10px] uppercase tracking-wider font-bold text-[#554336] truncate opacity-60">Yönetim</p>
+              <p className="text-sm font-semibold text-foreground truncate">Hesabım</p>
+              <p className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground truncate opacity-60">Yönetim</p>
             </div>
           )}
         </div>
@@ -248,7 +248,7 @@ export function Sidebar({ isCollapsed, onToggle, hideToggle, theme, onToggleThem
             variant="ghost"
             size="icon"
             onClick={onToggleTheme}
-            className="rounded-full h-8 w-8 text-[#8c5000] hover:bg-[#8c5000]/10 flex-shrink-0"
+            className="rounded-full h-8 w-8 text-primary hover:bg-primary/10 flex-shrink-0"
           >
             {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </Button>
