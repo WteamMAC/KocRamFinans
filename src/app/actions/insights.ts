@@ -35,11 +35,15 @@ ${JSON.stringify(financialData)}
     let responseText = result.response.text();
     responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
     
-    const parsedData = JSON.parse(responseText);
-
-    return { success: true, data: parsedData };
+    try {
+      const parsedData = JSON.parse(responseText);
+      return { success: true, data: parsedData };
+    } catch (parseError) {
+      console.error("Insights JSON Parse Error. Raw output:", responseText);
+      return { success: false, error: "Yapay zeka yanıtı anlaşılamadı. Lütfen sayfayı yenileyin." };
+    }
   } catch (error: any) {
     console.error("Insights Error:", error);
-    return { success: false, error: "Tavsiyeler yüklenemedi." };
+    return { success: false, error: "Tavsiyeler yüklenemedi: " + (error.message || "Bilinmeyen hata") };
   }
 }
