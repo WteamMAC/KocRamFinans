@@ -12,13 +12,13 @@ function determineTag(title: string, description: string): string {
     if (text.includes("bist") || text.includes("borsa istanbul") || text.includes("spk") || text.includes("hisse") || text.includes("endeks") || text.includes("koç") || text.includes("sabancı")) {
         return "BIST";
     }
-    if (text.includes("nasdaq") || text.includes("s&p") || text.includes("dow jones") || text.includes("fed") || text.includes("abd borsası") || text.includes("wall street") || text.includes("faiz kararı")) {
+    if (text.includes("nasdaq") || text.includes("s&p") || text.includes("dow jones") || text.includes("fed") || text.includes("abd borsası") || text.includes("wall street") || text.includes("faiz kararı") || text.includes("küresel")) {
         return "Küresel / ABD";
     }
     if (text.includes("altın") || text.includes("gram") || text.includes("ons") || text.includes("gümüş") || text.includes("petrol") || text.includes("emtia") || text.includes("brent")) {
         return "Emtia / Altın";
     }
-    if (text.includes("dolar") || text.includes("euro") || text.includes("tcmb") || text.includes("faiz") || text.includes("enflasyon") || text.includes("döviz") || text.includes("kur") || text.includes("merkez bankası")) {
+    if (text.includes("dolar") || text.includes("euro") || text.includes("tcmb") || text.includes("faiz") || text.includes("enflasyon") || text.includes("döviz") || text.includes("kur") || text.includes("merkez bankası") || text.includes("ekonomi")) {
         return "Döviz / Makro";
     }
     return "Genel Ekonomi";
@@ -28,12 +28,22 @@ const SOURCES = [
     { name: "NTV", url: "https://www.ntv.com.tr/ekonomi.rss" },
     { name: "TRT Haber", url: "https://www.trthaber.com/ekonomi_articles.rss" },
     { name: "Habertürk", url: "https://www.haberturk.com/rss/ekonomi.xml" },
-    { name: "Bloomberg HT", url: "https://www.bloomberght.com/rss" }
+    { name: "Bloomberg HT", url: "https://www.bloomberght.com/rss" },
+    { name: "Investing.com", url: "https://tr.investing.com/rss/news_285.rss" },
+    { name: "Dünya Gazetesi", url: "https://www.dunya.com/rss" },
+    { name: "CNBC-e", url: "https://www.cnbce.com/rss" },
+    { name: "BBC Türkçe", url: "https://feeds.bbci.co.uk/turkce/rss.xml" }
 ];
 
 async function fetchFeed(source: { name: string, url: string }): Promise<NewsItem[]> {
     try {
-        const res = await fetch(source.url, { next: { revalidate: 300 } });
+        // Cache bypass to fetch latest instantly
+        const res = await fetch(source.url, { 
+            cache: "no-store",
+            headers: {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+            }
+        });
         const xml = await res.text();
 
         const items: NewsItem[] = [];
@@ -67,7 +77,7 @@ async function fetchFeed(source: { name: string, url: string }): Promise<NewsIte
             return null;
         };
 
-        while ((match = itemRegex.exec(xml)) !== null && items.length < 20) {
+        while ((match = itemRegex.exec(xml)) !== null && items.length < 25) {
             const itemXml = match[1];
             const title = extractTag(itemXml, 'title');
             const link = extractLink(itemXml);
@@ -91,8 +101,7 @@ async function fetchFeed(source: { name: string, url: string }): Promise<NewsIte
                 }
             }
 
-            if (title && link) {
-                // Ignore empty titles or items that failed to parse reasonably
+            if (title && link && !title.includes("Haber başlığı bulunamadı")) {
                 items.push({ title, link, pubDate, description, imageUrl, tag, source: source.name, timestamp });
             }
         }
@@ -113,8 +122,8 @@ async function getEconomicNews(): Promise<NewsItem[]> {
     // Sort by descending timestamp (newest first)
     allNews.sort((a, b) => (b as any).timestamp - (a as any).timestamp);
     
-    // Return max 60 items so we don't overload the client
-    return allNews.slice(0, 60);
+    // Return max 120 items so we don't overload the client but have plenty of news
+    return allNews.slice(0, 120);
 }
 
 export default async function NewsPage() {
