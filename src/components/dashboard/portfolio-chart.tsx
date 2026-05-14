@@ -126,24 +126,26 @@ export function PortfolioChart({ assets }: PortfolioChartProps) {
         setActiveIndex(index);
     };
 
+    const pieProps: any = {
+        activeIndex,
+        activeShape: renderActiveShape,
+        data: groupedData,
+        cx: "50%",
+        cy: "50%",
+        innerRadius: 60,
+        outerRadius: 80,
+        paddingAngle: 5,
+        dataKey: "value",
+        onClick: onPieClick,
+        onMouseEnter: onPieClick,
+        style: { cursor: 'pointer' }
+    };
+
     return (
         <div className="h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                    <Pie
-                        activeIndex={activeIndex}
-                        activeShape={renderActiveShape}
-                        data={groupedData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={80}
-                        paddingAngle={5}
-                        dataKey="value"
-                        onClick={onPieClick}
-                        onMouseEnter={onPieClick}
-                        style={{ cursor: 'pointer' }}
-                    >
+                    <Pie {...pieProps}>
                         {groupedData.map((entry, index) => (
                             <Cell
                                 key={`cell-${index}`}
