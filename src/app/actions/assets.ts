@@ -75,7 +75,7 @@ export async function addAsset(data: {
 /**
  * Bir varlığı güncel fiyattan satar (Kapatır).
  */
-export async function sellAsset(id: string) {
+export async function sellAsset(id: string, postSellAction?: "KEEP_TL" | "KEEP_USDT" | "WITHDRAW") {
   try {
     const { userId } = await auth();
     if (!userId) throw new Error("Oturum açmanız gerekiyor.");
@@ -111,6 +111,58 @@ export async function sellAsset(id: string) {
         soldAt: new Date(),
       },
     });
+
+    const totalSoldAmount = investment.quantity * sellPrice;
+
+    if (postSellAction === "KEEP_TL") {
+      await prisma.investment.create({
+        data: {
+          userId: investment.userId,
+          type: "CASH",
+          symbol: "TRY",
+          quantity: totalSoldAmount,
+          purchasePrice: 1,
+          amount: totalSoldAmount,
+          description: `${investment.symbol || 'Varlık'} satışından TL`,
+          status: "OPEN",
+          transactionType: "BUY",
+        }
+      });
+    } else if (postSellAction === "KEEP_USDT") {
+      let usdtPrice = 33; // Kur anlık çekilemezse diye kaba bir varsayılan değer
+      try {
+        const prices = await getLivePrices(["USDT-TRY", "TRY=X"]);
+        const liveUsdt = prices.get("USDT-TRY") || prices.get("TRY=X");
+        if (liveUsdt && liveUsdt.price > 0) {
+          usdtPrice = liveUsdt.price;
+        }
+      } catch (err) {
+        console.error("USDT price fetch error for sell:", err);
+      }
+
+      await prisma.investment.create({
+        data: {
+          userId: investment.userId,
+          type: "CRYPTO",
+          symbol: "USDT",
+          quantity: totalSoldAmount / usdtPrice,
+          purchasePrice: usdtPrice,
+          amount: totalSoldAmount,
+          description: `${investment.symbol || 'Varlık'} satışından USDT`,
+          status: "OPEN",
+          transactionType: "BUY",
+        }
+      });
+    } else if (postSellAction === "WITHDRAW") {
+      await prisma.income.create({
+        data: {
+          userId: investment.userId,
+          type: "Yatırım Satışı",
+          amount: totalSoldAmount,
+          description: `${investment.symbol || 'Varlık'} satış geliri`,
+        }
+      });
+    }
 
     revalidatePath("/dashboard");
     revalidatePath("/dashboard/assets");

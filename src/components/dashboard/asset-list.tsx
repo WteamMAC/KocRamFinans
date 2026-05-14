@@ -160,13 +160,13 @@ export function AssetList({ assets, allInvestments, fixedAssets, metrics }: Asse
   }>, asset: Asset) => {
     const symbol = asset.symbol || "Diğer";
     if (!acc[symbol]) {
-      acc[symbol] = { 
-        symbol, 
-        type: asset.type, 
-        totalQuantity: 0, 
-        totalCost: 0, 
-        currentPrice: asset.currentPrice, 
-        items: [] as Asset[] 
+      acc[symbol] = {
+        symbol,
+        type: asset.type,
+        totalQuantity: 0,
+        totalCost: 0,
+        currentPrice: asset.currentPrice,
+        items: [] as Asset[]
       };
     }
     acc[symbol].totalQuantity += asset.quantity;
@@ -351,8 +351,8 @@ export function AssetList({ assets, allInvestments, fixedAssets, metrics }: Asse
           onClick={() => setActiveTab("financial")}
           className={cn(
             "flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all",
-            activeTab === "financial" 
-              ? "bg-[#8c5000] text-white shadow-ambient-medium" 
+            activeTab === "financial"
+              ? "bg-[#8c5000] text-white shadow-ambient-medium"
               : "text-[#8c5000] hover:bg-[#8c5000]/10"
           )}
         >
@@ -362,8 +362,8 @@ export function AssetList({ assets, allInvestments, fixedAssets, metrics }: Asse
           onClick={() => setActiveTab("fixed")}
           className={cn(
             "flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all",
-            activeTab === "fixed" 
-              ? "bg-[#8c5000] text-white shadow-ambient-medium" 
+            activeTab === "fixed"
+              ? "bg-[#8c5000] text-white shadow-ambient-medium"
               : "text-[#8c5000] hover:bg-[#8c5000]/10"
           )}
         >
@@ -378,8 +378,8 @@ export function AssetList({ assets, allInvestments, fixedAssets, metrics }: Asse
             {activeTab === "financial" ? "Varlık Portföyü" : "Sabit Varlıklarım"}
           </h2>
           <p className="text-[#554336] mt-1">
-            {activeTab === "financial" 
-              ? "Yatırımlarınızı profesyonel bir bakış açısıyla yönetin." 
+            {activeTab === "financial"
+              ? "Yatırımlarınızı profesyonel bir bakış açısıyla yönetin."
               : "Ev, araba ve diğer somut varlıklarınızı buradan takip edin."}
           </p>
         </div>
@@ -612,12 +612,12 @@ export function AssetList({ assets, allInvestments, fixedAssets, metrics }: Asse
               {activeTab === "financial" ? "Toplam Portföy Değeri" : "Toplam Varlık Değeri"}
             </h3>
             <div className="text-4xl font-heading font-bold text-[#8c5000] mb-4 relative z-10">
-              {activeTab === "financial" 
+              {activeTab === "financial"
                 ? Object.values(groupedAssets).reduce((sum: number, g) => sum + (g.totalQuantity * (g.currentPrice || 0)), 0).toLocaleString("tr-TR", { minimumFractionDigits: 2 })
                 : (fixedAssets || []).reduce((sum: number, a) => sum + a.value, 0).toLocaleString("tr-TR", { minimumFractionDigits: 2 })
               } ₺
             </div>
-            
+
             {activeTab === "financial" ? (
               <>
                 <div className="text-sm font-medium text-[#554336] relative z-10">
@@ -648,19 +648,19 @@ export function AssetList({ assets, allInvestments, fixedAssets, metrics }: Asse
               {activeTab === "financial" ? "Portföy Dağılımı (Kategori Bazlı)" : "Sabit Varlık Dağılımı"}
             </h3>
             <div className="flex-1 min-h-[250px] -ml-4">
-              <PortfolioChart assets={activeTab === "financial" 
+              <PortfolioChart assets={activeTab === "financial"
                 ? Object.values(groupedAssets).map((g) => ({
-                    id: g.symbol,
-                    symbol: g.symbol,
-                    type: g.type,
-                    currentValue: g.totalQuantity * (g.currentPrice || 0)
-                  }))
+                  id: g.symbol,
+                  symbol: g.symbol,
+                  type: g.type,
+                  currentValue: g.totalQuantity * (g.currentPrice || 0)
+                }))
                 : (fixedAssets || []).map((a) => ({
-                    id: a.id,
-                    symbol: a.name,
-                    type: a.type,
-                    currentValue: a.value
-                  }))
+                  id: a.id,
+                  symbol: a.name,
+                  type: a.type,
+                  currentValue: a.value
+                }))
               } />
             </div>
           </Card>
@@ -777,8 +777,8 @@ export function AssetList({ assets, allInvestments, fixedAssets, metrics }: Asse
             ) : (
               (() => {
                 const filteredFixed = (fixedAssets || []).filter((a) =>
-                  a.name.toLowerCase().includes(filterQuery.toLowerCase()) ||
-                  a.type.toLowerCase().includes(filterQuery.toLowerCase())
+                  (a.name || "").toLowerCase().includes(filterQuery.toLowerCase()) ||
+                  (a.type || "").toLowerCase().includes(filterQuery.toLowerCase())
                 );
                 return filteredFixed.length === 0 ? (
                   <div className="lg:col-span-2 p-12 text-center bg-white rounded-[32px] border border-dashed border-[#dbc2b0] text-[#554336] opacity-60 shadow-ambient-low">
@@ -802,9 +802,9 @@ export function AssetList({ assets, allInvestments, fixedAssets, metrics }: Asse
                             <div className="text-xl font-bold text-[#8c5000]">{asset.value.toLocaleString("tr-TR")} ₺</div>
                             <div className="text-[10px] font-medium text-[#554336] opacity-40">Tahmini Değer</div>
                           </div>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
+                          <Button
+                            variant="ghost"
+                            size="icon"
                             onClick={() => handleDeleteFixed(asset.id)}
                             className="text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors"
                           >
