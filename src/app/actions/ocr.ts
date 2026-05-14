@@ -19,11 +19,11 @@ export async function processReceiptWithAI(base64Image: string, mimeType: string
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     const prompt = `Sen bir kişisel finans asistanısın. Gönderilen fiş veya fatura görüntüsünü analiz et.
-Sadece aşağıdaki JSON formatında geçerli bir çıktı ver, Markdown veya fazladan metin kullanma:
+Sadece aşağıdaki JSON formatında geçerli bir çıktı ver. JSON içine ASLA YORUM SATIRI (//) EKLEME, SADECE GEÇERLİ BİR JSON OLSUN:
 {
-  "amount": 150.50, // sadece sayı, küsuratları nokta ile ayır
-  "category": "Market", // "Market", "Kira", "Fatura", "Ulaşım", "Eğlence", "Sağlık", "Diğer" kategorilerinden biri
-  "description": "Örn: Migros Alışverişi" // kısa ve net açıklama
+  "amount": 150.50,
+  "category": "Market",
+  "description": "Migros Alışverişi"
 }`;
 
     const imageParts = [
@@ -41,11 +41,14 @@ Sadece aşağıdaki JSON formatında geçerli bir çıktı ver, Markdown veya fa
     // Clean markdown if present
     responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
     
-    const parsedData = JSON.parse(responseText);
-
-    return { success: true, data: parsedData };
+      const parsedData = JSON.parse(responseText);
+      return { success: true, data: parsedData };
+    } catch (parseError) {
+      console.error("JSON Parse Error. Raw output:", responseText);
+      return { success: false, error: "Fiş formatı anlaşılamadı. Lütfen daha net bir fotoğraf yükleyin." };
+    }
   } catch (error: any) {
     console.error("OCR Error:", error);
-    return { success: false, error: "Fiş analiz edilemedi. Lütfen tekrar deneyin." };
+    return { success: false, error: "Hata: " + (error.message || "Bilinmeyen hata") };
   }
 }
