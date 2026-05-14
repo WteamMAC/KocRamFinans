@@ -13,6 +13,8 @@ import { FixedAssetsSummary } from "@/components/dashboard/fixed-assets-summary"
 import { PerformanceChart } from "@/components/dashboard/performance-chart";
 import { ChatAI } from "@/components/dashboard/chat-ai";
 import { SmartInsights } from "@/components/dashboard/smart-insights";
+import { FinancialCalendar } from "@/components/dashboard/financial-calendar";
+import { InvestmentProjection } from "@/components/dashboard/investment-projection";
 import { cn } from "@/lib/utils";
 import { getLivePrices, calculatePortfolioMetrics } from "@/lib/price-service";
 
@@ -227,34 +229,46 @@ export default async function DashboardPage() {
         </Card>
       </div>
 
-      {/* Upcoming Payments */}
-      <Card className="bg-card border-border/20 shadow-ambient-medium rounded-[32px] overflow-hidden">
-        <CardHeader className="bg-muted/30 border-b border-border/10 py-6">
-          <CardTitle className="text-xl font-heading font-bold text-primary flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-primary" /> Ödeme Takvimi
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-8">
-          <UpcomingPayments expenses={user.expenses} />
-        </CardContent>
-      </Card>
+      {/* Upcoming Payments & Calendar */}
+      <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-7">
+        <Card className="col-span-4 bg-card border-border/20 shadow-ambient-medium rounded-[32px] overflow-hidden flex flex-col h-full">
+          <CardHeader className="bg-muted/30 border-b border-border/10 py-6">
+            <CardTitle className="text-xl font-heading font-bold text-primary flex items-center gap-2">
+              <Calendar className="h-5 w-5 text-primary" /> Ödeme Takvimi
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-8 flex-1">
+            <UpcomingPayments expenses={user.expenses} />
+          </CardContent>
+        </Card>
+        
+        <div className="col-span-3 h-full">
+          <FinancialCalendar incomes={user.incomes} expenses={user.expenses} debts={user.debts} />
+        </div>
+      </div>
 
-      {/* Assets Section */}
-      <Card className="bg-card border-border/20 shadow-ambient-medium rounded-[32px] overflow-hidden">
-        <CardHeader className="bg-primary py-6 px-8 flex flex-row items-center justify-between">
-          <CardTitle className="text-xl font-heading font-bold text-primary-foreground">Varlık Dağılımı</CardTitle>
-          <div className="flex items-center gap-2 bg-primary-foreground/10 px-3 py-1 rounded-full">
-             <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></div>
-             <span className="text-[10px] font-bold text-primary-foreground/80 uppercase tracking-widest">Canlı Piyasa</span>
-          </div>
-        </CardHeader>
-        <CardContent className="p-8">
-          <InvestmentSummary 
-            investments={portfolioMetrics.assets} 
-            fixedAssets={user.fixedAssets} 
-          />
-        </CardContent>
-      </Card>
+      {/* Assets & Projection Section */}
+      <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-7">
+        <Card className="col-span-4 bg-card border-border/20 shadow-ambient-medium rounded-[32px] overflow-hidden flex flex-col h-full">
+          <CardHeader className="bg-primary py-6 px-8 flex flex-row items-center justify-between">
+            <CardTitle className="text-xl font-heading font-bold text-primary-foreground">Varlık Dağılımı</CardTitle>
+            <div className="flex items-center gap-2 bg-primary-foreground/10 px-3 py-1 rounded-full">
+               <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></div>
+               <span className="text-[10px] font-bold text-primary-foreground/80 uppercase tracking-widest">Canlı Piyasa</span>
+            </div>
+          </CardHeader>
+          <CardContent className="p-8 flex-1">
+            <InvestmentSummary 
+              investments={portfolioMetrics.assets} 
+              fixedAssets={user.fixedAssets} 
+            />
+          </CardContent>
+        </Card>
+        
+        <div className="col-span-3 h-full">
+           <InvestmentProjection currentValue={totalInvestment} />
+        </div>
+      </div>
 
       {/* Fixed Assets Section */}
       <Card className="bg-card border-border/20 shadow-ambient-medium rounded-[32px] overflow-hidden">
