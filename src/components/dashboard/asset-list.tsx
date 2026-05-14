@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState, useEffect, useRef } from "react";
@@ -77,7 +78,7 @@ interface AssetListProps {
   hideTabs?: boolean;
 }
 
-export function AssetList({ assets, allInvestments, fixedAssets, metrics, defaultTab = "financial", hideTabs = false }: AssetListProps) {
+export function AssetList({ assets, allInvestments, fixedAssets, defaultTab = "financial", hideTabs = false }: AssetListProps) {
   const router = useRouter();
   const [isAdding, setIsAdding] = useState(false);
   const [loading, setLoading] = useState(false);

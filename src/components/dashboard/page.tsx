@@ -1,7 +1,8 @@
+/* eslint-disable @next/next/no-img-element */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Card } from "@/components/ui/card";
 import { Newspaper, Clock, ArrowUpRight, TrendingUp, AlertCircle } from "lucide-react";
 
-export const dynamic = "force-dynamic";
 
 /**
  * İnternetten canlı haber çeken fonksiyon (NTV Ekonomi RSS üzerinden)

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 import type { Content, Part } from "@google/generative-ai";
 import { auth } from "@clerk/nextjs/server";

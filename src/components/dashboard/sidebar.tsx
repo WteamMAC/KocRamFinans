@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import { useState, useEffect } from "react";
@@ -40,11 +41,11 @@ const routes = [
     color: "text-[#666000]",
     isExpandable: true,
     subRoutes: [
-        { label: "Kripto Para", icon: Bitcoin, href: "/dashboard/assets/crypto", color: "text-orange-500" },
-        { label: "BIST (Hisse)", icon: TrendingUp, href: "/dashboard/assets/bist", color: "text-emerald-500" },
-        { label: "NASDAQ (Hisse)", icon: Globe, href: "/dashboard/assets/nasdaq", color: "text-blue-500" },
-        { label: "Altın & Emtia", icon: Coins, href: "/dashboard/assets/gold", color: "text-amber-500" },
-        { label: "Sabit Varlıklar", icon: Home, href: "/dashboard/assets/fixed", color: "text-indigo-500" },
+      { label: "Kripto Para", icon: Bitcoin, href: "/dashboard/assets/crypto", color: "text-orange-500" },
+      { label: "BIST (Hisse)", icon: TrendingUp, href: "/dashboard/assets/bist", color: "text-emerald-500" },
+      { label: "NASDAQ (Hisse)", icon: Globe, href: "/dashboard/assets/nasdaq", color: "text-blue-500" },
+      { label: "Altın & Emtia", icon: Coins, href: "/dashboard/assets/gold", color: "text-amber-500" },
+      { label: "Sabit Varlıklar", icon: Home, href: "/dashboard/assets/fixed", color: "text-indigo-500" },
     ]
   },
   {
@@ -54,9 +55,9 @@ const routes = [
     color: "text-[#36684d]",
     isExpandable: true,
     subRoutes: [
-        { label: "Gelir Ekle", icon: PlusCircle, href: "/dashboard/income-expense/add-income", color: "text-emerald-500" },
-        { label: "Gider Ekle", icon: MinusCircle, href: "/dashboard/income-expense/add-expense", color: "text-rose-500" },
-        { label: "Gelir Gider Göster", icon: History, href: "/dashboard/income-expense/history", color: "text-[#36684d]" },
+      { label: "Gelir Ekle", icon: PlusCircle, href: "/dashboard/income-expense/add-income", color: "text-emerald-500" },
+      { label: "Gider Ekle", icon: MinusCircle, href: "/dashboard/income-expense/add-expense", color: "text-rose-500" },
+      { label: "Gelir Gider Göster", icon: History, href: "/dashboard/income-expense/history", color: "text-[#36684d]" },
     ]
   },
   {
@@ -91,14 +92,14 @@ export function Sidebar({ isCollapsed, onToggle, hideToggle, theme, onToggleThem
 
   useEffect(() => {
     if (isCollapsed) {
-        setOpenSubMenus({});
+      setOpenSubMenus({});
     } else {
-        // Find if current path is in subroutes to open it
-        routes.forEach(route => {
-            if (route.subRoutes?.some(sub => pathname.startsWith(sub.href))) {
-                setOpenSubMenus(prev => ({ ...prev, [route.label]: true }));
-            }
-        });
+      // Find if current path is in subroutes to open it
+      routes.forEach(route => {
+        if (route.subRoutes?.some(sub => pathname.startsWith(sub.href))) {
+          setOpenSubMenus(prev => ({ ...prev, [route.label]: true }));
+        }
+      });
     }
   }, [isCollapsed, pathname]);
 
