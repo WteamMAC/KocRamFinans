@@ -515,6 +515,8 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
                                 <SelectItem value="NASDAQ">NASDAQ (Hisse)</SelectItem>
                                 <SelectItem value="CRYPTO">Kripto Para</SelectItem>
                                 <SelectItem value="GOLD">Altın/Emtia</SelectItem>
+                                <SelectItem value="BES">Bireysel Emeklilik (BES)</SelectItem>
+                                <SelectItem value="FAIZ">Vadeli Mevduat (Faiz)</SelectItem>
                               </SelectContent>
                             </Select>
                           )}
@@ -526,9 +528,21 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
                         <div className="relative">
                           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#434750] opacity-40" />
                           <Input 
-                            placeholder="Örn: THYAO, BTC" 
+                            placeholder={
+                              form.getValues(`investments.${index}.type`) === "BES" ? "Örn: Agesa, Anadolu Hayat" :
+                              form.getValues(`investments.${index}.type`) === "FAIZ" ? "Örn: Garanti %45, Vadeli TL" :
+                              "Örn: THYAO, BTC"
+                            } 
                             value={searchQueries[index] || form.getValues(`investments.${index}.symbol`) || ""}
-                            onChange={(e) => handleSearch(index, e.target.value, form.getValues(`investments.${index}.type`))}
+                            onChange={(e) => {
+                              const currentType = form.getValues(`investments.${index}.type`);
+                              if (currentType === "BES" || currentType === "FAIZ") {
+                                form.setValue(`investments.${index}.symbol`, e.target.value);
+                                setSearchQueries(p => ({ ...p, [index]: e.target.value }));
+                              } else {
+                                handleSearch(index, e.target.value, currentType);
+                              }
+                            }}
                             className={cn(
                               "pl-12 bg-white border-[#c4c6d2]/20 h-12 rounded-xl",
                               form.formState.errors.investments?.[index]?.symbol && "border-rose-300"

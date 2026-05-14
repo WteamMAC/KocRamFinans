@@ -263,6 +263,7 @@ export default async function DashboardPage() {
              currentValue={totalInvestment} 
              investments={portfolioMetrics.assets}
              fixedAssets={user.fixedAssets}
+             monthlySavings={(totalIncome - totalExpense) > 0 ? (totalIncome - totalExpense) : 0}
            />
         </div>
       </div>

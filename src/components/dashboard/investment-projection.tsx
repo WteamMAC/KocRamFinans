@@ -13,21 +13,26 @@ interface InvestmentProjectionProps {
   currentValue: number;
   investments?: any[];
   fixedAssets?: any[];
+  monthlySavings?: number;
 }
 
-export function InvestmentProjection({ currentValue, investments = [], fixedAssets = [] }: InvestmentProjectionProps) {
+export function InvestmentProjection({ currentValue, investments = [], fixedAssets = [], monthlySavings = 0 }: InvestmentProjectionProps) {
   const [monthlyGrowthRate, setMonthlyGrowthRate] = useState(1.04);
   const [rationale, setRationale] = useState<string | null>(null);
+  const [assetProjections, setAssetProjections] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetchAIProjection() {
       try {
-        const result = await predictGrowthRate({ investments, fixedAssets });
+        const result = await predictGrowthRate({ investments, fixedAssets, monthlySavings });
         if (result.success && result.monthlyRate) {
           // Gelen oran 0.042 formatında, biz 1.042 formatına çeviriyoruz
           setMonthlyGrowthRate(1 + result.monthlyRate);
           setRationale(result.rationale);
+          if (result.assetProjections) {
+            setAssetProjections(result.assetProjections);
+          }
         }
       } catch (error) {
         console.error("AI Projection Error:", error);
@@ -39,14 +44,18 @@ export function InvestmentProjection({ currentValue, investments = [], fixedAsse
     fetchAIProjection();
   }, [investments, fixedAssets]);
 
+  let accumulatedValue = currentValue;
   const data = Array.from({ length: 6 }).map((_, i) => {
     const date = addMonths(new Date(), i);
-    // Compound interest: P * (1+r)^n
-    const projectedValue = currentValue * Math.pow(monthlyGrowthRate, i);
+    
+    if (i > 0) {
+      // Önceki ayın değerinin üzerine faiz/getiri ekle ve o ayki düzenli tasarrufu ekle
+      accumulatedValue = (accumulatedValue * monthlyGrowthRate) + monthlySavings;
+    }
     
     return {
       month: format(date, "MMM yyyy", { locale: tr }),
-      deger: Math.round(projectedValue),
+      deger: Math.round(accumulatedValue),
     };
   });
 
@@ -134,8 +143,39 @@ export function InvestmentProjection({ currentValue, investments = [], fixedAsse
             </AreaChart>
           </ResponsiveContainer>
         </div>
+        
+        {assetProjections && assetProjections.length > 0 && (
+          <div className="mt-6 border-t border-border/10 pt-4">
+            <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-3">Spesifik Varlık Tahminleri (6 Ay)</h4>
+            <div className="flex overflow-x-auto space-x-3 pb-2 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
+              {assetProjections.map((asset, idx) => {
+                const isPositive = asset.projectedValue >= asset.currentValue;
+                const percentChange = (((asset.projectedValue - asset.currentValue) / asset.currentValue) * 100) || 0;
+                
+                return (
+                  <div key={idx} className="flex-none flex flex-col gap-1.5 bg-muted/40 p-4 rounded-2xl border border-border/20 w-[240px]">
+                     <div className="flex items-center justify-between">
+                        <span className="text-sm font-bold text-primary">{asset.symbol || "Varlık"}</span>
+                        <span className={`text-xs font-bold flex items-center ${isPositive ? 'text-emerald-500' : 'text-rose-500'}`}>
+                          {isPositive ? <TrendingUp className="h-3 w-3 mr-1" /> : <TrendingUp className="h-3 w-3 mr-1 rotate-180" />}
+                          {isPositive ? '+' : ''}{percentChange.toFixed(1)}%
+                        </span>
+                     </div>
+                     <div className="text-xs font-medium text-foreground">
+                       {asset.projectedValue.toLocaleString("tr-TR")} ₺ <span className="text-[10px] text-muted-foreground line-through ml-1">{asset.currentValue.toLocaleString("tr-TR")} ₺</span>
+                     </div>
+                     <div className="text-[10px] text-muted-foreground mt-1 leading-relaxed">
+                        {asset.rationale}
+                     </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+        
         <p className="text-xs text-muted-foreground opacity-60 text-center mt-4 italic">
-           {loading ? "Yapay zeka portföyünüzü analiz ediyor..." : `* Mevcut varlık dağılımınız üzerinden AI tarafından tahmin edilmiştir.`}
+           {loading ? "Yapay zeka portföyünüzü analiz ediyor..." : `* Mevcut varlık dağılımınız${monthlySavings > 0 ? ' ve aylık ' + monthlySavings.toLocaleString("tr-TR") + ' ₺ düzenli tasarrufunuz ' : ' '}üzerinden AI tarafından tahmin edilmiştir.`}
         </p>
       </CardContent>
     </Card>

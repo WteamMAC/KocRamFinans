@@ -54,10 +54,20 @@ export async function completeOnboarding(formData: {
   
     // 2. Mevcut verileri temizle ve yeniden oluştur
     await prisma.$transaction([
-      prisma.income.deleteMany({ where: { userId: user.id } }),
+      prisma.income.deleteMany({ 
+        where: { 
+          userId: user.id, 
+          type: { notIn: ["Yatırım Satışı", "Yatırım Çekimi"] },
+          NOT: {
+            description: {
+              contains: "satış geliri"
+            }
+          }
+        } 
+      }),
       prisma.expense.deleteMany({ where: { userId: user.id, isRecurring: true } }),
       prisma.debt.deleteMany({ where: { userId: user.id } }),
-      prisma.investment.deleteMany({ where: { userId: user.id } }),
+      prisma.investment.deleteMany({ where: { userId: user.id, status: "OPEN" } }),
       prisma.fixedAsset.deleteMany({ where: { userId: user.id } }),
       prisma.child.deleteMany({ where: { userId: user.id } }),
   

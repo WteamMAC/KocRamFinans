@@ -47,6 +47,7 @@ interface Asset {
   purchasePrice: number | null;
   amount: number;
   currentPrice?: number;
+  description?: string | null;
   createdAt: Date | string;
 }
 
@@ -166,7 +167,7 @@ export function AssetList({ assets, allInvestments, fixedAssets, defaultTab = "f
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(async () => {
-      if (searchQuery.length >= 2) {
+      if (searchQuery.length >= 2 && formData.type !== "BES" && formData.type !== "FAIZ") {
         const results = await searchSymbolsAction(searchQuery, formData.type);
         setSearchResults(results);
         setShowSearch(true);
@@ -424,108 +425,206 @@ export function AssetList({ assets, allInvestments, fixedAssets, defaultTab = "f
                 </Select>
               </div>
 
-              <div className="space-y-3 relative" ref={inputRef}>
-                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Sembol Arama</Label>
-                <div className="relative">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground opacity-50" />
-                  <Input
-                    placeholder="Örn: THYAO, BTC, AAPL..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-12 bg-muted border-border/30 h-12 rounded-xl focus:ring-primary"
-                  />
-                </div>
-
-                {showSearch && searchResults.length > 0 && rect && createPortal(
-                  <div
-                    className="fixed z-[9999] bg-card border border-border/30 shadow-ambient-high rounded-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200"
-                    style={{ top: rect.bottom + 8, left: rect.left, width: rect.width }}
-                  >
-                    {searchResults.map((result, idx) => (
-                      <div
-                        key={idx}
-                        className="p-4 hover:bg-muted cursor-pointer border-b border-border/10 last:border-0 transition-colors flex items-center justify-between group"
-                        onMouseDown={(e) => {
-                          e.preventDefault();
-                          const sym = `${result.symbol} (${result.shortname || result.symbol})`;
-                          // Otomatik kategori eşleme
-                          setFormData((prev) => ({
-                            ...prev,
-                            symbol: sym,
-                            type: result.suggestedCategory || prev.type
-                          }));
-                          setSearchQuery(sym);
-                          setShowSearch(false);
+              {formData.type === "BES" ? (
+                <>
+                  <div className="space-y-3 relative" ref={inputRef}>
+                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Firma Adı</Label>
+                    <Input
+                      placeholder="Örn: Agesa, Anadolu Hayat..."
+                      value={formData.symbol}
+                      onChange={(e) => setFormData(p => ({ ...p, symbol: e.target.value }))}
+                      className="bg-muted border-border/30 h-12 rounded-xl focus:ring-primary"
+                    />
+                  </div>
+                  <div className="space-y-3">
+                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">İlk Giriş Tutarı (Ana Para)</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="any"
+                      value={formData.quantity === 0 ? "" : formData.quantity}
+                      onChange={(e) => handleNumberChange("quantity", e.target.value)}
+                      className="bg-muted border-border/30 h-12 rounded-xl focus:ring-primary"
+                    />
+                  </div>
+                  <div className="space-y-3">
+                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Devlet Katkı Payı (%)</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="1"
+                      placeholder="Örn: 30"
+                      value={formData.purchasePrice === 0 ? "" : formData.purchasePrice}
+                      onChange={(e) => handleNumberChange("purchasePrice", e.target.value)}
+                      className="bg-muted border-border/30 h-12 rounded-xl focus:ring-primary"
+                    />
+                  </div>
+                  <div className="space-y-3 lg:col-span-3">
+                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Açıklama (Opsiyonel)</Label>
+                    <Input
+                      placeholder="Örn: Her ay 5000 TL ödenecek..."
+                      value={formData.description}
+                      onChange={(e) => setFormData(p => ({ ...p, description: e.target.value }))}
+                      className="bg-muted border-border/30 h-12 rounded-xl focus:ring-primary"
+                    />
+                  </div>
+                </>
+              ) : formData.type === "FAIZ" ? (
+                <>
+                  <div className="space-y-3 relative" ref={inputRef}>
+                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Banka / Hesap Adı</Label>
+                    <Input
+                      placeholder="Örn: Garanti Vadeli, Akbank %45..."
+                      value={formData.symbol}
+                      onChange={(e) => setFormData(p => ({ ...p, symbol: e.target.value }))}
+                      className="bg-muted border-border/30 h-12 rounded-xl focus:ring-primary"
+                    />
+                  </div>
+                  <div className="space-y-3">
+                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Ana Para Tutarı (₺)</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="any"
+                      value={formData.quantity === 0 ? "" : formData.quantity}
+                      onChange={(e) => handleNumberChange("quantity", e.target.value)}
+                      className="bg-muted border-border/30 h-12 rounded-xl focus:ring-primary"
+                    />
+                  </div>
+                  <div className="space-y-3">
+                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Faiz Oranı (%)</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="any"
+                      placeholder="Örn: 45"
+                      value={formData.purchasePrice === 0 ? "" : formData.purchasePrice}
+                      onChange={(e) => handleNumberChange("purchasePrice", e.target.value)}
+                      className="bg-muted border-border/30 h-12 rounded-xl focus:ring-primary"
+                    />
+                  </div>
+                  <div className="space-y-3 lg:col-span-3">
+                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Vade / Açıklama (Opsiyonel)</Label>
+                    <Input
+                      placeholder="Örn: 32 Günlük Vadeli..."
+                      value={formData.description}
+                      onChange={(e) => setFormData(p => ({ ...p, description: e.target.value }))}
+                      className="bg-muted border-border/30 h-12 rounded-xl focus:ring-primary"
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="space-y-3 relative" ref={inputRef}>
+                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Sembol Arama</Label>
+                    <div className="relative">
+                      <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground opacity-50" />
+                      <Input
+                        placeholder="Örn: THYAO, BTC, AAPL..."
+                        value={searchQuery}
+                        onChange={(e) => {
+                          setSearchQuery(e.target.value);
+                          if (formData.type === "BES" || formData.type === "FAIZ") {
+                            setFormData((p) => ({ ...p, symbol: e.target.value }));
+                          }
                         }}
+                        className="pl-12 bg-muted border-border/30 h-12 rounded-xl focus:ring-primary"
+                      />
+                    </div>
+
+                    {showSearch && searchResults.length > 0 && rect && createPortal(
+                      <div
+                        className="fixed z-[9999] bg-card border border-border/30 shadow-ambient-high rounded-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+                        style={{ top: rect.bottom + 8, left: rect.left, width: rect.width }}
                       >
-                        <div className="flex flex-col">
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-primary group-hover:text-primary/80 transition-colors">{result.symbol}</span>
-                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-muted text-muted-foreground opacity-70">
-                              {result.suggestedCategory === "CRYPTO" ? "Kripto" :
-                                result.suggestedCategory === "BIST" ? "BIST" :
-                                  result.suggestedCategory === "NASDAQ" ? "NASDAQ" :
-                                    result.suggestedCategory === "GOLD" ? "Altın/Emtia" : "Varlık"}
-                            </span>
+                        {searchResults.map((result, idx) => (
+                          <div
+                            key={idx}
+                            className="p-4 hover:bg-muted cursor-pointer border-b border-border/10 last:border-0 transition-colors flex items-center justify-between group"
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              const sym = `${result.symbol} (${result.shortname || result.symbol})`;
+                              // Otomatik kategori eşleme
+                              setFormData((prev) => ({
+                                ...prev,
+                                symbol: sym,
+                                type: result.suggestedCategory || prev.type
+                              }));
+                              setSearchQuery(sym);
+                              setShowSearch(false);
+                            }}
+                          >
+                            <div className="flex flex-col">
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-primary group-hover:text-primary/80 transition-colors">{result.symbol}</span>
+                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-muted text-muted-foreground opacity-70">
+                                  {result.suggestedCategory === "CRYPTO" ? "Kripto" :
+                                    result.suggestedCategory === "BIST" ? "BIST" :
+                                      result.suggestedCategory === "NASDAQ" ? "NASDAQ" :
+                                        result.suggestedCategory === "GOLD" ? "Altın/Emtia" : "Varlık"}
+                                </span>
+                              </div>
+                              <span className="text-[10px] text-muted-foreground opacity-60 truncate max-w-[200px]">{result.shortname || result.longname}</span>
+                            </div>
+                            <ArrowUpRight className="h-4 w-4 text-accent opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0" />
                           </div>
-                          <span className="text-[10px] text-muted-foreground opacity-60 truncate max-w-[200px]">{result.shortname || result.longname}</span>
-                        </div>
-                        <ArrowUpRight className="h-4 w-4 text-accent opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0" />
-                      </div>
-                    ))}
-                  </div>,
-                  document.body
-                )}
-              </div>
-
-              <div className="space-y-3">
-                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Miktar</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  step="any"
-                  value={formData.quantity === 0 ? "" : formData.quantity}
-                  onChange={(e) => handleNumberChange("quantity", e.target.value)}
-                  className="bg-muted border-border/30 h-12 rounded-xl focus:ring-primary"
-                />
-              </div>
-
-              <div className="space-y-3">
-                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Alış Fiyatı (Opsiyonel)</Label>
-                <div className="flex gap-2">
-                  <Input
-                    type="number"
-                    min="0"
-                    step="any"
-                    disabled={formData.useCurrentPrice}
-                    value={formData.purchasePrice === 0 ? "" : formData.purchasePrice}
-                    onChange={(e) => handleNumberChange("purchasePrice", e.target.value)}
-                    className="bg-muted border-border/30 h-12 rounded-xl focus:ring-primary"
-                  />
-                  <Button
-                    type="button"
-                    variant={formData.useCurrentPrice ? "default" : "outline"}
-                    onClick={() => setFormData(p => ({ ...p, useCurrentPrice: !p.useCurrentPrice }))}
-                    className={cn(
-                      "h-12 rounded-xl border-border/30 transition-all",
-                      formData.useCurrentPrice ? "bg-accent text-accent-foreground hover:bg-accent/80" : "bg-card text-muted-foreground"
+                        ))}
+                      </div>,
+                      document.body
                     )}
-                  >
-                    <Clock className="mr-2 h-4 w-4" />
-                    Güncel
-                  </Button>
-                </div>
-              </div>
+                  </div>
 
-              <div className="space-y-3 lg:col-span-2">
-                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Açıklama</Label>
-                <Input
-                  placeholder="Örn: Emeklilik fonu için..."
-                  value={formData.description}
-                  onChange={(e) => setFormData(p => ({ ...p, description: e.target.value }))}
-                  className="bg-muted border-border/30 h-12 rounded-xl focus:ring-primary"
-                />
-              </div>
+                  <div className="space-y-3">
+                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Miktar</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="any"
+                      value={formData.quantity === 0 ? "" : formData.quantity}
+                      onChange={(e) => handleNumberChange("quantity", e.target.value)}
+                      className="bg-muted border-border/30 h-12 rounded-xl focus:ring-primary"
+                    />
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Alış Fiyatı (Opsiyonel)</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        type="number"
+                        min="0"
+                        step="any"
+                        disabled={formData.useCurrentPrice}
+                        value={formData.purchasePrice === 0 ? "" : formData.purchasePrice}
+                        onChange={(e) => handleNumberChange("purchasePrice", e.target.value)}
+                        className="bg-muted border-border/30 h-12 rounded-xl focus:ring-primary"
+                      />
+                      <Button
+                        type="button"
+                        variant={formData.useCurrentPrice ? "default" : "outline"}
+                        onClick={() => setFormData(p => ({ ...p, useCurrentPrice: !p.useCurrentPrice }))}
+                        className={cn(
+                          "h-12 rounded-xl border-border/30 transition-all",
+                          formData.useCurrentPrice ? "bg-accent text-accent-foreground hover:bg-accent/80" : "bg-card text-muted-foreground"
+                        )}
+                      >
+                        <Clock className="mr-2 h-4 w-4" />
+                        Güncel
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3 lg:col-span-2">
+                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Açıklama</Label>
+                    <Input
+                      placeholder="Örn: Emeklilik fonu için..."
+                      value={formData.description}
+                      onChange={(e) => setFormData(p => ({ ...p, description: e.target.value }))}
+                      className="bg-muted border-border/30 h-12 rounded-xl focus:ring-primary"
+                    />
+                  </div>
+                </>
+              )}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -625,7 +724,11 @@ export function AssetList({ assets, allInvestments, fixedAssets, defaultTab = "f
 
           <Card className="lg:col-span-2 p-6 bg-card border-border/30 shadow-ambient-medium rounded-[32px] flex flex-col">
             <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-4 opacity-70">
-              {activeTab === "financial" ? "Portföy Dağılımı (Kategori Bazlı)" : "Sabit Varlık Dağılımı"}
+              {activeTab === "financial" ? (
+                assets.length > 0 && new Set(assets.map(a => a.type)).size === 1
+                  ? `${assets[0].type} Portföy Dağılımı (Sembol Bazlı)`
+                  : "Portföy Dağılımı (Kategori Bazlı)"
+              ) : "Sabit Varlık Dağılımı"}
             </h3>
             <div className="flex-1 min-h-[250px] -ml-4">
               <PortfolioChart assets={activeTab === "financial"
@@ -683,9 +786,13 @@ export function AssetList({ assets, allInvestments, fixedAssets, defaultTab = "f
                   </div>
                 ) : (
                   filteredGroups.map((group) => {
-                    const totalValue = group.totalQuantity * (group.currentPrice || 0);
+                    const staticPrice = (group.type === "BES" || group.type === "FAIZ" || group.type === "CASH") ? 1 : 0;
+                    const cPrice = group.currentPrice || staticPrice;
+                    const totalValue = group.totalQuantity * cPrice;
+
                     const totalPortfolioValue = Object.values(groupedAssets).reduce((sum: number, g) => {
-                      return sum + (g.totalQuantity * (g.currentPrice || 0));
+                      const sp = (g.type === "BES" || g.type === "FAIZ" || g.type === "CASH") ? 1 : 0;
+                      return sum + (g.totalQuantity * (g.currentPrice || sp));
                     }, 0);
                     const portfolioRatio = totalPortfolioValue > 0 ? (totalValue / totalPortfolioValue) * 100 : 0;
                     const profit = totalValue - group.totalCost;
@@ -713,7 +820,9 @@ export function AssetList({ assets, allInvestments, fixedAssets, defaultTab = "f
                                   <span className="text-[10px] font-bold text-muted-foreground bg-muted px-2 py-0.5 rounded-full uppercase">{group.type}</span>
                                 </div>
                                 <p className="text-muted-foreground text-sm font-medium mt-1">
-                                  {group.totalQuantity.toLocaleString("tr-TR")} Adet
+                                  {group.type === "BES" || group.type === "FAIZ" 
+                                    ? `${group.totalQuantity.toLocaleString("tr-TR")} ₺` 
+                                    : `${group.totalQuantity.toLocaleString("tr-TR")} Adet`}
                                   <span className="ml-2 text-[10px] font-bold text-muted-foreground bg-muted border border-border/10 px-2 py-0.5 rounded-md uppercase tracking-tighter">
                                     Pay: %{portfolioRatio.toFixed(1)}
                                   </span>
@@ -734,18 +843,37 @@ export function AssetList({ assets, allInvestments, fixedAssets, defaultTab = "f
 
                           {isExpanded && (
                             <div className="mt-6 pt-6 border-t border-border/10 space-y-4 animate-in slide-in-from-top-2">
-                              {group.items.map((item) => (
-                                <div key={item.id} className="flex justify-between items-center p-3 bg-card rounded-xl border border-border/10 shadow-sm">
-                                  <div className="flex flex-col">
-                                    <span className="text-sm font-bold text-foreground">{item.quantity.toLocaleString("tr-TR")} @ {item.purchasePrice?.toLocaleString("tr-TR")} ₺</span>
-                                    <span className="text-[10px] text-muted-foreground opacity-60">{new Date(item.createdAt).toLocaleDateString("tr-TR")}</span>
+                              {group.items.map((item) => {
+                                let meta: any = {};
+                                let isSpecial = group.type === "BES" || group.type === "FAIZ";
+                                if (isSpecial) {
+                                  try { meta = JSON.parse(item.description as string || "{}"); } catch(e){}
+                                }
+                                return (
+                                  <div key={item.id} className="flex justify-between items-center p-3 bg-card rounded-xl border border-border/10 shadow-sm">
+                                    <div className="flex flex-col">
+                                      {isSpecial ? (
+                                        <>
+                                          <span className="text-sm font-bold text-foreground">{item.quantity.toLocaleString("tr-TR")} ₺</span>
+                                          <span className="text-[10px] font-bold text-emerald-500">
+                                            {group.type === "BES" ? `Devlet Katkısı: %${meta.rate || 0}` : `Faiz Oranı: %${meta.rate || 0}`}
+                                          </span>
+                                          {meta.originalDescription && <span className="text-[10px] text-muted-foreground opacity-80">{meta.originalDescription}</span>}
+                                        </>
+                                      ) : (
+                                        <span className="text-sm font-bold text-foreground">{item.quantity.toLocaleString("tr-TR")} @ {item.purchasePrice?.toLocaleString("tr-TR")} ₺</span>
+                                      )}
+                                      <span className="text-[10px] text-muted-foreground opacity-60 mt-0.5">{new Date(item.createdAt).toLocaleDateString("tr-TR")}</span>
+                                    </div>
+                                    <div className="flex gap-2">
+                                      {!isSpecial && (
+                                        <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); setSellModalState({ assetId: item.id }); setError(null); }} className="h-8 text-xs font-bold border-border/30">Sat</Button>
+                                      )}
+                                      <Button size="icon" variant="ghost" onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }} className="h-8 w-8 text-rose-500 hover:bg-rose-50"><Trash2 className="h-4 w-4" /></Button>
+                                    </div>
                                   </div>
-                                  <div className="flex gap-2">
-                                    <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); setSellModalState({ assetId: item.id }); setError(null); }} className="h-8 text-xs font-bold border-border/30">Sat</Button>
-                                    <Button size="icon" variant="ghost" onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }} className="h-8 w-8 text-rose-500 hover:bg-rose-50"><Trash2 className="h-4 w-4" /></Button>
-                                  </div>
-                                </div>
-                              ))}
+                                );
+                              })}
                             </div>
                           )}
                         </div>

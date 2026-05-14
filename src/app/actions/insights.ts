@@ -56,22 +56,31 @@ export async function predictGrowthRate(portfolioData: any) {
   try {
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-    const prompt = `Sen uzman bir finansal analistsin. Aşağıdaki portföy verilerini (yatırımlar ve sabit varlıklar) analiz et ve önümüzdeki 6 ay için gerçekçi bir "Aylık Birleşik Büyüme Oranı" tahmin et.
+    const prompt = `Sen uzman bir finansal analistsin. Aşağıdaki portföy verilerini (yatırımlar, sabit varlıklar ve aylık düzenli tasarruf miktarı) analiz et. 
+Portföydeki spesifik varlıkların (örneğin BTC, AAPL, Altın vs.) gelecek 6 ay içindeki beklenen değer artışlarını tek tek hesapla ve genel portföy büyüme projeksiyonunu buna göre belirle.
     
-Varlıklar:
+Varlıklar ve Nakit Akışı:
 ${JSON.stringify(portfolioData)}
 
 Lütfen şu kurallara uy:
-1. Mevcut piyasa koşullarını (BIST, Altın, Döviz, Kripto, Emlak) göz önüne al.
-2. Tahminini rasyonel bir temele oturt.
+1. Her bir ana varlığın (kripto, hisse, altın vs.) 6 ay sonraki beklenen değerini rasyonel bir temelde (örnek: "BTC halving etkisi", "BIST faiz indirimi beklentisi") tahmin et.
+2. Bu spesifik varlık tahminlerini harmanlayarak tüm portföy için gerçekçi bir "Aylık Ortalama Büyüme Oranı (monthlyRate)" bul. (Aylık düzenli nakit girişini de hesaba kat).
 3. Yanıtını SADECE aşağıdaki JSON formatında ver:
 {
-  "monthlyRate": 0.042, // %4.2 ise 0.042
-  "rationale": "Kısa ve öz açıklama",
-  "confidence": 0.85 // 0-1 arası
+  "monthlyRate": 0.042, // Portföyün aylık ortalama büyüme oranı
+  "rationale": "Kısa genel açıklama. Örneğin: 'BTC'deki beklenen ralli ve düzenli yatırımlarınız portföyünüzü güçlendiriyor.'",
+  "confidence": 0.85,
+  "assetProjections": [
+    {
+      "symbol": "BTC",
+      "currentValue": 80000,
+      "projectedValue": 115000, // 6 Ay Sonraki Beklenen Değer
+      "rationale": "Küresel likidite artışı ve arz kısıtından dolayı güçlü yükseliş bekleniyor."
+    }
+  ] // Sadece en önemli 3-4 varlık için yap
 }
 
-Not: Türkiye piyasası verilerini ve enflasyonist ortamı da değerlendir.
+Not: Türkiye piyasası verilerini, küresel piyasaları ve enflasyonist ortamı da değerlendir.
 `;
 
     const result = await model.generateContent(prompt);
