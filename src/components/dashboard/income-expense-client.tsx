@@ -18,11 +18,26 @@ import {
   Receipt,
   Car,
   Home,
-  ArrowRight
+  ArrowRight,
+  X,
+  CreditCard
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { ChatAI } from "./chat-ai";
+import { addIncome, addExpense } from "@/app/actions/income-expense";
+import { payDebtInstallment, addDebt } from "@/app/actions/debts";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogTrigger,
+  DialogFooter
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface Transaction {
   id: string;
@@ -42,6 +57,7 @@ interface IncomeExpenseClientProps {
   expenseCategoryMap: Record<string, number>;
   incomeCategoryMap: Record<string, number>;
   recentTransactions: Transaction[];
+  debts: any[];
 }
 
 export function IncomeExpenseClient({
@@ -53,11 +69,23 @@ export function IncomeExpenseClient({
   expenseCategoryMap,
   incomeCategoryMap,
   recentTransactions,
+  debts,
 }: IncomeExpenseClientProps) {
   const router = useRouter();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [theme, setThemeState] = useState<"light" | "dark">("light");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [transactionType, setTransactionType] = useState<"income" | "expense" | "debt_payment" | "new_debt">("income");
+
+  const [formData, setFormData] = useState({
+    type: "",
+    amount: "",
+    description: "",
+    debtId: "",
+    remainingInstallments: "",
+  });
 
   useEffect(() => {
     setMounted(true);
@@ -84,6 +112,43 @@ export function IncomeExpenseClient({
     setIsRefreshing(true);
     router.refresh();
     setTimeout(() => setIsRefreshing(false), 1000);
+  };
+
+  const handleSave = async () => {
+    if (!formData.amount) return;
+    setLoading(true);
+    try {
+        if (transactionType === "income") {
+            await addIncome({
+                type: formData.type || "Diğer",
+                amount: Number(formData.amount),
+                description: formData.description
+            });
+        } else if (transactionType === "expense") {
+            await addExpense({
+                type: formData.type || "Diğer",
+                amount: Number(formData.amount),
+                isRecurring: false,
+                description: formData.description
+            });
+        } else if (transactionType === "debt_payment") {
+            await payDebtInstallment(formData.debtId, Number(formData.amount));
+        } else if (transactionType === "new_debt") {
+            await addDebt({
+                type: formData.type || "Diğer",
+                amount: Number(formData.amount),
+                remainingInstallments: formData.remainingInstallments ? Number(formData.remainingInstallments) : undefined,
+                description: formData.description
+            });
+        }
+        setIsModalOpen(false);
+        setFormData({ type: "", amount: "", description: "", debtId: "", remainingInstallments: "" });
+        router.refresh();
+    } catch (err) {
+        console.error(err);
+    } finally {
+        setLoading(false);
+    }
   };
 
   return (
@@ -114,12 +179,147 @@ export function IncomeExpenseClient({
             <RefreshCw className={cn("mr-2 h-4 w-4", isRefreshing && "animate-spin")} />
             Yenile
           </Button>
-          <Button variant="outline" className="px-5 py-2 h-10 rounded-xl border-[#dbc2b0]/30 text-[#554336] hover:bg-[#f3f4f5] bg-white transition-colors">
-            <Download className="w-4 h-4 mr-2" /> Dışa Aktar
-          </Button>
-          <Button className="px-5 py-2 h-10 rounded-xl bg-[#8c5000] text-white shadow-lg shadow-[#8c5000]/20 hover:opacity-90 transition-all font-semibold">
-            <Plus className="w-4 h-4 mr-2" /> İşlem Ekle
-          </Button>
+          
+          <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+            <DialogTrigger render={
+              <Button className="px-5 py-2 h-10 rounded-xl bg-[#8c5000] text-white shadow-lg shadow-[#8c5000]/20 hover:opacity-90 transition-all font-semibold">
+                <Plus className="w-4 h-4 mr-2" /> İşlem Ekle
+              </Button>
+            } />
+            <DialogContent className="sm:max-w-[500px] rounded-[32px] border-[#dbc2b0]/30 shadow-2xl">
+              <DialogHeader>
+                <DialogTitle className="text-2xl font-heading font-bold text-[#8c5000]">Yeni İşlem Ekle</DialogTitle>
+              </DialogHeader>
+              <div className="grid gap-6 py-6">
+                <div className="flex p-1 bg-[#f8f9fa] rounded-2xl border border-[#dbc2b0]/20">
+                    <button 
+                        onClick={() => setTransactionType("income")}
+                        className={cn("flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all", transactionType === "income" ? "bg-white text-[#36684d] shadow-sm" : "text-[#554336] opacity-60")}
+                    >
+                        Gelir
+                    </button>
+                    <button 
+                        onClick={() => setTransactionType("expense")}
+                        className={cn("flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all", transactionType === "expense" ? "bg-white text-[#8c5000] shadow-sm" : "text-[#554336] opacity-60")}
+                    >
+                        Gider
+                    </button>
+                    <button 
+                        onClick={() => setTransactionType("debt_payment")}
+                        className={cn("flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all", transactionType === "debt_payment" ? "bg-white text-[#ba1a1a] shadow-sm" : "text-[#554336] opacity-60")}
+                    >
+                        Borç Öde
+                    </button>
+                    <button 
+                        onClick={() => setTransactionType("new_debt")}
+                        className={cn("flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all", transactionType === "new_debt" ? "bg-white text-[#ba1a1a] shadow-sm" : "text-[#554336] opacity-60")}
+                    >
+                        Borç Al
+                    </button>
+                </div>
+
+                <div className="grid gap-4">
+                    {transactionType === "debt_payment" ? (
+                        <div className="space-y-3">
+                            <Label className="text-[10px] font-bold text-[#554336] uppercase tracking-widest px-1">Ödenecek Borç</Label>
+                            <Select onValueChange={(v) => setFormData(p => ({ ...p, debtId: String(v ?? "") }))}>
+                                <SelectTrigger className="bg-[#f8f9fa] border-[#dbc2b0]/30 h-12 rounded-xl">
+                                    <SelectValue placeholder="Borç Seçin" />
+                                </SelectTrigger>
+                                <SelectContent className="rounded-xl">
+                                    {debts.map(debt => (
+                                        <SelectItem key={debt.id} value={debt.id}>
+                                            {debt.description || debt.type} (Kalan: ₺{debt.amount.toLocaleString()})
+                                        </SelectItem>
+                                    ))}
+                                    {debts.length === 0 && <SelectItem value="none" disabled>Aktif borç bulunamadı</SelectItem>}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    ) : (
+                        <div className="space-y-3">
+                            <Label className="text-[10px] font-bold text-[#554336] uppercase tracking-widest px-1">Kategori</Label>
+                            <Select onValueChange={(v) => setFormData(p => ({ ...p, type: String(v ?? "") }))}>
+                                <SelectTrigger className="bg-[#f8f9fa] border-[#dbc2b0]/30 h-12 rounded-xl">
+                                    <SelectValue placeholder="Kategori Seçin" />
+                                </SelectTrigger>
+                                <SelectContent className="rounded-xl">
+                                    {transactionType === "income" ? (
+                                        <>
+                                            <SelectItem value="Maaş">Maaş</SelectItem>
+                                            <SelectItem value="Kira Geliri">Kira Geliri</SelectItem>
+                                            <SelectItem value="Yatırım Geliri">Yatırım Geliri</SelectItem>
+                                            <SelectItem value="Freelance">Freelance</SelectItem>
+                                            <SelectItem value="Diğer">Diğer</SelectItem>
+                                        </>
+                                    ) : transactionType === "new_debt" ? (
+                                        <>
+                                            <SelectItem value="Banka Kredisi">Banka Kredisi</SelectItem>
+                                            <SelectItem value="Kredi Kartı">Kredi Kartı</SelectItem>
+                                            <SelectItem value="Şahsi Borç">Şahsi Borç</SelectItem>
+                                            <SelectItem value="Diğer">Diğer</SelectItem>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <SelectItem value="Market">Market</SelectItem>
+                                            <SelectItem value="Kira">Kira</SelectItem>
+                                            <SelectItem value="Fatura">Fatura</SelectItem>
+                                            <SelectItem value="Ulaşım">Ulaşım</SelectItem>
+                                            <SelectItem value="Eğlence">Eğlence</SelectItem>
+                                            <SelectItem value="Diğer">Diğer</SelectItem>
+                                        </>
+                                    )}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    )}
+
+                    {transactionType === "new_debt" && (
+                        <div className="space-y-3">
+                            <Label className="text-[10px] font-bold text-[#554336] uppercase tracking-widest px-1">Taksit Sayısı (Opsiyonel)</Label>
+                            <Input 
+                                type="number" 
+                                placeholder="Örn: 12" 
+                                value={formData.remainingInstallments}
+                                onChange={(e) => setFormData(p => ({ ...p, remainingInstallments: e.target.value }))}
+                                className="bg-[#f8f9fa] border-[#dbc2b0]/30 h-12 rounded-xl"
+                            />
+                        </div>
+                    )}
+
+                    <div className="space-y-3">
+                        <Label className="text-[10px] font-bold text-[#554336] uppercase tracking-widest px-1">Tutar (₺)</Label>
+                        <Input 
+                            type="number" 
+                            placeholder="0.00" 
+                            value={formData.amount}
+                            onChange={(e) => setFormData(p => ({ ...p, amount: e.target.value }))}
+                            className="bg-[#f8f9fa] border-[#dbc2b0]/30 h-12 rounded-xl font-bold text-lg"
+                        />
+                    </div>
+
+                    <div className="space-y-3">
+                        <Label className="text-[10px] font-bold text-[#554336] uppercase tracking-widest px-1">Açıklama</Label>
+                        <Input 
+                            placeholder="İşlem detayları..." 
+                            value={formData.description}
+                            onChange={(e) => setFormData(p => ({ ...p, description: e.target.value }))}
+                            className="bg-[#f8f9fa] border-[#dbc2b0]/30 h-12 rounded-xl"
+                        />
+                    </div>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button 
+                    onClick={handleSave}
+                    disabled={loading}
+                    className="w-full bg-[#8c5000] hover:bg-[#7a4600] text-white h-12 rounded-xl font-bold shadow-lg"
+                >
+                    {loading ? "Kaydediliyor..." : "İşlemi Kaydet"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </header>
 
@@ -174,7 +374,6 @@ export function IncomeExpenseClient({
 
       {/* Main Analytics Grid */}
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 mb-8">
-        {/* Monthly Cash Flow Chart */}
         <div className="xl:col-span-8 space-y-8">
           {/* Comparison Chart */}
           <div className="bg-white p-8 rounded-2xl shadow-ambient-low border border-white/50 animate-in fade-in zoom-in-95 duration-700">
@@ -201,7 +400,6 @@ export function IncomeExpenseClient({
                       <div className={cn("flex-1 rounded-t-md transition-all duration-500", isCurrentMonth ? "bg-[#36684d] shadow-lg shadow-[#36684d]/20" : "bg-[#36684d]/40 group-hover:bg-[#36684d]/60")} style={{ height: `${incHeight}%` }}></div>
                       <div className={cn("flex-1 rounded-t-md transition-all duration-500", isCurrentMonth ? "bg-[#8c5000] shadow-lg shadow-[#8c5000]/20" : "bg-[#f18d02]/40 group-hover:bg-[#f18d02]/60")} style={{ height: `${expHeight}%` }}></div>
                       
-                      {/* Tooltip */}
                       <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-white px-3 py-2 rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 whitespace-nowrap text-xs font-bold flex flex-col gap-1 border border-[#dbc2b0]/30">
                         <span className="text-[#36684d]">Gelir: ₺{d.income.toLocaleString('tr-TR')}</span>
                         <span className="text-[#8c5000]">Gider: ₺{d.expense.toLocaleString('tr-TR')}</span>
@@ -253,7 +451,6 @@ export function IncomeExpenseClient({
 
         {/* Category Breakdown */}
         <div className="xl:col-span-4 flex flex-col gap-8">
-          {/* Breakdown Card */}
           <div className="bg-white p-8 rounded-2xl shadow-ambient-low border border-white/50 h-full animate-in fade-in slide-in-from-right-6 duration-700">
             <h3 className="text-xl font-heading font-bold text-[#191c1d] mb-10">Harcama Kategorileri</h3>
             
@@ -306,7 +503,6 @@ export function IncomeExpenseClient({
             </ul>
           </div>
 
-          {/* Mascot Info Card */}
           <div className="bg-[#8c5000]/5 p-6 rounded-2xl border border-[#8c5000]/20 relative overflow-hidden group mt-auto animate-in fade-in slide-in-from-bottom-4 duration-700">
             <div className="relative z-10">
               <p className="font-bold text-[#191c1d] text-lg mb-2">Merhaba!</p>

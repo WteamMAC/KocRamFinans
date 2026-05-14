@@ -11,7 +11,8 @@ import {
   ChevronRight,
   Sun,
   Moon,
-  ArrowRightLeft
+  ArrowRightLeft,
+  CreditCard
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -34,6 +35,12 @@ const routes = [
     icon: ArrowRightLeft,
     href: "/dashboard/income-expense",
     color: "text-[#36684d]",
+  },
+  {
+    label: "Borç ve Krediler",
+    icon: CreditCard,
+    href: "/dashboard/debts",
+    color: "text-[#ba1a1a]",
   },
   {
     label: "Bilgileri Düzenle",

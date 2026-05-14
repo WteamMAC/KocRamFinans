@@ -19,6 +19,7 @@ export default async function IncomeExpensePage() {
     include: {
       incomes: { orderBy: { createdAt: "desc" } },
       expenses: { orderBy: { createdAt: "desc" } },
+      debts: { where: { amount: { gt: 0 } } },
     },
   });
 
@@ -121,6 +122,7 @@ export default async function IncomeExpensePage() {
         ...t,
         createdAt: t.createdAt.toISOString(),
       }))}
+      debts={user.debts}
     />
   );
 }
