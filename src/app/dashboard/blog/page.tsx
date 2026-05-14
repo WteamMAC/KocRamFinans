@@ -17,15 +17,20 @@ export default async function BlogPage() {
 
   const { posts, nextCursor } = await getPosts(user.id);
   
-  // Takipçi verilerini çek
-  const userData = await prisma.user.findUnique({
-    where: { id: user.id },
-    include: {
-      _count: {
-        select: { followers: true, following: true }
+  // Takipçi verilerini çek (DB hatasına karşı korumalı)
+  let userData = null;
+  try {
+    userData = await prisma.user.findUnique({
+      where: { id: user.id },
+      include: {
+        _count: {
+          select: { followers: true, following: true }
+        }
       }
-    }
-  });
+    });
+  } catch (e) {
+    console.error("Social stats fetch error (Check if DB is pushed):", e);
+  }
 
   return (
     <div className="flex-1 p-6 pt-10 bg-background min-h-screen">

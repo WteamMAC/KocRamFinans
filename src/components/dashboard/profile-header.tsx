@@ -47,7 +47,7 @@ export function ProfileHeader({ profile, initialIsFollowing }: ProfileHeaderProp
           <div className="flex flex-col md:flex-row md:items-end gap-6">
             {/* Avatar */}
             <div className="relative">
-              <div className="w-32 h-32 rounded-[28px] border-4 border-card bg-muted overflow-hidden shadow-xl">
+              <div className="w-32 h-32 relative rounded-[28px] border-4 border-card bg-muted overflow-hidden shadow-xl">
                 {profile.imageUrl ? (
                   <Image src={profile.imageUrl} alt={profile.name} fill className="object-cover" />
                 ) : (
