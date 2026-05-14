@@ -98,10 +98,10 @@ export function FixedAssetsSummary({ fixedAssets }: FixedAssetsSummaryProps) {
 
       <div className="w-full lg:w-1/2 space-y-4">
         <div className="bg-[#8c5000]/5 p-6 rounded-[24px] border border-[#8c5000]/10 mb-4">
-           <span className="text-[10px] font-bold text-[#554336] uppercase tracking-widest block mb-1">Toplam Sabit Varlık Değeri</span>
-           <span className="text-3xl font-heading font-bold text-[#8c5000]">{totalValue.toLocaleString('tr-TR')} ₺</span>
+          <span className="text-[10px] font-bold text-[#554336] uppercase tracking-widest block mb-1">Toplam Sabit Varlık Değeri</span>
+          <span className="text-3xl font-heading font-bold text-[#8c5000]">{totalValue.toLocaleString('tr-TR')} ₺</span>
         </div>
-        
+
         <div className="grid gap-2 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
           {groupedData.map((item: any, index: number) => {
             const percent = ((item.value / totalValue) * 100).toFixed(1);

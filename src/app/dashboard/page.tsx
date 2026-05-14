@@ -5,7 +5,7 @@ import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowDownRight, ArrowUpRight, Calendar, PieChart, TrendingUp } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Calendar, PieChart, TrendingUp, TrendingDown, LayoutDashboard } from "lucide-react";
 import { BudgetOverview } from "@/components/dashboard/budget-overview";
 import { UpcomingPayments } from "@/components/dashboard/upcoming-payments";
 import { InvestmentSummary } from "@/components/dashboard/investment-summary";
@@ -65,7 +65,7 @@ export default async function DashboardPage() {
   const totalProfit = portfolioMetrics.totalProfit;
   const profitPercent = portfolioMetrics.profitPercent;
   
-  const netWorth = totalInvestment + (totalIncome - totalExpense) - totalDebt;
+  const netWorth = totalInvestment + (totalIncome - totalExpense) + totalFixedAssets - totalDebt;
   const savingsRate = totalIncome > 0 ? ((totalIncome - totalExpense) / totalIncome) * 100 : 0;
 
   return (
@@ -220,28 +220,22 @@ export default async function DashboardPage() {
         </CardContent>
       </Card>
 
+      {/* Fixed Assets Section */}
+      <Card className="bg-white border-[#dbc2b0]/20 shadow-ambient-medium rounded-[32px] overflow-hidden">
+        <CardHeader className="bg-[#554336] py-6 px-8 flex flex-row items-center justify-between">
+          <CardTitle className="text-xl font-heading font-bold text-white flex items-center gap-2">
+            <LayoutDashboard className="h-5 w-5 text-[#fed65b]" /> Sabit Varlık Analizi
+          </CardTitle>
+          <div className="bg-white/10 px-3 py-1 rounded-full text-[10px] font-bold text-white/80 uppercase tracking-widest">
+            Taşınmaz & Araçlar
+          </div>
+        </CardHeader>
+        <CardContent className="p-8">
+          <FixedAssetsSummary fixedAssets={user.fixedAssets} />
+        </CardContent>
+      </Card>
+
       <ChatAI />
     </div>
   );
-}
-
-// Re-defining icons used above but not imported correctly or missing
-function TrendingDown(props: any) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <polyline points="23 18 13.5 8.5 8.5 13.5 1 6" />
-      <polyline points="17 18 23 18 23 12" />
-    </svg>
-  )
 }

@@ -2,6 +2,7 @@
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
 import { useEffect, useState } from "react";
+import { cn } from "@/lib/utils";
 
 interface InvestmentSummaryProps {
   investments: any[];
@@ -188,6 +189,3 @@ export function InvestmentSummary({ investments, fixedAssets }: InvestmentSummar
     </div>
   );
 }
-
-// Re-importing cn since it was used but not available in previous view
-import { cn } from "@/lib/utils";
