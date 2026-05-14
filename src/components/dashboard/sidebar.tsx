@@ -18,7 +18,10 @@ import {
   Globe,
   Home,
   Coins,
-  ChevronDown
+  ChevronDown,
+  PlusCircle,
+  MinusCircle,
+  History
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -49,6 +52,12 @@ const routes = [
     icon: ArrowRightLeft,
     href: "/dashboard/income-expense",
     color: "text-[#36684d]",
+    isExpandable: true,
+    subRoutes: [
+        { label: "Gelir Ekle", icon: PlusCircle, href: "/dashboard/income-expense/add-income", color: "text-emerald-500" },
+        { label: "Gider Ekle", icon: MinusCircle, href: "/dashboard/income-expense/add-expense", color: "text-rose-500" },
+        { label: "Gelir Gider Göster", icon: History, href: "/dashboard/income-expense/history", color: "text-[#36684d]" },
+    ]
   },
   {
     label: "Borç ve Krediler",
