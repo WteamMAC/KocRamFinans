@@ -74,7 +74,7 @@ async function fetchFeed(source: { name: string, url: string }): Promise<NewsIte
         const extractLink = (xmlStr: string) => {
             let m = xmlStr.match(/<link[^>]*href="([^"]+)"/i);
             if (m) return m[1].trim();
-            m = xmlStr.match(/<link[^>]*>(?:<!\\[CDATA\\[)?([^<]+)(?:\\]\\]>)?<\/link>/i);
+            m = xmlStr.match(/<link[^>]*>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/link>/i);
             return m ? m[1].trim() : '';
         };
 
