@@ -36,7 +36,7 @@ export default async function SettingsPage() {
     hasChildren: user.hasChildren,
     children: user.children.map((c: any) => ({ birthDate: c.birthDate.toISOString().split("T")[0] })),
     incomes: user.incomes
-      .filter((i: any) => i.type !== "Yatırım Satışı" && i.type !== "Yatırım Çekimi" && i.description !== "Varlık satışından TL" && !i.description?.includes("satış geliri"))
+      .filter((i: any) => i.type !== "Yatırım Satışı" && i.type !== "Yatırım Çekimi")
       .map((i: any) => ({ type: i.type, amount: i.amount, description: i.description || undefined })),
     expenses: user.expenses
       .filter((e: any) => e.isRecurring)
