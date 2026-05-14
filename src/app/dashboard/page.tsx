@@ -34,6 +34,7 @@ export default async function DashboardPage() {
       debts: true,
       investments: true,
       fixedAssets: true,
+      children: true,
     } as any,
   }) as any;
 
@@ -242,7 +243,7 @@ export default async function DashboardPage() {
         </Card>
         
         <div className="col-span-3 h-full">
-          <FinancialCalendar incomes={user.incomes} expenses={user.expenses} debts={user.debts} />
+          <FinancialCalendar incomes={user.incomes} expenses={user.expenses} debts={user.debts} userChildren={user.children} />
         </div>
       </div>
 

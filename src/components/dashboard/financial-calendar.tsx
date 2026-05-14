@@ -12,9 +12,10 @@ interface FinancialCalendarProps {
   incomes: any[];
   expenses: any[];
   debts: any[];
+  userChildren?: any[];
 }
 
-export function FinancialCalendar({ incomes, expenses, debts }: FinancialCalendarProps) {
+export function FinancialCalendar({ incomes, expenses, debts, userChildren = [] }: FinancialCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
 
   const monthStart = startOfMonth(currentDate);
@@ -22,14 +23,14 @@ export function FinancialCalendar({ incomes, expenses, debts }: FinancialCalenda
   const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
   // Map events to specific dates
-  const eventsByDate = new Map<string, { incomes: any[], expenses: any[], debts: any[] }>();
+  const eventsByDate = new Map<string, { incomes: any[], expenses: any[], debts: any[], birthdays: any[] }>();
 
   // Helper to normalize dates for comparison (ignoring time)
   const getDateKey = (date: Date) => format(date, "yyyy-MM-dd");
 
-  const addEvent = (dateStr: string, type: 'incomes' | 'expenses' | 'debts', event: any) => {
+  const addEvent = (dateStr: string, type: 'incomes' | 'expenses' | 'debts' | 'birthdays', event: any) => {
     if (!eventsByDate.has(dateStr)) {
-      eventsByDate.set(dateStr, { incomes: [], expenses: [], debts: [] });
+      eventsByDate.set(dateStr, { incomes: [], expenses: [], debts: [], birthdays: [] });
     }
     eventsByDate.get(dateStr)![type].push(event);
   };
@@ -49,6 +50,15 @@ export function FinancialCalendar({ incomes, expenses, debts }: FinancialCalenda
     if (incomes.includes(tx)) addEvent(key, 'incomes', tx);
     else if (expenses.includes(tx)) addEvent(key, 'expenses', tx);
     else addEvent(key, 'debts', tx);
+  });
+
+  // Add birthdays to the current year
+  userChildren.forEach(child => {
+    if (!child.birthDate) return;
+    const birthDate = new Date(child.birthDate);
+    const birthdayThisYear = new Date(currentDate.getFullYear(), birthDate.getMonth(), birthDate.getDate());
+    const key = getDateKey(birthdayThisYear);
+    addEvent(key, 'birthdays', child);
   });
 
   const nextMonth = () => setCurrentDate(addMonths(currentDate, 1));
@@ -126,6 +136,7 @@ export function FinancialCalendar({ incomes, expenses, debts }: FinancialCalenda
                     {events.incomes.length > 0 && <span className={cn("w-1.5 h-1.5 rounded-full bg-emerald-500", isSelected && "bg-white")} />}
                     {events.expenses.length > 0 && <span className={cn("w-1.5 h-1.5 rounded-full bg-rose-500", isSelected && "bg-white")} />}
                     {events.debts.length > 0 && <span className={cn("w-1.5 h-1.5 rounded-full bg-orange-500", isSelected && "bg-white")} />}
+                    {events.birthdays.length > 0 && <span className={cn("w-1.5 h-1.5 rounded-full bg-purple-500", isSelected && "bg-white")} />}
                   </div>
                 )}
               </button>
@@ -141,7 +152,7 @@ export function FinancialCalendar({ incomes, expenses, debts }: FinancialCalenda
                 {format(selectedDate, "d MMMM yyyy, EEEE", { locale: tr })}
               </h4>
               
-              {!selectedEvents || (selectedEvents.incomes.length === 0 && selectedEvents.expenses.length === 0 && selectedEvents.debts.length === 0) ? (
+              {!selectedEvents || (selectedEvents.incomes.length === 0 && selectedEvents.expenses.length === 0 && selectedEvents.debts.length === 0 && selectedEvents.birthdays.length === 0) ? (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground opacity-70">
                   <Info className="h-4 w-4" />
                   Bu tarihte herhangi bir işlem veya ödeme bulunmuyor.
@@ -175,6 +186,18 @@ export function FinancialCalendar({ incomes, expenses, debts }: FinancialCalenda
                       <span className="font-bold text-orange-600">-{debt.amount.toLocaleString("tr-TR")} ₺</span>
                     </div>
                   ))}
+                  {selectedEvents.birthdays.map((child, i) => {
+                    const age = selectedDate.getFullYear() - new Date(child.birthDate).getFullYear();
+                    return (
+                      <div key={`bday-${i}`} className="flex justify-between items-center text-sm">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-purple-500" />
+                          <span className="font-medium text-foreground">Çocuğun Doğum Günü {age > 0 ? `(${age}. Yaş)` : ''}</span>
+                        </div>
+                        <span className="font-bold text-purple-600 text-lg leading-none">🎂</span>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
