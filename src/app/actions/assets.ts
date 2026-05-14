@@ -272,9 +272,78 @@ export async function fixCategories() {
       data: { type: "GOLD" }
     });
 
+    // BES ve FAIZ kayıtları hatalı BIST olarak kaydedilmiş olabilir.
+    // description alanında JSON meta verisi olanlar (rate içerenler) BES/FAIZ'dır.
+    // Bunları güvenli şekilde düzeltmek için description'a bakıyoruz.
+    const bstInvs = await prisma.investment.findMany({
+      where: { userId: user.id, type: "BIST" },
+      select: { id: true, description: true },
+    });
+
+    for (const inv of bstInvs) {
+      try {
+        if (!inv.description) continue;
+        const meta = JSON.parse(inv.description);
+        if (typeof meta.rate === "number") {
+          // Bu kayıt aslında BES veya FAIZ idi; tip bilgisi kaybolmuş.
+          // FAIZ olarak işaretle (BES daha spesifik olduğundan bu genel düzeltme FAIZ'a çeker;
+          // kullanıcı kendi FAIZ sayfasına bakarak silebilir veya tekrar ekleyebilir)
+          // Güvenlik açısından BIST'te bırakıyoruz, sadece uyarı logluyoruz
+          console.warn(`Investment ${inv.id} may be a misclassified BES/FAIZ record.`);
+        }
+      } catch {
+        // JSON parse hatası - normal BIST kaydı
+      }
+    }
+
     revalidatePath("/dashboard/assets");
   } catch (error) {
     console.error("Fix Categories Error:", error);
+  }
+}
+
+/**
+ * Hatalı BIST olarak kaydedilmiş BES/FAIZ kayıtlarını düzeltir.
+ * description alanında JSON rate verisi olan BIST kayıtlarını FAIZ'a taşır.
+ */
+export async function fixMisclassifiedBesFaiz() {
+  try {
+    const { userId } = await auth();
+    if (!userId) throw new Error("Oturum açmanız gerekiyor.");
+
+    const user = await prisma.user.findUnique({
+      where: { clerkUserId: userId },
+    });
+    if (!user) throw new Error("Kullanıcı bulunamadı.");
+
+    const bistInvs = await prisma.investment.findMany({
+      where: { userId: user.id, type: "BIST" },
+      select: { id: true, description: true },
+    });
+
+    let fixedCount = 0;
+    for (const inv of bistInvs) {
+      try {
+        if (!inv.description) continue;
+        const meta = JSON.parse(inv.description);
+        if (typeof meta.rate === "number") {
+          await prisma.investment.update({
+            where: { id: inv.id },
+            data: { type: "FAIZ" },
+          });
+          fixedCount++;
+        }
+      } catch {
+        // JSON parse hatası — normal BIST kaydı, atla
+      }
+    }
+
+    revalidatePath("/dashboard");
+    revalidatePath("/dashboard/assets");
+    return { success: true, fixedCount };
+  } catch (error: any) {
+    console.error("fixMisclassifiedBesFaiz error:", error);
+    throw new Error(error.message || "Düzeltme işlemi başarısız.");
   }
 }
 

@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from "recharts";
 import { cn } from "@/lib/utils";
-import { deleteAsset, addAsset } from "@/app/actions/assets";
+import { deleteAsset, addAsset, fixMisclassifiedBesFaiz } from "@/app/actions/assets";
 
 interface InvestmentItem {
   id: string;
@@ -43,6 +43,8 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
   const router = useRouter();
   const [isAdding, setIsAdding] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [fixLoading, setFixLoading] = useState(false);
+  const [fixMessage, setFixMessage] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [projYears, setProjYears] = useState(10);
   const [projMonthly, setProjMonthly] = useState(0); // only for BES
@@ -77,18 +79,32 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
   // Projection calculation
   const projectionData = useMemo(() => {
     if (type === "FAIZ") {
-      // Simple interest per group, sum up
-      const totalRate = grouped.reduce((s, g) => s + g.rate, 0) / Math.max(grouped.length, 1);
+      // Her hesabın ağırlıklı ortalama faiz oranı ve toplam anapara
       const totalPrin = grouped.reduce((s, g) => s + g.totalQuantity, 0);
-      const monthlyRate = totalRate / 12 / 100;
-      const totalMonths = projYears * 12;
-      return Array.from({ length: projYears + 1 }, (_, i) => ({
+      if (totalPrin <= 0) return [];
+
+      // Her grubu ayrı bileşik faizle hesaplayıp toplayalım (daha doğru)
+      const yearlyTotals: number[] = Array(projYears + 1).fill(0);
+      for (const g of grouped) {
+        const monthlyRate = g.rate / 12 / 100;
+        let bal = g.totalQuantity;
+        for (let yr = 0; yr <= projYears; yr++) {
+          yearlyTotals[yr] += bal;
+          // sonraki yıl için 12 aylık bileşik büyüme
+          for (let m = 0; m < 12; m++) {
+            bal = bal * (1 + monthlyRate);
+          }
+        }
+      }
+
+      return yearlyTotals.map((total, i) => ({
         label: `${i}. Yıl`,
-        toplam: Math.round(totalPrin * (1 + monthlyRate * (i * 12))),
-        anaPara: totalPrin,
+        toplam: Math.round(total),
+        anaPara: Math.round(totalPrin),         // girilen ilk anapara — referans çizgisi
+        faizKazanci: Math.round(total - totalPrin),
       }));
     } else {
-      // BES: compound + govt contribution
+      // BES: aylık ek katkı + bileşik getiri + devlet katkısı
       const govtRate = grouped.reduce((s, g) => s + g.rate, 0) / Math.max(grouped.length, 1);
       const monthlyRate = projReturn / 12 / 100;
       const totalMonths = projYears * 12;
@@ -106,6 +122,7 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
             label: `${Math.floor(i / 12)}. Yıl`,
             toplam: Math.round(totalWithReturn + govtContrib),
             anaPara: Math.round(totalPrin),
+            faizKazanci: Math.round(totalWithReturn + govtContrib - totalPrin),
           });
         }
       }
@@ -148,6 +165,27 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
     }
   }
 
+  async function handleFixOldRecords() {
+    setFixLoading(true);
+    setFixMessage(null);
+    try {
+      const result = await fixMisclassifiedBesFaiz();
+      setFixMessage(
+        result.fixedCount > 0
+          ? `✅ ${result.fixedCount} eski kayıt düzeltildi! Sayfa yenileniyor...`
+          : "ℹ️ Düzeltilecek eski kayıt bulunamadı."
+      );
+      if (result.fixedCount > 0) {
+        setTimeout(() => router.refresh(), 1500);
+      }
+    } catch (err) {
+      setFixMessage("❌ Düzeltme sırasında hata oluştu.");
+      console.error(err);
+    } finally {
+      setFixLoading(false);
+    }
+  }
+
   const isBES = type === "BES";
   const accentColor = isBES ? "text-teal-500" : "text-yellow-500";
   const accentBg = isBES ? "bg-teal-500/10" : "bg-yellow-500/10";
@@ -170,7 +208,13 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
             </p>
           </div>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
+          {!isBES && (
+            <Button variant="outline" size="sm" onClick={handleFixOldRecords} disabled={fixLoading} className="rounded-xl border-yellow-500/40 text-yellow-600 hover:bg-yellow-50">
+              <RefreshCw className={cn("h-4 w-4 mr-2", fixLoading && "animate-spin")} />
+              {fixLoading ? "Düzeltiliyor..." : "Eski Kayıtları Düzelt"}
+            </Button>
+          )}
           <Button variant="outline" size="sm" onClick={() => router.refresh()} className="rounded-xl border-border/30">
             <RefreshCw className="h-4 w-4 mr-2" /> Yenile
           </Button>
@@ -179,6 +223,13 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
           </Button>
         </div>
       </div>
+
+      {/* Fix message toast */}
+      {fixMessage && (
+        <div className="px-4 py-3 rounded-xl bg-muted/60 border border-border/20 text-sm font-medium text-foreground animate-in slide-in-from-top-2 duration-300">
+          {fixMessage}
+        </div>
+      )}
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -310,12 +361,19 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
                         <p className="font-bold text-lg text-primary">{g.totalQuantity.toLocaleString("tr-TR")} ₺</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider">1 Yıl Sonra</p>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
+                          {isBES ? "1 Yıl Sonra" : "1 Yıl Sonra (Bileşik)"}
+                        </p>
                         <p className={cn("font-bold text-lg", accentColor)}>
                           {isBES
                             ? Math.round(g.totalQuantity * (1 + g.rate / 100)).toLocaleString("tr-TR")
-                            : Math.round(g.totalQuantity * (1 + g.rate / 100)).toLocaleString("tr-TR")} ₺
+                            : Math.round(g.totalQuantity * Math.pow(1 + g.rate / 12 / 100, 12)).toLocaleString("tr-TR")} ₺
                         </p>
+                        {!isBES && (
+                          <p className="text-[10px] text-emerald-500 font-bold">
+                            +{Math.round(g.totalQuantity * (Math.pow(1 + g.rate / 12 / 100, 12) - 1)).toLocaleString("tr-TR")} ₺ faiz
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -444,20 +502,31 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
                     contentStyle={{ borderRadius: "16px", border: "none", boxShadow: "0 10px 40px -10px rgba(0,0,0,0.1)" }}
                     formatter={(val: any, name: any) => [
                       `${Number(val).toLocaleString("tr-TR")} ₺`,
-                      name === "toplam" ? "Tahmini Toplam" : "Ana Para"
+                      name === "toplam"
+                        ? (isBES ? "Tahmini Toplam (BES)" : "Bileşik Faiz Toplamı")
+                        : name === "faizKazanci"
+                        ? "Kazanılan Faiz"
+                        : "Başlangıç Anapara"
                     ]}
                   />
                   <Area type="monotone" dataKey="toplam" stroke={accentSolid} strokeWidth={3} fillOpacity={1} fill="url(#colorProj)" />
+                  {!isBES && <Area type="monotone" dataKey="faizKazanci" stroke="#10b981" strokeWidth={2} strokeDasharray="4 4" fillOpacity={0.08} fill="#10b981" />}
                   <Area type="monotone" dataKey="anaPara" stroke="#3b82f6" strokeWidth={2} strokeDasharray="5 5" fillOpacity={0.05} fill="#3b82f6" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
-            <div className="flex justify-center gap-6 mt-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+            <div className="flex justify-center flex-wrap gap-5 mt-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
               <span className="flex items-center gap-1.5">
-                <span className="w-3 h-3 rounded-full" style={{ background: accentSolid }} /> Tahmini Birikim
+                <span className="w-3 h-3 rounded-full" style={{ background: accentSolid }} />
+                {isBES ? "BES Tahmini" : "Bileşik Toplam"}
               </span>
+              {!isBES && (
+                <span className="flex items-center gap-1.5">
+                  <span className="w-3 h-3 rounded-full border-2 border-emerald-400 border-dashed" /> Kazanılan Faiz
+                </span>
+              )}
               <span className="flex items-center gap-1.5">
-                <span className="w-3 h-3 rounded-full border-2 border-blue-400 border-dashed" /> Ana Para
+                <span className="w-3 h-3 rounded-full border-2 border-blue-400 border-dashed" /> Başlangıç Anapara
               </span>
             </div>
           </Card>
@@ -473,9 +542,13 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
                   <thead>
                     <tr className="bg-muted/50">
                       <th className="px-4 py-3 text-left text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Yıl</th>
-                      <th className="px-4 py-3 text-right text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Ana Para</th>
-                      <th className="px-4 py-3 text-right text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Tahmini Toplam</th>
-                      <th className="px-4 py-3 text-right text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Kazanç</th>
+                      <th className="px-4 py-3 text-right text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                        {isBES ? "Ana Para" : "Başlangıç Anapara"}
+                      </th>
+                      <th className="px-4 py-3 text-right text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                        {isBES ? "Tahmini Toplam" : "Bileşik Toplam"}
+                      </th>
+                      <th className="px-4 py-3 text-right text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Kazanılan Faiz</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/10">
@@ -484,7 +557,9 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
                         <td className="px-4 py-3 font-bold text-foreground">{row.label}</td>
                         <td className="px-4 py-3 text-right text-muted-foreground">{row.anaPara.toLocaleString("tr-TR")} ₺</td>
                         <td className={cn("px-4 py-3 text-right font-bold", accentColor)}>{row.toplam.toLocaleString("tr-TR")} ₺</td>
-                        <td className="px-4 py-3 text-right text-emerald-500 font-bold">+{Math.max(0, row.toplam - row.anaPara).toLocaleString("tr-TR")} ₺</td>
+                        <td className="px-4 py-3 text-right text-emerald-500 font-bold">
+                          +{Math.max(0, row.faizKazanci ?? (row.toplam - row.anaPara)).toLocaleString("tr-TR")} ₺
+                        </td>
                       </tr>
                     ))}
                   </tbody>
