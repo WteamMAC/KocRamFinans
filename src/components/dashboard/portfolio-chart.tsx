@@ -67,20 +67,20 @@ const renderActiveShape = (props: any) => {
 
 export function PortfolioChart({ assets }: PortfolioChartProps) {
     const [isMounted, setIsMounted] = useState(false);
-    const [activeIndex, setActiveIndex] = useState(0);
+    const [activeIndexCategory, setActiveIndexCategory] = useState(0);
+    const [activeIndexSymbol, setActiveIndexSymbol] = useState(0);
+    const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
     const { theme } = useTheme();
 
     useEffect(() => {
         setIsMounted(true);
     }, []);
 
-    // Benzersiz tip sayısına bak. Eğer sadece 1 tip varsa (örneğin sadece Kripto sayfasındaysak),
-    // o zaman grafiği kendi içinde (sembol bazında) grupla.
     const uniqueTypes = new Set(assets.map(a => a.type));
-    const groupBySymbol = uniqueTypes.size === 1;
+    const isSingleType = uniqueTypes.size === 1;
 
-    const groupedData = assets.reduce((acc, asset) => {
-        const key = groupBySymbol ? asset.symbol : asset.type;
+    const categoryData = assets.reduce((acc, asset) => {
+        const key = asset.type;
         const existing = acc.find((a) => a.name === key);
         if (existing) {
             existing.value += asset.currentValue;
@@ -90,83 +90,143 @@ export function PortfolioChart({ assets }: PortfolioChartProps) {
         return acc;
     }, [] as { name: string; value: number }[]);
 
-    // Değerine göre büyükten küçüğe sıralayalım (grafik daha güzel görünür)
-    groupedData.sort((a, b) => b.value - a.value);
+    categoryData.sort((a, b) => b.value - a.value);
 
-    // Eğer veri yoksa boş bir görünüm döndür
-    if (!groupedData || groupedData.length === 0) {
+    // İlk kategoriyi seçili yap
+    useEffect(() => {
+        if (categoryData.length > 0 && !selectedCategory) {
+            setSelectedCategory(categoryData[0].name);
+        }
+    }, [categoryData, selectedCategory]);
+
+    const activeCategory = selectedCategory || (categoryData.length > 0 ? categoryData[0].name : null);
+
+    const symbolData = assets
+        .filter(a => isSingleType ? true : a.type === activeCategory)
+        .reduce((acc, asset) => {
+            const key = asset.symbol;
+            const existing = acc.find((a) => a.name === key);
+            if (existing) {
+                existing.value += asset.currentValue;
+            } else {
+                acc.push({ name: key, value: asset.currentValue });
+            }
+            return acc;
+        }, [] as { name: string; value: number }[]);
+
+    symbolData.sort((a, b) => b.value - a.value);
+
+    if (!assets || assets.length === 0) {
         return (
-            <div className="h-[300px] w-full flex items-center justify-center border border-dashed rounded-xl border-border">
+            <div className="h-[350px] w-full flex items-center justify-center border border-dashed rounded-xl border-border">
                 <p className="text-sm text-muted-foreground">Henüz portföyünüzde varlık bulunmuyor.</p>
             </div>
         );
     }
 
-    // Component sadece istemcide (client) yüklendikten sonra Recharts'ı göster
     if (!isMounted) {
-        return <div className="h-[300px] w-full animate-pulse bg-muted rounded-xl" />;
+        return <div className="h-[350px] w-full animate-pulse bg-muted rounded-xl" />;
     }
 
-    // Kategorilere göre özel renkler
     const TYPE_COLORS: Record<string, string> = {
-        "CRYPTO": "#f59e0b", // Amber
-        "BIST": "#10b981", // Emerald
-        "NASDAQ": "#3b82f6", // Blue
-        "GOLD": "#eab308", // Yellow
-        "CASH": "#64748b", // Slate
+        "CRYPTO": "#f59e0b",
+        "BIST": "#10b981",
+        "NASDAQ": "#3b82f6",
+        "GOLD": "#eab308",
+        "CASH": "#64748b",
     };
 
-    // Semboller için kullanılacak şık renk paleti (random yerine)
     const SYMBOL_COLORS = [
         "#f18d02", "#36684d", "#efe440", "#7cb191", "#ba1a1a", "#666000", "#8c5000",
         "#f59e0b", "#10b981", "#3b82f6", "#ec4899", "#8b5cf6", "#14b8a6", "#f43f5e"
     ];
 
-    const onPieClick = (_: any, index: number) => {
-        setActiveIndex(index);
+    const onCategoryEnter = (data: any, index: number) => {
+        setActiveIndexCategory(index);
+        if (data && data.name) {
+            setSelectedCategory(data.name);
+            setActiveIndexSymbol(0); // Reset symbol index when category changes
+        }
     };
 
-    const pieProps: any = {
-        activeIndex,
-        activeShape: renderActiveShape,
-        data: groupedData,
-        cx: "50%",
-        cy: "50%",
-        innerRadius: 60,
-        outerRadius: 80,
-        paddingAngle: 5,
-        dataKey: "value",
-        onClick: onPieClick,
-        onMouseEnter: onPieClick,
-        style: { cursor: 'pointer' }
+    const onSymbolEnter = (_: any, index: number) => {
+        setActiveIndexSymbol(index);
     };
+
+    const tooltipStyle = {
+        borderRadius: '16px',
+        border: theme === "dark" ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.05)',
+        boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
+        backgroundColor: theme === "dark" ? "#1e293b" : "#ffffff",
+        color: theme === "dark" ? "#f1f5f9" : "#1e293b"
+    };
+
+    const formatter = (value: any) => new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(Number(value));
+
+    // Ekranı ikiye bölecek miyiz?
+    const showTwoCharts = !isSingleType && categoryData.length > 1;
 
     return (
-        <div className="h-[300px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                    <Pie {...pieProps}>
-                        {groupedData.map((entry, index) => (
-                            <Cell
-                                key={`cell-${index}`}
-                                fill={groupBySymbol ? SYMBOL_COLORS[index % SYMBOL_COLORS.length] : (TYPE_COLORS[entry.name] || SYMBOL_COLORS[index % SYMBOL_COLORS.length])}
-                            />
-                        ))}
-                    </Pie>
-                    <Tooltip
-                        formatter={(value: any) =>
-                            new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(Number(value))
-                        }
-                        contentStyle={{ 
-                            borderRadius: '16px', 
-                            border: theme === "dark" ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.05)', 
-                            boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
-                            backgroundColor: theme === "dark" ? "#1e293b" : "#ffffff",
-                            color: theme === "dark" ? "#f1f5f9" : "#1e293b"
-                        }}
-                    />
-                </PieChart>
-            </ResponsiveContainer>
+        <div className="h-[380px] w-full flex flex-col md:flex-row gap-4 pt-4">
+            {showTwoCharts && (
+                <div className="flex-1 min-w-0 flex flex-col items-center">
+                    <h3 className="text-sm font-semibold mb-2 text-muted-foreground">Kategori Dağılımı</h3>
+                    <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                            <Pie
+                                activeIndex={activeIndexCategory}
+                                activeShape={renderActiveShape}
+                                data={categoryData}
+                                cx="50%"
+                                cy="50%"
+                                innerRadius={50}
+                                outerRadius={70}
+                                paddingAngle={5}
+                                dataKey="value"
+                                onMouseEnter={onCategoryEnter}
+                                onClick={onCategoryEnter}
+                                style={{ cursor: 'pointer' }}
+                            >
+                                {categoryData.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={TYPE_COLORS[entry.name] || SYMBOL_COLORS[index % SYMBOL_COLORS.length]} />
+                                ))}
+                            </Pie>
+                            <Tooltip formatter={formatter} contentStyle={tooltipStyle} />
+                            <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '12px' }} />
+                        </PieChart>
+                    </ResponsiveContainer>
+                </div>
+            )}
+            
+            <div className="flex-1 min-w-0 flex flex-col items-center">
+                <h3 className="text-sm font-semibold mb-2 text-muted-foreground">
+                    {showTwoCharts ? `${activeCategory} Varlıkları` : 'Varlık Dağılımı'}
+                </h3>
+                <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                        <Pie
+                            activeIndex={activeIndexSymbol}
+                            activeShape={renderActiveShape}
+                            data={symbolData}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={50}
+                            outerRadius={70}
+                            paddingAngle={5}
+                            dataKey="value"
+                            onMouseEnter={onSymbolEnter}
+                            onClick={onSymbolEnter}
+                            style={{ cursor: 'pointer' }}
+                        >
+                            {symbolData.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={SYMBOL_COLORS[index % SYMBOL_COLORS.length]} />
+                            ))}
+                        </Pie>
+                        <Tooltip formatter={formatter} contentStyle={tooltipStyle} />
+                        <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '12px' }} />
+                    </PieChart>
+                </ResponsiveContainer>
+            </div>
         </div>
     );
 }
