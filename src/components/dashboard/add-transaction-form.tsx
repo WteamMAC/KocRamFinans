@@ -145,7 +145,7 @@ export function AddTransactionForm({ type }: AddTransactionFormProps) {
           {error && <div className="p-4 bg-red-500/10 text-red-600 rounded-xl text-sm font-medium border border-red-500/20">{error}</div>}
           <div className="space-y-3">
             <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Kategori</Label>
-            <Select onValueChange={(v: string | null) => setFormData(p => ({ ...p, category: v ?? "" }))}>
+            <Select onValueChange={(v: any) => setFormData(p => ({ ...p, category: v ?? "" }))}>
               <SelectTrigger className="bg-muted border-border/30 h-14 rounded-2xl text-base">
                 <SelectValue placeholder="Kategori Seçin" />
               </SelectTrigger>

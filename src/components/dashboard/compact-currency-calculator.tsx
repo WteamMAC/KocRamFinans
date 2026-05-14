@@ -97,15 +97,15 @@ export function CompactCurrencyCalculator() {
           type="number"
           value={amount === 0 ? "" : amount}
           onChange={(e) => setAmount(parseFloat(e.target.value) || 0)}
-          className="w-14 h-8 bg-transparent border-none focus-visible:ring-0 text-sm font-black p-0 text-center placeholder:opacity-50"
+          className="w-18 h-8 bg-transparent border-none focus-visible:ring-0 text-sm font-black p-0 text-center placeholder:opacity-50"
           placeholder="1"
         />
         <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-0 h-[1.5px] bg-primary group-hover/input:w-6 transition-all duration-300 rounded-full" />
       </div>
 
       {/* From Currency Select */}
-      <Select value={fromCurrency} onValueChange={setFromCurrency}>
-        <SelectTrigger className="w-[50px] h-8 bg-transparent border-none focus:ring-0 text-[10px] font-black p-0 flex justify-center hover:text-primary transition-colors z-10">
+      <Select value={fromCurrency} onValueChange={(val: any) => setFromCurrency(val)}>
+        <SelectTrigger className="w-[65px] h-8 bg-transparent border-none focus:ring-0 text-[10px] font-black p-0 flex justify-center hover:text-primary transition-colors z-10">
           <SelectValue />
         </SelectTrigger>
         <SelectContent className="rounded-xl border-border/30 bg-card/95 backdrop-blur-xl">
@@ -129,8 +129,8 @@ export function CompactCurrencyCalculator() {
       </Button>
 
       {/* To Currency Select */}
-      <Select value={toCurrency} onValueChange={setToCurrency}>
-        <SelectTrigger className="w-[50px] h-8 bg-transparent border-none focus:ring-0 text-[10px] font-black p-0 flex justify-center hover:text-primary transition-colors z-10">
+      <Select value={toCurrency} onValueChange={(val: any) => setToCurrency(val)}>
+        <SelectTrigger className="w-[65px] h-8 bg-transparent border-none focus:ring-0 text-[10px] font-black p-0 flex justify-center hover:text-primary transition-colors z-10">
           <SelectValue />
         </SelectTrigger>
         <SelectContent className="rounded-xl border-border/30 bg-card/95 backdrop-blur-xl">
