@@ -73,9 +73,10 @@ interface AssetListProps {
   fixedAssets?: FixedAsset[];
   metrics?: any;
   defaultTab?: "financial" | "fixed";
+  hideTabs?: boolean;
 }
 
-export function AssetList({ assets, allInvestments, fixedAssets, metrics, defaultTab = "financial" }: AssetListProps) {
+export function AssetList({ assets, allInvestments, fixedAssets, metrics, defaultTab = "financial", hideTabs = false }: AssetListProps) {
   const router = useRouter();
   const [isAdding, setIsAdding] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -349,30 +350,32 @@ export function AssetList({ assets, allInvestments, fixedAssets, metrics, defaul
   return (
     <div className="space-y-8 pb-20">
       {/* View Tabs */}
-      <div className="flex items-center gap-2 p-1.5 bg-[#8c5000]/5 w-fit rounded-2xl border border-[#8c5000]/10 mb-2">
-        <button
-          onClick={() => setActiveTab("financial")}
-          className={cn(
-            "flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all",
-            activeTab === "financial"
-              ? "bg-[#8c5000] text-white shadow-ambient-medium"
-              : "text-[#8c5000] hover:bg-[#8c5000]/10"
-          )}
-        >
-          <Coins className="h-4 w-4" /> Finansal Yatırımlar
-        </button>
-        <button
-          onClick={() => setActiveTab("fixed")}
-          className={cn(
-            "flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all",
-            activeTab === "fixed"
-              ? "bg-[#8c5000] text-white shadow-ambient-medium"
-              : "text-[#8c5000] hover:bg-[#8c5000]/10"
-          )}
-        >
-          <LayoutGrid className="h-4 w-4" /> Sabit Varlıklar
-        </button>
-      </div>
+      {!hideTabs && (
+        <div className="flex items-center gap-2 p-1.5 bg-[#8c5000]/5 w-fit rounded-2xl border border-[#8c5000]/10 mb-2">
+          <button
+            onClick={() => setActiveTab("financial")}
+            className={cn(
+              "flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all",
+              activeTab === "financial"
+                ? "bg-[#8c5000] text-white shadow-ambient-medium"
+                : "text-[#8c5000] hover:bg-[#8c5000]/10"
+            )}
+          >
+            <Coins className="h-4 w-4" /> Finansal Yatırımlar
+          </button>
+          <button
+            onClick={() => setActiveTab("fixed")}
+            className={cn(
+              "flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all",
+              activeTab === "fixed"
+                ? "bg-[#8c5000] text-white shadow-ambient-medium"
+                : "text-[#8c5000] hover:bg-[#8c5000]/10"
+            )}
+          >
+            <LayoutGrid className="h-4 w-4" /> Sabit Varlıklar
+          </button>
+        </div>
+      )}
 
       {/* Header & Stats Summary */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">

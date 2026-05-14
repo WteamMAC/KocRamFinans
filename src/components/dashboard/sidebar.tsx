@@ -127,20 +127,36 @@ export function Sidebar({ isCollapsed, onToggle, hideToggle, theme, onToggleThem
           {routes.map((route) => (
             <div key={route.href} className="space-y-1">
               {route.isExpandable && !isCollapsed ? (
-                <div
-                  onClick={() => toggleSubMenu(route.label)}
-                  className={cn(
-                    "text-sm group flex p-3 w-full justify-between font-medium cursor-pointer rounded-xl transition-all duration-200",
-                    pathname.startsWith(route.href)
-                      ? "bg-[#f3f4f5]/50 text-[#8c5000]"
-                      : "text-[#554336] hover:bg-[#f8f9fa] hover:text-[#8c5000]"
-                  )}
-                >
-                  <div className="flex items-center flex-1">
-                    <route.icon className={cn("h-5 w-5 flex-shrink-0 transition-transform group-hover:scale-110 mr-3", route.color)} />
-                    <span className="truncate">{route.label}</span>
-                  </div>
-                  <ChevronDown className={cn("h-4 w-4 transition-transform duration-200 opacity-50", openSubMenus[route.label] && "rotate-180")} />
+                <div className="flex items-center group">
+                  <Link
+                    href={route.href}
+                    className={cn(
+                      "text-sm flex p-3 flex-1 font-medium cursor-pointer rounded-l-xl transition-all duration-200",
+                      pathname === route.href
+                        ? "bg-[#f3f4f5] text-[#8c5000] shadow-ambient-low"
+                        : pathname.startsWith(route.href)
+                          ? "bg-[#f3f4f5]/30 text-[#8c5000]"
+                          : "text-[#554336] hover:bg-[#f8f9fa] hover:text-[#8c5000]"
+                    )}
+                  >
+                    <div className="flex items-center flex-1">
+                      <route.icon className={cn("h-5 w-5 flex-shrink-0 transition-transform group-hover:scale-110 mr-3", route.color)} />
+                      <span className="truncate">{route.label}</span>
+                    </div>
+                  </Link>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      toggleSubMenu(route.label);
+                    }}
+                    className={cn(
+                      "p-3 rounded-r-xl transition-all duration-200 border-l border-transparent hover:bg-[#f8f9fa]",
+                      pathname.startsWith(route.href) && "bg-[#f3f4f5]/30"
+                    )}
+                  >
+                    <ChevronDown className={cn("h-4 w-4 transition-transform duration-200 opacity-50", openSubMenus[route.label] && "rotate-180")} />
+                  </button>
                 </div>
               ) : (
                 <Link

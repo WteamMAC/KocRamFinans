@@ -97,6 +97,7 @@ export default async function AssetCategoryPage({ params }: CategoryPageProps) {
         }))}
         metrics={metrics}
         defaultTab={category === "fixed" ? "fixed" : "financial"}
+        hideTabs={true}
       />
     </div>
   );
