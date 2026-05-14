@@ -126,32 +126,37 @@ export default function CalculatorsPage() {
                 <CardHeader className="bg-primary/5 border-b border-border/10">
                   <CardTitle className="text-lg">Hesaplama Parametreleri</CardTitle>
                 </CardHeader>
-                <CardContent className="p-6 space-y-6">
-                  <div className="space-y-2">
-                    <Label>Anapara (₺)</Label>
-                    <Input 
-                      type="number" 
-                      value={interestData.principal} 
-                      onChange={e => setInterestData(p => ({...p, principal: Number(e.target.value)}))}
-                      className="h-12 rounded-xl bg-muted border-none font-bold text-lg"
-                    />
+                <CardContent className="p-8 space-y-8">
+                  <div className="space-y-3">
+                    <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Anapara (₺)</Label>
+                    <div>
+                      <Input 
+                        type="number" 
+                        value={interestData.principal || ""} 
+                        onChange={e => setInterestData(p => ({...p, principal: Number(e.target.value)}))}
+                        className="h-14 rounded-2xl bg-muted/30 border border-border/50 font-bold text-2xl text-primary transition-all focus-visible:ring-1 focus-visible:ring-primary"
+                      />
+                      <div className="text-sm font-bold text-emerald-600 mt-2 ml-2 flex items-center gap-1">
+                        <ArrowRight className="h-3 w-3" /> {interestData.principal.toLocaleString("tr-TR")} ₺
+                      </div>
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label>Yıllık Faiz Oranı (%)</Label>
+                  <div className="space-y-3">
+                    <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Yıllık Faiz Oranı (%)</Label>
                     <Input 
                       type="number" 
-                      value={interestData.rate} 
+                      value={interestData.rate || ""} 
                       onChange={e => setInterestData(p => ({...p, rate: Number(e.target.value)}))}
-                      className="h-12 rounded-xl bg-muted border-none font-bold text-lg"
+                      className="h-14 rounded-2xl bg-muted/30 border border-border/50 font-bold text-xl text-primary transition-all focus-visible:ring-1 focus-visible:ring-primary"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label>Vade (Ay)</Label>
+                  <div className="space-y-3">
+                    <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Vade (Ay)</Label>
                     <Input 
                       type="number" 
-                      value={interestData.term} 
+                      value={interestData.term || ""} 
                       onChange={e => setInterestData(p => ({...p, term: Number(e.target.value)}))}
-                      className="h-12 rounded-xl bg-muted border-none font-bold text-lg"
+                      className="h-14 rounded-2xl bg-muted/30 border border-border/50 font-bold text-xl text-primary transition-all focus-visible:ring-1 focus-visible:ring-primary"
                     />
                   </div>
                 </CardContent>
@@ -174,7 +179,7 @@ export default function CalculatorsPage() {
                   <CardTitle className="text-lg mb-8 flex items-center gap-2">
                      <Sparkles className="h-5 w-5 text-accent" /> Birikim Gelişimi
                   </CardTitle>
-                  <div className="h-[300px] w-full">
+                  <div className="h-[300px] w-full pr-4">
                     <ResponsiveContainer width="100%" height="100%">
                       <AreaChart data={interestRes.chartData}>
                         <defs>
@@ -185,6 +190,7 @@ export default function CalculatorsPage() {
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} strokeOpacity={0.1} />
                         <XAxis dataKey="ay" axisLine={false} tickLine={false} tick={{fontSize: 10}} dy={10} />
+                        <YAxis axisLine={false} tickLine={false} tick={{fontSize: 10}} tickFormatter={(val: any) => new Intl.NumberFormat("tr-TR", { notation: "compact" }).format(val)} dx={-10} />
                         <Tooltip 
                           contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 40px -10px rgba(0,0,0,0.1)' }}
                           formatter={(val: any) => [`${Number(val).toLocaleString("tr-TR")} ₺`, "Bakiye"]}
@@ -206,41 +212,46 @@ export default function CalculatorsPage() {
                 <CardHeader className="bg-emerald-500/5 border-b border-border/10">
                   <CardTitle className="text-lg">BES Planı Parametreleri</CardTitle>
                 </CardHeader>
-                <CardContent className="p-6 space-y-6">
-                  <div className="space-y-2">
-                    <Label>Aylık Katkı Payı (₺)</Label>
-                    <Input 
-                      type="number" 
-                      value={besData.monthly} 
-                      onChange={e => setBesData(p => ({...p, monthly: Number(e.target.value)}))}
-                      className="h-12 rounded-xl bg-muted border-none font-bold text-lg"
-                    />
+                <CardContent className="p-8 space-y-8">
+                  <div className="space-y-3">
+                    <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Aylık Katkı Payı (₺)</Label>
+                    <div>
+                      <Input 
+                        type="number" 
+                        value={besData.monthly || ""} 
+                        onChange={e => setBesData(p => ({...p, monthly: Number(e.target.value)}))}
+                        className="h-14 rounded-2xl bg-muted/30 border border-border/50 font-bold text-2xl text-primary transition-all focus-visible:ring-1 focus-visible:ring-primary"
+                      />
+                      <div className="text-sm font-bold text-emerald-600 mt-2 ml-2 flex items-center gap-1">
+                        <ArrowRight className="h-3 w-3" /> {besData.monthly.toLocaleString("tr-TR")} ₺
+                      </div>
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label>Devlet Katkısı Oranı (%)</Label>
+                  <div className="space-y-3">
+                    <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Devlet Katkısı Oranı (%)</Label>
                     <Input 
                       type="number" 
-                      value={besData.contribution} 
-                      className="h-12 rounded-xl bg-muted border-none font-bold text-lg opacity-60"
+                      value={besData.contribution || ""} 
+                      className="h-14 rounded-2xl bg-muted border-none font-bold text-xl text-primary opacity-60"
                       disabled
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label>Tahmini Yıllık Fon Getirisi (%)</Label>
+                  <div className="space-y-3">
+                    <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Tahmini Yıllık Fon Getirisi (%)</Label>
                     <Input 
                       type="number" 
-                      value={besData.annualReturn} 
+                      value={besData.annualReturn || ""} 
                       onChange={e => setBesData(p => ({...p, annualReturn: Number(e.target.value)}))}
-                      className="h-12 rounded-xl bg-muted border-none font-bold text-lg"
+                      className="h-14 rounded-2xl bg-muted/30 border border-border/50 font-bold text-xl text-primary transition-all focus-visible:ring-1 focus-visible:ring-primary"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label>Süre (Yıl)</Label>
+                  <div className="space-y-3">
+                    <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Süre (Yıl)</Label>
                     <Input 
                       type="number" 
-                      value={besData.years} 
+                      value={besData.years || ""} 
                       onChange={e => setBesData(p => ({...p, years: Number(e.target.value)}))}
-                      className="h-12 rounded-xl bg-muted border-none font-bold text-lg"
+                      className="h-14 rounded-2xl bg-muted/30 border border-border/50 font-bold text-xl text-primary transition-all focus-visible:ring-1 focus-visible:ring-primary"
                     />
                   </div>
                 </CardContent>
@@ -264,11 +275,12 @@ export default function CalculatorsPage() {
 
                 <Card className="p-8 border-border/30 shadow-ambient-medium rounded-[32px] bg-card overflow-hidden">
                   <CardTitle className="text-lg mb-8">Uzun Vadeli BES Gelişimi</CardTitle>
-                  <div className="h-[300px] w-full">
+                  <div className="h-[300px] w-full pr-4">
                     <ResponsiveContainer width="100%" height="100%">
                       <AreaChart data={besRes.chartData}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} strokeOpacity={0.1} />
                         <XAxis dataKey="yil" axisLine={false} tickLine={false} tick={{fontSize: 10}} dy={10} />
+                        <YAxis axisLine={false} tickLine={false} tick={{fontSize: 10}} tickFormatter={(val: any) => new Intl.NumberFormat("tr-TR", { notation: "compact" }).format(val)} dx={-10} />
                         <Tooltip 
                            contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 40px -10px rgba(0,0,0,0.1)' }}
                            formatter={(val: any) => [`${Number(val).toLocaleString("tr-TR")} ₺`, "Toplam"]}
