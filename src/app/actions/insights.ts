@@ -11,7 +11,7 @@ export async function generateSmartInsights(financialData: any) {
   }
 
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
     const prompt = `Sen uzman bir finansal danışmansın. Aşağıdaki kullanıcı verilerini analiz et ve 3 adet kısa, öz ve vurucu "Proaktif Uyarı / Tavsiye" üret. 
 Kullanıcının adı yok, doğrudan "Siz" veya "Harcamalarınız" diye hitap et.
