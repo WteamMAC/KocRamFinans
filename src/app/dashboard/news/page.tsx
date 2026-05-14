@@ -24,24 +24,22 @@ function determineTag(title: string, description: string): string {
     return "Genel Ekonomi";
 }
 
-/**
- * İnternetten canlı haber çeken fonksiyon (NTV Ekonomi RSS üzerinden)
- * Next.js sunucu tarafında çalışır ve dış paket (rss-parser vb.) gerektirmez.
- */
-async function getEconomicNews(): Promise<NewsItem[]> {
+const SOURCES = [
+    { name: "NTV", url: "https://www.ntv.com.tr/ekonomi.rss" },
+    { name: "TRT Haber", url: "https://www.trthaber.com/ekonomi_articles.rss" },
+    { name: "Habertürk", url: "https://www.haberturk.com/rss/ekonomi.xml" },
+    { name: "Bloomberg HT", url: "https://www.bloomberght.com/rss" }
+];
+
+async function fetchFeed(source: { name: string, url: string }): Promise<NewsItem[]> {
     try {
-        // Haberleri her 5 dakikada bir yeniden doğrula (revalidate)
-        const res = await fetch("https://www.ntv.com.tr/ekonomi.rss", {
-            next: { revalidate: 300 }
-        });
+        const res = await fetch(source.url, { next: { revalidate: 300 } });
         const xml = await res.text();
 
         const items: NewsItem[] = [];
-        // NTV feed uses <entry> instead of <item> (Atom vs RSS)
         const itemRegex = /<(?:item|entry)>([\s\S]*?)<\/(?:item|entry)>/gi;
         let match;
 
-        // XML içinden belirli etiketleri güvenli çıkarmak için Regex fonksiyonu
         const extractTag = (xmlStr: string, tag: string, altTag?: string) => {
             let regex = new RegExp(`<${tag}[^>]*>(?:<!\\[CDATA\\[)?([\\s\\S]*?)(?:\\]\\]>)?<\\/${tag}>`, 'i');
             let m = xmlStr.match(regex);
@@ -53,15 +51,12 @@ async function getEconomicNews(): Promise<NewsItem[]> {
         };
 
         const extractLink = (xmlStr: string) => {
-            // First try Atom link <link href="...">
             let m = xmlStr.match(/<link[^>]*href="([^"]+)"/i);
             if (m) return m[1].trim();
-            // Then try standard RSS link
             m = xmlStr.match(/<link[^>]*>(?:<!\\[CDATA\\[)?([^<]+)(?:\\]\\]>)?<\/link>/i);
             return m ? m[1].trim() : '';
         };
 
-        // Görselleri ayıklamak için
         const extractImage = (xmlStr: string) => {
             const encMatch = xmlStr.match(/<enclosure[^>]*url="([^"]*)"/i);
             if (encMatch) return encMatch[1];
@@ -72,8 +67,7 @@ async function getEconomicNews(): Promise<NewsItem[]> {
             return null;
         };
 
-        // Daha fazla haber çekip (örn. 30) filtrelemede içerik zenginliği sağlayalım
-        while ((match = itemRegex.exec(xml)) !== null && items.length < 30) {
+        while ((match = itemRegex.exec(xml)) !== null && items.length < 20) {
             const itemXml = match[1];
             const title = extractTag(itemXml, 'title');
             const link = extractLink(itemXml);
@@ -87,24 +81,40 @@ async function getEconomicNews(): Promise<NewsItem[]> {
             
             const imageUrl = extractImage(itemXml);
             const tag = determineTag(title, rawDesc.replace(/<[^>]+>/g, ''));
+            let timestamp = Date.now();
 
             if (pubDate) {
                 const dateObj = new Date(pubDate);
-                // check if date is valid
                 if (!isNaN(dateObj.getTime())) {
+                    timestamp = dateObj.getTime();
                     pubDate = dateObj.toLocaleTimeString("tr-TR", { hour: '2-digit', minute: '2-digit' }) + " - " + dateObj.toLocaleDateString("tr-TR");
                 }
             }
 
             if (title && link) {
-                items.push({ title, link, pubDate, description, imageUrl, tag });
+                // Ignore empty titles or items that failed to parse reasonably
+                items.push({ title, link, pubDate, description, imageUrl, tag, source: source.name, timestamp });
             }
         }
         return items;
     } catch (err) {
-        console.error("Haberleri çekerken hata oluştu:", err);
+        console.error(`${source.name} beslemesi çekilemedi:`, err);
         return [];
     }
+}
+
+/**
+ * Birden çok kaynaktan canlı haber çeken fonksiyon
+ */
+async function getEconomicNews(): Promise<NewsItem[]> {
+    const allFeeds = await Promise.all(SOURCES.map(source => fetchFeed(source)));
+    let allNews = allFeeds.flat();
+    
+    // Sort by descending timestamp (newest first)
+    allNews.sort((a, b) => (b as any).timestamp - (a as any).timestamp);
+    
+    // Return max 60 items so we don't overload the client
+    return allNews.slice(0, 60);
 }
 
 export default async function NewsPage() {
