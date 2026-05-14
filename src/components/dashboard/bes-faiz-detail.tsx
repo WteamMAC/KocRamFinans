@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { 
-  TrendingUp, TrendingDown, Trash2, Plus, Shield, Landmark, 
+  Trash2, Plus, Shield, Landmark, 
   ChevronDown, RefreshCw, Sparkles
 } from "lucide-react";
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from "recharts";
@@ -100,7 +100,7 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
       return yearlyTotals.map((total, i) => ({
         label: `${i}. Yıl`,
         toplam: Math.round(total),
-        anaPara: Math.round(totalPrin),         // girilen ilk anapara — referans çizgisi
+        anaPara: Math.round(totalPrin),
         faizKazanci: Math.round(total - totalPrin),
       }));
     } else {
@@ -355,25 +355,45 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
                       </div>
                       <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", isExp && "rotate-180")} />
                     </div>
-                    <div className="mt-4 pt-4 border-t border-border/10 flex justify-between">
+                    <div className="mt-4 pt-4 border-t border-border/10 grid grid-cols-2 gap-4">
                       <div>
                         <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Ana Para</p>
                         <p className="font-bold text-lg text-primary">{g.totalQuantity.toLocaleString("tr-TR")} ₺</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
-                          {isBES ? "1 Yıl Sonra" : "1 Yıl Sonra (Bileşik)"}
-                        </p>
-                        <p className={cn("font-bold text-lg", accentColor)}>
-                          {isBES
-                            ? Math.round(g.totalQuantity * (1 + g.rate / 100)).toLocaleString("tr-TR")
-                            : Math.round(g.totalQuantity * Math.pow(1 + g.rate / 12 / 100, 12)).toLocaleString("tr-TR")} ₺
-                        </p>
-                        {!isBES && (
-                          <p className="text-[10px] text-emerald-500 font-bold">
-                            +{Math.round(g.totalQuantity * (Math.pow(1 + g.rate / 12 / 100, 12) - 1)).toLocaleString("tr-TR")} ₺ faiz
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Birikmiş {isBES ? "Getiri" : "Faiz"}</p>
+                        {(() => {
+                          // Basit bir "bugüne kadar ne kazandı" hesabı (createdAt'ten bugüne)
+                          const firstCreated = new Date(Math.min(...g.items.map(i => new Date(i.createdAt).getTime())));
+                          const monthsPassed = Math.max(0, (new Date().getFullYear() - firstCreated.getFullYear()) * 12 + (new Date().getMonth() - firstCreated.getMonth()));
+                          const monthlyRate = g.rate / 12 / 100;
+                          const currentVal = g.totalQuantity * Math.pow(1 + monthlyRate, monthsPassed);
+                          const earned = currentVal - g.totalQuantity;
+                          return (
+                            <>
+                              <p className="font-bold text-lg text-emerald-500">+{Math.round(earned).toLocaleString("tr-TR")} ₺</p>
+                              <p className="text-[9px] text-muted-foreground italic">{monthsPassed} ayda birikti</p>
+                            </>
+                          );
+                        })()}
+                      </div>
+                      <div className="col-span-2 mt-2 p-3 bg-muted/50 rounded-xl border border-border/5 flex justify-between items-center">
+                        <div>
+                          <p className="text-[9px] font-bold text-muted-foreground uppercase">1 Yıl Sonraki Tahmin</p>
+                          <p className={cn("font-bold text-xl", accentColor)}>
+                            {isBES
+                              ? Math.round(g.totalQuantity * (1 + g.rate / 100)).toLocaleString("tr-TR")
+                              : Math.round(g.totalQuantity * Math.pow(1 + g.rate / 12 / 100, 12)).toLocaleString("tr-TR")} ₺
                           </p>
-                        )}
+                        </div>
+                        <div className="text-right">
+                           <p className="text-[9px] font-bold text-emerald-500 uppercase">Yıllık Kazanç</p>
+                           <p className="font-bold text-emerald-500">
+                             +{isBES 
+                               ? Math.round(g.totalQuantity * (g.rate / 100)).toLocaleString("tr-TR")
+                               : Math.round(g.totalQuantity * (Math.pow(1 + g.rate / 12 / 100, 12) - 1)).toLocaleString("tr-TR")} ₺
+                           </p>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -455,12 +475,12 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
                 </>
               ) : (
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Ortalama Faiz Oranı (%)</Label>
+                  <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Ağırlıklı Ortalama Faiz (%)</Label>
                   <div className="h-11 rounded-xl bg-muted/30 border border-border/20 flex items-center px-4">
                     <span className={cn("font-bold text-lg", accentColor)}>
-                      %{(grouped.reduce((s, g) => s + g.rate, 0) / Math.max(grouped.length, 1)).toFixed(1)}
+                      %{(grouped.reduce((s, g) => s + (g.rate * g.totalQuantity), 0) / Math.max(totalPrincipal, 1)).toFixed(2)}
                     </span>
-                    <span className="text-xs text-muted-foreground ml-2">(Hesaplarınızdan)</span>
+                    <span className="text-xs text-muted-foreground ml-2">(Bakiyeye Göre)</span>
                   </div>
                 </div>
               )}
