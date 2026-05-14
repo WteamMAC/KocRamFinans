@@ -89,6 +89,7 @@ export function AssetList({ assets, allInvestments, fixedAssets, metrics }: Asse
   const [theme, setThemeState] = useState<"light" | "dark">("light");
   const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState<"financial" | "fixed">("financial");
+  const [sellModalState, setSellModalState] = useState<{ assetId: string | null }>({ assetId: null });
 
   const [fixedAssetFormData, setFixedAssetFormData] = useState({
     name: "",
@@ -259,12 +260,13 @@ export function AssetList({ assets, allInvestments, fixedAssets, metrics }: Asse
     }
   }
 
-  async function handleSell(id: string) {
-    if (!confirm("Bu varlığı güncel piyasa fiyatından satmak istediğinize emin misiniz?")) return;
+  async function handleSell(id: string, action: "KEEP_TL" | "KEEP_USDT" | "WITHDRAW") {
+    if (!id) return;
     setLoading(true);
     setError(null);
     try {
-      await sellAsset(id);
+      await sellAsset(id, action);
+      setSellModalState({ assetId: null });
       await new Promise(r => setTimeout(r, 500));
       router.refresh();
     } catch (err: any) {
@@ -761,7 +763,7 @@ export function AssetList({ assets, allInvestments, fixedAssets, metrics }: Asse
                                     <span className="text-[10px] text-[#554336] opacity-60">{new Date(item.createdAt).toLocaleDateString("tr-TR")}</span>
                                   </div>
                                   <div className="flex gap-2">
-                                    <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); handleSell(item.id); }} className="h-8 text-xs font-bold border-[#dbc2b0]/30">Sat</Button>
+                                    <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); setSellModalState({ assetId: item.id }); setError(null); }} className="h-8 text-xs font-bold border-[#dbc2b0]/30">Sat</Button>
                                     <Button size="icon" variant="ghost" onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }} className="h-8 w-8 text-rose-500 hover:bg-rose-50"><Trash2 className="h-4 w-4" /></Button>
                                   </div>
                                 </div>
@@ -918,6 +920,40 @@ export function AssetList({ assets, allInvestments, fixedAssets, metrics }: Asse
             </div>
           </div>
         </div>
+      )}
+
+      {/* Modal for Selling Asset */}
+      {sellModalState.assetId && (
+        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-[#191c1d]/40 backdrop-blur-sm">
+          <div className="bg-white rounded-[32px] shadow-2xl w-full max-w-md flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
+            <div className="p-6 border-b border-[#dbc2b0]/20 flex justify-between items-center">
+              <div>
+                <h3 className="text-xl font-heading font-bold text-[#8c5000]">Varlık Satışı</h3>
+                <p className="text-xs text-[#554336] mt-1">Satış sonrası elde edilen tutarı ne yapmak istersiniz?</p>
+              </div>
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full bg-white shadow-sm border border-[#dbc2b0]/30 hover:bg-rose-50 hover:text-rose-500" onClick={() => setSellModalState({ assetId: null })}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="p-6 flex flex-col gap-3">
+              <Button onClick={() => handleSell(sellModalState.assetId!, "KEEP_TL")} disabled={loading} className="w-full justify-start p-6 text-base bg-[#f8f9fa] text-[#554336] hover:bg-[#edeeef] rounded-xl border border-[#dbc2b0]/20">
+                {loading ? "İşleniyor..." : "Nakit (TL) olarak portföyde tut"}
+              </Button>
+              <Button onClick={() => handleSell(sellModalState.assetId!, "KEEP_USDT")} disabled={loading} className="w-full justify-start p-6 text-base bg-[#f8f9fa] text-[#554336] hover:bg-[#edeeef] rounded-xl border border-[#dbc2b0]/20">
+                {loading ? "İşleniyor..." : "Nakit (USDT) olarak portföyde tut"}
+              </Button>
+              <Button onClick={() => handleSell(sellModalState.assetId!, "WITHDRAW")} disabled={loading} className="w-full justify-start p-6 text-base bg-[#f8f9fa] text-[#554336] hover:bg-[#edeeef] rounded-xl border border-[#dbc2b0]/20">
+                {loading ? "İşleniyor..." : "Parayı çek (Aylık nakit akışına ekle)"}
+              </a >
+              {error && <div className="mt-2 p-3 bg-red-50 text-red-600 rounded-xl text-sm font-medium border border-red-100">{error}</div>}
+            </div >
+            <div className="p-4 bg-white/50 border-t border-[#dbc2b0]/10 flex justify-end">
+              <Button variant="outline" className="rounded-full" onClick={() => setSellModalState({ assetId: null })}>
+                Vazgeç
+              </Button>
+            </div>
+          </div >
+        </div >
       )}
     </div>
   );
