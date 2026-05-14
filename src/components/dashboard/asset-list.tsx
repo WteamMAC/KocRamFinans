@@ -166,7 +166,7 @@ export function AssetList({ assets, allInvestments, fixedAssets, defaultTab = "f
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(async () => {
-      if (searchQuery.length >= 2) {
+      if (searchQuery.length >= 2 && formData.type !== "BES" && formData.type !== "FAIZ") {
         const results = await searchSymbolsAction(searchQuery, formData.type);
         setSearchResults(results);
         setShowSearch(true);
@@ -429,9 +429,18 @@ export function AssetList({ assets, allInvestments, fixedAssets, defaultTab = "f
                 <div className="relative">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground opacity-50" />
                   <Input
-                    placeholder="Örn: THYAO, BTC, AAPL..."
+                    placeholder={
+                      formData.type === "BES" ? "Örn: Agesa, Anadolu Hayat" :
+                      formData.type === "FAIZ" ? "Örn: Garanti %45, Vadeli TL" :
+                      "Örn: THYAO, BTC, AAPL..."
+                    }
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      if (formData.type === "BES" || formData.type === "FAIZ") {
+                        setFormData((p) => ({ ...p, symbol: e.target.value }));
+                      }
+                    }}
                     className="pl-12 bg-muted border-border/30 h-12 rounded-xl focus:ring-primary"
                   />
                 </div>

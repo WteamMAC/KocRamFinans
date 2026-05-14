@@ -26,6 +26,8 @@ export function InvestmentSummary({ investments, fixedAssets }: InvestmentSummar
     NASDAQ: "NASDAQ (Hisse)",
     CRYPTO: "Kripto Para",
     GOLD: "Altın/Emtia",
+    BES: "Bireysel Emeklilik (BES)",
+    FAIZ: "Vadeli Mevduat (Faiz)",
   };
 
   // Yatırımları grupla
