@@ -27,13 +27,13 @@ export default async function DebtsPage() {
   }
 
   return (
-    <div className="flex-1 space-y-10 p-8 pt-10 bg-[#f8f9fa] min-h-screen">
+    <div className="flex-1 space-y-10 p-8 pt-10 bg-background min-h-screen">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h2 className="text-4xl font-heading font-bold text-[#8c5000] tracking-tight">
+          <h2 className="text-4xl font-heading font-bold text-primary tracking-tight">
             Borç ve Krediler
           </h2>
-          <p className="text-[#554336] mt-1 font-medium italic opacity-80">Yükümlülüklerinizi yönetin ve ödeme planınızı takip edin.</p>
+          <p className="text-muted-foreground mt-1 font-medium italic opacity-80">Yükümlülüklerinizi yönetin ve ödeme planınızı takip edin.</p>
         </div>
       </div>
 

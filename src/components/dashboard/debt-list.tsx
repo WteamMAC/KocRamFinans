@@ -71,16 +71,16 @@ export function DebtList({ debts }: { debts: any[] }) {
     return (
         <div className="space-y-8 pb-12">
             <div className="flex justify-between items-center">
-                <div className="bg-white px-4 py-2 rounded-2xl border border-[#dbc2b0]/30 shadow-sm flex items-center gap-3">
+                <div className="bg-card px-4 py-2 rounded-2xl border border-border/30 shadow-sm flex items-center gap-3">
                     <TrendingDown className="w-5 h-5 text-rose-600" />
                     <div>
-                        <p className="text-[10px] font-bold text-[#554336] uppercase tracking-widest opacity-60">Toplam Yükümlülük</p>
-                        <p className="text-xl font-heading font-bold text-[#8c5000]">₺{totalDebt.toLocaleString('tr-TR')}</p>
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">Toplam Yükümlülük</p>
+                        <p className="text-xl font-heading font-bold text-primary">₺{totalDebt.toLocaleString('tr-TR')}</p>
                     </div>
                 </div>
                 <Button 
                     onClick={() => setIsAdding(!isAdding)}
-                    className="bg-[#ba1a1a] text-white hover:bg-[#911313] rounded-xl px-6 h-12 font-bold shadow-lg shadow-[#ba1a1a]/20"
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl px-6 h-12 font-bold shadow-lg shadow-destructive/20"
                 >
                     {isAdding ? <X className="w-4 h-4 mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
                     {isAdding ? "Vazgeç" : "Yeni Borç Ekle"}
@@ -89,15 +89,15 @@ export function DebtList({ debts }: { debts: any[] }) {
 
             {/* Add Debt Form */}
             {isAdding && (
-                <Card className="p-8 bg-white border-[#dbc2b0]/30 shadow-ambient-high rounded-[32px] animate-in fade-in slide-in-from-top-4 duration-500">
+                <Card className="p-8 bg-card border-border/30 shadow-ambient-high rounded-[32px] animate-in fade-in slide-in-from-top-4 duration-500">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                         <div className="space-y-3">
-                            <Label className="text-[10px] font-bold text-[#554336] uppercase tracking-widest px-1">Borç Türü</Label>
+                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Borç Türü</Label>
                             <Select value={formData.type} onValueChange={(v) => setFormData((p) => ({ ...p, type: String(v ?? "") }))}>
-                                <SelectTrigger className="bg-[#f8f9fa] border-[#dbc2b0]/30 h-12 rounded-xl focus:ring-[#ba1a1a]">
+                                <SelectTrigger className="bg-muted border-border/30 h-12 rounded-xl focus:ring-destructive">
                                     <SelectValue />
                                 </SelectTrigger>
-                                <SelectContent className="rounded-xl border-[#dbc2b0]/30">
+                                <SelectContent className="rounded-xl border-border/30 bg-card">
                                     <SelectItem value="Kredi Kartı">Kredi Kartı</SelectItem>
                                     <SelectItem value="Banka Kredisi">Banka Kredisi</SelectItem>
                                     <SelectItem value="Şahsi Borç">Şahsi Borç</SelectItem>
@@ -107,45 +107,45 @@ export function DebtList({ debts }: { debts: any[] }) {
                             </Select>
                         </div>
                         <div className="space-y-3">
-                            <Label className="text-[10px] font-bold text-[#554336] uppercase tracking-widest px-1">Toplam Tutar (₺)</Label>
+                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Toplam Tutar (₺)</Label>
                             <Input
                                 type="number"
                                 value={formData.amount}
                                 onChange={(e) => setFormData(p => ({ ...p, amount: e.target.value }))}
-                                className="bg-[#f8f9fa] border-[#dbc2b0]/30 h-12 rounded-xl focus:ring-[#ba1a1a] text-lg font-bold"
+                                className="bg-muted border-border/30 h-12 rounded-xl focus:ring-destructive text-lg font-bold"
                                 placeholder="0.00"
                             />
                         </div>
                         <div className="space-y-3">
-                            <Label className="text-[10px] font-bold text-[#554336] uppercase tracking-widest px-1">Taksit Sayısı (Opsiyonel)</Label>
-                            <Input
-                                type="number"
-                                min="1"
-                                value={formData.remainingInstallments}
-                                onChange={(e) => setFormData(p => ({ ...p, remainingInstallments: e.target.value }))}
-                                className="bg-[#f8f9fa] border-[#dbc2b0]/30 h-12 rounded-xl focus:ring-[#ba1a1a]"
-                                placeholder="Örn: 12"
-                            />
+                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Taksit Sayısı (Opsiyonel)</Label>
+                                <Input
+                                    type="number"
+                                    min="1"
+                                    value={formData.remainingInstallments}
+                                    onChange={(e) => setFormData(p => ({ ...p, remainingInstallments: e.target.value }))}
+                                    className="bg-muted border-border/30 h-12 rounded-xl focus:ring-destructive"
+                                    placeholder="Örn: 12"
+                                />
                         </div>
                         <div className="space-y-3">
-                            <Label className="text-[10px] font-bold text-[#554336] uppercase tracking-widest px-1">Açıklama</Label>
-                            <Input
-                                value={formData.description}
-                                onChange={(e) => setFormData(p => ({ ...p, description: e.target.value }))}
-                                className="bg-[#f8f9fa] border-[#dbc2b0]/30 h-12 rounded-xl focus:ring-[#ba1a1a]"
-                                placeholder="Örn: Ev Kredisi"
-                            />
-                            <p className="text-[10px] text-[#554336]/60 italic mt-1 px-1">
+                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Açıklama</Label>
+                                <Input
+                                    value={formData.description}
+                                    onChange={(e) => setFormData(p => ({ ...p, description: e.target.value }))}
+                                    className="bg-muted border-border/30 h-12 rounded-xl focus:ring-destructive"
+                                    placeholder="Örn: Ev Kredisi"
+                                />
+                            <p className="text-[10px] text-muted-foreground/60 italic mt-1 px-1">
                                 * Borç eklemek, gelir listenize "Alınan Borç" olarak yansıtılacaktır.
                             </p>
                         </div>
                     </div>
-                    {error && <div className="mt-6 p-4 bg-red-50 text-red-600 rounded-xl text-sm font-medium border border-red-100">{error}</div>}
+                    {error && <div className="mt-6 p-4 bg-destructive/10 text-destructive rounded-xl text-sm font-medium border border-destructive/20">{error}</div>}
                     <div className="mt-8 flex justify-end">
                         <Button
                             onClick={handleAdd}
                             disabled={loading}
-                            className="bg-[#ba1a1a] text-white hover:bg-[#911313] rounded-full px-10 py-6 h-auto text-lg font-bold shadow-ambient-medium"
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-full px-10 py-6 h-auto text-lg font-bold shadow-ambient-medium"
                         >
                             {loading ? "Kaydediliyor..." : "Borcu Kaydet"}
                         </Button>
@@ -156,35 +156,35 @@ export function DebtList({ debts }: { debts: any[] }) {
             {/* Debt Cards Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {activeDebts.map((debt) => (
-                    <Card key={debt.id} className="bg-white border-[#dbc2b0]/30 shadow-ambient-low hover:shadow-ambient-medium transition-all rounded-[32px] overflow-hidden group">
+                    <Card key={debt.id} className="bg-card border-border/30 shadow-ambient-low hover:shadow-ambient-medium transition-all rounded-[32px] overflow-hidden group">
                         <div className="p-8">
                             <div className="flex justify-between items-start mb-6">
                                 <div className={cn(
                                     "w-12 h-12 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 shadow-sm",
-                                    debt.type === "Kredi Kartı" ? "bg-rose-50 text-rose-600" : "bg-[#8c5000]/10 text-[#8c5000]"
+                                    debt.type === "Kredi Kartı" ? "bg-rose-500/10 text-rose-600" : "bg-primary/10 text-primary"
                                 )}>
                                     {debt.type === "Kredi Kartı" ? <CreditCard className="w-6 h-6" /> : <Landmark className="w-6 h-6" />}
                                 </div>
                                 <div className="text-right">
-                                    <span className="text-[10px] font-bold text-[#554336] uppercase tracking-widest opacity-60">Kalan Borç</span>
-                                    <p className="text-2xl font-heading font-bold text-[#8c5000]">₺{debt.amount.toLocaleString('tr-TR')}</p>
+                                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">Kalan Borç</span>
+                                    <p className="text-2xl font-heading font-bold text-primary">₺{debt.amount.toLocaleString('tr-TR')}</p>
                                 </div>
                             </div>
                             
-                            <h3 className="text-lg font-bold text-[#191c1d] mb-1">{debt.description || debt.type}</h3>
-                            <p className="text-sm text-[#554336] opacity-70 mb-6">{debt.type}</p>
+                            <h3 className="text-lg font-bold text-foreground mb-1">{debt.description || debt.type}</h3>
+                            <p className="text-sm text-muted-foreground opacity-70 mb-6">{debt.type}</p>
 
-                            <div className="space-y-4 pt-4 border-t border-[#dbc2b0]/20">
+                            <div className="space-y-4 pt-4 border-t border-border/20">
                                 {debt.remainingInstallments !== null && (
                                     <div className="flex items-center justify-between text-sm">
-                                        <div className="flex items-center gap-2 text-[#554336] font-medium">
+                                        <div className="flex items-center gap-2 text-muted-foreground font-medium">
                                             <Clock className="w-4 h-4 opacity-40" /> Kalan Taksit
                                         </div>
-                                        <span className="font-bold text-[#191c1d]">{debt.remainingInstallments} Ay</span>
+                                        <span className="font-bold text-foreground">{debt.remainingInstallments} Ay</span>
                                     </div>
                                 )}
                                 <div className="flex items-center justify-between text-sm">
-                                    <div className="flex items-center gap-2 text-[#554336] font-medium">
+                                    <div className="flex items-center gap-2 text-muted-foreground font-medium">
                                         <TrendingDown className="w-4 h-4 opacity-40" /> Aylık Ödeme (Tahmini)
                                     </div>
                                     <span className="font-bold text-rose-600">
@@ -196,13 +196,13 @@ export function DebtList({ debts }: { debts: any[] }) {
                             <div className="grid grid-cols-2 gap-3 mt-8">
                                 <Button 
                                     variant="outline" 
-                                    className="rounded-xl border-rose-200 text-rose-600 hover:bg-rose-50 font-bold h-11"
+                                    className="rounded-xl border-destructive/20 text-destructive hover:bg-destructive/5 font-bold h-11"
                                     onClick={() => setPayModal({ id: debt.id, amount: debt.remainingInstallments ? debt.amount / debt.remainingInstallments : 0, isClose: false, description: debt.description || debt.type })}
                                 >
                                     Taksit Öde
                                 </Button>
                                 <Button 
-                                    className="rounded-xl bg-[#ba1a1a] hover:bg-[#911313] text-white font-bold h-11"
+                                    className="rounded-xl bg-destructive hover:bg-destructive/90 text-destructive-foreground font-bold h-11"
                                     onClick={() => setPayModal({ id: debt.id, amount: debt.amount, isClose: true, description: debt.description || debt.type })}
                                 >
                                     Borcu Kapat
@@ -213,7 +213,7 @@ export function DebtList({ debts }: { debts: any[] }) {
                 ))}
 
                 {activeDebts.length === 0 && !isAdding && (
-                    <div className="col-span-full py-20 flex flex-col items-center justify-center text-[#554336] opacity-50 italic">
+                    <div className="col-span-full py-20 flex flex-col items-center justify-center text-muted-foreground opacity-50 italic">
                         <AlertCircle className="w-12 h-12 mb-4 opacity-20" />
                         Aktif borç veya kredi kaydı bulunmuyor.
                     </div>
@@ -223,29 +223,29 @@ export function DebtList({ debts }: { debts: any[] }) {
             {/* Simple Custom Payment Modal */}
             {payModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-300">
-                    <div className="bg-white rounded-[32px] w-full max-w-md overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
-                        <div className="p-8 bg-[#f8f9fa] border-b border-[#dbc2b0]/20 flex justify-between items-center">
-                            <h3 className="text-xl font-heading font-bold text-[#8c5000]">
+                    <div className="bg-card rounded-[32px] w-full max-w-md overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300 border border-border/30">
+                        <div className="p-8 bg-muted border-b border-border/20 flex justify-between items-center">
+                            <h3 className="text-xl font-heading font-bold text-primary">
                                 {payModal.isClose ? "Borcu Kapat" : "Taksit Ödemesi"}
                             </h3>
-                            <button onClick={() => setPayModal(null)} className="text-[#554336] hover:text-[#ba1a1a]">
+                            <button onClick={() => setPayModal(null)} className="text-muted-foreground hover:text-destructive">
                                 <X className="w-6 h-6" />
                             </button>
                         </div>
                         <div className="p-8 flex flex-col gap-6">
-                            <div className="p-4 bg-white rounded-2xl border border-[#dbc2b0]/30">
-                                <span className="text-[10px] font-bold text-[#554336] uppercase tracking-widest opacity-60">İşlem Yapılan Borç</span>
-                                <p className="text-lg font-bold text-[#191c1d] mt-1">{payModal.description}</p>
+                            <div className="p-4 bg-card rounded-2xl border border-border/30">
+                                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">İşlem Yapılan Borç</span>
+                                <p className="text-lg font-bold text-foreground mt-1">{payModal.description}</p>
                             </div>
 
                             <div className="space-y-3">
-                                <Label className="text-[10px] font-bold text-[#554336] uppercase tracking-widest px-1">Ödenecek Tutar (₺)</Label>
+                                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Ödenecek Tutar (₺)</Label>
                                 <Input
                                     type="number"
                                     value={payModal.amount}
                                     disabled={payModal.isClose}
                                     onChange={(e) => setPayModal({ ...payModal, amount: Number(e.target.value) })}
-                                    className="bg-[#f8f9fa] border-[#dbc2b0]/30 h-12 rounded-xl focus:ring-[#ba1a1a] text-lg font-bold"
+                                    className="bg-muted border-border/30 h-12 rounded-xl focus:ring-red-600 text-lg font-bold"
                                 />
                                 <p className="text-[10px] text-rose-600/70 italic mt-1">
                                     * Bu ödeme, gider listenize otomatik olarak eklenecektir.
@@ -253,11 +253,11 @@ export function DebtList({ debts }: { debts: any[] }) {
                             </div>
                             {error && <div className="p-3 bg-red-50 text-red-600 rounded-xl text-sm font-medium border border-red-100">{error}</div>}
                         </div>
-                        <div className="p-6 bg-[#f8f9fa] border-t border-[#dbc2b0]/10 flex justify-end gap-3">
-                            <Button variant="outline" className="rounded-full px-8 border-[#dbc2b0]/30 text-[#554336]" onClick={() => setPayModal(null)}>
+                        <div className="p-6 bg-muted border-t border-border/10 flex justify-end gap-3">
+                            <Button variant="outline" className="rounded-full px-8 border-border/30 text-muted-foreground" onClick={() => setPayModal(null)}>
                                 Vazgeç
                             </Button>
-                            <Button onClick={handlePay} disabled={loading} className="rounded-full bg-[#ba1a1a] hover:bg-[#911313] text-white px-10 font-bold shadow-lg">
+                            <Button onClick={handlePay} disabled={loading} className="rounded-full bg-destructive hover:bg-destructive/90 text-destructive-foreground px-10 font-bold shadow-lg shadow-destructive/20">
                                 {loading ? "İşleniyor..." : "Ödemeyi Onayla"}
                             </Button>
                         </div>

@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import { useTheme } from "next-themes";
+
 export default function DashboardLayout({
   children,
 }: {
@@ -17,29 +19,15 @@ export default function DashboardLayout({
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const pathname = usePathname();
-  const [theme, setThemeState] = useState<"light" | "dark">("light");
+  const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-    if (document.documentElement.classList.contains("dark")) {
-      setThemeState("dark");
-    } else if (localStorage.getItem("theme") === "dark") {
-      setThemeState("dark");
-      document.documentElement.classList.add("dark");
-    }
   }, []);
 
   const toggleTheme = () => {
-    const newTheme = theme === "dark" ? "light" : "dark";
-    setThemeState(newTheme);
-    if (newTheme === "dark") {
-      document.documentElement.classList.add("dark");
-      localStorage.setItem("theme", "dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-    }
+    setTheme(theme === "dark" ? "light" : "dark");
   };
 
   // Sayfa değiştiğinde mobil menüyü kapat
@@ -48,12 +36,12 @@ export default function DashboardLayout({
   }, [pathname]);
 
   return (
-    <div className="h-full relative flex flex-col md:flex-row bg-[#f8f9fa]">
+    <div className="h-full relative flex flex-col md:flex-row bg-background">
       {/* Mobile Header */}
-      <div className="md:hidden flex items-center justify-between px-4 py-4 bg-white border-b border-[#dbc2b0]/30 sticky top-0 z-[100] shadow-ambient-low">
+      <div className="md:hidden flex items-center justify-between px-4 py-4 bg-card border-b border-border/30 sticky top-0 z-[100] shadow-ambient-low">
         <Link className="flex items-center gap-2" href="/dashboard">
           <img src="/mascot.png" alt="Logo" className="h-12 w-12 object-contain" />
-          <span className="text-xl font-heading font-bold text-[#8c5000]">Koç Ram Finans</span>
+          <span className="text-xl font-heading font-bold text-primary">Koç Ram Finans</span>
         </Link>
         <div className="flex items-center gap-2">
           {mounted && (
@@ -61,7 +49,7 @@ export default function DashboardLayout({
               variant="ghost"
               size="icon"
               onClick={toggleTheme}
-              className="text-[#8c5000]"
+              className="text-primary"
             >
               {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             </Button>
@@ -70,7 +58,7 @@ export default function DashboardLayout({
             variant="ghost"
             size="icon"
             onClick={() => setIsMobileOpen(true)}
-            className="text-[#8c5000]"
+            className="text-primary"
           >
             <Menu className="h-6 w-6" />
           </Button>
@@ -79,13 +67,13 @@ export default function DashboardLayout({
 
       {/* Desktop Sidebar */}
       <div className={cn(
-        "hidden md:flex h-full md:flex-col md:fixed md:inset-y-0 z-[80] bg-white transition-all duration-300 ease-in-out shadow-ambient-low",
+        "hidden md:flex h-full md:flex-col md:fixed md:inset-y-0 z-[80] bg-card transition-all duration-300 ease-in-out shadow-ambient-low",
         isCollapsed ? "md:w-20" : "md:w-72"
       )}>
         <Sidebar
           isCollapsed={isCollapsed}
           onToggle={() => setIsCollapsed(!isCollapsed)}
-          theme={theme}
+          theme={theme as "light" | "dark"}
           onToggleTheme={toggleTheme}
         />
       </div>
@@ -100,19 +88,19 @@ export default function DashboardLayout({
 
       {/* Mobile Sidebar Content */}
       <div className={cn(
-        "fixed inset-y-0 left-0 z-[120] w-72 bg-white md:hidden transition-transform duration-300 ease-in-out transform shadow-ambient-high",
+        "fixed inset-y-0 left-0 z-[120] w-72 bg-card md:hidden transition-transform duration-300 ease-in-out transform shadow-ambient-high",
         isMobileOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="absolute right-4 top-4">
           <Button variant="ghost" size="icon" onClick={() => setIsMobileOpen(false)}>
-            <X className="h-6 w-6 text-[#8c5000]" />
+            <X className="h-6 w-6 text-primary" />
           </Button>
         </div>
         <Sidebar
           isCollapsed={false}
           onToggle={() => setIsMobileOpen(false)}
           hideToggle
-          theme={theme}
+          theme={theme as "light" | "dark"}
           onToggleTheme={toggleTheme}
         />
       </div>

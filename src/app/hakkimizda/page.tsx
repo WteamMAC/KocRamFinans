@@ -232,9 +232,9 @@ export default function AboutPage() {
                 <motion.div 
                   key={index}
                   variants={fadeInUp}
-                  className={`bg-white p-10 rounded-2xl border border-outline-variant/50 shadow-md hover:border-${value.color} hover:-translate-y-2 transition-all duration-300`}
+                  className={`bg-card p-10 rounded-2xl border border-border/50 shadow-md hover:border-${value.color} hover:-translate-y-2 transition-all duration-300`}
                 >
-                  <div className={`w-16 h-16 ${value.color === 'primary' ? 'bg-primary-container/10 text-primary' : 'bg-tertiary-container/10 text-tertiary'} rounded-xl flex items-center justify-center mb-8`}>
+                  <div className={`w-16 h-16 ${value.color === 'primary' ? 'bg-primary/10 text-primary' : 'bg-tertiary/10 text-tertiary'} rounded-xl flex items-center justify-center mb-8`}>
                     <span className="material-symbols-outlined text-4xl">{value.icon}</span>
                   </div>
                   <h3 className="text-xl font-heading font-bold mb-4">{value.title}</h3>
@@ -277,7 +277,7 @@ export default function AboutPage() {
                       {member.initials}
                     </div>
                     <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
-                      <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-primary cursor-pointer hover:bg-primary-container transition-colors shadow-lg">
+                      <div className="w-10 h-10 bg-card rounded-full flex items-center justify-center text-primary cursor-pointer hover:bg-primary/10 transition-colors shadow-lg">
                         <span className="material-symbols-outlined text-xl">share</span>
                       </div>
                     </div>

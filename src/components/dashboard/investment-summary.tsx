@@ -2,6 +2,7 @@
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
 import { useEffect, useState } from "react";
+import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 
 interface InvestmentSummaryProps {
@@ -9,11 +10,12 @@ interface InvestmentSummaryProps {
   fixedAssets?: any[];
 }
 
-const COLORS = ["#8c5000", "#666000", "#36684d", "#efe440", "#ba1a1a", "#554336"];
-const FIXED_COLORS = ["#8c5000", "#fed65b", "#554336", "#c4a484", "#3d2b1f", "#efe440"];
+const COLORS = ["var(--primary)", "#10b981", "#3b82f6", "#f59e0b", "#6366f1", "#f43f5e"];
+const FIXED_COLORS = ["#8b5cf6", "#ec4899", "#f97316", "#06b6d4", "#84cc16", "#f2e743"];
 
 export function InvestmentSummary({ investments, fixedAssets }: InvestmentSummaryProps) {
   const [isMounted, setIsMounted] = useState(false);
+  const { theme } = useTheme();
 
   useEffect(() => {
     setIsMounted(true);
@@ -59,7 +61,7 @@ export function InvestmentSummary({ investments, fixedAssets }: InvestmentSummar
   const totalFixedAsset = fixedAssetData.reduce((acc, curr) => acc + curr.value, 0);
 
   if (!isMounted) {
-    return <div className="h-[350px] w-full bg-[#f8f9fa] animate-pulse rounded-[24px]" />;
+    return <div className="h-[350px] w-full bg-muted animate-pulse rounded-[24px]" />;
   }
 
   return (
@@ -69,11 +71,11 @@ export function InvestmentSummary({ investments, fixedAssets }: InvestmentSummar
     )}>
       {/* Yatırım Dağılımı */}
       <div className="flex flex-col items-center">
-        <h3 className="text-sm font-bold text-[#8c5000] mb-6 uppercase tracking-widest">Yatırım Portföyü</h3>
+        <h3 className="text-sm font-bold text-primary mb-6 uppercase tracking-widest">Yatırım Portföyü</h3>
         <div className="h-[300px] w-full relative">
           <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none pb-12">
-            <span className="text-[9px] font-bold text-[#554336] uppercase tracking-widest mb-0.5">Toplam</span>
-            <span className="text-xl font-heading font-bold text-[#8c5000]">{totalInvestment.toLocaleString('tr-TR')} ₺</span>
+            <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mb-0.5">Toplam</span>
+            <span className="text-xl font-heading font-bold text-primary">{totalInvestment.toLocaleString('tr-TR')} ₺</span>
           </div>
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
@@ -97,12 +99,12 @@ export function InvestmentSummary({ investments, fixedAssets }: InvestmentSummar
                   if (active && payload && payload.length) {
                     const data = payload[0];
                     return (
-                      <div className="bg-white/95 backdrop-blur-md p-3 border border-[#dbc2b0]/30 rounded-xl shadow-lg">
-                        <p className="text-[9px] font-bold text-[#554336] uppercase tracking-widest mb-1">{data.name}</p>
-                        <p className="text-base font-heading font-bold text-[#8c5000]">
+                      <div className="bg-card/95 backdrop-blur-md p-3 border border-border/30 rounded-xl shadow-lg">
+                        <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mb-1">{data.name}</p>
+                        <p className="text-base font-heading font-bold text-primary">
                           {data.value?.toLocaleString('tr-TR')} ₺
                         </p>
-                        <p className="text-[9px] font-bold text-emerald-600 mt-1">
+                        <p className="text-[9px] font-bold text-emerald-500 mt-1">
                           Pay: %{((Number(data.value) / totalInvestment) * 100).toFixed(1)}
                         </p>
                       </div>
@@ -118,7 +120,7 @@ export function InvestmentSummary({ investments, fixedAssets }: InvestmentSummar
                 formatter={(value) => {
                   const item = investmentData.find(d => d.name === value);
                   const percent = item ? ((item.value / totalInvestment) * 100).toFixed(1) : 0;
-                  return <span className="text-[10px] font-bold text-[#554336]">{value} (%{percent})</span>;
+                  return <span className="text-[10px] font-bold text-muted-foreground">{value} (%{percent})</span>;
                 }}
               />
             </PieChart>
@@ -129,11 +131,11 @@ export function InvestmentSummary({ investments, fixedAssets }: InvestmentSummar
       {/* Sabit Varlık Dağılımı */}
       {fixedAssets && fixedAssets.length > 0 && (
         <div className="flex flex-col items-center">
-          <h3 className="text-sm font-bold text-[#8c5000] mb-6 uppercase tracking-widest">Sabit Varlıklar</h3>
+          <h3 className="text-sm font-bold text-primary mb-6 uppercase tracking-widest">Sabit Varlıklar</h3>
           <div className="h-[300px] w-full relative">
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none pb-12">
-              <span className="text-[9px] font-bold text-[#554336] uppercase tracking-widest mb-0.5">Toplam</span>
-              <span className="text-xl font-heading font-bold text-[#8c5000]">{totalFixedAsset.toLocaleString('tr-TR')} ₺</span>
+              <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mb-0.5">Toplam</span>
+              <span className="text-xl font-heading font-bold text-primary">{totalFixedAsset.toLocaleString('tr-TR')} ₺</span>
             </div>
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -157,12 +159,12 @@ export function InvestmentSummary({ investments, fixedAssets }: InvestmentSummar
                     if (active && payload && payload.length) {
                       const data = payload[0];
                       return (
-                        <div className="bg-white/95 backdrop-blur-md p-3 border border-[#dbc2b0]/30 rounded-xl shadow-lg">
-                          <p className="text-[9px] font-bold text-[#554336] uppercase tracking-widest mb-1">{data.name}</p>
-                          <p className="text-base font-heading font-bold text-[#8c5000]">
+                        <div className="bg-card/95 backdrop-blur-md p-3 border border-border/30 rounded-xl shadow-lg">
+                          <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mb-1">{data.name}</p>
+                          <p className="text-base font-heading font-bold text-primary">
                             {data.value?.toLocaleString('tr-TR')} ₺
                           </p>
-                          <p className="text-[9px] font-bold text-[#666000] mt-1">
+                          <p className="text-[9px] font-bold text-primary mt-1">
                             Pay: %{((Number(data.value) / totalFixedAsset) * 100).toFixed(1)}
                           </p>
                         </div>
@@ -178,7 +180,7 @@ export function InvestmentSummary({ investments, fixedAssets }: InvestmentSummar
                   formatter={(value) => {
                     const item = fixedAssetData.find(d => d.name === value);
                     const percent = item ? ((item.value / totalFixedAsset) * 100).toFixed(1) : 0;
-                    return <span className="text-[10px] font-bold text-[#554336]">{value} (%{percent})</span>;
+                    return <span className="text-[10px] font-bold text-muted-foreground">{value} (%{percent})</span>;
                   }}
                 />
               </PieChart>

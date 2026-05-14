@@ -20,6 +20,8 @@ export const metadata: Metadata = {
   description: "Finansal durumunuzu takip edin ve geleceğinizi planlayın.",
 };
 
+import { ThemeProvider } from "@/components/theme-provider";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -37,23 +39,19 @@ export default function RootLayout({
         },
         variables: {
           colorPrimary: "#8c5000",
-          colorText: "#191c1d",
-          colorBackground: "#ffffff",
-          colorInputBackground: "#f8f9fa",
-          colorInputText: "#191c1d",
           borderRadius: "0.5rem",
           fontFamily: "var(--font-work-sans), var(--font-montserrat), sans-serif",
         },
         elements: {
-          card: "shadow-ambient-high border border-[#dbc2b0]/20 rounded-2xl",
-          headerTitle: "text-[#8c5000] font-bold text-2xl tracking-tight font-heading",
-          headerSubtitle: "text-[#554336] font-medium",
-          socialButtonsBlockButton: "border-[#dbc2b0]/30 hover:bg-[#f8f9fa] transition-all",
-          formButtonPrimary: "bg-[#8c5000] hover:bg-[#f18d02] transition-all shadow-ambient-medium",
-          footerActionLink: "text-[#8c5000] hover:text-[#f18d02] font-bold",
-          identityPreviewText: "text-[#8c5000] font-bold",
-          formFieldInput: "border-[#dbc2b0]/30 focus:border-[#f18d02] focus:ring-[#f18d02]/20 transition-all rounded-lg",
-          formFieldLabel: "text-[12px] font-bold text-[#554336] uppercase tracking-widest mb-1",
+          card: "shadow-ambient-high border border-border/20 rounded-2xl bg-card text-card-foreground",
+          headerTitle: "text-primary font-bold text-2xl tracking-tight font-heading",
+          headerSubtitle: "text-muted-foreground font-medium",
+          socialButtonsBlockButton: "border-border/30 hover:bg-muted transition-all bg-card text-foreground",
+          formButtonPrimary: "bg-primary hover:bg-primary/90 transition-all shadow-ambient-medium text-primary-foreground",
+          footerActionLink: "text-primary hover:text-primary/90 font-bold",
+          identityPreviewText: "text-primary font-bold",
+          formFieldInput: "border-border/30 focus:border-primary focus:ring-primary/20 transition-all rounded-lg bg-background text-foreground",
+          formFieldLabel: "text-[12px] font-bold text-muted-foreground uppercase tracking-widest mb-1",
         }
       }}
     >
@@ -62,9 +60,19 @@ export default function RootLayout({
       </head>
       <html
         lang="tr"
+        suppressHydrationWarning
         className={`${montserrat.variable} ${workSans.variable} h-full antialiased`}
       >
-        <body className="min-h-full flex flex-col font-sans">{children}</body>
+        <body className="min-h-full flex flex-col font-sans bg-background text-foreground">
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            {children}
+          </ThemeProvider>
+        </body>
       </html>
     </ClerkProvider>
   );
