@@ -944,16 +944,16 @@ export function AssetList({ assets, allInvestments, fixedAssets, metrics }: Asse
               </Button>
               <Button onClick={() => handleSell(sellModalState.assetId!, "WITHDRAW")} disabled={loading} className="w-full justify-start p-6 text-base bg-[#f8f9fa] text-[#554336] hover:bg-[#edeeef] rounded-xl border border-[#dbc2b0]/20">
                 {loading ? "İşleniyor..." : "Parayı çek (Aylık nakit akışına ekle)"}
-              </a >
+              </Button>
               {error && <div className="mt-2 p-3 bg-red-50 text-red-600 rounded-xl text-sm font-medium border border-red-100">{error}</div>}
-            </div >
+            </div>
             <div className="p-4 bg-white/50 border-t border-[#dbc2b0]/10 flex justify-end">
               <Button variant="outline" className="rounded-full" onClick={() => setSellModalState({ assetId: null })}>
                 Vazgeç
               </Button>
             </div>
-          </div >
-        </div >
+          </div>
+        </div>
       )}
     </div>
   );
