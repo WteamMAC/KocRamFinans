@@ -55,7 +55,10 @@ export function NewsClient({ initialNews }: NewsClientProps) {
                     <h2 className="text-3xl font-heading font-bold text-primary flex items-center gap-3">
                         <Newspaper className="h-8 w-8" /> Canlı Ekonomi Haberleri
                     </h2>
-                    <p className="text-[#554336] mt-1">Piyasalardaki en güncel gelişmeleri anlık olarak takip edin ve filtrelenmiş olarak görün.</p>
+                    <p className="text-[#554336] mt-1">
+                        Piyasalardaki en güncel gelişmeleri anlık olarak takip edin ve filtrelenmiş olarak görün. 
+                        <span className="font-bold ml-1 text-primary">({filteredNews.length} haber listeleniyor)</span>
+                    </p>
                 </div>
             </div>
 

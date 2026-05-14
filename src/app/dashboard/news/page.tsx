@@ -2,6 +2,8 @@
 import { NewsClient, NewsItem } from "@/components/dashboard/news-client";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = 'force-no-store';
 
 function determineTag(title: string, description: string): string {
     const text = (title + " " + description).toLowerCase();
