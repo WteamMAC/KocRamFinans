@@ -26,12 +26,19 @@ import {
   Newspaper,
   Calculator,
   Shield,
-  Landmark
+  Landmark,
+  Rss
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
 const routes = [
+  {
+    label: "Blog",
+    icon: Rss,
+    href: "/dashboard/blog",
+    color: "text-pink-500",
+  },
   {
     label: "Finansal Özet",
     icon: LayoutDashboard,
