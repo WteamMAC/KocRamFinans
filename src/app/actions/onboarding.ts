@@ -58,11 +58,6 @@ export async function completeOnboarding(formData: {
         where: { 
           userId: user.id, 
           type: { notIn: ["Yatırım Satışı", "Yatırım Çekimi"] },
-          NOT: {
-            description: {
-              contains: "satış geliri"
-            }
-          }
         } 
       }),
       prisma.expense.deleteMany({ where: { userId: user.id, isRecurring: true } }),

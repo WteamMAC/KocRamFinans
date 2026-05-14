@@ -153,7 +153,11 @@ export function PerformanceChart({ incomes, expenses, investments }: Performance
                 axisLine={false}
                 tickLine={false}
                 tick={{ fontSize: 10, fill: textColor, fontWeight: "bold" }}
-                tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
+                tickFormatter={(value) => {
+                  if (value >= 1000000) return `${(value / 1000000).toFixed(1).replace(/\\.0$/, '')}m`;
+                  if (value >= 1000) return `${(value / 1000).toFixed(0)}k`;
+                  return value;
+                }}
               />
               <Tooltip 
                 contentStyle={{ 

@@ -166,6 +166,36 @@ export function PortfolioChart({ assets }: PortfolioChartProps) {
     // Ekranı ikiye bölecek miyiz?
     const showTwoCharts = !isSingleType && categoryData.length > 1;
 
+    const categoryPieProps: any = {
+        activeIndex: activeIndexCategory,
+        activeShape: renderActiveShape,
+        data: categoryData,
+        cx: "50%",
+        cy: "50%",
+        innerRadius: 50,
+        outerRadius: 70,
+        paddingAngle: 5,
+        dataKey: "value",
+        onMouseEnter: onCategoryEnter,
+        onClick: onCategoryEnter,
+        style: { cursor: 'pointer' }
+    };
+
+    const symbolPieProps: any = {
+        activeIndex: activeIndexSymbol,
+        activeShape: renderActiveShape,
+        data: symbolData,
+        cx: "50%",
+        cy: "50%",
+        innerRadius: 50,
+        outerRadius: 70,
+        paddingAngle: 5,
+        dataKey: "value",
+        onMouseEnter: onSymbolEnter,
+        onClick: onSymbolEnter,
+        style: { cursor: 'pointer' }
+    };
+
     return (
         <div className="h-[380px] w-full flex flex-col md:flex-row gap-4 pt-4">
             {showTwoCharts && (
@@ -173,20 +203,7 @@ export function PortfolioChart({ assets }: PortfolioChartProps) {
                     <h3 className="text-sm font-semibold mb-2 text-muted-foreground">Kategori Dağılımı</h3>
                     <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
-                            <Pie
-                                activeIndex={activeIndexCategory}
-                                activeShape={renderActiveShape}
-                                data={categoryData}
-                                cx="50%"
-                                cy="50%"
-                                innerRadius={50}
-                                outerRadius={70}
-                                paddingAngle={5}
-                                dataKey="value"
-                                onMouseEnter={onCategoryEnter}
-                                onClick={onCategoryEnter}
-                                style={{ cursor: 'pointer' }}
-                            >
+                            <Pie {...categoryPieProps}>
                                 {categoryData.map((entry, index) => (
                                     <Cell key={`cell-${index}`} fill={TYPE_COLORS[entry.name] || SYMBOL_COLORS[index % SYMBOL_COLORS.length]} />
                                 ))}
@@ -204,20 +221,7 @@ export function PortfolioChart({ assets }: PortfolioChartProps) {
                 </h3>
                 <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
-                        <Pie
-                            activeIndex={activeIndexSymbol}
-                            activeShape={renderActiveShape}
-                            data={symbolData}
-                            cx="50%"
-                            cy="50%"
-                            innerRadius={50}
-                            outerRadius={70}
-                            paddingAngle={5}
-                            dataKey="value"
-                            onMouseEnter={onSymbolEnter}
-                            onClick={onSymbolEnter}
-                            style={{ cursor: 'pointer' }}
-                        >
+                        <Pie {...symbolPieProps}>
                             {symbolData.map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill={SYMBOL_COLORS[index % SYMBOL_COLORS.length]} />
                             ))}

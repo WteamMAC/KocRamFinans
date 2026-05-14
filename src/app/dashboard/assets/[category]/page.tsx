@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { getLivePrices, calculatePortfolioMetrics } from "@/lib/price-service";
 import { AssetList } from "@/components/dashboard/asset-list";
+import { BesFaizDetail } from "@/components/dashboard/bes-faiz-detail";
 
 interface CategoryPageProps {
   params: Promise<{ category: string }>;
@@ -29,12 +30,33 @@ export default async function AssetCategoryPage({ params }: CategoryPageProps) {
     return null;
   }
 
-  // Filter based on category
+  // === BES ve FAIZ için özel sayfa ===
+  if (category === "bes" || category === "faiz") {
+    const type = category === "bes" ? "BES" : "FAIZ";
+    const investments = user.investments
+      .filter(inv => inv.type === type && inv.status === "OPEN")
+      .map(inv => ({
+        id: inv.id,
+        symbol: inv.symbol,
+        quantity: inv.quantity,
+        purchasePrice: inv.purchasePrice,
+        amount: inv.amount,
+        description: inv.description,
+        createdAt: inv.createdAt,
+        status: inv.status,
+      }));
+
+    return (
+      <div className="flex-1 p-8 pt-10 bg-background min-h-screen">
+        <BesFaizDetail type={type} investments={investments} />
+      </div>
+    );
+  }
+
+  // === Diğer kategoriler için mevcut akış ===
   let filteredInvestments = user.investments;
   let filteredFixedAssets = user.fixedAssets;
 
-  const categoryUpper = category.toUpperCase();
-  
   if (category === "fixed") {
     filteredInvestments = [];
   } else if (category === "gold") {
@@ -48,12 +70,6 @@ export default async function AssetCategoryPage({ params }: CategoryPageProps) {
     filteredFixedAssets = [];
   } else if (category === "nasdaq") {
     filteredInvestments = user.investments.filter(inv => inv.type === "NASDAQ" || inv.type === "Nasdaq");
-    filteredFixedAssets = [];
-  } else if (category === "bes") {
-    filteredInvestments = user.investments.filter(inv => inv.type === "BES");
-    filteredFixedAssets = [];
-  } else if (category === "faiz") {
-    filteredInvestments = user.investments.filter(inv => inv.type === "FAIZ");
     filteredFixedAssets = [];
   }
 
@@ -79,8 +95,6 @@ export default async function AssetCategoryPage({ params }: CategoryPageProps) {
     nasdaq: "NASDAQ Hisse Portföyü",
     gold: "Altın & Emtia Portföyü",
     fixed: "Sabit Varlıklarım",
-    bes: "Bireysel Emeklilik (BES)",
-    faiz: "Vadeli Mevduat Hesapları"
   };
 
   return (

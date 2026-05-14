@@ -361,31 +361,38 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
                   <div key={field.id} className="flex flex-col gap-2">
                     <div className="flex gap-4 items-end animate-in fade-in duration-300">
                       <div className="flex-1 space-y-2">
-                        <Select 
-                          onValueChange={(val) => form.setValue(`incomes.${index}.type`, val || "")}
-                          defaultValue={field.type}
-                        >
-                          <SelectTrigger className="bg-[#faf9f6] border-[#c4c6d2]/30 h-12 rounded-xl">
-                            <SelectValue placeholder="Tür" />
-                          </SelectTrigger>
-                          <SelectContent className="rounded-xl">
-                            <SelectItem value="Maaş">Maaş</SelectItem>
-                            <SelectItem value="Eş Maaşı">Eş Maaşı</SelectItem>
-                            <SelectItem value="Kira Geliri">Kira Geliri</SelectItem>
-                            <SelectItem value="Sosyal Medya">Sosyal Medya</SelectItem>
-                            <SelectItem value="Taksi/Ek İş">Taksi/Ek İş</SelectItem>
-                            <SelectItem value="Faiz">Faiz</SelectItem>
-                            <SelectItem value="Sponsorluk">Sponsorluk</SelectItem>
-                            <SelectItem value="Devlet Desteği">Devlet Desteği</SelectItem>
-                            <SelectItem value="Diğer">Diğer</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <Controller
+                          name={`incomes.${index}.type` as const}
+                          control={form.control}
+                          render={({ field: selectField }) => (
+                            <Select 
+                              onValueChange={selectField.onChange}
+                              value={selectField.value}
+                            >
+                              <SelectTrigger className="bg-[#faf9f6] border-[#c4c6d2]/30 h-12 rounded-xl">
+                                <SelectValue placeholder="Tür" />
+                              </SelectTrigger>
+                              <SelectContent className="rounded-xl">
+                                <SelectItem value="Maaş">Maaş</SelectItem>
+                                <SelectItem value="Eş Maaşı">Eş Maaşı</SelectItem>
+                                <SelectItem value="Kira Geliri">Kira Geliri</SelectItem>
+                                <SelectItem value="Sosyal Medya">Sosyal Medya</SelectItem>
+                                <SelectItem value="Taksi/Ek İş">Taksi/Ek İş</SelectItem>
+                                <SelectItem value="Faiz">Faiz</SelectItem>
+                                <SelectItem value="Sponsorluk">Sponsorluk</SelectItem>
+                                <SelectItem value="Devlet Desteği">Devlet Desteği</SelectItem>
+                                <SelectItem value="Diğer">Diğer</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          )}
+                        />
                       </div>
                       <div className="flex-1">
                         <Input 
                           type="number" 
+                          step="any"
                           placeholder="Miktar" 
-                          {...form.register(`incomes.${index}.amount`)} 
+                          {...form.register(`incomes.${index}.amount`, { valueAsNumber: true })} 
                           className={cn(
                             "bg-[#faf9f6] border-[#c4c6d2]/30 h-12 rounded-xl",
                             form.formState.errors.incomes?.[index]?.amount && "border-rose-300"
@@ -423,11 +430,11 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
                       </div>
                       <div className="space-y-2 col-span-2 md:col-span-1">
                         <Label className="text-[9px] font-bold text-[#747781] uppercase px-1">Miktar</Label>
-                        <Input type="number" placeholder="0 ₺" {...form.register(`expenses.${index}.amount`)} className="bg-white border-[#c4c6d2]/20 h-10 rounded-lg" />
+                        <Input type="number" step="any" placeholder="0 ₺" {...form.register(`expenses.${index}.amount`, { valueAsNumber: true })} className="bg-white border-[#c4c6d2]/20 h-10 rounded-lg" />
                       </div>
                       <div className="space-y-2">
                         <Label className="text-[9px] font-bold text-[#747781] uppercase px-1">Ödeme Günü (1-31)</Label>
-                        <Input type="number" {...form.register(`expenses.${index}.dueDate`)} className="bg-white border-[#c4c6d2]/20 h-10 rounded-lg" />
+                        <Input type="number" {...form.register(`expenses.${index}.dueDate`, { valueAsNumber: true })} className="bg-white border-[#c4c6d2]/20 h-10 rounded-lg" />
                       </div>
                       <div className="flex items-center gap-3 pt-6">
                         <input type="checkbox" {...form.register(`expenses.${index}.isRecurring`)} className="w-4 h-4 rounded border-[#c4c6d2] text-[#001b44] focus:ring-[#001b44]" />
@@ -463,12 +470,12 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
                     </div>
                     <div className="space-y-2">
                        <Label className="text-[9px] font-bold text-[#747781] uppercase px-1">Toplam Tutar</Label>
-                       <Input type="number" {...form.register(`debts.${index}.amount`)} className="bg-white border-[#c4c6d2]/20 h-10 rounded-lg" />
+                       <Input type="number" step="any" {...form.register(`debts.${index}.amount`, { valueAsNumber: true })} className="bg-white border-[#c4c6d2]/20 h-10 rounded-lg" />
                     </div>
                     <div className="flex gap-2 items-end">
                       <div className="flex-1 space-y-2">
                         <Label className="text-[9px] font-bold text-[#747781] uppercase px-1">Kalan Taksit</Label>
-                        <Input type="number" {...form.register(`debts.${index}.remainingInstallments`)} className="bg-white border-[#c4c6d2]/20 h-10 rounded-lg" />
+                        <Input type="number" {...form.register(`debts.${index}.remainingInstallments`, { valueAsNumber: true })} className="bg-white border-[#c4c6d2]/20 h-10 rounded-lg" />
                       </div>
                       <Button type="button" variant="ghost" size="icon" onClick={() => removeDebt(index)} className="h-10 w-10 hover:bg-rose-50 text-rose-500">
                         <Trash2 className="w-4 h-4" />
@@ -507,7 +514,7 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
                                 form.setValue(`investments.${index}.symbol`, "");
                                 setSearchQueries(p => ({ ...p, [index]: "" }));
                               }} 
-                              defaultValue={selectField.value}
+                              value={selectField.value}
                             >
                               <SelectTrigger className="bg-white border-[#c4c6d2]/20 h-12 rounded-xl">
                                 <SelectValue placeholder="Tür Seç" />
@@ -651,7 +658,7 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
                           name={`fixedAssets.${index}.type` as any}
                           control={form.control}
                           render={({ field: selectField }) => (
-                            <Select onValueChange={selectField.onChange} defaultValue={selectField.value}>
+                            <Select onValueChange={selectField.onChange} value={selectField.value}>
                               <SelectTrigger className="bg-white border-[#c4c6d2]/20 h-10 rounded-lg">
                                 <SelectValue placeholder="Seçiniz" />
                               </SelectTrigger>
@@ -670,7 +677,7 @@ export function OnboardingForm({ initialData, isSettings = false }: { initialDat
                       <div className="space-y-2">
                         <Label className="text-[9px] font-bold text-[#747781] uppercase px-1">Tahmini Değer (₺)</Label>
                         <div className="flex gap-2">
-                          <Input type="number" placeholder="0 ₺" {...form.register(`fixedAssets.${index}.value`)} className="bg-white border-[#c4c6d2]/20 h-10 rounded-lg flex-1" />
+                          <Input type="number" step="any" placeholder="0 ₺" {...form.register(`fixedAssets.${index}.value`, { valueAsNumber: true })} className="bg-white border-[#c4c6d2]/20 h-10 rounded-lg flex-1" />
                           <Button type="button" variant="ghost" size="icon" onClick={() => removeFixedAsset(index)} className="h-10 w-10 hover:bg-rose-50 text-rose-500">
                             <Trash2 className="w-4 h-4" />
                           </Button>

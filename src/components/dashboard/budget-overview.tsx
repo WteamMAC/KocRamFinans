@@ -34,7 +34,6 @@ export function BudgetOverview({ incomes, expenses }: BudgetOverviewProps) {
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data}>
           <defs>
-          <defs>
             <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%" stopColor={theme === "dark" ? "#c084fc" : "#8c5000"} stopOpacity={1}/>
               <stop offset="95%" stopColor={theme === "dark" ? "#c084fc" : "#8c5000"} stopOpacity={0.6}/>
@@ -43,7 +42,6 @@ export function BudgetOverview({ incomes, expenses }: BudgetOverviewProps) {
               <stop offset="5%" stopColor={theme === "dark" ? "#fbbf24" : "#efe440"} stopOpacity={1}/>
               <stop offset="95%" stopColor={theme === "dark" ? "#fbbf24" : "#efe440"} stopOpacity={0.6}/>
             </linearGradient>
-          </defs>
           </defs>
           <XAxis
             dataKey="name"

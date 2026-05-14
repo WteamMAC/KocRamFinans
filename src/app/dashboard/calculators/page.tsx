@@ -22,12 +22,14 @@ export default function CalculatorsPage() {
   const calculateInterest = () => {
     const { principal, rate, term } = interestData;
     const monthlyRate = rate / 12 / 100;
-    const finalAmount = principal * (1 + monthlyRate * term);
+    
+    // Bileşik faiz: A = P * (1 + r)^n
+    const finalAmount = principal * Math.pow(1 + monthlyRate, term);
     const profit = finalAmount - principal;
 
     const chartData = Array.from({ length: term + 1 }).map((_, i) => ({
       ay: `${i}. Ay`,
-      tutar: Math.round(principal * (1 + monthlyRate * i)),
+      tutar: Math.round(principal * Math.pow(1 + monthlyRate, i)),
     }));
 
     return { finalAmount, profit, chartData };
