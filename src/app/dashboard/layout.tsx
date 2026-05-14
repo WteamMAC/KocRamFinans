@@ -10,6 +10,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { useTheme } from "next-themes";
+import { ChatAI } from "@/components/dashboard/chat-ai";
 
 export default function DashboardLayout({
   children,
@@ -105,7 +106,6 @@ export default function DashboardLayout({
         />
       </div>
 
-      {/* Main Content */}
       <main className={cn(
         "flex-1 min-h-screen transition-all duration-300 ease-in-out",
         "md:pl-0", // Default pl
@@ -113,6 +113,7 @@ export default function DashboardLayout({
       )}>
         {children}
       </main>
+      <ChatAI />
     </div>
   );
 }
