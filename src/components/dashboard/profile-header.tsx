@@ -174,9 +174,7 @@ export function ProfileHeader({ profile, initialIsFollowing, currentUserRole }: 
           {/* Action Buttons */}
           <div className="flex flex-wrap gap-3 items-center">
             {profile.isMe && (
-              <div className="bg-card border border-border/20 rounded-full shadow-ambient-low">
-                <NotificationBell />
-              </div>
+              <NotificationBell />
             )}
             {currentUserRole === "ADMIN" && !profile.isMe && (
               <Button

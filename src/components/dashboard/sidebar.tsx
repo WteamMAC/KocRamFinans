@@ -105,12 +105,6 @@ const routes = [
     color: "text-blue-500",
   },
   {
-    label: "Bildirimler",
-    icon: Bell,
-    href: "/dashboard/notifications",
-    color: "text-amber-500",
-  },
-  {
     label: "Bilgileri Düzenle",
     icon: Settings,
     href: "/dashboard/settings",
