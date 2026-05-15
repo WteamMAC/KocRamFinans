@@ -30,7 +30,11 @@ export async function addAsset(data: {
 
     // Sayısal değerleri doğrula
     const quantity = Number(data.quantity);
-    if (isNaN(quantity) || quantity <= 0) throw new Error("Geçersiz miktar girdiniz.");
+    if (isNaN(quantity) || quantity <= 0) throw new Error("Geçersiz miktar girdiniz. Miktar 0'dan büyük olmalıdır.");
+    
+    if (data.purchasePrice !== undefined && Number(data.purchasePrice) < 0) {
+        throw new Error("Fiyat 0 veya daha büyük olmalıdır.");
+    }
 
     let finalPrice = Number(data.purchasePrice) || 0;
     const trimmedSymbol = data.symbol?.trim().toUpperCase() || null;

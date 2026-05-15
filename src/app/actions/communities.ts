@@ -130,7 +130,7 @@ export async function getCommunities(params?: {
     ...c,
     isMember: c.members && c.members.length > 0 && c.members[0].status === "ACCEPTED",
     isPending: c.members && c.members.length > 0 && c.members[0].status === "PENDING",
-    isAdmin: c.members && c.members.length > 0 && c.members[0].role === "ADMIN",
+    isAdmin: (c.members && c.members.length > 0 && c.members[0].role === "ADMIN") || (internalUser?.role === "ADMIN"),
     memberCount: c._count.members,
     postCount: c._count.posts
   }));
@@ -152,7 +152,7 @@ export async function getCommunityDetails(communityId: string) {
   if (!community) return null;
   
   const isMember = community.members && community.members.length > 0 && community.members[0].status === "ACCEPTED";
-  const isAdmin = community.members && community.members.length > 0 && community.members[0].role === "ADMIN";
+  const isAdmin = (community.members && community.members.length > 0 && community.members[0].role === "ADMIN") || (internalUser?.role === "ADMIN");
 
   const clerk = await clerkClient();
   const creatorClerk = await clerk.users.getUser(community.creator.clerkUserId);

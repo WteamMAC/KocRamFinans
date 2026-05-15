@@ -32,6 +32,16 @@ export async function completeOnboarding(formData: {
   }
 
   try {
+    // Sayısal alanların doğrulanması
+    for (const inc of formData.incomes) if (inc.amount <= 0) throw new Error("Tüm gelir tutarları 0'dan büyük olmalıdır.");
+    for (const exp of formData.expenses) if (exp.amount <= 0) throw new Error("Tüm gider tutarları 0'dan büyük olmalıdır.");
+    for (const d of formData.debts) if (d.amount <= 0) throw new Error("Tüm borç tutarları 0'dan büyük olmalıdır.");
+    for (const inv of formData.investments) {
+      if (inv.quantity <= 0) throw new Error("Tüm yatırım miktarları 0'dan büyük olmalıdır.");
+      if (inv.purchasePrice < 0) throw new Error("Yatırım alış fiyatı negatif olamaz.");
+    }
+    for (const fa of formData.fixedAssets) if (fa.value <= 0) throw new Error("Tüm sabit varlık değerleri 0'dan büyük olmalıdır.");
+
     let username = "user_" + Math.random().toString(36).substring(2, 10);
     let email = `${username}@kocramfinans.internal`;
 

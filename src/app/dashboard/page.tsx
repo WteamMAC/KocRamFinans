@@ -16,6 +16,7 @@ import { FinancialCalendar } from "@/components/dashboard/financial-calendar";
 import { InvestmentProjection } from "@/components/dashboard/investment-projection";
 import { cn } from "@/lib/utils";
 import { getLivePrices, calculatePortfolioMetrics } from "@/lib/price-service";
+import { processAutoPayments } from "@/app/actions/debts";
 
 export default async function DashboardPage() {
   await cookies();
@@ -24,6 +25,12 @@ export default async function DashboardPage() {
 
   if (!userId) {
     redirect("/");
+  }
+
+  // Get internal user id
+  const internalUser = await prisma.user.findUnique({ where: { clerkUserId: userId } });
+  if (internalUser) {
+    await processAutoPayments(internalUser.id);
   }
 
   const user = await prisma.user.findUnique({

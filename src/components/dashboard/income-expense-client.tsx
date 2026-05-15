@@ -87,6 +87,8 @@ export function IncomeExpenseClient({
     description: "",
     debtId: "",
     remainingInstallments: "",
+    interestRate: "",
+    paymentDay: "",
     isRecurring: false,
     dueDate: "",
     date: new Date().toISOString().split('T')[0],
@@ -137,11 +139,13 @@ export function IncomeExpenseClient({
                 type: formData.type || "Diğer",
                 amount: Number(formData.amount),
                 remainingInstallments: formData.remainingInstallments ? Number(formData.remainingInstallments) : undefined,
+                interestRate: formData.interestRate ? Number(formData.interestRate) : undefined,
+                paymentDay: formData.paymentDay ? Number(formData.paymentDay) : undefined,
                 description: formData.description
             });
         }
         setIsModalOpen(false);
-        setFormData({ type: "", amount: "", description: "", debtId: "", remainingInstallments: "", isRecurring: false, dueDate: "", date: new Date().toISOString().split('T')[0] });
+        setFormData({ type: "", amount: "", description: "", debtId: "", remainingInstallments: "", interestRate: "", paymentDay: "", isRecurring: false, dueDate: "", date: new Date().toISOString().split('T')[0] });
         router.refresh();
     } catch (err) {
         console.error(err);
@@ -276,16 +280,43 @@ export function IncomeExpenseClient({
                     )}
 
                     {transactionType === "new_debt" && (
-                        <div className="space-y-3">
-                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Taksit Sayısı (Opsiyonel)</Label>
-                            <Input 
-                                type="number" 
-                                placeholder="Örn: 12" 
-                                value={formData.remainingInstallments}
-                                onChange={(e) => setFormData(p => ({ ...p, remainingInstallments: e.target.value }))}
-                                className="bg-muted border-border/30 h-12 rounded-xl"
-                            />
-                        </div>
+                        <>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-3">
+                                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Taksit Sayısı</Label>
+                                    <Input 
+                                        type="number" 
+                                        placeholder="Örn: 12" 
+                                        value={formData.remainingInstallments}
+                                        onChange={(e) => setFormData(p => ({ ...p, remainingInstallments: e.target.value }))}
+                                        className="bg-muted border-border/30 h-12 rounded-xl"
+                                    />
+                                </div>
+                                <div className="space-y-3">
+                                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Aylık Faiz (%)</Label>
+                                    <Input 
+                                        type="number" 
+                                        step="0.01"
+                                        placeholder="Örn: 3.50" 
+                                        value={formData.interestRate}
+                                        onChange={(e) => setFormData(p => ({ ...p, interestRate: e.target.value }))}
+                                        className="bg-muted border-border/30 h-12 rounded-xl"
+                                    />
+                                </div>
+                            </div>
+                            <div className="space-y-3">
+                                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Ödeme Günü (1-31)</Label>
+                                <Input 
+                                    type="number" 
+                                    min="1"
+                                    max="31"
+                                    placeholder="Her ayın hangi günü ödenecek?" 
+                                    value={formData.paymentDay}
+                                    onChange={(e) => setFormData(p => ({ ...p, paymentDay: e.target.value }))}
+                                    className="bg-muted border-border/30 h-12 rounded-xl"
+                                />
+                            </div>
+                        </>
                     )}
 
                     <div className="space-y-3">
