@@ -1,4 +1,5 @@
 import { auth } from "@clerk/nextjs/server";
+import { prisma } from "@/lib/prisma";
 import { redirect, notFound } from "next/navigation";
 import { getUserProfile, getProfilePosts, getFollowStatus } from "@/app/actions/blog";
 import { ProfileHeader } from "@/components/dashboard/profile-header";
