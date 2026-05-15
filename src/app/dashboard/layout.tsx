@@ -13,6 +13,7 @@ import { useTheme } from "next-themes";
 import { ChatAI } from "@/components/dashboard/chat-ai";
 import { OnboardingTour } from "@/components/dashboard/onboarding-tour";
 import { NotificationBell } from "@/components/dashboard/notification-bell";
+import { MessageBell } from "@/components/dashboard/message-bell";
 
 export default function DashboardLayout({
   children,
@@ -64,6 +65,7 @@ export default function DashboardLayout({
           <span className="text-xl font-heading font-bold text-primary">Koç Ram Finans</span>
         </Link>
         <div className="flex items-center gap-1">
+          <MessageBell className="h-8 w-8" />
           <NotificationBell />
           {mounted && (
             <Button

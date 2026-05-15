@@ -35,6 +35,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/dashboard/notification-bell";
+import { MessageBell } from "@/components/dashboard/message-bell";
 
 const routes = [
   {
@@ -292,6 +293,7 @@ export function Sidebar({ isCollapsed, onToggle, hideToggle, theme, onToggleThem
         </div>
 
         <div className="flex items-center gap-1">
+          <MessageBell className="h-8 w-8" />
           <NotificationBell />
           {theme && onToggleTheme && (
             <Button
