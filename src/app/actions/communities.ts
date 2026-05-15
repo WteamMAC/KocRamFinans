@@ -205,7 +205,7 @@ export async function getCommunityRequests(communityId: string) {
     where: { communityId_userId: { communityId, userId: me.id } }
   });
 
-  if (!myMemberInfo || myMemberInfo.role !== "ADMIN") throw new Error("Yetkiniz yok");
+  if ((!myMemberInfo || myMemberInfo.role !== "ADMIN") && me.role !== "ADMIN") throw new Error("Yetkiniz yok");
 
   const requests = await prisma.communityMember.findMany({
     where: { communityId, status: "PENDING" },
@@ -271,7 +271,9 @@ export async function deleteCommunity(communityId: string) {
   if (!me) throw new Error("User not found");
 
   const community = await prisma.community.findUnique({ where: { id: communityId } });
-  if (!community || community.creatorId !== me.id) throw new Error("Sadece kurucu silebilir");
+  if (!community) throw new Error("Topluluk bulunamadı");
+  
+  if (community.creatorId !== me.id && me.role !== "ADMIN") throw new Error("Yetki yok");
 
   await prisma.community.delete({ where: { id: communityId } });
   revalidatePath("/dashboard/blog");
@@ -287,7 +289,7 @@ export async function removeMember(communityId: string, targetUserId: string) {
     where: { communityId_userId: { communityId, userId: me.id } }
   });
 
-  if (!myMemberInfo || myMemberInfo.role !== "ADMIN") throw new Error("Yetkiniz yok");
+  if ((!myMemberInfo || myMemberInfo.role !== "ADMIN") && me.role !== "ADMIN") throw new Error("Yetkiniz yok");
   if (me.id === targetUserId) throw new Error("Kendinizi çıkaramazsınız");
 
   await prisma.communityMember.delete({
