@@ -16,7 +16,7 @@ import { getUserNotifications, markNotificationAsRead, markAllNotificationsAsRea
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 
-type Notification = {
+type AppNotification = {
   id: string;
   type: string;
   title: string;
@@ -27,16 +27,16 @@ type Notification = {
 };
 
 export function NotificationBell() {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
   const router = useRouter();
 
   const fetchNotifications = async () => {
     try {
-      const data = await getUserNotifications();
+      const data = await getUserNotifications() as AppNotification[];
       setNotifications(data);
-      setUnreadCount(data.filter(n => !n.isRead).length);
+      setUnreadCount(data.filter((n: AppNotification) => !n.isRead).length);
     } catch (e) {
       console.error("Failed to fetch notifications:", e);
     }
@@ -49,7 +49,7 @@ export function NotificationBell() {
     return () => clearInterval(interval);
   }, []);
 
-  const handleNotificationClick = async (notif: Notification) => {
+  const handleNotificationClick = async (notif: AppNotification) => {
     if (!notif.isRead) {
       await markNotificationAsRead(notif.id);
       setUnreadCount(prev => Math.max(0, prev - 1));
@@ -70,15 +70,13 @@ export function NotificationBell() {
 
   return (
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative text-primary rounded-full hover:bg-primary/10 transition-all">
-          <Bell className="h-5 w-5" />
-          {unreadCount > 0 && (
-            <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-[10px] animate-pulse">
-              {unreadCount > 9 ? "9+" : unreadCount}
-            </Badge>
-          )}
-        </Button>
+      <DropdownMenuTrigger className="relative text-primary rounded-full hover:bg-primary/10 transition-all p-2 h-9 w-9 inline-flex items-center justify-center focus:outline-none">
+        <Bell className="h-5 w-5" />
+        {unreadCount > 0 && (
+          <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-[10px] animate-pulse">
+            {unreadCount > 9 ? "9+" : unreadCount}
+          </Badge>
+        )}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-80 p-0 shadow-xl border-border/50">
         <div className="flex items-center justify-between px-4 py-3 border-b border-border/30 bg-muted/30">
