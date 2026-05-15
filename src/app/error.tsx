@@ -3,8 +3,9 @@
 import { useEffect } from 'react';
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Home, RefreshCcw, AlertTriangle } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export default function Error({
   error,
@@ -76,16 +77,16 @@ export default function Error({
               Tekrar Dene
             </Button>
             
-            <Button 
-              asChild
-              variant="outline"
-              className="h-14 px-8 text-lg font-bold rounded-2xl border-2 border-[#F18D02] text-[#F18D02] hover:bg-[#F18D02]/10 transition-all flex items-center gap-3"
+            <Link 
+              href="/"
+              className={cn(
+                buttonVariants({ variant: "outline" }),
+                "h-14 px-8 text-lg font-bold rounded-2xl border-2 border-[#F18D02] text-[#F18D02] hover:bg-[#F18D02]/10 transition-all flex items-center gap-3"
+              )}
             >
-              <Link href="/">
-                <Home className="w-6 h-6" />
-                Ana Sayfaya Dön
-              </Link>
-            </Button>
+              <Home className="w-6 h-6" />
+              Ana Sayfaya Dön
+            </Link>
           </div>
         </motion.div>
       </div>
