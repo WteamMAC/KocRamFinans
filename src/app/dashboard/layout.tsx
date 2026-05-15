@@ -55,7 +55,7 @@ export default function DashboardLayout({
   }, []);
 
   return (
-    <div className="h-full relative flex flex-col md:flex-row bg-background">
+    <div className="h-full relative flex flex-col md:flex-row bg-background overflow-x-hidden w-full max-w-[100vw]">
       {/* Mobile Header */}
       <div className="md:hidden flex items-center justify-between px-4 py-4 bg-card border-b border-border/30 sticky top-0 z-[100] shadow-ambient-low">
         <Link className="flex items-center gap-2" href="/dashboard">
