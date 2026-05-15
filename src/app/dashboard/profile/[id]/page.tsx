@@ -13,6 +13,12 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   const { userId: clerkUserId } = await auth();
   if (!clerkUserId) redirect("/");
 
+  // Mevcut kullanıcının rolünü al
+  const me = await prisma.user.findUnique({
+    where: { clerkUserId },
+    select: { role: true }
+  });
+
   const profile = await getUserProfile(id);
   if (!profile) notFound();
 
@@ -33,7 +39,8 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
           <BlogFeed 
             initialPosts={posts} 
             initialNextCursor={nextCursor} 
-            currentUserId={profile.isMe ? id : ""} // Kendi profilindeyse post atabilsin
+            currentUserId={id} 
+            userRole={me?.role}
             mode="profile"
             profileId={id}
           />

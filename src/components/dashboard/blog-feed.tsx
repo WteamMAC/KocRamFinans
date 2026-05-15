@@ -36,6 +36,8 @@ type Post = {
   id: string; content: string; tags: string[]; createdAt: Date;
   authorId: string; authorName: string; authorImage: string;
   likeCount: number; isLikedByMe: boolean; isMyPost: boolean;
+  isAdmin: boolean;
+  isAnnouncement: boolean;
   comments: Comment[];
   imageUrl?: string | null;
   communityId?: string | null;
@@ -70,10 +72,11 @@ function Avatar({ src, name, id, size = "md" }: { src: string; name: string; id:
 }
 
 // ─── Create Post Box ──────────────────────────────────────────────────
-function CreatePostBox({ currentUserId, communityId, communityName }: { 
+function CreatePostBox({ currentUserId, communityId, communityName, userRole }: { 
   currentUserId: string; 
   communityId?: string;
   communityName?: string;
+  userRole?: string;
 }) {
   const { user } = useUser();
   const router = useRouter();
@@ -82,6 +85,7 @@ function CreatePostBox({ currentUserId, communityId, communityName }: {
   const [isPending, startTransition] = useTransition();
   const [focused, setFocused] = useState(false);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [isAnnouncement, setIsAnnouncement] = useState(false);
 
   const toggleTag = (tag: string) =>
     setSelectedTags((p) => p.includes(tag) ? p.filter((t) => t !== tag) : [...p, tag]);
@@ -108,8 +112,8 @@ function CreatePostBox({ currentUserId, communityId, communityName }: {
     const allTags = Array.from(new Set([...selectedTags, ...extractedTags]));
 
     startTransition(async () => {
-      await createPost(content.trim(), allTags, imageUrl || undefined, communityId);
-      setContent(""); setSelectedTags([]); setFocused(false); setImageUrl(null);
+      await createPost(content.trim(), allTags, imageUrl || undefined, communityId, isAnnouncement);
+      setContent(""); setSelectedTags([]); setFocused(false); setImageUrl(null); setIsAnnouncement(false);
       router.refresh();
     });
   };
@@ -189,7 +193,18 @@ function CreatePostBox({ currentUserId, communityId, communityName }: {
             </label>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={() => { setFocused(false); setContent(""); setSelectedTags([]); setImageUrl(null); }} className="text-muted-foreground hover:text-foreground rounded-full">
+            {userRole === "ADMIN" && (focused || content) && (
+              <button 
+                onClick={() => setIsAnnouncement(!isAnnouncement)}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold transition-all",
+                  isAnnouncement ? "bg-amber-500/20 text-amber-600" : "text-muted-foreground hover:bg-muted"
+                )}
+              >
+                <ShieldAlert className="h-4 w-4" /> Duyuru Olarak Paylaş
+              </button>
+            )}
+            <Button variant="ghost" size="sm" onClick={() => { setFocused(false); setContent(""); setSelectedTags([]); setImageUrl(null); setIsAnnouncement(false); }} className="text-muted-foreground hover:text-foreground rounded-full">
               <X className="h-4 w-4 mr-1" /> Vazgeç
             </Button>
             <Button onClick={handleSubmit} disabled={isPending || (!content.trim() && !imageUrl) || overLimit} className="rounded-full px-5 h-9 text-sm font-bold bg-primary text-primary-foreground hover:bg-primary/90 shadow-ambient-low">
@@ -312,10 +327,18 @@ function PostCard({ post, currentUserId, onTagClick, onCommunityClick }: {
     "#borç": "border-l-rose-500/60", "#tasarruf": "border-l-indigo-500/60", "#bütçe": "border-l-purple-500/60",
   };
   const firstTag = post.tags[0];
-  const accentClass = firstTag ? (accentMap[firstTag] || "border-l-primary/30") : "border-l-border/20";
+  const accentClass = post.isAnnouncement 
+    ? "border-l-amber-500 shadow-amber-500/10 ring-2 ring-amber-500/10"
+    : firstTag ? (accentMap[firstTag] || "border-l-primary/30") : "border-l-border/20";
 
   return (
     <div className={cn("bg-card border-l-4 border border-border/20 rounded-[24px] p-5 shadow-ambient-low hover:shadow-ambient-medium transition-all duration-300 space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500", accentClass)}>
+      {post.isAnnouncement && (
+        <div className="flex items-center gap-2 text-amber-600 bg-amber-500/10 px-3 py-1 rounded-full w-fit mb-2">
+          <ShieldAlert className="h-3.5 w-3.5 animate-pulse" />
+          <span className="text-[10px] font-black uppercase tracking-widest">Resmi Duyuru</span>
+        </div>
+      )}
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
           <Avatar src={post.authorImage} name={post.authorName} id={post.authorId} />
@@ -334,7 +357,11 @@ function PostCard({ post, currentUserId, onTagClick, onCommunityClick }: {
         </div>
         <div className="flex items-center gap-2">
           {!post.isMyPost && <Link href={`/dashboard/profile/${post.authorId}`}><Button variant="ghost" size="sm" className="h-8 rounded-xl text-[11px] font-bold text-primary hover:bg-primary/10">Profili Gör</Button></Link>}
-          {post.isMyPost && <button onClick={handleDelete} disabled={isPending} className="p-2 rounded-xl text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 transition-all duration-200"><Trash2 className="h-4 w-4" /></button>}
+          {(post.isMyPost || post.isAdmin) && (
+            <button onClick={handleDelete} disabled={isPending} className="p-2 rounded-xl text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 transition-all duration-200">
+              <Trash2 className="h-4 w-4" />
+            </button>
+          )}
         </div>
       </div>
       {post.imageUrl && (
@@ -357,7 +384,11 @@ function PostCard({ post, currentUserId, onTagClick, onCommunityClick }: {
 }
 
 // ─── Community Admin Panel ───────────────────────────────────────────
-function CommunityAdminPanel({ communityId, onClose }: { communityId: string, onClose: () => void }) {
+function CommunityAdminPanel({ communityId, onClose, onDeleteSuccess }: { 
+  communityId: string, 
+  onClose: () => void,
+  onDeleteSuccess?: () => void
+}) {
   const router = useRouter();
   const [requests, setRequests] = useState<any[]>([]);
   const [members, setMembers] = useState<any[]>([]);
@@ -402,6 +433,7 @@ function CommunityAdminPanel({ communityId, onClose }: { communityId: string, on
     startTransition(async () => {
       await deleteCommunity(communityId);
       onClose();
+      onDeleteSuccess?.();
       router.refresh();
     });
   };
@@ -489,6 +521,7 @@ export function BlogFeed({
   initialPosts: Post[];
   initialNextCursor: string | null;
   currentUserId: string;
+  userRole?: string;
   mode?: "feed" | "profile";
   profileId?: string;
 }) {
@@ -604,7 +637,15 @@ export function BlogFeed({
       )}
 
       {isAdminPanelOpen && selectedCommunity && (
-        <CommunityAdminPanel communityId={selectedCommunity.id} onClose={() => setIsAdminPanelOpen(false)} />
+        <CommunityAdminPanel 
+          communityId={selectedCommunity.id} 
+          onClose={() => setIsAdminPanelOpen(false)} 
+          onDeleteSuccess={() => {
+            setSelectedCommunity(null);
+            setCommunityDetails(null);
+            switchFeed("my-communities");
+          }}
+        />
       )}
 
       {feedType === "my-communities" && !selectedCommunity && (
@@ -624,7 +665,12 @@ export function BlogFeed({
             <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder={selectedCommunity ? `${selectedCommunity.name} içinde ara...` : "Gönderi veya kullanıcı ara..."} className="w-full pl-9 pr-4 py-2.5 bg-card border border-border/20 rounded-xl text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all" />
           </div>
 
-          <CreatePostBox currentUserId={currentUserId} communityId={selectedCommunity?.id} communityName={selectedCommunity?.name} />
+          <CreatePostBox 
+            currentUserId={currentUserId} 
+            communityId={selectedCommunity?.id} 
+            communityName={selectedCommunity?.name} 
+            userRole={userRole}
+          />
           
           {availableTags.length > 0 && <TagFilterBar availableTags={availableTags} activeTag={activeTag} onSelect={setActiveTag} />}
 

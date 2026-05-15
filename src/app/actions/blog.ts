@@ -8,11 +8,20 @@ async function getInternalUser(clerkUserId: string) {
   return prisma.user.findUnique({ where: { clerkUserId } });
 }
 
-export async function createPost(content: string, tags: string[], imageUrl?: string, communityId?: string) {
+export async function createPost(
+  content: string, 
+  tags: string[], 
+  imageUrl?: string, 
+  communityId?: string,
+  isAnnouncement: boolean = false
+) {
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthorized");
   const user = await getInternalUser(userId);
   if (!user) throw new Error("User not found");
+
+  // Duyuru yetkisi sadece adminlerde
+  const announcementFlag = isAnnouncement && user.role === "ADMIN";
 
   await prisma.blogPost.create({
     data: { 
@@ -20,7 +29,8 @@ export async function createPost(content: string, tags: string[], imageUrl?: str
       content, 
       tags, 
       imageUrl,
-      communityId 
+      communityId,
+      isAnnouncement: announcementFlag
     },
   });
 
@@ -35,7 +45,9 @@ export async function deletePost(postId: string) {
   if (!user) throw new Error("User not found");
 
   const post = await prisma.blogPost.findUnique({ where: { id: postId } });
-  if (!post || post.authorId !== user.id) throw new Error("Yetki yok");
+  if (!post) throw new Error("Post bulunamadı");
+  
+  if (post.authorId !== user.id && user.role !== "ADMIN") throw new Error("Yetki yok");
 
   await prisma.blogPost.delete({ where: { id: postId } });
   revalidatePath("/dashboard/blog");
@@ -78,7 +90,9 @@ export async function deleteComment(commentId: string) {
   if (!user) throw new Error("User not found");
 
   const comment = await prisma.blogComment.findUnique({ where: { id: commentId } });
-  if (!comment || comment.authorId !== user.id) throw new Error("Yetki yok");
+  if (!comment) throw new Error("Yorum bulunamadı");
+  
+  if (comment.authorId !== user.id && user.role !== "ADMIN") throw new Error("Yetki yok");
 
   await prisma.blogComment.delete({ where: { id: commentId } });
   revalidatePath("/dashboard/blog");
@@ -126,10 +140,15 @@ export async function getPosts(
     };
   }
 
+  const me = currentInternalUserId ? await prisma.user.findUnique({ where: { id: currentInternalUserId }, select: { role: true } }) : null;
+
   try {
     const posts = await prisma.blogPost.findMany({
       where: whereClause,
-      orderBy: { createdAt: "desc" },
+      orderBy: [
+        { isAnnouncement: "desc" },
+        { createdAt: "desc" }
+      ],
       take: PAGE_SIZE + 1,
       ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
       include: {
@@ -168,6 +187,7 @@ export async function getPosts(
         content: post.content,
         tags: post.tags,
         imageUrl: post.imageUrl,
+        isAnnouncement: post.isAnnouncement,
         createdAt: post.createdAt,
         authorId: post.author.id,
         communityId: post.community?.id,
@@ -182,6 +202,7 @@ export async function getPosts(
           ? post.likes.some((l: any) => l.userId === currentInternalUserId)
           : false,
         isMyPost: currentInternalUserId ? post.author.id === currentInternalUserId : false,
+        isAdmin: me?.role === "ADMIN",
         comments: post.comments.map((comment: any) => {
           const commentUser = userMap.get(comment.author.clerkUserId);
           return {
@@ -292,7 +313,10 @@ export async function getProfilePosts(targetInternalUserId: string, cursor?: str
   try {
     const posts = await prisma.blogPost.findMany({
       where: { authorId: targetInternalUserId },
-      orderBy: { createdAt: "desc" },
+      orderBy: [
+        { isAnnouncement: "desc" },
+        { createdAt: "desc" }
+      ],
       take: PAGE_SIZE + 1,
       ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
       include: {
@@ -333,6 +357,7 @@ export async function getProfilePosts(targetInternalUserId: string, cursor?: str
         content: post.content,
         tags: post.tags,
         imageUrl: post.imageUrl,
+        isAnnouncement: post.isAnnouncement,
         createdAt: post.createdAt,
         authorId: post.author.id,
         communityId: post.community?.id,
@@ -345,6 +370,7 @@ export async function getProfilePosts(targetInternalUserId: string, cursor?: str
         likeCount: post.likes.length,
         isLikedByMe: me ? post.likes.some((l: any) => l.userId === me.id) : false,
         isMyPost: me ? post.author.id === me.id : false,
+        isAdmin: me ? me.role === "ADMIN" : false,
         comments: post.comments.map((comment: any) => {
           const commentUser = userMap.get(comment.author.clerkUserId);
           return {
