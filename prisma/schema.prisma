@@ -11,6 +11,7 @@ model User {
   clerkUserId String   @unique
   email       String?  @unique
   role        String   @default("USER")
+  isBanned    Boolean  @default(false)
   familyCount Int      @default(1)
   
   maritalStatus String?

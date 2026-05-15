@@ -19,6 +19,7 @@ export async function createPost(
   if (!userId) throw new Error("Unauthorized");
   const user = await getInternalUser(userId);
   if (!user) throw new Error("User not found");
+  if (user.isBanned) throw new Error("Hesabınız askıya alındığı için paylaşım yapamazsınız.");
 
   // Duyuru yetkisi sadece adminlerde
   const announcementFlag = isAnnouncement && user.role === "ADMIN";
@@ -304,6 +305,7 @@ export async function getUserProfile(targetInternalUserId: string) {
     followingCount: user._count.following,
     postCount: user._count.blogPosts,
     isMe: (await auth()).userId === user.clerkUserId,
+    isBanned: user.isBanned,
   };
 }
 
@@ -397,5 +399,24 @@ export async function getProfilePosts(targetInternalUserId: string, cursor?: str
     console.error("getProfilePosts error (Check if DB is pushed):", error);
     return { posts: [], nextCursor: null };
   }
+}
+
+export async function toggleUserBan(targetInternalUserId: string) {
+  const { userId: clerkUserId } = await auth();
+  if (!clerkUserId) throw new Error("Unauthorized");
+  const me = await getInternalUser(clerkUserId);
+  if (!me || me.role !== "ADMIN") throw new Error("Bu işlem için yetkiniz yok.");
+
+  const targetUser = await prisma.user.findUnique({ where: { id: targetInternalUserId } });
+  if (!targetUser) throw new Error("Kullanıcı bulunamadı.");
+  if (targetUser.role === "ADMIN") throw new Error("Başka bir admini banlayamazsınız.");
+
+  await prisma.user.update({
+    where: { id: targetInternalUserId },
+    data: { isBanned: !targetUser.isBanned }
+  });
+
+  revalidatePath(`/dashboard/profile/${targetInternalUserId}`);
+  revalidatePath("/dashboard/blog");
 }
 

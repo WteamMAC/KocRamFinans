@@ -10,7 +10,7 @@ export default async function BlogPage() {
 
   const user = await prisma.user.findUnique({
     where: { clerkUserId: userId },
-    select: { id: true, role: true },
+    select: { id: true, role: true, isBanned: true },
   });
 
   if (!user) redirect("/onboarding");
@@ -58,6 +58,7 @@ export default async function BlogPage() {
           initialNextCursor={nextCursor} 
           currentUserId={user.id} 
           userRole={user.role}
+          isBanned={user.isBanned}
         />
       </div>
     </div>

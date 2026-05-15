@@ -516,6 +516,7 @@ export function BlogFeed({
   initialNextCursor,
   currentUserId,
   userRole,
+  isBanned,
   mode = "feed",
   profileId,
 }: {
@@ -523,6 +524,7 @@ export function BlogFeed({
   initialNextCursor: string | null;
   currentUserId: string;
   userRole?: string;
+  isBanned?: boolean;
   mode?: "feed" | "profile";
   profileId?: string;
 }) {
@@ -666,12 +668,20 @@ export function BlogFeed({
             <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder={selectedCommunity ? `${selectedCommunity.name} içinde ara...` : "Gönderi veya kullanıcı ara..."} className="w-full pl-9 pr-4 py-2.5 bg-card border border-border/20 rounded-xl text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all" />
           </div>
 
-          <CreatePostBox 
-            currentUserId={currentUserId} 
-            communityId={selectedCommunity?.id} 
-            communityName={selectedCommunity?.name} 
-            userRole={userRole}
-          />
+          {isBanned ? (
+            <div className="bg-rose-500/10 border border-rose-500/20 rounded-[24px] p-6 text-center animate-in fade-in duration-500">
+              <Ban className="h-8 w-8 text-rose-500 mx-auto mb-2" />
+              <p className="text-rose-600 font-bold text-sm">Hesabınız kuralları ihlal ettiği için askıya alınmıştır.</p>
+              <p className="text-rose-500/60 text-[11px] mt-1">Paylaşım yapma yetkiniz kısıtlanmıştır.</p>
+            </div>
+          ) : (
+            <CreatePostBox 
+              currentUserId={currentUserId} 
+              communityId={selectedCommunity?.id} 
+              communityName={selectedCommunity?.name} 
+              userRole={userRole}
+            />
+          )}
           
           {availableTags.length > 0 && <TagFilterBar availableTags={availableTags} activeTag={activeTag} onSelect={setActiveTag} />}
 

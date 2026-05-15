@@ -17,7 +17,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   // Mevcut kullanıcının rolünü al
   const me = await prisma.user.findUnique({
     where: { clerkUserId },
-    select: { role: true }
+    select: { role: true, isBanned: true }
   });
 
   const profile = await getUserProfile(id);
@@ -29,7 +29,11 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   return (
     <div className="flex-1 p-6 pt-10 bg-background min-h-screen">
       <div className="max-w-2xl mx-auto space-y-6">
-        <ProfileHeader profile={profile} initialIsFollowing={isFollowing} />
+        <ProfileHeader 
+          profile={profile} 
+          initialIsFollowing={isFollowing} 
+          currentUserRole={me?.role}
+        />
         
         <div className="space-y-4">
           <div className="flex items-center gap-2 px-1">
@@ -42,6 +46,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
             initialNextCursor={nextCursor} 
             currentUserId={id} 
             userRole={me?.role}
+            isBanned={me?.isBanned}
             mode="profile"
             profileId={id}
           />

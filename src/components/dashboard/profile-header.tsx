@@ -2,9 +2,9 @@
 
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
-import { toggleFollow } from "@/app/actions/blog";
+import { toggleFollow, toggleUserBan } from "@/app/actions/blog";
 import { cn } from "@/lib/utils";
-import { Users, BookOpen, UserPlus, UserMinus } from "lucide-react";
+import { Users, BookOpen, UserPlus, UserMinus, ShieldAlert, Ban } from "lucide-react";
 import Image from "next/image";
 
 interface ProfileHeaderProps {
@@ -16,8 +16,10 @@ interface ProfileHeaderProps {
     followingCount: number;
     postCount: number;
     isMe: boolean;
+    isBanned: boolean;
   };
   initialIsFollowing: boolean;
+  currentUserRole?: string;
 }
 
 export function ProfileHeader({ profile, initialIsFollowing }: ProfileHeaderProps) {
@@ -33,6 +35,17 @@ export function ProfileHeader({ profile, initialIsFollowing }: ProfileHeaderProp
         setFollowerCount(prev => isFollowing ? prev - 1 : prev + 1);
       } catch (error) {
         console.error("Follow error:", error);
+      }
+    });
+  };
+
+  const handleBan = () => {
+    if (!confirm(`Kullanıcıyı ${profile.isBanned ? 'banını kaldırmak' : 'banlamak'} istediğinize emin misiniz?`)) return;
+    startTransition(async () => {
+      try {
+        await toggleUserBan(profile.id);
+      } catch (error) {
+        alert(error instanceof Error ? error.message : "İşlem başarısız");
       }
     });
   };
@@ -63,41 +76,62 @@ export function ProfileHeader({ profile, initialIsFollowing }: ProfileHeaderProp
               <h1 className="text-3xl font-heading font-bold text-foreground mb-1">
                 {profile.name}
               </h1>
-              <p className="text-sm text-muted-foreground opacity-70">
-                Topluluk Üyesi
+              <p className="text-sm text-muted-foreground opacity-70 flex items-center gap-2">
+                {profile.isBanned ? (
+                  <span className="text-rose-500 font-bold flex items-center gap-1">
+                    <Ban className="h-3.5 w-3.5" /> Hesabı Askıya Alındı
+                  </span>
+                ) : "Topluluk Üyesi"}
               </p>
             </div>
           </div>
 
-          {/* Follow Button */}
-          {!profile.isMe && (
-            <Button
-              onClick={handleFollow}
-              disabled={isPending}
-              variant={isFollowing ? "outline" : "default"}
-              className={cn(
-                "rounded-2xl px-8 h-12 font-bold transition-all active:scale-95",
-                isFollowing ? "border-border/30 hover:bg-rose-500/10 hover:text-rose-500 hover:border-rose-500/50" : "bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20"
-              )}
-            >
-              {isPending ? (
-                <span className="flex items-center gap-2">
-                  <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                  İşleniyor...
-                </span>
-              ) : isFollowing ? (
-                <>
-                  <UserMinus className="w-4 h-4 mr-2" />
-                  Takibi Bırak
-                </>
-              ) : (
-                <>
-                  <UserPlus className="w-4 h-4 mr-2" />
-                  Takip Et
-                </>
-              )}
-            </Button>
-          )}
+          {/* Action Buttons */}
+          <div className="flex flex-wrap gap-3">
+            {currentUserRole === "ADMIN" && !profile.isMe && (
+              <Button
+                onClick={handleBan}
+                disabled={isPending}
+                variant="ghost"
+                className={cn(
+                  "rounded-2xl px-5 h-12 font-bold transition-all border border-border/20",
+                  profile.isBanned ? "text-emerald-500 hover:bg-emerald-500/10" : "text-rose-500 hover:bg-rose-500/10"
+                )}
+              >
+                {profile.isBanned ? <ShieldAlert className="mr-2 h-4 w-4" /> : <Ban className="mr-2 h-4 w-4" />}
+                {profile.isBanned ? "Banı Kaldır" : "Kullanıcıyı Banla"}
+              </Button>
+            )}
+
+            {!profile.isMe && (
+              <Button
+                onClick={handleFollow}
+                disabled={isPending}
+                variant={isFollowing ? "outline" : "default"}
+                className={cn(
+                  "rounded-2xl px-8 h-12 font-bold transition-all active:scale-95",
+                  isFollowing ? "border-border/30 hover:bg-rose-500/10 hover:text-rose-500 hover:border-rose-500/50" : "bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20"
+                )}
+              >
+                {isPending ? (
+                  <span className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    İşleniyor...
+                  </span>
+                ) : isFollowing ? (
+                  <>
+                    <UserMinus className="w-4 h-4 mr-2" />
+                    Takibi Bırak
+                  </>
+                ) : (
+                  <>
+                    <UserPlus className="w-4 h-4 mr-2" />
+                    Takip Et
+                  </>
+                )}
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Stats */}
