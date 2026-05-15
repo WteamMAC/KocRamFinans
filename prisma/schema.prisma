@@ -133,8 +133,12 @@ model Debt {
   userId                String
   user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   type                  String   // "CreditCard", "BankLoan", "Personal", "Other"
-  amount                Float
-  remainingInstallments Int?     // Number of months left
+  amount                Float    // Kalan Toplam Borç (Faizli)
+  principalAmount       Float?   // Ana Para
+  interestRate          Float?   // Aylık Faiz Oranı (%)
+  installmentAmount     Float?   // Aylık Taksit Tutarı
+  remainingInstallments Int?     // Kalan Taksit Sayısı
+  paymentDay            Int?     // Her ayın hangi günü ödenecek (1-31)
   description           String?
   
   createdAt             DateTime @default(now())

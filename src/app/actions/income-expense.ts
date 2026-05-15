@@ -13,6 +13,7 @@ export async function addIncome(data: { type: string; amount: number; isRecurrin
   });
 
   if (!user) throw new Error("User not found");
+  if (data.amount <= 0) throw new Error("Tutar 0'dan büyük olmalıdır.");
 
   await prisma.income.create({
     data: {
@@ -39,6 +40,7 @@ export async function addExpense(data: { type: string; amount: number; isRecurri
   });
 
   if (!user) throw new Error("User not found");
+  if (data.amount <= 0) throw new Error("Tutar 0'dan büyük olmalıdır.");
 
   await prisma.expense.create({
     data: {
