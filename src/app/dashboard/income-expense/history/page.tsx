@@ -47,7 +47,6 @@ export default async function IncomeExpenseHistoryPage() {
   const projectedBalance = totalIncome - totalExpense;
 
   // Build monthly data for comparison chart (last 6 months)
-  const now = new Date();
   const monthlyData: { month: string; income: number; expense: number }[] = [];
 
   for (let i = 5; i >= 0; i--) {
