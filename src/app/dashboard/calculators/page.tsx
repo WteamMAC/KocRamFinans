@@ -5,7 +5,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Calculator, TrendingUp, PiggyBank, Coins, ArrowRight, Sparkles, ZoomOut } from "lucide-react";
+import { Calculator, TrendingUp, PiggyBank, Coins, ArrowRight, Sparkles, ZoomOut, Zap, Percent, Info, TrendingDown } from "lucide-react";
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid, ReferenceArea } from "recharts";
 import { cn } from "@/lib/utils";
 
@@ -100,6 +100,41 @@ export default function CalculatorsPage() {
 
   const besDataToShow = besZoomData || besRes.chartData;
 
+  // --- Kaldıraç Hesaplama State ---
+  const [leverageData, setLeverageData] = useState({
+    capital: 1000,
+    leverage: 10,
+    entryPrice: 50000,
+    side: "long" as "long" | "short",
+    exitPrice: 55000,
+  });
+
+  const calculateLeverage = () => {
+    const { capital, leverage, entryPrice, side, exitPrice } = leverageData;
+    const positionSize = capital * leverage;
+    const maintenanceMarginRate = 0.005; // %0.5 likidasyon payı
+
+    let liquidationPrice = 0;
+    if (side === "long") {
+      liquidationPrice = entryPrice * (1 - (1 / leverage) + maintenanceMarginRate);
+    } else {
+      liquidationPrice = entryPrice * (1 + (1 / leverage) - maintenanceMarginRate);
+    }
+
+    let pnl = 0;
+    if (side === "long") {
+      pnl = (exitPrice - entryPrice) * (positionSize / entryPrice);
+    } else {
+      pnl = (entryPrice - exitPrice) * (positionSize / entryPrice);
+    }
+
+    const roi = (pnl / capital) * 100;
+
+    return { positionSize, liquidationPrice, pnl, roi };
+  };
+
+  const levRes = calculateLeverage();
+
   return (
     <div className="flex-1 space-y-8 p-8 pt-10 bg-background min-h-screen pb-20">
       <div className="flex items-center gap-4">
@@ -140,6 +175,15 @@ export default function CalculatorsPage() {
             )}
           >
             <Coins className="h-4 w-4 mr-2" /> Altın Birikimi
+          </button>
+          <button 
+            onClick={() => setActiveTab("leverage")}
+            className={cn(
+              "rounded-xl px-6 py-3 text-sm font-bold transition-all flex items-center",
+              activeTab === "leverage" ? "bg-card text-primary shadow-ambient-medium" : "text-muted-foreground hover:bg-muted"
+            )}
+          >
+            <Zap className="h-4 w-4 mr-2" /> Kaldıraç (Futures)
           </button>
         </div>
 
@@ -384,6 +428,151 @@ export default function CalculatorsPage() {
               <h2 className="text-2xl font-bold text-primary">Altın Birikim Hesaplayıcı Yakında!</h2>
               <p className="text-muted-foreground">Şu an Mevduat ve BES hesaplayıcılarını kullanabilirsiniz.</p>
            </div>
+        )}
+
+        {activeTab === "leverage" && (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <Card className="lg:col-span-1 border-border/30 shadow-ambient-medium rounded-[32px] overflow-hidden bg-card h-fit">
+                <CardHeader className="bg-orange-500/5 border-b border-border/10">
+                  <CardTitle className="text-lg">Pozisyon Parametreleri</CardTitle>
+                </CardHeader>
+                <CardContent className="p-8 space-y-8">
+                  <div className="flex p-1 bg-muted rounded-xl gap-1">
+                    <button
+                      onClick={() => setLeverageData(p => ({...p, side: "long"}))}
+                      className={cn(
+                        "flex-1 py-2 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2",
+                        leverageData.side === "long" ? "bg-emerald-500 text-white shadow-lg" : "text-muted-foreground hover:bg-muted-foreground/10"
+                      )}
+                    >
+                      <TrendingUp className="h-4 w-4" /> LONG
+                    </button>
+                    <button
+                      onClick={() => setLeverageData(p => ({...p, side: "short"}))}
+                      className={cn(
+                        "flex-1 py-2 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2",
+                        leverageData.side === "short" ? "bg-red-500 text-white shadow-lg" : "text-muted-foreground hover:bg-muted-foreground/10"
+                      )}
+                    >
+                      <TrendingDown className="h-4 w-4" /> SHORT
+                    </button>
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Marjin / Sermaye ($)</Label>
+                    <Input 
+                      type="number" 
+                      value={leverageData.capital || ""} 
+                      onChange={e => setLeverageData(p => ({...p, capital: Number(e.target.value)}))}
+                      className="h-14 rounded-2xl bg-muted/30 border border-border/50 font-bold text-2xl text-primary transition-all"
+                    />
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Kaldıraç (x)</Label>
+                      <span className="text-lg font-bold text-primary">{leverageData.leverage}x</span>
+                    </div>
+                    <input 
+                      type="range"
+                      value={leverageData.leverage}
+                      min={1}
+                      max={125}
+                      step={1}
+                      onChange={(e) => setLeverageData(p => ({...p, leverage: Number(e.target.value)}))}
+                      className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
+                    />
+                    <div className="flex justify-between text-[10px] font-bold text-muted-foreground">
+                      <span>1x</span>
+                      <span>25x</span>
+                      <span>50x</span>
+                      <span>75x</span>
+                      <span>100x</span>
+                      <span>125x</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Giriş Fiyatı ($)</Label>
+                    <Input 
+                      type="number" 
+                      value={leverageData.entryPrice || ""} 
+                      onChange={e => setLeverageData(p => ({...p, entryPrice: Number(e.target.value)}))}
+                      className="h-14 rounded-2xl bg-muted/30 border border-border/50 font-bold text-xl text-primary transition-all"
+                    />
+                  </div>
+
+                  <div className="space-y-3 border-t border-border/10 pt-6">
+                    <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Hedef/Tahmini Fiyat ($)</Label>
+                    <Input 
+                      type="number" 
+                      value={leverageData.exitPrice || ""} 
+                      onChange={e => setLeverageData(p => ({...p, exitPrice: Number(e.target.value)}))}
+                      className="h-14 rounded-2xl bg-muted/30 border border-border/50 font-bold text-xl text-primary transition-all"
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <div className="lg:col-span-2 space-y-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Card className={cn(
+                    "p-8 rounded-[32px] shadow-ambient-high relative overflow-hidden text-white",
+                    leverageData.side === "long" ? "bg-emerald-600" : "bg-red-600"
+                  )}>
+                     <div className="absolute top-0 right-0 p-8 bg-white/10 rounded-full -mr-10 -mt-10" />
+                     <h3 className="text-xs font-bold uppercase tracking-widest opacity-70 mb-2">Likidasyon Fiyatı</h3>
+                     <div className="text-4xl font-heading font-bold">${levRes.liquidationPrice.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                     <p className="text-[10px] mt-2 opacity-60 flex items-center gap-1 uppercase tracking-tighter">
+                       <Info className="h-3 w-3" /> Fiyat bu seviyeye gelirse pozisyonunuz kapanır.
+                     </p>
+                  </Card>
+                  <Card className="bg-card border-border/30 p-8 rounded-[32px] shadow-ambient-medium">
+                     <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2">Pozisyon Büyüklüğü</h3>
+                     <div className="text-4xl font-heading font-bold text-primary">${levRes.positionSize.toLocaleString("en-US")}</div>
+                     <p className="text-xs font-medium text-muted-foreground mt-2">Sermaye: ${leverageData.capital.toLocaleString("en-US")} x {leverageData.leverage}x</p>
+                  </Card>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Card className="bg-card border-border/30 p-8 rounded-[32px] shadow-ambient-medium">
+                     <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2">Tahmini Kar/Zarar (PNL)</h3>
+                     <div className={cn(
+                       "text-4xl font-heading font-bold",
+                       levRes.pnl >= 0 ? "text-emerald-500" : "text-red-500"
+                     )}>
+                       {levRes.pnl >= 0 ? "+" : ""}{levRes.pnl.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} $
+                     </div>
+                  </Card>
+                  <Card className="bg-card border-border/30 p-8 rounded-[32px] shadow-ambient-medium">
+                     <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2">ROI (%)</h3>
+                     <div className={cn(
+                       "text-4xl font-heading font-bold",
+                       levRes.roi >= 0 ? "text-emerald-500" : "text-red-500"
+                     )}>
+                       {levRes.roi >= 0 ? "+" : ""}{levRes.roi.toFixed(2)}%
+                     </div>
+                  </Card>
+                </div>
+
+                <Card className="p-8 border-border/30 shadow-ambient-medium rounded-[32px] bg-card overflow-hidden">
+                  <div className="flex items-start gap-4">
+                    <div className="p-3 bg-blue-500/10 text-blue-500 rounded-2xl">
+                      <Percent className="h-6 w-6" />
+                    </div>
+                    <div className="space-y-2">
+                      <h4 className="text-lg font-bold">Risk Yönetimi Hatırlatması</h4>
+                      <p className="text-muted-foreground text-sm leading-relaxed">
+                        Kaldıraçlı işlemler yüksek risk içerir. Likidasyon fiyatı, giriş fiyatınızdan ne kadar uzaksa riskiniz o kadar düşüktür. 
+                        Her zaman Stop-Loss kullanmayı ve kaybetmeyi göze alabileceğiniz tutarlarla işlem yapmayı unutmayın.
+                      </p>
+                    </div>
+                  </div>
+                </Card>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>
