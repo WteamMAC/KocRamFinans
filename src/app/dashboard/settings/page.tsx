@@ -13,87 +13,24 @@ export default async function SettingsPage() {
 
   const user = await prisma.user.findUnique({
     where: { clerkUserId: userId as string },
-    include: {
-      incomes: true,
-      expenses: true,
-      debts: true,
-      investments: true,
-      children: true,
-      fixedAssets: true,
-    } as any,
-  }) as any;
+  });
 
   if (!user) {
     redirect("/onboarding");
     return null;
   }
 
-  // Prisma verisini OnboardingForm'un beklediği formata dönüştür
-  const initialData = {
-    familyCount: user.familyCount,
-    maritalStatus: user.maritalStatus || "Bekar",
-    marriageDate: user.marriageDate ? user.marriageDate.toISOString().split("T")[0] : undefined,
-    hasChildren: user.hasChildren,
-    children: user.children.map((c: any) => ({ birthDate: c.birthDate.toISOString().split("T")[0] })),
-    incomes: user.incomes
-      .filter((i: any) => i.type !== "Yatırım Satışı" && i.type !== "Yatırım Çekimi")
-      .map((i: any) => ({ type: i.type, amount: i.amount, description: i.description || undefined })),
-    expenses: user.expenses
-      .filter((e: any) => e.isRecurring)
-      .map((e: any) => ({ 
-        type: e.type, 
-        amount: e.amount, 
-        dueDate: e.dueDate || undefined, 
-        isRecurring: e.isRecurring,
-        description: e.description || undefined 
-      })),
-    debts: user.debts.map((d: any) => ({ 
-      type: d.type, 
-      amount: d.amount, 
-      remainingInstallments: d.remainingInstallments || undefined,
-      description: d.description || undefined 
-    })),
-    investments: user.investments
-      .filter((inv: any) => inv.status === "OPEN")
-      .map((inv: any) => {
-        let pPrice = inv.purchasePrice || 0;
-        let desc = inv.description || undefined;
-        if (inv.type === "BES" || inv.type === "FAIZ") {
-          try {
-            const meta = JSON.parse(inv.description || "{}");
-            pPrice = meta.rate || 0;
-            desc = meta.originalDescription || undefined;
-          } catch(e) {}
-        }
-        return { 
-          type: inv.type, 
-          symbol: inv.symbol || "",
-          quantity: inv.quantity,
-          purchasePrice: pPrice,
-          currentValuation: inv.currentValuation || undefined,
-          description: desc 
-        }
-      }),
-    fixedAssets: user.fixedAssets.map((asset: any) => ({
-      name: asset.name,
-      type: asset.type,
-      value: asset.value
-    })),
-  };
-
   return (
-    <div className="p-8 pt-6 min-h-screen bg-background">
-      <div className="max-w-4xl mx-auto space-y-6">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight text-primary">
-            Bilgileri Düzenle
-          </h2>
-          <p className="text-muted-foreground mt-1">
-            Finansal verilerinizi güncelleyerek daha doğru analizler alabilirsiniz.
-          </p>
-        </div>
-        <OnboardingForm initialData={initialData} isSettings={true} />
+    <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background py-12">
+      <div className="max-w-2xl mx-auto px-4 mb-8">
+        <h2 className="text-3xl font-bold tracking-tight text-primary font-heading">
+          Profil Bilgilerini Güncelle
+        </h2>
+        <p className="text-muted-foreground mt-1">
+          Tercihlerini ve ilgi alanlarını istediğin zaman değiştirebilirsin.
+        </p>
       </div>
+      <OnboardingForm />
     </div>
   );
 }

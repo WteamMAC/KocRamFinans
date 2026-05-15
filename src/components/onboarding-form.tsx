@@ -1,736 +1,491 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, useFieldArray, Controller } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import * as z from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { completeOnboarding } from "@/app/actions/onboarding";
+import { cn } from "@/lib/utils";
+import { Check, ChevronRight, ChevronLeft, User, Globe, Hash, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { completeOnboarding } from "@/app/actions/onboarding";
-import { searchSymbolsAction } from "@/app/actions/market";
-import { 
-  Plus, 
-  Trash2, 
-  Users, 
-  ChevronRight, 
-  ChevronLeft, 
-  Check,
-  Search,
-  ArrowUpRight,
-  AlertCircle,
-  Baby,
-  Calendar
-} from "lucide-react";
-import { cn } from "@/lib/utils";
 
-const onboardingSchema = z.object({
-  familyCount: z.coerce.number().min(1, "En az 1 kişi olmalıdır."),
-  maritalStatus: z.string().min(1, "Medeni durum seçiniz"),
-  marriageDate: z.string().optional(),
-  hasChildren: z.boolean().default(false),
-  children: z.array(z.object({
-    birthDate: z.string().min(1, "Doğum tarihi giriniz"),
-  })),
-  incomes: z.array(z.object({
-    type: z.string().min(1, "Tür seçiniz"),
-    amount: z.coerce.number().min(0, "Miktar giriniz"),
-    description: z.string().optional(),
-  })),
-  expenses: z.array(z.object({
-    type: z.string().min(1, "Gider türü/adı giriniz"),
-    amount: z.coerce.number().min(0, "Miktar giriniz"),
-    dueDate: z.coerce.number().min(1, "1-31 arası gün giriniz").max(31, "1-31 arası gün giriniz").optional(),
-    isRecurring: z.boolean().default(true),
-    description: z.string().optional(),
-  })),
-  debts: z.array(z.object({
-    type: z.string().min(1, "Borç türü/adı giriniz"),
-    amount: z.coerce.number().min(0, "Borç tutarı giriniz"),
-    remainingInstallments: z.coerce.number().optional(),
-    description: z.string().optional(),
-  })),
-    investments: z.array(z.object({
-      type: z.string().min(1, "Tür seçiniz"),
-      symbol: z.string().min(1, "Varlık sembolü seçiniz"),
-      quantity: z.coerce.number().min(0, "Miktar giriniz"),
-      purchasePrice: z.coerce.number().min(0, "Alış fiyatı giriniz"),
-      currentValuation: z.coerce.number().optional(),
-      description: z.string().optional(),
-    })),
-    fixedAssets: z.array(z.object({
-      name: z.string().min(1, "Varlık adı giriniz"),
-      type: z.string().min(1, "Tür seçiniz"),
-      value: z.coerce.number().min(0, "Değer giriniz"),
-    })),
-  });
+// ─── Schema ────────────────────────────────────────────────────────────────────
+const schema = z.object({
+  firstName:  z.string().min(2, "En az 2 karakter giriniz"),
+  lastName:   z.string().min(2, "En az 2 karakter giriniz"),
+  birthDate:  z.string().min(1, "Doğum tarihi seçiniz"),
+  gender:     z.enum(["male", "female", "other", "prefer_not"], { error: "Cinsiyet seçiniz" }),
+  currency:   z.string().min(1, "Para birimi seçiniz"),
+  country:    z.string().min(1, "Ülke seçiniz"),
+  interests:  z.array(z.string()).min(1, "En az 1 ilgi alanı seçiniz"),
+});
 
-type OnboardingValues = z.infer<typeof onboardingSchema>;
+type FormValues = z.infer<typeof schema>;
 
-export function OnboardingForm({ initialData, isSettings = false }: { initialData?: OnboardingValues, isSettings?: boolean }) {
-  const [step, setStep] = useState(1);
+// ─── Data ──────────────────────────────────────────────────────────────────────
+const CURRENCIES = [
+  { code: "TRY", label: "Türk Lirası", symbol: "₺", flag: "🇹🇷" },
+  { code: "USD", label: "Amerikan Doları", symbol: "$", flag: "🇺🇸" },
+  { code: "EUR", label: "Euro", symbol: "€", flag: "🇪🇺" },
+  { code: "GBP", label: "İngiliz Sterlini", symbol: "£", flag: "🇬🇧" },
+  { code: "CHF", label: "İsviçre Frangı", symbol: "₣", flag: "🇨🇭" },
+  { code: "JPY", label: "Japon Yeni", symbol: "¥", flag: "🇯🇵" },
+  { code: "AED", label: "BAE Dirhemi", symbol: "د.إ", flag: "🇦🇪" },
+  { code: "SAR", label: "Suudi Riyali", symbol: "﷼", flag: "🇸🇦" },
+  { code: "RUB", label: "Rus Rublesi", symbol: "₽", flag: "🇷🇺" },
+  { code: "CAD", label: "Kanada Doları", symbol: "CA$", flag: "🇨🇦" },
+];
+
+const COUNTRIES = [
+  { code: "TR", label: "Türkiye", flag: "🇹🇷" },
+  { code: "US", label: "Amerika Birleşik Devletleri", flag: "🇺🇸" },
+  { code: "DE", label: "Almanya", flag: "🇩🇪" },
+  { code: "GB", label: "Birleşik Krallık", flag: "🇬🇧" },
+  { code: "FR", label: "Fransa", flag: "🇫🇷" },
+  { code: "NL", label: "Hollanda", flag: "🇳🇱" },
+  { code: "CH", label: "İsviçre", flag: "🇨🇭" },
+  { code: "AE", label: "Birleşik Arap Emirlikleri", flag: "🇦🇪" },
+  { code: "SA", label: "Suudi Arabistan", flag: "🇸🇦" },
+  { code: "JP", label: "Japonya", flag: "🇯🇵" },
+  { code: "CA", label: "Kanada", flag: "🇨🇦" },
+  { code: "AU", label: "Avustralya", flag: "🇦🇺" },
+  { code: "RU", label: "Rusya", flag: "🇷🇺" },
+  { code: "OTHER", label: "Diğer", flag: "🌍" },
+];
+
+const HASHTAGS = [
+  { tag: "borsa", label: "Borsa", emoji: "📈" },
+  { tag: "kripto", label: "Kripto", emoji: "₿" },
+  { tag: "altin", label: "Altın", emoji: "🪙" },
+  { tag: "dolar", label: "Dolar/Kur", emoji: "💵" },
+  { tag: "bes", label: "BES", emoji: "🛡️" },
+  { tag: "emeklilik", label: "Emeklilik", emoji: "🏖️" },
+  { tag: "gayrimenkul", label: "Gayrimenkul", emoji: "🏠" },
+  { tag: "faiz", label: "Faiz/Mevduat", emoji: "🏦" },
+  { tag: "tasarruf", label: "Tasarruf", emoji: "💰" },
+  { tag: "girisim", label: "Girişim", emoji: "🚀" },
+  { tag: "ekonomi", label: "Ekonomi", emoji: "📊" },
+  { tag: "haber", label: "Haberler", emoji: "📰" },
+  { tag: "teknoloji", label: "Teknoloji", emoji: "💻" },
+  { tag: "enerji", label: "Enerji", emoji: "⚡" },
+  { tag: "saglik", label: "Sağlık", emoji: "💊" },
+  { tag: "fintech", label: "FinTech", emoji: "🔗" },
+  { tag: "vergi", label: "Vergi", emoji: "📋" },
+  { tag: "kisiselfinans", label: "Kişisel Finans", emoji: "🎯" },
+];
+
+const GENDERS = [
+  { value: "male",       label: "Erkek",          emoji: "👨", color: "from-blue-400/20 to-blue-600/10 border-blue-400/40",   activeColor: "from-blue-500 to-blue-700 border-blue-500" },
+  { value: "female",     label: "Kadın",           emoji: "👩", color: "from-rose-400/20 to-rose-600/10 border-rose-400/40",   activeColor: "from-rose-500 to-rose-700 border-rose-500" },
+  { value: "other",      label: "Diğer",           emoji: "🌈", color: "from-purple-400/20 to-purple-600/10 border-purple-400/40", activeColor: "from-purple-500 to-purple-700 border-purple-500" },
+  { value: "prefer_not", label: "Belirtmek İstemiyorum", emoji: "🔒", color: "from-muted/50 to-muted/20 border-border/40", activeColor: "from-muted-foreground to-foreground border-muted-foreground" },
+];
+
+// ─── Step configs ───────────────────────────────────────────────────────────────
+const STEPS = [
+  { id: 1, icon: User,  title: "Profil Bilgileri",    desc: "Seni tanıyalım, hoş geldin!" },
+  { id: 2, icon: Globe, title: "Bölge & Para Birimi", desc: "Hangi ülke ve para birimiyle çalışıyorsun?" },
+  { id: 3, icon: Hash,  title: "İlgi Alanları",       desc: "Hangi konularla ilgileniyorsun?" },
+];
+
+// ─── Component ─────────────────────────────────────────────────────────────────
+export function OnboardingForm() {
+  const router  = useRouter();
+  const [step, setStep]       = useState(1);
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
-  
-  const [searchQueries, setSearchQueries] = useState<Record<number, string>>({});
-  const [searchResults, setSearchResults] = useState<Record<number, any[]>>({});
-  const [showSearch, setShowSearch] = useState<Record<number, boolean>>({});
-  const inputRefs = useRef<Record<number, HTMLDivElement | null>>({});
+  const [genderAnim, setGenderAnim] = useState(false);
 
-  const form = useForm<OnboardingValues>({
-    resolver: zodResolver(onboardingSchema) as any,
-    defaultValues: initialData || {
-      familyCount: 1,
-      maritalStatus: "Bekar",
-      hasChildren: false,
-      children: [],
-      incomes: [],
-      expenses: [],
-      debts: [],
-      investments: [],
-      fixedAssets: [],
+  const form = useForm<FormValues>({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      firstName: "", lastName: "", birthDate: "", gender: undefined,
+      currency: "TRY", country: "TR", interests: [],
     },
     mode: "onChange",
   });
 
-  const { fields: incomeFields, append: appendIncome, remove: removeIncome } = useFieldArray({
-    control: form.control,
-    name: "incomes",
-  });
+  const { formState: { errors } } = form;
 
-  const { fields: expenseFields, append: appendExpense, remove: removeExpense } = useFieldArray({
-    control: form.control,
-    name: "expenses",
-  });
-
-  const { fields: debtFields, append: appendDebt, remove: removeDebt } = useFieldArray({
-    control: form.control,
-    name: "debts",
-  });
-
-  const { fields: investmentFields, append: appendInvestment, remove: removeInvestment } = useFieldArray({
-    control: form.control,
-    name: "investments",
-  });
-
-  const { fields: fixedAssetFields, append: appendFixedAsset, remove: removeFixedAsset } = useFieldArray({
-    control: form.control,
-    name: "fixedAssets",
-  });
-
-  const { fields: childrenFields, append: appendChild, remove: removeChild } = useFieldArray({
-    control: form.control,
-    name: "children",
-  });
-
-  const handleSearch = async (index: number, query: string, type: string) => {
-    setSearchQueries(prev => ({ ...prev, [index]: query }));
-    form.setValue(`investments.${index}.symbol`, query);
-    
-    if (query.length >= 2) {
-      const results = await searchSymbolsAction(query, type);
-      setSearchResults(prev => ({ ...prev, [index]: results }));
-      setShowSearch(prev => ({ ...prev, [index]: true }));
-    } else {
-      setShowSearch(prev => ({ ...prev, [index]: false }));
-    }
+  // Cinsiyet seçince animasyon tetikle
+  const handleGenderSelect = (val: FormValues["gender"]) => {
+    form.setValue("gender", val, { shouldValidate: true });
+    setGenderAnim(true);
+    setTimeout(() => setGenderAnim(false), 600);
   };
 
-  async function onSubmit(data: OnboardingValues) {
+  // HashTag toggle
+  const toggleTag = (tag: string) => {
+    const cur = form.getValues("interests");
+    const next = cur.includes(tag) ? cur.filter(t => t !== tag) : [...cur, tag];
+    form.setValue("interests", next, { shouldValidate: true });
+  };
+
+  const nextStep = async () => {
+    let fields: (keyof FormValues)[] = [];
+    if (step === 1) fields = ["firstName", "lastName", "birthDate", "gender"];
+    if (step === 2) fields = ["currency", "country"];
+    const ok = await form.trigger(fields);
+    if (ok) setStep(s => s + 1);
+  };
+
+  const prevStep = () => setStep(s => Math.max(s - 1, 1));
+
+  const onSubmit = async (data: FormValues) => {
     setLoading(true);
     try {
-      const cleanedInvestments = data.investments.map(inv => {
-        let sym = inv.symbol || "";
-        if (sym.includes("(")) sym = sym.split(" ")[0];
-        return { ...inv, symbol: sym.toUpperCase() };
-      });
-
-      await completeOnboarding({ ...data, investments: cleanedInvestments } as any);
+      await completeOnboarding({
+        firstName:  data.firstName,
+        lastName:   data.lastName,
+        birthDate:  data.birthDate,
+        gender:     data.gender,
+        currency:   data.currency,
+        country:    data.country,
+        interests:  data.interests,
+        // Legacy alanlar (boş gönderiyoruz, mevcut action'ı bozmamak için)
+        familyCount: 1,
+        maritalStatus: "Bekar",
+        hasChildren: false,
+        children: [],
+        incomes: [],
+        expenses: [],
+        debts: [],
+        investments: [],
+        fixedAssets: [],
+      } as any);
       router.push("/dashboard");
-    } catch (error: any) {
-      if (error.message === "NEXT_REDIRECT") return;
-      console.error("Güncelleme hatası:", error);
+    } catch (err: any) {
+      if (err.message === "NEXT_REDIRECT") return;
+      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
-  const canContinue = async () => {
-    let fieldsToValidate: any[] = [];
-    if (step === 1) fieldsToValidate = ["familyCount", "incomes"];
-    if (step === 2) fieldsToValidate = ["expenses"];
-    if (step === 3) fieldsToValidate = ["debts"];
-    if (step === 4) fieldsToValidate = ["investments"];
-    if (step === 5) fieldsToValidate = ["fixedAssets"];
-    
-    const isValid = await form.trigger(fieldsToValidate as any);
-    return isValid;
-  };
-
-  const nextStep = async () => {
-    const isValid = await canContinue();
-    if (isValid) setStep((s) => Math.min(s + 1, isSettings ? 1 : 5));
-  };
-
-  const prevStep = () => setStep((s) => Math.max(s - 1, 1));
+  const selectedGender = form.watch("gender");
+  const selectedInterests = form.watch("interests");
 
   return (
-    <Card className={cn(
-      "w-full max-w-4xl mx-auto border-border/20 shadow-2xl bg-card rounded-[32px] overflow-hidden",
-      isSettings ? "mt-4" : "animate-in fade-in zoom-in-95 duration-700"
-    )}>
-      <CardHeader className="text-center pt-10 pb-6 bg-muted/30 border-b border-border/10">
-        {!isSettings && (
-          <div className="flex justify-center mb-8">
-            <div className="flex items-center gap-3">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="flex items-center">
-                  <div
+    <div className="w-full max-w-2xl mx-auto px-4">
+      {/* ── Card ── */}
+      <div className="bg-card border border-border/20 rounded-[32px] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-700">
+
+        {/* ── Header ── */}
+        <div className="px-10 pt-10 pb-6 bg-muted/30 border-b border-border/10">
+          {/* Step dots */}
+          <div className="flex items-center justify-center gap-3 mb-8">
+            {STEPS.map((s, i) => (
+              <div key={s.id} className="flex items-center">
+                <div className={cn(
+                  "w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-all duration-500",
+                  step === s.id  ? "bg-primary text-primary-foreground scale-110 shadow-lg shadow-primary/20" :
+                  step  > s.id  ? "bg-emerald-500 text-white" :
+                  "bg-muted text-muted-foreground"
+                )}>
+                  {step > s.id ? <Check className="w-4 h-4" /> : s.id}
+                </div>
+                {i < STEPS.length - 1 && (
+                  <div className={cn("w-12 h-0.5 mx-2 rounded-full transition-all duration-500",
+                    step > s.id ? "bg-emerald-500" : "bg-border/40")} />
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Logo + Title */}
+          <div className="flex items-center justify-center gap-3 mb-3">
+            <img src="/mascot.png" alt="Logo" className="h-10 w-10 object-contain" />
+            <span className="text-[10px] font-bold text-primary uppercase tracking-[0.2em]">Koç Ram Finans</span>
+          </div>
+          <h1 className="text-3xl font-heading font-bold text-center text-foreground tracking-tight">
+            {STEPS[step - 1].title}
+          </h1>
+          <p className="text-sm text-muted-foreground text-center mt-1">
+            {STEPS[step - 1].desc}
+          </p>
+        </div>
+
+        {/* ── Content ── */}
+        <div className="p-10">
+          <form onSubmit={form.handleSubmit(onSubmit)}>
+
+            {/* ══ STEP 1: Profil ══ */}
+            {step === 1 && (
+              <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+
+                {/* Ad / Soyad */}
+                <div className="grid grid-cols-2 gap-5">
+                  {(["firstName", "lastName"] as const).map((field) => (
+                    <div key={field} className="space-y-2">
+                      <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                        {field === "firstName" ? "Ad" : "Soyad"} <span className="text-destructive">*</span>
+                      </Label>
+                      <Input
+                        {...form.register(field)}
+                        placeholder={field === "firstName" ? "Adınız" : "Soyadınız"}
+                        className={cn(
+                          "h-12 rounded-xl bg-muted/40 border-border/30 focus:border-primary/50 transition-colors",
+                          errors[field] && "border-destructive/50"
+                        )}
+                      />
+                      {errors[field] && (
+                        <p className="text-[10px] text-destructive flex items-center gap-1">
+                          <AlertCircle className="h-3 w-3" /> {errors[field]?.message}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Doğum Tarihi */}
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                    Doğum Tarihi <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    type="date"
+                    {...form.register("birthDate")}
+                    max={new Date().toISOString().split("T")[0]}
                     className={cn(
-                      "w-10 h-10 rounded-full flex items-center justify-center font-bold transition-all duration-500",
-                      step === i ? "bg-primary text-primary-foreground scale-110 shadow-lg" : 
-                      step > i ? "bg-emerald-500 text-white" : "bg-muted text-muted-foreground"
+                      "h-12 rounded-xl bg-muted/40 border-border/30 focus:border-primary/50 transition-colors",
+                      errors.birthDate && "border-destructive/50"
                     )}
-                  >
-                    {step > i ? <Check className="w-5 h-5" /> : i}
-                  </div>
-                  {i < 5 && (
-                    <div className={cn(
-                      "w-8 h-1 mx-2 rounded-full transition-colors duration-500",
-                      step > i ? "bg-emerald-500" : "bg-muted"
-                    )} />
+                  />
+                  {errors.birthDate && (
+                    <p className="text-[10px] text-destructive flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" /> {errors.birthDate.message}
+                    </p>
                   )}
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
-        <div className="flex items-center justify-center gap-3 mb-2">
-           <img src="/mascot.png" alt="Logo" className="h-12 w-12 object-contain" />
-           <span className="text-[10px] font-bold text-primary uppercase tracking-[0.2em]">Koç Ram Finans</span>
-        </div>
-        <CardTitle className="text-4xl font-heading font-bold text-foreground tracking-tight">
-          {step === 1 && (isSettings ? "Profil Düzenleme" : "Hoş Geldiniz")}
-          {step === 2 && "Giderler"}
-          {step === 3 && "Borç Durumu"}
-          {step === 4 && "Varlık Portföyü"}
-          {step === 5 && "Sabit Varlıklar"}
-        </CardTitle>
-        <CardDescription className="text-muted-foreground mt-2 font-medium">
-          {step === 4 ? "Elinizdeki varlıkların adet ve alış fiyatlarını girerek maliyet takibini başlatın." : 
-           step === 5 ? "Araba, ev, elektronik eşya gibi somut varlıklarınızı ekleyerek toplam servetinizi görün." :
-           "Yıldız (*) ile işaretli alanlar zorunludur."}
-        </CardDescription>
-      </CardHeader>
 
-      <CardContent className="p-10">
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-          {step === 1 && (
-            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <div className="space-y-3">
-                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">
-                   Aile Kişi Sayısı <span className="text-destructive">*</span>
-                </Label>
-                <div className="relative">
-                  <Users className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground opacity-50" />
-                  <Input 
-                    type="number" 
-                    {...form.register("familyCount")} 
-                    className={cn(
-                      "pl-12 bg-muted/50 border-border/30 h-12 rounded-xl focus:ring-primary",
-                      form.formState.errors.familyCount && "border-destructive/30 ring-destructive/10"
-                    )}
-                  />
-                </div>
-                {form.formState.errors.familyCount && (
-                  <p className="text-[10px] font-bold text-rose-500 px-1 flex items-center gap-1">
-                    <AlertCircle className="h-3 w-3" /> {form.formState.errors.familyCount.message}
-                  </p>
-                )}
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Cinsiyet — Animasyonlu */}
                 <div className="space-y-3">
-                  <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">
-                     Medeni Durum <span className="text-destructive">*</span>
+                  <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                    Cinsiyet <span className="text-destructive">*</span>
+                  </Label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {GENDERS.map((g) => {
+                      const isActive = selectedGender === g.value;
+                      return (
+                        <button
+                          key={g.value}
+                          type="button"
+                          onClick={() => handleGenderSelect(g.value as FormValues["gender"])}
+                          className={cn(
+                            "relative p-4 rounded-2xl border bg-gradient-to-br transition-all duration-300 text-left group overflow-hidden",
+                            isActive
+                              ? `${g.activeColor} text-white shadow-lg scale-[1.02]`
+                              : `${g.color} hover:scale-[1.01] hover:shadow-md`
+                          )}
+                        >
+                          {/* Ripple animasyonu */}
+                          {isActive && genderAnim && (
+                            <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                              <span className="w-full h-full rounded-2xl bg-white/20 animate-ping absolute" />
+                            </span>
+                          )}
+                          <span className="text-2xl mb-1 block transition-transform duration-300 group-hover:scale-110">
+                            {g.emoji}
+                          </span>
+                          <span className={cn("text-sm font-bold block", isActive ? "text-white" : "text-foreground")}>
+                            {g.label}
+                          </span>
+                          {isActive && (
+                            <span className="absolute top-3 right-3 w-5 h-5 rounded-full bg-white/30 flex items-center justify-center">
+                              <Check className="w-3 h-3 text-white" />
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {errors.gender && (
+                    <p className="text-[10px] text-destructive flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" /> {errors.gender.message}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* ══ STEP 2: Para Birimi & Ülke ══ */}
+            {step === 2 && (
+              <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+
+                {/* Para Birimi */}
+                <div className="space-y-3">
+                  <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                    Tercih Ettiğiniz Para Birimi <span className="text-destructive">*</span>
                   </Label>
                   <Controller
-                    name="maritalStatus"
+                    name="currency"
                     control={form.control}
                     render={({ field }) => (
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <SelectTrigger className="bg-muted/50 border-border/30 h-12 rounded-xl">
-                          <SelectValue placeholder="Seçiniz" />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-xl">
-                          <SelectItem value="Bekar">Bekar</SelectItem>
-                          <SelectItem value="Evli">Evli</SelectItem>
-                          <SelectItem value="Boşanmış">Boşanmış</SelectItem>
-                          <SelectItem value="Dul">Dul</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <div className="grid grid-cols-2 gap-2">
+                        {CURRENCIES.map((c) => {
+                          const isActive = field.value === c.code;
+                          return (
+                            <button
+                              key={c.code}
+                              type="button"
+                              onClick={() => field.onChange(c.code)}
+                              className={cn(
+                                "flex items-center gap-3 p-3.5 rounded-2xl border transition-all duration-200 text-left",
+                                isActive
+                                  ? "bg-primary text-primary-foreground border-primary shadow-md scale-[1.02]"
+                                  : "bg-muted/40 border-border/30 hover:border-primary/30 hover:bg-muted/60"
+                              )}
+                            >
+                              <span className="text-xl">{c.flag}</span>
+                              <div className="flex-1 min-w-0">
+                                <div className={cn("text-xs font-bold truncate", isActive ? "text-primary-foreground" : "text-foreground")}>
+                                  {c.code}
+                                </div>
+                                <div className={cn("text-[10px] truncate", isActive ? "text-primary-foreground/80" : "text-muted-foreground")}>
+                                  {c.label}
+                                </div>
+                              </div>
+                              <span className={cn("text-sm font-bold", isActive ? "text-primary-foreground" : "text-muted-foreground")}>
+                                {c.symbol}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
                     )}
                   />
                 </div>
 
-                {form.watch("maritalStatus") === "Evli" && (
-                  <div className="space-y-3 animate-in fade-in slide-in-from-left-2 duration-300">
-                    <Label className="text-[10px] font-bold text-[#747781] uppercase tracking-widest px-1">
-                       Evlilik Tarihi
-                    </Label>
-                    <div className="relative">
-                      <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-[#434750] opacity-50" />
-                      <Input 
-                        type="date" 
-                        {...form.register("marriageDate")} 
-                        max={new Date().toISOString().split("T")[0]}
-                        className="pl-12 bg-[#faf9f6] border-[#c4c6d2]/30 h-12 rounded-xl focus:ring-[#001b44]"
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-4">
-                <div className="flex items-center gap-3 p-4 bg-muted/50 border border-border/20 rounded-2xl">
-                  <input 
-                    type="checkbox" 
-                    id="hasChildren"
-                    {...form.register("hasChildren")} 
-                    className="w-5 h-5 rounded border-border text-primary focus:ring-primary" 
-                  />
-                  <Label htmlFor="hasChildren" className="text-sm font-bold text-foreground cursor-pointer flex items-center gap-2">
-                    <Baby className="h-4 w-4" /> Çocuk Var mı?
+                {/* Ülke */}
+                <div className="space-y-3">
+                  <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                    Yaşadığınız Ülke <span className="text-destructive">*</span>
                   </Label>
-                </div>
-
-                {form.watch("hasChildren") && (
-                  <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
-                    <div className="flex justify-between items-center px-1">
-                      <Label className="text-[10px] font-bold text-[#747781] uppercase tracking-widest">
-                         Çocukların Doğum Tarihleri
-                      </Label>
-                      <Button type="button" variant="ghost" size="sm" onClick={() => appendChild({ birthDate: "" })} className="text-[#001b44] font-bold">
-                        <Plus className="w-4 h-4 mr-1" /> Çocuk Ekle
-                      </Button>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {childrenFields.map((field, index) => (
-                        <div key={field.id} className="relative group">
-                          <Input 
-                            type="date" 
-                            {...form.register(`children.${index}.birthDate`)} 
-                            max={new Date().toISOString().split("T")[0]}
-                            className="bg-[#faf9f6] border-[#c4c6d2]/30 h-12 rounded-xl pr-12"
-                          />
-                          <Button 
-                            type="button" 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={() => removeChild(index)}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 text-rose-500 hover:bg-rose-50 rounded-lg"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                    {childrenFields.length === 0 && (
-                      <p className="text-center py-4 text-[11px] text-[#747781] italic bg-[#faf9f6]/50 rounded-xl border border-dashed border-[#c4c6d2]/30">
-                        Lütfen en az bir çocuk doğum tarihi ekleyin veya seçeneği kapatın.
-                      </p>
+                  <Controller
+                    name="country"
+                    control={form.control}
+                    render={({ field }) => (
+                      <div className="grid grid-cols-2 gap-2">
+                        {COUNTRIES.map((c) => {
+                          const isActive = field.value === c.code;
+                          return (
+                            <button
+                              key={c.code}
+                              type="button"
+                              onClick={() => field.onChange(c.code)}
+                              className={cn(
+                                "flex items-center gap-3 p-3.5 rounded-2xl border transition-all duration-200 text-left",
+                                isActive
+                                  ? "bg-primary text-primary-foreground border-primary shadow-md scale-[1.02]"
+                                  : "bg-muted/40 border-border/30 hover:border-primary/30 hover:bg-muted/60"
+                              )}
+                            >
+                              <span className="text-xl">{c.flag}</span>
+                              <span className={cn("text-xs font-semibold truncate", isActive ? "text-primary-foreground" : "text-foreground")}>
+                                {c.label}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
                     )}
-                  </div>
-                )}
-              </div>
-              
-              <div className="space-y-4">
-                <div className="flex justify-between items-center px-1">
-                  <Label className="text-[10px] font-bold text-[#747781] uppercase tracking-widest">
-                     Gelir Kaynakları
-                  </Label>
-                  <Button type="button" variant="ghost" size="sm" onClick={() => appendIncome({ type: "Maaş", amount: 0 })} className="text-[#001b44] hover:bg-[#faf9f6] font-bold">
-                    <Plus className="w-4 h-4 mr-1" /> Ekle
-                  </Button>
+                  />
                 </div>
-                
-                {incomeFields.map((field, index) => (
-                  <div key={field.id} className="flex flex-col gap-2">
-                    <div className="flex gap-4 items-end animate-in fade-in duration-300">
-                      <div className="flex-1 space-y-2">
-                        <Controller
-                          name={`incomes.${index}.type` as const}
-                          control={form.control}
-                          render={({ field: selectField }) => (
-                            <Select 
-                              onValueChange={selectField.onChange}
-                              value={selectField.value}
-                            >
-                              <SelectTrigger className="bg-[#faf9f6] border-[#c4c6d2]/30 h-12 rounded-xl">
-                                <SelectValue placeholder="Tür" />
-                              </SelectTrigger>
-                              <SelectContent className="rounded-xl">
-                                <SelectItem value="Maaş">Maaş</SelectItem>
-                                <SelectItem value="Eş Maaşı">Eş Maaşı</SelectItem>
-                                <SelectItem value="Kira Geliri">Kira Geliri</SelectItem>
-                                <SelectItem value="Sosyal Medya">Sosyal Medya</SelectItem>
-                                <SelectItem value="Taksi/Ek İş">Taksi/Ek İş</SelectItem>
-                                <SelectItem value="Faiz">Faiz</SelectItem>
-                                <SelectItem value="Sponsorluk">Sponsorluk</SelectItem>
-                                <SelectItem value="Devlet Desteği">Devlet Desteği</SelectItem>
-                                <SelectItem value="Diğer">Diğer</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          )}
-                        />
-                      </div>
-                      <div className="flex-1">
-                        <Input 
-                          type="number" 
-                          step="any"
-                          placeholder="Miktar" 
-                          {...form.register(`incomes.${index}.amount`, { valueAsNumber: true })} 
-                          className={cn(
-                            "bg-[#faf9f6] border-[#c4c6d2]/30 h-12 rounded-xl",
-                            form.formState.errors.incomes?.[index]?.amount && "border-rose-300"
-                          )}
-                        />
-                      </div>
-                      <Button type="button" variant="ghost" size="icon" onClick={() => removeIncome(index)} className="h-12 w-12 hover:bg-rose-50 text-rose-500 rounded-xl">
-                        <Trash2 className="w-5 h-5" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
               </div>
-            </div>
-          )}
+            )}
 
-          {step === 2 && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <div className="flex justify-between items-center px-1">
-                <Label className="text-[10px] font-bold text-[#747781] uppercase tracking-widest">
-                   Giderler ve Faturalar
-                </Label>
-                <Button type="button" variant="ghost" size="sm" onClick={() => appendExpense({ type: "", amount: 0, dueDate: 1, isRecurring: true })} className="text-[#001b44] font-bold">
-                  <Plus className="w-4 h-4 mr-1" /> Ekle
-                </Button>
-              </div>
-              
-              <div className="grid gap-4">
-                {expenseFields.map((field, index) => (
-                  <div key={field.id} className="p-6 bg-[#faf9f6] border border-[#c4c6d2]/20 rounded-[24px] relative group hover:shadow-md transition-all">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2 col-span-2 md:col-span-1">
-                        <Label className="text-[9px] font-bold text-[#747781] uppercase px-1">Açıklama</Label>
-                        <Input placeholder="Örn: Kira, Elektrik" {...form.register(`expenses.${index}.type`)} className="bg-white border-[#c4c6d2]/20 h-10 rounded-lg" />
-                      </div>
-                      <div className="space-y-2 col-span-2 md:col-span-1">
-                        <Label className="text-[9px] font-bold text-[#747781] uppercase px-1">Miktar</Label>
-                        <Input type="number" step="any" placeholder="0 ₺" {...form.register(`expenses.${index}.amount`, { valueAsNumber: true })} className="bg-white border-[#c4c6d2]/20 h-10 rounded-lg" />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-[9px] font-bold text-[#747781] uppercase px-1">Ödeme Günü (1-31)</Label>
-                        <Input type="number" {...form.register(`expenses.${index}.dueDate`, { valueAsNumber: true })} className="bg-white border-[#c4c6d2]/20 h-10 rounded-lg" />
-                      </div>
-                      <div className="flex items-center gap-3 pt-6">
-                        <input type="checkbox" {...form.register(`expenses.${index}.isRecurring`)} className="w-4 h-4 rounded border-[#c4c6d2] text-[#001b44] focus:ring-[#001b44]" />
-                        <Label className="text-xs font-bold text-[#001b44]">Düzenli Ödeme</Label>
-                      </div>
-                    </div>
-                    <Button type="button" variant="ghost" size="icon" className="absolute top-4 right-4 hover:bg-rose-50 text-rose-500" onClick={() => removeExpense(index)}>
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {step === 3 && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <div className="flex justify-between items-center px-1">
-                <Label className="text-[10px] font-bold text-[#747781] uppercase tracking-widest">
-                   Borçlar ve Taksitler
-                </Label>
-                <Button type="button" variant="ghost" size="sm" onClick={() => appendDebt({ type: "Kredi Kartı", amount: 0 })} className="text-[#001b44] font-bold">
-                  <Plus className="w-4 h-4 mr-1" /> Ekle
-                </Button>
-              </div>
-              
-              <div className="grid gap-4">
-                {debtFields.map((field, index) => (
-                  <div key={field.id} className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end p-6 bg-[#faf9f6] border border-[#c4c6d2]/20 rounded-[24px]">
-                    <div className="space-y-2">
-                       <Label className="text-[9px] font-bold text-[#747781] uppercase px-1">Borç Türü</Label>
-                       <Input placeholder="Örn: Banka, Şahıs" {...form.register(`debts.${index}.type`)} className="bg-white border-[#c4c6d2]/20 h-10 rounded-lg" />
-                    </div>
-                    <div className="space-y-2">
-                       <Label className="text-[9px] font-bold text-[#747781] uppercase px-1">Toplam Tutar</Label>
-                       <Input type="number" step="any" {...form.register(`debts.${index}.amount`, { valueAsNumber: true })} className="bg-white border-[#c4c6d2]/20 h-10 rounded-lg" />
-                    </div>
-                    <div className="flex gap-2 items-end">
-                      <div className="flex-1 space-y-2">
-                        <Label className="text-[9px] font-bold text-[#747781] uppercase px-1">Kalan Taksit</Label>
-                        <Input type="number" {...form.register(`debts.${index}.remainingInstallments`, { valueAsNumber: true })} className="bg-white border-[#c4c6d2]/20 h-10 rounded-lg" />
-                      </div>
-                      <Button type="button" variant="ghost" size="icon" onClick={() => removeDebt(index)} className="h-10 w-10 hover:bg-rose-50 text-rose-500">
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {step === 4 && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <div className="flex justify-between items-center px-1">
-                <Label className="text-[10px] font-bold text-[#747781] uppercase tracking-widest">
-                   Yatırım Portföyü
-                </Label>
-                <Button type="button" variant="ghost" size="sm" onClick={() => appendInvestment({ type: "BIST", symbol: "", quantity: 0, purchasePrice: 0 })} className="text-[#001b44] font-bold">
-                  <Plus className="w-4 h-4 mr-1" /> Ekle
-                </Button>
-              </div>
-              
-              <div className="grid gap-6">
-                {investmentFields.map((field, index) => (
-                  <div key={field.id} className="p-8 bg-[#faf9f6] border border-[#c4c6d2]/20 rounded-[32px] relative group hover:shadow-lg transition-all">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <Label className="text-[9px] font-bold text-[#747781] uppercase px-1">Varlık Türü</Label>
-                        <Controller
-                          name={`investments.${index}.type` as any}
-                          control={form.control}
-                          render={({ field: selectField }) => (
-                            <Select 
-                              onValueChange={(val) => {
-                                selectField.onChange(val);
-                                form.setValue(`investments.${index}.symbol`, "");
-                                setSearchQueries(p => ({ ...p, [index]: "" }));
-                              }} 
-                              value={selectField.value}
-                            >
-                              <SelectTrigger className="bg-white border-[#c4c6d2]/20 h-12 rounded-xl">
-                                <SelectValue placeholder="Tür Seç" />
-                              </SelectTrigger>
-                              <SelectContent className="rounded-xl">
-                                <SelectItem value="BIST">BIST (Hisse)</SelectItem>
-                                <SelectItem value="NASDAQ">NASDAQ (Hisse)</SelectItem>
-                                <SelectItem value="CRYPTO">Kripto Para</SelectItem>
-                                <SelectItem value="GOLD">Altın/Emtia</SelectItem>
-                                <SelectItem value="BES">Bireysel Emeklilik (BES)</SelectItem>
-                                <SelectItem value="FAIZ">Vadeli Mevduat (Faiz)</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          )}
-                        />
-                      </div>
-
-                      <div className="space-y-2 relative" ref={el => { inputRefs.current[index] = el; }}>
-                        <Label className="text-[9px] font-bold text-[#747781] uppercase px-1">Sembol / İçerik <span className="text-rose-500">*</span></Label>
-                        <div className="relative">
-                          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#434750] opacity-40" />
-                          <Input 
-                            placeholder={
-                              form.getValues(`investments.${index}.type`) === "BES" ? "Örn: Agesa, Anadolu Hayat" :
-                              form.getValues(`investments.${index}.type`) === "FAIZ" ? "Örn: Garanti %45, Vadeli TL" :
-                              "Örn: THYAO, BTC"
-                            } 
-                            value={searchQueries[index] || form.getValues(`investments.${index}.symbol`) || ""}
-                            onChange={(e) => {
-                              const currentType = form.getValues(`investments.${index}.type`);
-                              if (currentType === "BES" || currentType === "FAIZ") {
-                                form.setValue(`investments.${index}.symbol`, e.target.value);
-                                setSearchQueries(p => ({ ...p, [index]: e.target.value }));
-                              } else {
-                                handleSearch(index, e.target.value, currentType);
-                              }
-                            }}
-                            className={cn(
-                              "pl-12 bg-white border-[#c4c6d2]/20 h-12 rounded-xl",
-                              form.formState.errors.investments?.[index]?.symbol && "border-rose-300"
-                            )}
-                          />
-                        </div>
-
-                        {showSearch[index] && searchResults[index]?.length > 0 && inputRefs.current[index] && (
-                          <div className="absolute z-[100] top-full mt-2 left-0 w-full bg-white border border-[#c4c6d2]/30 shadow-2xl rounded-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                             {searchResults[index].map((result: any, ridx: number) => (
-                               <div 
-                                 key={ridx}
-                                 className="p-3 hover:bg-[#faf9f6] cursor-pointer border-b border-[#c4c6d2]/10 last:border-0 flex items-center justify-between group"
-                                 onClick={() => {
-                                   const sym = `${result.symbol} (${result.shortname || result.symbol})`;
-                                   form.setValue(`investments.${index}.symbol`, sym);
-                                   setSearchQueries(p => ({ ...p, [index]: sym }));
-                                   setShowSearch(p => ({ ...p, [index]: false }));
-                                 }}
-                               >
-                                 <div className="flex flex-col">
-                                   <span className="font-bold text-[#001b44]">{result.symbol}</span>
-                                   <span className="text-[9px] text-[#434750] opacity-60">{result.shortname || result.longname}</span>
-                                 </div>
-                                 <ArrowUpRight className="h-3 w-3 text-[#fed65b] opacity-0 group-hover:opacity-100 transition-all" />
-                               </div>
-                             ))}
-                          </div>
+            {/* ══ STEP 3: Hashtag Seçimi ══ */}
+            {step === 3 && (
+              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <p className="text-xs text-muted-foreground">
+                  İlgilendiğin konuları seç, sana uygun içerik ve topluluklar önerelim.
+                </p>
+                <div className="flex flex-wrap gap-2.5">
+                  {HASHTAGS.map((h) => {
+                    const isActive = selectedInterests.includes(h.tag);
+                    return (
+                      <button
+                        key={h.tag}
+                        type="button"
+                        onClick={() => toggleTag(h.tag)}
+                        className={cn(
+                          "flex items-center gap-2 px-4 py-2.5 rounded-full border text-sm font-semibold transition-all duration-200",
+                          isActive
+                            ? "bg-primary text-primary-foreground border-primary shadow-md scale-105"
+                            : "bg-muted/40 border-border/30 text-foreground hover:border-primary/40 hover:bg-muted/70 hover:scale-102"
                         )}
-                      </div>
+                      >
+                        <span>{h.emoji}</span>
+                        <span>#{h.label}</span>
+                        {isActive && <Check className="w-3.5 h-3.5" />}
+                      </button>
+                    );
+                  })}
+                </div>
+                {errors.interests && (
+                  <p className="text-[10px] text-destructive flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" /> {errors.interests.message}
+                  </p>
+                )}
 
-                      <div className="space-y-2">
-                        <Label className="text-[9px] font-bold text-[#747781] uppercase px-1">
-                          {form.getValues(`investments.${index}.type`) === "BES" ? "İlk Giriş Tutarı (₺)" :
-                           form.getValues(`investments.${index}.type`) === "FAIZ" ? "Ana Para Tutarı (₺)" :
-                           "Adet / Miktar"}
-                        </Label>
-                        <Input 
-                          type="number" 
-                          step="any"
-                          {...form.register(`investments.${index}.quantity`, { valueAsNumber: true })} 
-                          className="bg-white border-[#c4c6d2]/20 h-12 rounded-xl"
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label className="text-[9px] font-bold text-[#747781] uppercase px-1">
-                          {form.getValues(`investments.${index}.type`) === "BES" ? "Devlet Katkı Payı (%)" :
-                           form.getValues(`investments.${index}.type`) === "FAIZ" ? "Faiz Oranı (%)" :
-                           "Birim Alış Fiyatı (₺)"} <span className="text-rose-500">*</span>
-                        </Label>
-                        <Input 
-                          type="number" 
-                          step="any"
-                          {...form.register(`investments.${index}.purchasePrice`, { valueAsNumber: true })} 
-                          className="bg-white border-[#c4c6d2]/20 h-12 rounded-xl"
-                        />
-                      </div>
-                    </div>
-                    
-                    {/* Özet Bilgi */}
-                    {form.watch(`investments.${index}.quantity`) > 0 && form.watch(`investments.${index}.purchasePrice`) > 0 && (
-                       <div className="mt-4 p-4 bg-[#001b44]/5 rounded-2xl flex items-center justify-between border border-[#001b44]/10">
-                          <span className="text-[10px] font-bold text-[#001b44] uppercase tracking-wider">Toplam Yatırım Tutarı:</span>
-                          <span className="text-lg font-bold text-[#001b44]">
-                             {form.getValues(`investments.${index}.type`) === "BES" || form.getValues(`investments.${index}.type`) === "FAIZ"
-                               ? form.watch(`investments.${index}.quantity`).toLocaleString('tr-TR')
-                               : (form.watch(`investments.${index}.quantity`) * form.watch(`investments.${index}.purchasePrice`)).toLocaleString('tr-TR')} ₺
+                {/* Seçilen özet */}
+                {selectedInterests.length > 0 && (
+                  <div className="p-4 bg-primary/5 border border-primary/15 rounded-2xl">
+                    <p className="text-[10px] font-bold text-primary uppercase tracking-widest mb-2">
+                      {selectedInterests.length} alan seçildi
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {selectedInterests.map(tag => {
+                        const h = HASHTAGS.find(x => x.tag === tag);
+                        return (
+                          <span key={tag} className="text-[11px] font-bold text-primary bg-primary/10 px-2 py-1 rounded-lg">
+                            {h?.emoji} #{h?.label ?? tag}
                           </span>
-                       </div>
-                    )}
-
-                    <Button type="button" variant="ghost" size="icon" className="absolute top-4 right-4 hover:bg-rose-50 text-rose-500" onClick={() => removeInvestment(index)}>
-                      <Trash2 className="w-5 h-5" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {step === 5 && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <div className="flex justify-between items-center px-1">
-                <Label className="text-[10px] font-bold text-[#747781] uppercase tracking-widest">
-                   Sabit Varlıklar (Araba, Ev, Eşya vb.)
-                </Label>
-                <Button type="button" variant="ghost" size="sm" onClick={() => appendFixedAsset({ name: "", type: "Diğer", value: 0 })} className="text-[#001b44] font-bold">
-                  <Plus className="w-4 h-4 mr-1" /> Ekle
-                </Button>
-              </div>
-              
-              <div className="grid gap-4">
-                {fixedAssetFields.map((field, index) => (
-                  <div key={field.id} className="p-6 bg-[#faf9f6] border border-[#c4c6d2]/20 rounded-[24px] relative group hover:shadow-md transition-all">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="space-y-2">
-                        <Label className="text-[9px] font-bold text-[#747781] uppercase px-1">Varlık Adı</Label>
-                        <Input placeholder="Örn: BMW 3.20, iPhone 15" {...form.register(`fixedAssets.${index}.name`)} className="bg-white border-[#c4c6d2]/20 h-10 rounded-lg" />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-[9px] font-bold text-[#747781] uppercase px-1">Varlık Türü</Label>
-                        <Controller
-                          name={`fixedAssets.${index}.type` as any}
-                          control={form.control}
-                          render={({ field: selectField }) => (
-                            <Select onValueChange={selectField.onChange} value={selectField.value}>
-                              <SelectTrigger className="bg-white border-[#c4c6d2]/20 h-10 rounded-lg">
-                                <SelectValue placeholder="Seçiniz" />
-                              </SelectTrigger>
-                              <SelectContent className="rounded-lg">
-                                <SelectItem value="Gayrimenkul">Gayrimenkul (Ev, Arsa)</SelectItem>
-                                <SelectItem value="Taşıt">Taşıt (Araba, Motor)</SelectItem>
-                                <SelectItem value="Elektronik">Elektronik (Tel, PC, TV)</SelectItem>
-                                <SelectItem value="Eşya/Mobilya">Eşya / Mobilya</SelectItem>
-                                <SelectItem value="Kıymetli Eşya">Kıymetli Eşya (Saat, Takı)</SelectItem>
-                                <SelectItem value="Diğer">Diğer</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          )}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-[9px] font-bold text-[#747781] uppercase px-1">Tahmini Değer (₺)</Label>
-                        <div className="flex gap-2">
-                          <Input type="number" step="any" placeholder="0 ₺" {...form.register(`fixedAssets.${index}.value`, { valueAsNumber: true })} className="bg-white border-[#c4c6d2]/20 h-10 rounded-lg flex-1" />
-                          <Button type="button" variant="ghost" size="icon" onClick={() => removeFixedAsset(index)} className="h-10 w-10 hover:bg-rose-50 text-rose-500">
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </div>
+                        );
+                      })}
                     </div>
                   </div>
-                ))}
-                {fixedAssetFields.length === 0 && (
-                   <div className="text-center py-12 border-2 border-dashed border-[#c4c6d2]/30 rounded-[32px] bg-[#faf9f6]/30">
-                      <div className="mx-auto w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-sm mb-4">
-                         <Plus className="w-8 h-8 text-[#001b44]/20" />
-                      </div>
-                      <p className="text-sm font-medium text-[#747781]">Henüz sabit varlık eklemediniz.</p>
-                      <Button type="button" variant="link" onClick={() => appendFixedAsset({ name: "", type: "Diğer", value: 0 })} className="text-[#001b44] font-bold mt-2">
-                         Hemen bir tane ekle
-                      </Button>
-                   </div>
                 )}
               </div>
-            </div>
-          )}
-        </form>
-      </CardContent>
-      
-      <CardFooter className={cn("flex p-10 bg-muted/20 border-t border-border/10", isSettings ? "justify-end" : "justify-between")}>
-        {!isSettings && (
+            )}
+          </form>
+        </div>
+
+        {/* ── Footer ── */}
+        <div className="flex items-center justify-between px-10 py-6 bg-muted/20 border-t border-border/10">
           <Button
             type="button"
             variant="ghost"
             onClick={prevStep}
             disabled={step === 1 || loading}
-            className="h-12 px-8 rounded-xl font-bold text-foreground"
+            className="h-12 px-7 rounded-xl font-bold"
           >
-            <ChevronLeft className="w-5 h-5 mr-2" /> Geri
+            <ChevronLeft className="w-5 h-5 mr-1" /> Geri
           </Button>
-        )}
-        {step < (isSettings ? 1 : 5) ? (
-          <Button type="button" onClick={nextStep} className="h-12 px-8 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 font-bold shadow-lg shadow-primary/10">
-            Devam Et <ChevronRight className="w-5 h-5 ml-2" />
-          </Button>
-        ) : (
-          <Button 
-            type="button" 
-            onClick={form.handleSubmit(onSubmit)} 
-            disabled={loading} 
-            className="h-12 px-10 rounded-xl bg-primary text-primary-foreground font-bold shadow-xl hover:scale-[1.02] transition-transform"
-          >
-            {loading ? "Kaydediliyor..." : isSettings ? "Değişiklikleri Kaydet" : "Kurulumu Tamamla"}
-            {!loading && <Check className="w-5 h-5 ml-2" />}
-          </Button>
-        )}
-      </CardFooter>
-    </Card>
+
+          {step < 3 ? (
+            <Button
+              type="button"
+              onClick={nextStep}
+              className="h-12 px-8 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 font-bold shadow-lg shadow-primary/15"
+            >
+              Devam Et <ChevronRight className="w-5 h-5 ml-1" />
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              onClick={form.handleSubmit(onSubmit)}
+              disabled={loading}
+              className="h-12 px-10 rounded-xl bg-primary text-primary-foreground font-bold shadow-xl hover:scale-[1.02] transition-transform"
+            >
+              {loading ? "Kaydediliyor..." : "Başlayalım! 🚀"}
+              {!loading && <Check className="w-5 h-5 ml-2" />}
+            </Button>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }

@@ -16,6 +16,17 @@ model User {
   isBanned    Boolean  @default(false)
   familyCount Int      @default(1)
   
+  // Profil Bilgileri
+  firstName   String?
+  lastName    String?
+  birthDate   DateTime?
+  gender      String?   // "male" | "female" | "other" | "prefer_not"
+
+  // Tercihler
+  currency    String?   @default("TRY") // ISO 4217 currency code
+  country     String?   @default("TR")  // ISO 3166-1 alpha-2 country code
+  interests   String[]  // Hashtag'ler: ["kripto", "borsa", "altin", ...]
+
   maritalStatus String?
   marriageDate  DateTime?
   hasChildren   Boolean   @default(false)
