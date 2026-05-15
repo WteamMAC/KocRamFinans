@@ -28,6 +28,7 @@ const MAX_CHARS = 500;
 const HASHTAG_REGEX = /#([a-zA-Z0-9çşğüöıÇŞĞÜÖİ]+)/g;
 
 // ─── Types ────────────────────────────────────────────────────────────
+type Comment = {
   id: string; content: string; createdAt: Date;
   authorId: string; authorUsername: string | null; authorName: string; authorImage: string; isMyComment: boolean;
 };
