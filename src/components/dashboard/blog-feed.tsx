@@ -520,11 +520,15 @@ export function BlogFeed({
         let result;
         if (mode === "profile" && profileId) {
           result = await getProfilePosts(profileId);
-        } else {
+        } else if (selectedCommunity) {
+          result = await getPosts(currentUserId, undefined, "community", selectedCommunity.id);
+        } else if (feedType !== "communities") {
           result = await getPosts(currentUserId, undefined, feedType);
+        } else {
+          return; // Topluluk keşif ekranındayken polling yapma
         }
 
-        if (result.posts && result.posts.length > 0) {
+        if (result && result.posts && result.posts.length > 0) {
           setPosts((prev) => {
             // Sadece gerçekten yeni olanları (id'si bizde olmayanları) ekle
             const existingIds = new Set(prev.map(p => p.id));
@@ -580,11 +584,15 @@ export function BlogFeed({
         result = await getProfilePosts(profileId, nextCursor);
       } else if (selectedCommunity) {
         result = await getPosts(currentUserId, nextCursor, "community", selectedCommunity.id);
+      } else if (feedType !== "communities") {
+        result = await getPosts(currentUserId, nextCursor, feedType);
       } else {
-        result = await getPosts(currentUserId, nextCursor, feedType as any);
+        return;
       }
-      setPosts((prev) => [...prev, ...result.posts]);
-      setNextCursor(result.nextCursor);
+      if (result) {
+        setPosts((prev) => [...prev, ...result.posts]);
+        setNextCursor(result.nextCursor);
+      }
     });
   };
 
