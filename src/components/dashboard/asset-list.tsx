@@ -143,14 +143,16 @@ export function AssetList({ assets, allInvestments, fixedAssets, defaultTab = "f
     type: string;
     totalQuantity: number;
     totalCost: number;
+    totalValue: number;
+    totalDailyReturn: number;
     currentPrice?: number;
     rate?: number;
     items: Asset[];
-  }>, asset: Asset) => {
+  }>, asset: any) => {
     const symbol = asset.symbol || "Diğer";
     if (!acc[symbol]) {
-      let rate = 0;
-      if (asset.type === "BES" || asset.type === "FAIZ") {
+      let rate = asset.rate || 0;
+      if (!rate && (asset.type === "BES" || asset.type === "FAIZ")) {
         try {
           const meta = JSON.parse(asset.description || "{}");
           rate = meta.rate || asset.purchasePrice || 0;
@@ -164,13 +166,22 @@ export function AssetList({ assets, allInvestments, fixedAssets, defaultTab = "f
         type: asset.type,
         totalQuantity: 0,
         totalCost: 0,
+        totalValue: 0,
+        totalDailyReturn: 0,
         currentPrice: asset.currentPrice,
         rate,
         items: [] as Asset[]
       };
     }
     acc[symbol].totalQuantity += asset.quantity;
-    acc[symbol].totalCost += asset.amount || (asset.quantity * (asset.purchasePrice || 0));
+    acc[symbol].totalCost += asset.cost || asset.amount || (asset.quantity * (asset.purchasePrice || 0));
+    acc[symbol].totalValue += asset.currentValue || (asset.quantity * (asset.currentPrice || 0));
+    
+    if (asset.type === "FAIZ") {
+      const itemRate = asset.rate || acc[symbol].rate || 0;
+      acc[symbol].totalDailyReturn += (asset.quantity * itemRate) / 365 / 100;
+    }
+    
     acc[symbol].items.push(asset);
     return acc;
   }, {});
@@ -441,7 +452,7 @@ export function AssetList({ assets, allInvestments, fixedAssets, defaultTab = "f
             </h3>
             <div className="text-4xl font-heading font-bold text-primary mb-4 relative z-10">
               {activeTab === "financial"
-                ? Object.values(groupedAssets).reduce((sum: number, g) => sum + (g.totalQuantity * (g.currentPrice || 0)), 0).toLocaleString("tr-TR", { minimumFractionDigits: 2 })
+                ? Object.values(groupedAssets).reduce((sum: number, g) => sum + g.totalValue, 0).toLocaleString("tr-TR", { minimumFractionDigits: 2 })
                 : (fixedAssets || []).reduce((sum: number, a) => sum + a.value, 0).toLocaleString("tr-TR", { minimumFractionDigits: 2 })
               } ₺
             </div>
@@ -455,14 +466,13 @@ export function AssetList({ assets, allInvestments, fixedAssets, defaultTab = "f
                   <div className="text-xs font-bold text-emerald-500 mt-1 relative z-10 flex items-center gap-1 bg-emerald-500/5 w-fit px-2 py-0.5 rounded-md border border-emerald-500/10">
                     <TrendingUp className="h-3 w-3" />
                     Günlük Faiz Getirisi: {Object.values(groupedAssets)
-                      .filter((g: any) => g.type === "FAIZ")
-                      .reduce((sum: number, g: any) => sum + ((g.totalQuantity * (g.rate || 0)) / 365 / 100), 0)
+                      .reduce((sum: number, g: any) => sum + (g.totalDailyReturn || 0), 0)
                       .toLocaleString("tr-TR", { maximumFractionDigits: 2 })} ₺
                   </div>
                 )}
                 {(() => {
                   const totalCost = Object.values(groupedAssets).reduce((sum: number, g) => sum + g.totalCost, 0);
-                  const currentVal = Object.values(groupedAssets).reduce((sum: number, g) => sum + (g.totalQuantity * (g.currentPrice || 0)), 0);
+                  const currentVal = Object.values(groupedAssets).reduce((sum: number, g) => sum + g.totalValue, 0);
                   const profit = currentVal - totalCost;
                   const profitPct = totalCost > 0 ? (profit / totalCost) * 100 : 0;
                   return (
@@ -580,7 +590,7 @@ export function AssetList({ assets, allInvestments, fixedAssets, defaultTab = "f
                                 {group.type === "FAIZ" && (
                                   <div className="flex items-center gap-1.5 mt-1 bg-emerald-500/10 text-emerald-600 px-2 py-0.5 rounded-lg w-fit border border-emerald-500/10 shadow-sm border-emerald-500/20">
                                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                    <span className="text-[10px] font-black uppercase tracking-tighter">Günlük Getiri: ~{((group.totalQuantity * (group.rate || 0)) / 365 / 100).toLocaleString("tr-TR", { maximumFractionDigits: 2 })} ₺</span>
+                                    <span className="text-[10px] font-black uppercase tracking-tighter">Günlük Getiri: ~{group.totalDailyReturn.toLocaleString("tr-TR", { maximumFractionDigits: 2 })} ₺</span>
                                   </div>
                                 )}
                                 <p className="text-muted-foreground text-sm font-medium mt-1">
@@ -594,7 +604,7 @@ export function AssetList({ assets, allInvestments, fixedAssets, defaultTab = "f
                               </div>
                             </div>
                             <div className="text-right">
-                              <div className="text-2xl font-bold text-primary">{totalValue.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} ₺</div>
+                              <div className="text-2xl font-bold text-primary">{group.totalValue.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} ₺</div>
                               <div className={cn(
                                 "flex items-center justify-end text-sm font-bold mt-1",
                                 profit >= 0 ? "text-emerald-600" : "text-rose-600"

@@ -64,13 +64,26 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
       const sym = inv.symbol || "Bilinmiyor";
       const meta = parseMeta(inv);
       if (!acc[sym]) {
-        acc[sym] = { symbol: sym, totalQuantity: 0, totalCost: 0, rate: meta.rate, originalDescription: meta.originalDescription, items: [] };
+        acc[sym] = { symbol: sym, totalQuantity: 0, totalCost: 0, rate: 0, originalDescription: meta.originalDescription, items: [] };
       }
       acc[sym].totalQuantity += inv.quantity;
       acc[sym].totalCost += inv.amount || inv.quantity;
-      acc[sym].rate = meta.rate; // use latest
+      // Weighted average rate calculation
       acc[sym].items.push(inv);
     }
+    
+    // Calculate final weighted average rate for each group
+    Object.values(acc).forEach(g => {
+      const totalWeight = g.totalQuantity;
+      if (totalWeight > 0) {
+        const weightedSum = g.items.reduce((sum, item) => {
+          const meta = parseMeta(item);
+          return sum + (item.quantity * meta.rate);
+        }, 0);
+        g.rate = weightedSum / totalWeight;
+      }
+    });
+
     return Object.values(acc);
   }, [investments]);
 

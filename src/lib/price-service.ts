@@ -181,13 +181,39 @@ export function calculatePortfolioMetrics(investments: any[], livePrices: Map<st
         profitPercent: inv.amount > 0 ? (profit / inv.amount) * 100 : 0
       };
     } else {
-      const live = inv.symbol ? livePrices.get(inv.symbol) : null;
-      const currentPrice = (live && live.price > 0)
-        ? live.price
-        : (inv.purchasePrice || (inv.amount / (inv.quantity || 1)));
+      const isBesFaiz = inv.type === "BES" || inv.type === "FAIZ";
+      let currentPrice = 0;
+      let cost = inv.amount || 0;
+      let rate = 0;
+
+      if (isBesFaiz) {
+        // BES/FAIZ için özel hesaplama: principal + accrued interest
+        try {
+          const meta = JSON.parse(inv.description || "{}");
+          rate = meta.rate || inv.purchasePrice || 0;
+        } catch {
+          rate = inv.purchasePrice || 0;
+        }
+
+        // Eğer purchasePrice rate olarak kullanılmışsa (eski kayıtlar), cost'u normalize et
+        if (inv.purchasePrice === rate && rate > 1) {
+          cost = inv.quantity;
+        }
+
+        // Gün geçtikçe biriken faizi hesapla (Günlük bileşik faiz simülasyonu)
+        const daysPassed = Math.max(0, (Date.now() - new Date(inv.createdAt).getTime()) / (1000 * 60 * 60 * 24));
+        const dailyRate = rate / 365 / 100;
+        // Basit bileşik faiz: (1 + r)^n
+        const multiplier = Math.pow(1 + dailyRate, daysPassed);
+        currentPrice = multiplier; // 1 TL'nin bugünkü değeri
+      } else {
+        const live = inv.symbol ? livePrices.get(inv.symbol) : null;
+        currentPrice = (live && live.price > 0)
+          ? live.price
+          : (inv.purchasePrice || (inv.amount / (inv.quantity || 1)));
+      }
 
       const currentValue = (inv.quantity || 1) * currentPrice;
-      const cost = inv.amount || 0;
 
       totalCost += cost;
       totalCurrentValue += currentValue;
@@ -197,6 +223,8 @@ export function calculatePortfolioMetrics(investments: any[], livePrices: Map<st
         ...inv,
         currentPrice,
         currentValue,
+        cost,
+        rate,
         profit,
         profitPercent: cost > 0 ? (profit / cost) * 100 : 0
       };

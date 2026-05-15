@@ -316,9 +316,9 @@ export async function fixMisclassifiedBesFaiz() {
     });
     if (!user) throw new Error("Kullanıcı bulunamadı.");
 
+    // 1. Tip düzeltmesi (BIST -> FAIZ)
     const bistInvs = await prisma.investment.findMany({
       where: { userId: user.id, type: "BIST" },
-      select: { id: true, description: true },
     });
 
     let fixedCount = 0;
@@ -333,8 +333,39 @@ export async function fixMisclassifiedBesFaiz() {
           });
           fixedCount++;
         }
-      } catch {
-        // JSON parse hatası — normal BIST kaydı, atla
+      } catch { /* atla */ }
+    }
+
+    // 2. Fiyat/Miktar normalizasyonu (Mevcut BES/FAIZ kayıtları için)
+    // Eğer purchasePrice > 1 ise, büyük ihtimalle "oran" olarak girilmiştir.
+    // Bu durumda purchasePrice'ı 1 yapıp, amount'u quantity'e eşitlemeliyiz.
+    const allBesFaiz = await prisma.investment.findMany({
+      where: { userId: user.id, type: { in: ["BES", "FAIZ"] } }
+    });
+
+    for (const inv of allBesFaiz) {
+      if (inv.purchasePrice && inv.purchasePrice > 1.5) { // 1.5'ten büyükse oran varsayıyoruz
+        const rate = inv.purchasePrice;
+        let desc = inv.description;
+        try {
+          const meta = JSON.parse(inv.description || "{}");
+          if (!meta.rate) {
+            meta.rate = rate;
+            desc = JSON.stringify(meta);
+          }
+        } catch {
+          desc = JSON.stringify({ rate, originalDescription: inv.description });
+        }
+
+        await prisma.investment.update({
+          where: { id: inv.id },
+          data: {
+            purchasePrice: 1,
+            amount: inv.quantity,
+            description: desc
+          }
+        });
+        fixedCount++;
       }
     }
 
