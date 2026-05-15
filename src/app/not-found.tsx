@@ -2,8 +2,9 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { Home, Sparkles } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export default function NotFound() {
   return (
@@ -96,17 +97,16 @@ export default function NotFound() {
             Endişelenmeyin, sizi ana merkeze geri götürebiliriz.
           </p>
 
-          <Button 
-            asChild
-            className="h-14 px-10 text-lg font-bold rounded-2xl shadow-[0_10px_25px_-5px_rgba(241,141,2,0.4)] 
-              hover:shadow-[0_15px_35px_-5px_rgba(241,141,2,0.6)] 
-              bg-[#F18D02] hover:bg-[#8C5000] text-white transition-all duration-300 transform hover:-translate-y-1 active:scale-95 flex items-center gap-3"
+          <Link 
+            href="/"
+            className={cn(
+              buttonVariants({ variant: "default" }),
+              "h-14 px-10 text-lg font-bold rounded-2xl shadow-[0_10px_25px_-5px_rgba(241,141,2,0.4)] hover:shadow-[0_15px_35px_-5px_rgba(241,141,2,0.6)] bg-[#F18D02] hover:bg-[#8C5000] text-white transition-all duration-300 transform hover:-translate-y-1 active:scale-95 flex items-center gap-3"
+            )}
           >
-            <Link href="/">
-              <Home className="w-6 h-6" />
-              Ana Menüye Dön
-            </Link>
-          </Button>
+            <Home className="w-6 h-6" />
+            Ana Menüye Dön
+          </Link>
         </motion.div>
       </div>
 
