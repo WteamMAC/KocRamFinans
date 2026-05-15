@@ -168,7 +168,7 @@ export function OnboardingForm() {
   const onSubmit = async (data: F) => {
     setLoading(true);
     try {
-      await completeOnboarding({
+      const result = await completeOnboarding({
         ...data,
         familyCount: 1,
         maritalStatus: "Bekar",
@@ -181,16 +181,12 @@ export function OnboardingForm() {
         fixedAssets: []
       } as any);
 
-      router.push("/dashboard");
-      router.refresh();
-      setTimeout(() => {
+      if (result?.success) {
+        window.location.replace("/dashboard");
+      } else {
         window.location.href = "/dashboard";
-      }, 500);
-    } catch(e:any) {
-      if (e?.message?.includes("NEXT_REDIRECT")) {
-        window.location.href = "/dashboard";
-        return;
       }
+    } catch(e:any) {
       console.error("Onboarding error:", e);
       window.location.href = "/dashboard";
     } finally {
