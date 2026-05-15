@@ -117,7 +117,7 @@ export default async function DashboardPage() {
 
       {/* Stats Grid */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="relative overflow-hidden bg-card border-border/20 shadow-ambient-medium hover:shadow-ambient-high transition-all duration-300 group rounded-[24px]">
+        <Card className="tour-step-4 relative overflow-hidden bg-card border-border/20 shadow-ambient-medium hover:shadow-ambient-high transition-all duration-300 group rounded-[24px]">
           <div className="absolute -right-4 -top-4 p-8 bg-primary/5 rounded-full group-hover:scale-110 transition-transform"></div>
           <CardHeader className="pb-2">
             <CardTitle className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Net Varlık</CardTitle>

@@ -165,7 +165,7 @@ export function Sidebar({ isCollapsed, onToggle, hideToggle, theme, onToggleThem
           )}
         </Link>
 
-        <div className="space-y-1">
+        <div className="space-y-1 tour-step-1">
           {routes.map((route) => (
             <div key={route.href} className="space-y-1">
               {route.isExpandable && !isCollapsed ? (
@@ -273,7 +273,7 @@ export function Sidebar({ isCollapsed, onToggle, hideToggle, theme, onToggleThem
             variant="ghost"
             size="icon"
             onClick={onToggleTheme}
-            className="rounded-full h-8 w-8 text-primary hover:bg-primary/10 flex-shrink-0"
+            className="tour-step-3 rounded-full h-8 w-8 text-primary hover:bg-primary/10 flex-shrink-0"
           >
             {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </Button>

@@ -11,6 +11,7 @@ import { usePathname } from "next/navigation";
 
 import { useTheme } from "next-themes";
 import { ChatAI } from "@/components/dashboard/chat-ai";
+import { OnboardingTour } from "@/components/dashboard/onboarding-tour";
 
 export default function DashboardLayout({
   children,
@@ -114,6 +115,7 @@ export default function DashboardLayout({
         {children}
       </main>
       <ChatAI />
+      <OnboardingTour />
     </div>
   );
 }
