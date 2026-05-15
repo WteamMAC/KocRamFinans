@@ -54,6 +54,7 @@ interface IncomeExpenseClientProps {
   totalIncome: number;
   totalExpense: number;
   netBalance: number;
+  projectedBalance: number;
   monthlyData: { month: string; income: number; expense: number }[];
   maxMonthly: number;
   expenseCategoryMap: Record<string, number>;
@@ -66,6 +67,7 @@ export function IncomeExpenseClient({
   totalIncome,
   totalExpense,
   netBalance,
+  projectedBalance,
   monthlyData,
   maxMonthly,
   expenseCategoryMap,
@@ -86,6 +88,8 @@ export function IncomeExpenseClient({
     debtId: "",
     remainingInstallments: "",
     isRecurring: false,
+    dueDate: "",
+    date: new Date().toISOString().split('T')[0],
   });
   const [filterCategory, setFilterCategory] = useState("Tümü");
   const { theme, setTheme } = useTheme();
@@ -112,6 +116,9 @@ export function IncomeExpenseClient({
             await addIncome({
                 type: formData.type || "Diğer",
                 amount: Number(formData.amount),
+                isRecurring: formData.isRecurring,
+                dueDate: formData.dueDate ? Number(formData.dueDate) : undefined,
+                date: new Date(formData.date),
                 description: formData.description
             });
         } else if (transactionType === "expense") {
@@ -119,6 +126,8 @@ export function IncomeExpenseClient({
                 type: formData.type || "Diğer",
                 amount: Number(formData.amount),
                 isRecurring: formData.isRecurring,
+                dueDate: formData.dueDate ? Number(formData.dueDate) : undefined,
+                date: new Date(formData.date),
                 description: formData.description
             });
         } else if (transactionType === "debt_payment") {
@@ -132,7 +141,7 @@ export function IncomeExpenseClient({
             });
         }
         setIsModalOpen(false);
-        setFormData({ type: "", amount: "", description: "", debtId: "", remainingInstallments: "", isRecurring: false });
+        setFormData({ type: "", amount: "", description: "", debtId: "", remainingInstallments: "", isRecurring: false, dueDate: "", date: new Date().toISOString().split('T')[0] });
         router.refresh();
     } catch (err) {
         console.error(err);
@@ -291,6 +300,16 @@ export function IncomeExpenseClient({
                     </div>
 
                     <div className="space-y-3">
+                        <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">İşlem Tarihi</Label>
+                        <Input 
+                            type="date" 
+                            value={formData.date}
+                            onChange={(e) => setFormData(p => ({ ...p, date: e.target.value }))}
+                            className="bg-muted border-border/30 h-12 rounded-xl"
+                        />
+                    </div>
+
+                    <div className="space-y-3">
                         <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Açıklama</Label>
                         <Input 
                             placeholder="İşlem detayları..." 
@@ -300,17 +319,34 @@ export function IncomeExpenseClient({
                         />
                     </div>
 
-                    {transactionType === "expense" && (
-                        <div className="flex items-center space-x-3 bg-muted/50 p-4 rounded-2xl border border-border/20 transition-all hover:bg-muted">
-                            <Checkbox 
-                                id="isRecurring" 
-                                checked={formData.isRecurring} 
-                                onCheckedChange={(checked) => setFormData(p => ({ ...p, isRecurring: !!checked }))}
-                                className="border-primary data-[state=checked]:bg-primary"
-                            />
-                            <Label htmlFor="isRecurring" className="text-sm font-semibold text-muted-foreground cursor-pointer select-none">
-                                Düzenli (Her Ay Tekrarlanan) Gider
-                            </Label>
+                    {(transactionType === "income" || transactionType === "expense") && (
+                        <div className="space-y-4">
+                            <div className="flex items-center space-x-3 bg-muted/50 p-4 rounded-2xl border border-border/20 transition-all hover:bg-muted">
+                                <Checkbox 
+                                    id="isRecurring" 
+                                    checked={formData.isRecurring} 
+                                    onCheckedChange={(checked) => setFormData(p => ({ ...p, isRecurring: !!checked }))}
+                                    className="border-primary data-[state=checked]:bg-primary"
+                                />
+                                <Label htmlFor="isRecurring" className="text-sm font-semibold text-muted-foreground cursor-pointer select-none">
+                                    Düzenli (Her Ay Tekrarlanan) {transactionType === "income" ? "Gelir" : "Gider"}
+                                </Label>
+                            </div>
+
+                            {formData.isRecurring && (
+                                <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
+                                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Ayın Kaçıncı Günü? (1-31)</Label>
+                                    <Input 
+                                        type="number" 
+                                        min="1"
+                                        max="31"
+                                        placeholder="Örn: 15" 
+                                        value={formData.dueDate}
+                                        onChange={(e) => setFormData(p => ({ ...p, dueDate: e.target.value }))}
+                                        className="bg-muted border-border/30 h-12 rounded-xl"
+                                    />
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
@@ -366,7 +402,7 @@ export function IncomeExpenseClient({
         <div className="bg-card p-8 rounded-2xl shadow-ambient-low border border-border/20 relative overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 delay-300">
           <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full -mr-8 -mt-8"></div>
           <div className="flex items-center gap-3 mb-4 relative z-10">
-            <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest opacity-70">Net Durum</span>
+            <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest opacity-70">Net Durum (Güncel)</span>
             <div className="bg-primary/10 p-2 rounded-xl">
               <Wallet className="w-5 h-5 text-primary" />
             </div>
@@ -374,7 +410,12 @@ export function IncomeExpenseClient({
           <div className="flex items-baseline gap-2">
             <span className="text-3xl font-heading font-bold text-foreground">₺{netBalance.toLocaleString('tr-TR')}</span>
           </div>
-          <p className="text-primary text-[13px] font-semibold mt-4">Genel finansal denge</p>
+          <div className="mt-4 pt-4 border-t border-border/10">
+            <div className="flex justify-between items-center text-[11px] font-bold">
+              <span className="text-muted-foreground uppercase tracking-wider">Ay Sonu Beklenen:</span>
+              <span className={cn(projectedBalance >= 0 ? "text-emerald-500" : "text-rose-500")}>₺{projectedBalance.toLocaleString('tr-TR')}</span>
+            </div>
+          </div>
         </div>
       </section>
 

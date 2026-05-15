@@ -45,15 +45,15 @@ export function FinancialCalendar({ incomes, expenses, debts, userChildren = [],
     // Determine the date
     let eventDate = new Date(tx.createdAt);
     
-    // For recurring expenses/debts, we might want to map them to the current month based on dueDate
-    if ((tx.type === "Gider" || tx.type === "Borç") && tx.dueDate) {
+    // For recurring items, map them to the current month based on dueDate
+    if (tx.dueDate) {
       // Create a date in the current viewing month using the due date
       eventDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), tx.dueDate);
     }
     
     const key = getDateKey(eventDate);
-    if (incomes.includes(tx)) addEvent(key, 'incomes', tx);
-    else if (expenses.includes(tx)) addEvent(key, 'expenses', tx);
+    if (incomes.find(i => i.id === tx.id)) addEvent(key, 'incomes', tx);
+    else if (expenses.find(e => e.id === tx.id)) addEvent(key, 'expenses', tx);
     else addEvent(key, 'debts', tx);
   });
 

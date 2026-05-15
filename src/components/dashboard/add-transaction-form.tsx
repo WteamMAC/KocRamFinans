@@ -32,6 +32,8 @@ export function AddTransactionForm({ type }: AddTransactionFormProps) {
     amount: "",
     description: "",
     isRecurring: false,
+    dueDate: "",
+    date: new Date().toISOString().split('T')[0],
   });
   const [isScanning, setIsScanning] = useState(false);
 
@@ -52,6 +54,9 @@ export function AddTransactionForm({ type }: AddTransactionFormProps) {
         await addIncome({
           type: formData.category,
           amount: Number(formData.amount),
+          isRecurring: formData.isRecurring,
+          dueDate: formData.dueDate ? Number(formData.dueDate) : undefined,
+          date: new Date(formData.date),
           description: formData.description,
         });
       } else {
@@ -59,6 +64,8 @@ export function AddTransactionForm({ type }: AddTransactionFormProps) {
           type: formData.category,
           amount: Number(formData.amount),
           isRecurring: formData.isRecurring,
+          dueDate: formData.dueDate ? Number(formData.dueDate) : undefined,
+          date: new Date(formData.date),
           description: formData.description,
         });
       }
@@ -169,6 +176,16 @@ export function AddTransactionForm({ type }: AddTransactionFormProps) {
           </div>
 
           <div className="space-y-3">
+            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">İşlem Tarihi</Label>
+            <Input
+              type="date"
+              value={formData.date}
+              onChange={(e) => setFormData(p => ({ ...p, date: e.target.value }))}
+              className="bg-muted border-border/30 h-14 rounded-2xl"
+            />
+          </div>
+
+          <div className="space-y-3">
             <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Açıklama</Label>
             <Input
               placeholder="İşlem detayları (opsiyonel)..."
@@ -178,8 +195,8 @@ export function AddTransactionForm({ type }: AddTransactionFormProps) {
             />
           </div>
 
-          {type === "expense" && (
-            <div className="flex items-center space-x-3 bg-muted/50 p-4 rounded-2xl border border-border/20">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1 flex items-center space-x-3 bg-muted/50 p-4 rounded-2xl border border-border/20">
               <Checkbox
                 id="isRecurring"
                 checked={formData.isRecurring}
@@ -187,10 +204,25 @@ export function AddTransactionForm({ type }: AddTransactionFormProps) {
                 className="border-primary data-[state=checked]:bg-primary"
               />
               <Label htmlFor="isRecurring" className="text-sm font-semibold text-muted-foreground cursor-pointer">
-                Düzenli (Her Ay Tekrarlanan) Gider
+                {type === "income" ? "Düzenli (Her Ay) Gelir" : "Düzenli (Her Ay) Gider"}
               </Label>
             </div>
-          )}
+
+            {formData.isRecurring && (
+              <div className="flex-1 space-y-3">
+                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Ödeme/Giriş Günü (1-31)</Label>
+                <Input
+                  type="number"
+                  min="1"
+                  max="31"
+                  placeholder="Örn: 15"
+                  value={formData.dueDate}
+                  onChange={(e) => setFormData(p => ({ ...p, dueDate: e.target.value }))}
+                  className="bg-muted border-border/30 h-14 rounded-2xl"
+                />
+              </div>
+            )}
+          </div>
 
           <div className="pt-4">
             <Button

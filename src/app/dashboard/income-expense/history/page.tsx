@@ -28,9 +28,23 @@ export default async function IncomeExpenseHistoryPage() {
     return null;
   }
 
+  const now = new Date();
+  
+  // Actual totals (happened so far)
+  const actualIncome = user.incomes
+    .filter(inc => new Date(inc.date || inc.createdAt) <= now)
+    .reduce((acc, inc) => acc + inc.amount, 0);
+    
+  const actualExpense = user.expenses
+    .filter(exp => new Date(exp.date || exp.createdAt) <= now)
+    .reduce((acc, exp) => acc + exp.amount, 0);
+
+  // Projected totals (all entries this month/total)
   const totalIncome = user.incomes.reduce((acc, inc) => acc + inc.amount, 0);
   const totalExpense = user.expenses.reduce((acc, exp) => acc + exp.amount, 0);
-  const netBalance = totalIncome - totalExpense;
+  
+  const netBalance = actualIncome - actualExpense;
+  const projectedBalance = totalIncome - totalExpense;
 
   // Build monthly data for comparison chart (last 6 months)
   const now = new Date();
@@ -43,20 +57,20 @@ export default async function IncomeExpenseHistoryPage() {
 
     const monthlyIncome = user.incomes
       .filter((inc) => {
-        const cAt = new Date(inc.createdAt);
+        const dAt = new Date(inc.date || inc.createdAt);
         return (
-          cAt.getFullYear() === d.getFullYear() &&
-          cAt.getMonth() === d.getMonth()
+          dAt.getFullYear() === d.getFullYear() &&
+          dAt.getMonth() === d.getMonth()
         );
       })
       .reduce((acc, inc) => acc + inc.amount, 0);
 
     const monthlyExpense = user.expenses
       .filter((exp) => {
-        const cAt = new Date(exp.createdAt);
+        const dAt = new Date(exp.date || exp.createdAt);
         return (
-          cAt.getFullYear() === d.getFullYear() &&
-          cAt.getMonth() === d.getMonth()
+          dAt.getFullYear() === d.getFullYear() &&
+          dAt.getMonth() === d.getMonth()
         );
       })
       .reduce((acc, exp) => acc + exp.amount, 0);
@@ -90,7 +104,7 @@ export default async function IncomeExpenseHistoryPage() {
       category: inc.type,
       description: inc.description || inc.type,
       amount: inc.amount,
-      createdAt: inc.createdAt,
+      createdAt: inc.date || inc.createdAt,
     })),
     ...user.expenses.slice(0, 10).map((exp) => ({
       id: exp.id,
@@ -98,7 +112,7 @@ export default async function IncomeExpenseHistoryPage() {
       category: exp.type,
       description: exp.description || exp.type,
       amount: exp.amount,
-      createdAt: exp.createdAt,
+      createdAt: exp.date || exp.createdAt,
     })),
   ]
     .sort(
@@ -114,13 +128,14 @@ export default async function IncomeExpenseHistoryPage() {
       totalIncome={totalIncome}
       totalExpense={totalExpense}
       netBalance={netBalance}
+      projectedBalance={projectedBalance}
       monthlyData={monthlyData}
       maxMonthly={maxMonthly}
       expenseCategoryMap={expenseCategoryMap}
       incomeCategoryMap={incomeCategoryMap}
       recentTransactions={recentTransactions.map((t) => ({
         ...t,
-        createdAt: t.createdAt.toISOString(),
+        createdAt: new Date(t.createdAt).toISOString(),
       }))}
       debts={user.debts}
     />
