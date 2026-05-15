@@ -1,12 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, isSameMonth } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths } from "date-fns";
 import { tr } from "date-fns/locale";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Info } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Info, Plus, Trash2, Loader2, Star } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { addSpecialEvent, deleteSpecialEvent } from "@/app/actions/special-events";
 
 interface FinancialCalendarProps {
   incomes: any[];
@@ -14,24 +17,25 @@ interface FinancialCalendarProps {
   debts: any[];
   userChildren?: any[];
   marriageDate?: Date | null;
+  specialEvents?: any[];
 }
 
-export function FinancialCalendar({ incomes, expenses, debts, userChildren = [], marriageDate }: FinancialCalendarProps) {
+export function FinancialCalendar({ incomes, expenses, debts, userChildren = [], marriageDate, specialEvents = [] }: FinancialCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
 
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
   const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
-  // Map events to specific dates
-  const eventsByDate = new Map<string, { incomes: any[], expenses: any[], debts: any[], birthdays: any[], anniversary: boolean }>();
+  // Haritayı özel eventler ile birlikte güncelle
+  const eventsByDate = new Map<string, { incomes: any[], expenses: any[], debts: any[], birthdays: any[], anniversary: boolean, specialEvents: any[] }>();
 
-  // Helper to normalize dates for comparison (ignoring time)
   const getDateKey = (date: Date) => format(date, "yyyy-MM-dd");
+  const getMonthDayKey = (date: Date) => format(date, "MM-dd");
 
-  const addEvent = (dateStr: string, type: 'incomes' | 'expenses' | 'debts' | 'birthdays' | 'anniversary', event: any) => {
+  const addEvent = (dateStr: string, type: 'incomes' | 'expenses' | 'debts' | 'birthdays' | 'anniversary' | 'specialEvents', event: any) => {
     if (!eventsByDate.has(dateStr)) {
-      eventsByDate.set(dateStr, { incomes: [], expenses: [], debts: [], birthdays: [], anniversary: false });
+      eventsByDate.set(dateStr, { incomes: [], expenses: [], debts: [], birthdays: [], anniversary: false, specialEvents: [] });
     }
     if (type === 'anniversary') {
       eventsByDate.get(dateStr)!.anniversary = true;
@@ -40,47 +44,85 @@ export function FinancialCalendar({ incomes, expenses, debts, userChildren = [],
     }
   };
 
-  // Add all transactions to the map
   [...incomes, ...expenses, ...debts].forEach(tx => {
-    // Determine the date
     let eventDate = new Date(tx.createdAt);
-    
-    // For recurring items, map them to the current month based on dueDate
     if (tx.dueDate) {
-      // Create a date in the current viewing month using the due date
       eventDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), tx.dueDate);
     }
-    
     const key = getDateKey(eventDate);
     if (incomes.find(i => i.id === tx.id)) addEvent(key, 'incomes', tx);
     else if (expenses.find(e => e.id === tx.id)) addEvent(key, 'expenses', tx);
     else addEvent(key, 'debts', tx);
   });
 
-  // Add birthdays to the current year
   userChildren.forEach(child => {
     if (!child.birthDate) return;
     const birthDate = new Date(child.birthDate);
     const birthdayThisYear = new Date(currentDate.getFullYear(), birthDate.getMonth(), birthDate.getDate());
-    const key = getDateKey(birthdayThisYear);
-    addEvent(key, 'birthdays', child);
+    addEvent(getDateKey(birthdayThisYear), 'birthdays', child);
   });
 
-  // Add anniversary to the current year
   if (marriageDate) {
     const marriageD = new Date(marriageDate);
     const anniversaryThisYear = new Date(currentDate.getFullYear(), marriageD.getMonth(), marriageD.getDate());
-    const key = getDateKey(anniversaryThisYear);
-    addEvent(key, 'anniversary', true);
+    addEvent(getDateKey(anniversaryThisYear), 'anniversary', true);
   }
+
+  // Özel etkinlikleri (specialEvents) ekle
+  // Eğer isAnnual true ise, current year'a göre adapte et
+  specialEvents.forEach(evt => {
+    const evtDate = new Date(evt.date);
+    let targetDate = evtDate;
+    
+    if (evt.isAnnual) {
+      targetDate = new Date(currentDate.getFullYear(), evtDate.getMonth(), evtDate.getDate());
+    }
+    
+    addEvent(getDateKey(targetDate), 'specialEvents', evt);
+  });
 
   const nextMonth = () => setCurrentDate(addMonths(currentDate, 1));
   const prevMonth = () => setCurrentDate(subMonths(currentDate, 1));
 
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  
+  // Özel Gün Ekleme Modalı State'leri
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [newEventTitle, setNewEventTitle] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const selectedKey = selectedDate ? getDateKey(selectedDate) : null;
   const selectedEvents = selectedKey ? eventsByDate.get(selectedKey) : null;
+
+  const handleAddEvent = async () => {
+    if (!selectedDate || !newEventTitle.trim()) return;
+
+    setIsSubmitting(true);
+    const formData = new FormData();
+    formData.append("title", newEventTitle);
+    formData.append("date", selectedDate.toISOString());
+
+    const result = await addSpecialEvent(formData);
+
+    if (result.error) {
+      alert("Hata: " + result.error);
+    } else {
+      alert("Özel gün başarıyla eklendi ve her yıl tekrarlanacak şekilde ayarlandı.");
+      setIsAddModalOpen(false);
+      setNewEventTitle("");
+    }
+    setIsSubmitting(false);
+  };
+
+  const handleDeleteEvent = async (id: string) => {
+    setDeletingId(id);
+    const result = await deleteSpecialEvent(id);
+    if (result.error) {
+      alert("Hata: " + result.error);
+    }
+    setDeletingId(null);
+  };
 
   return (
     <Card className="border-border/30 shadow-ambient-medium rounded-[32px] overflow-hidden bg-card">
@@ -92,7 +134,7 @@ export function FinancialCalendar({ incomes, expenses, debts, userChildren = [],
             </div>
             <div>
               <CardTitle className="text-lg">Finansal Takvim</CardTitle>
-              <p className="text-xs text-muted-foreground">Gelir, gider ve ödeme günleriniz</p>
+              <p className="text-xs text-muted-foreground">Gelir, gider, özel günleriniz</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -118,7 +160,6 @@ export function FinancialCalendar({ incomes, expenses, debts, userChildren = [],
         </div>
         
         <div className="grid grid-cols-7 gap-1 md:gap-2">
-          {/* Padding for first day of month (Monday start) */}
           {Array.from({ length: (monthStart.getDay() + 6) % 7 }).map((_, i) => (
             <div key={`empty-${i}`} className="h-10 md:h-14 rounded-xl opacity-0" />
           ))}
@@ -143,14 +184,13 @@ export function FinancialCalendar({ incomes, expenses, debts, userChildren = [],
                   {format(day, "d")}
                 </span>
                 
-                {/* Dots indicator container */}
                 {events && (
                   <div className="absolute bottom-1.5 flex gap-0.5">
                     {events.incomes.length > 0 && <span className={cn("w-1.5 h-1.5 rounded-full bg-emerald-500", isSelected && "bg-white")} />}
                     {events.expenses.length > 0 && <span className={cn("w-1.5 h-1.5 rounded-full bg-rose-500", isSelected && "bg-white")} />}
                     {events.debts.length > 0 && <span className={cn("w-1.5 h-1.5 rounded-full bg-orange-500", isSelected && "bg-white")} />}
-                    {events.birthdays.length > 0 && <span className={cn("w-1.5 h-1.5 rounded-full bg-purple-500", isSelected && "bg-white")} />}
-                    {events.anniversary && <span className={cn("w-1.5 h-1.5 rounded-full bg-pink-500", isSelected && "bg-white")} />}
+                    {events.specialEvents.length > 0 && <span className={cn("w-1.5 h-1.5 rounded-full bg-sky-500", isSelected && "bg-white")} />}
+                    {(events.birthdays.length > 0 || events.anniversary) && <span className={cn("w-1.5 h-1.5 rounded-full bg-pink-500", isSelected && "bg-white")} />}
                   </div>
                 )}
               </button>
@@ -162,19 +202,36 @@ export function FinancialCalendar({ incomes, expenses, debts, userChildren = [],
         <div className="mt-6">
           {selectedDate ? (
             <div className="bg-muted/50 rounded-2xl p-4 border border-border/20 animate-in fade-in zoom-in-95 duration-200">
-              <h4 className="text-sm font-bold text-primary mb-3 pb-2 border-b border-border/20">
-                {format(selectedDate, "d MMMM yyyy, EEEE", { locale: tr })}
-              </h4>
+              <div className="flex items-center justify-between mb-3 pb-2 border-b border-border/20">
+                <h4 className="text-sm font-bold text-primary">
+                  {format(selectedDate, "d MMMM yyyy, EEEE", { locale: tr })}
+                </h4>
+                <Button variant="outline" size="sm" className="h-7 text-xs rounded-lg" onClick={() => setIsAddModalOpen(true)}>
+                  <Plus className="h-3 w-3 mr-1" /> Özel Gün Ekle
+                </Button>
+              </div>
               
-              {!selectedEvents || (selectedEvents.incomes.length === 0 && selectedEvents.expenses.length === 0 && selectedEvents.debts.length === 0 && selectedEvents.birthdays.length === 0 && !selectedEvents.anniversary) ? (
+              {!selectedEvents || (selectedEvents.incomes.length === 0 && selectedEvents.expenses.length === 0 && selectedEvents.debts.length === 0 && selectedEvents.birthdays.length === 0 && !selectedEvents.anniversary && selectedEvents.specialEvents.length === 0) ? (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground opacity-70">
                   <Info className="h-4 w-4" />
-                  Bu tarihte herhangi bir işlem veya ödeme bulunmuyor.
+                  Bu tarihte herhangi bir işlem veya özel gün bulunmuyor.
                 </div>
               ) : (
                 <div className="space-y-3">
+                  {selectedEvents.specialEvents.map((evt, i) => (
+                    <div key={`spe-${evt.id}`} className="flex justify-between items-center text-sm bg-sky-500/10 p-2 rounded-lg border border-sky-500/20">
+                      <div className="flex items-center gap-2">
+                        <Star className="h-4 w-4 text-sky-500 fill-sky-500" />
+                        <span className="font-bold text-sky-600 dark:text-sky-400">{evt.title}</span>
+                        <span className="text-[10px] bg-sky-500/20 text-sky-600 px-2 py-0.5 rounded-full">Her Yıl</span>
+                      </div>
+                      <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={() => handleDeleteEvent(evt.id)} disabled={deletingId === evt.id}>
+                        {deletingId === evt.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+                      </Button>
+                    </div>
+                  ))}
                   {selectedEvents.incomes.map((inc, i) => (
-                    <div key={`inc-${i}`} className="flex justify-between items-center text-sm">
+                    <div key={`inc-${i}`} className="flex justify-between items-center text-sm px-2">
                       <div className="flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full bg-emerald-500" />
                         <span className="font-medium text-foreground">{inc.type} (Gelir)</span>
@@ -183,7 +240,7 @@ export function FinancialCalendar({ incomes, expenses, debts, userChildren = [],
                     </div>
                   ))}
                   {selectedEvents.expenses.map((exp, i) => (
-                    <div key={`exp-${i}`} className="flex justify-between items-center text-sm">
+                    <div key={`exp-${i}`} className="flex justify-between items-center text-sm px-2">
                       <div className="flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full bg-rose-500" />
                         <span className="font-medium text-foreground">{exp.type} (Gider)</span>
@@ -192,7 +249,7 @@ export function FinancialCalendar({ incomes, expenses, debts, userChildren = [],
                     </div>
                   ))}
                   {selectedEvents.debts.map((debt, i) => (
-                    <div key={`debt-${i}`} className="flex justify-between items-center text-sm">
+                    <div key={`debt-${i}`} className="flex justify-between items-center text-sm px-2">
                       <div className="flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full bg-orange-500" />
                         <span className="font-medium text-foreground">{debt.type} (Borç/Ödeme)</span>
@@ -203,7 +260,7 @@ export function FinancialCalendar({ incomes, expenses, debts, userChildren = [],
                   {selectedEvents.birthdays.map((child, i) => {
                     const age = selectedDate.getFullYear() - new Date(child.birthDate).getFullYear();
                     return (
-                      <div key={`bday-${i}`} className="flex justify-between items-center text-sm">
+                      <div key={`bday-${i}`} className="flex justify-between items-center text-sm px-2">
                         <div className="flex items-center gap-2">
                           <span className="w-2 h-2 rounded-full bg-purple-500" />
                           <span className="font-medium text-foreground">Çocuğun Doğum Günü {age > 0 ? `(${age}. Yaş)` : ''}</span>
@@ -213,7 +270,7 @@ export function FinancialCalendar({ incomes, expenses, debts, userChildren = [],
                     );
                   })}
                   {selectedEvents.anniversary && (
-                    <div className="flex justify-between items-center text-sm">
+                    <div className="flex justify-between items-center text-sm px-2">
                       <div className="flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full bg-pink-500" />
                         <span className="font-medium text-foreground">Evlilik Yıl Dönümü</span>
@@ -231,6 +288,37 @@ export function FinancialCalendar({ incomes, expenses, debts, userChildren = [],
           )}
         </div>
       </CardContent>
+
+      <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Özel Gün Ekle</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="text-sm text-muted-foreground">
+              Seçili Tarih: <strong className="text-foreground">{selectedDate && format(selectedDate, "d MMMM yyyy", { locale: tr })}</strong>
+              <br/>
+              <span className="text-xs text-emerald-500 mt-1 inline-block">* Bu etkinlik her yıl aynı ay ve günde takviminizde görünecektir.</span>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Etkinlik/Özel Gün Adı</label>
+              <Input 
+                placeholder="Örn: Araç Sigortası Yenileme, Anneler Günü..." 
+                value={newEventTitle}
+                onChange={(e) => setNewEventTitle(e.target.value)}
+                autoFocus
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setIsAddModalOpen(false)}>İptal</Button>
+            <Button onClick={handleAddEvent} disabled={isSubmitting || !newEventTitle.trim()}>
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Ekle
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
