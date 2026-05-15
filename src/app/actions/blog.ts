@@ -8,14 +8,20 @@ async function getInternalUser(clerkUserId: string) {
   return prisma.user.findUnique({ where: { clerkUserId } });
 }
 
-export async function createPost(content: string, tags: string[], imageUrl?: string) {
+export async function createPost(content: string, tags: string[], imageUrl?: string, communityId?: string) {
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthorized");
   const user = await getInternalUser(userId);
   if (!user) throw new Error("User not found");
 
   await prisma.blogPost.create({
-    data: { authorId: user.id, content, tags, imageUrl },
+    data: { 
+      authorId: user.id, 
+      content, 
+      tags, 
+      imageUrl,
+      communityId 
+    },
   });
 
   revalidatePath("/dashboard/blog");
@@ -78,10 +84,15 @@ export async function deleteComment(commentId: string) {
   revalidatePath("/dashboard/blog");
 }
 
-export async function getPosts(currentInternalUserId?: string, cursor?: string, type: "explore" | "following" = "explore") {
+export async function getPosts(
+  currentInternalUserId?: string, 
+  cursor?: string, 
+  type: "explore" | "following" | "community" = "explore",
+  communityId?: string
+) {
   const PAGE_SIZE = 10;
 
-  let whereClause = {};
+  let whereClause: any = {};
 
   if (type === "following" && currentInternalUserId) {
     const following = await prisma.follow.findMany({
@@ -90,6 +101,18 @@ export async function getPosts(currentInternalUserId?: string, cursor?: string, 
     });
     const followingIds = following.map((f) => f.followingId);
     whereClause = { authorId: { in: followingIds } };
+  } else if (type === "community" && communityId) {
+    whereClause = { communityId };
+  } else {
+    // Keşfet kısmında topluluk postlarını gizleyelim mi? 
+    // Kullanıcı aksini belirtmediği sürece genel feed'de topluluk postlarını da görebilir (eğer topluluk gizli değilse)
+    whereClause = {
+      OR: [
+        { communityId: null },
+        { community: { isPrivate: false } },
+        ...(currentInternalUserId ? [{ community: { members: { some: { userId: currentInternalUserId } } } }] : [])
+      ]
+    };
   }
 
   const posts = await prisma.blogPost.findMany({

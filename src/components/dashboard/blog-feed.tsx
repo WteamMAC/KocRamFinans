@@ -2,12 +2,17 @@
 
 import { useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Heart, MessageCircle, Trash2, Send, X, ChevronDown, Filter, Image as ImageIcon, Camera } from "lucide-react";
 import { createPost, toggleLike, addComment, deletePost, deleteComment, getPosts, getProfilePosts } from "@/app/actions/blog";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useUser } from "@clerk/nextjs";
 import Link from "next/link";
+import { CommunityCreateModal } from "./community-create-modal";
+import { CommunityDiscovery } from "./community-discovery";
+import { 
+  Heart, MessageCircle, Trash2, Send, X, ChevronDown, 
+  Filter, Image as ImageIcon, Plus, Users, LayoutGrid, ArrowLeft 
+} from "lucide-react";
 
 const ALL_TAGS = ["#yatırım", "#kripto", "#hisse", "#tasarruf", "#borç", "#bes", "#faiz", "#altın", "#bütçe"];
 const MAX_CHARS = 500;
@@ -54,7 +59,11 @@ function Avatar({ src, name, id, size = "md" }: { src: string; name: string; id:
 }
 
 // ─── Create Post Box ──────────────────────────────────────────────────
-function CreatePostBox({ currentUserId }: { currentUserId: string }) {
+function CreatePostBox({ currentUserId, communityId, communityName }: { 
+  currentUserId: string; 
+  communityId?: string;
+  communityName?: string;
+}) {
   const { user } = useUser();
   const router = useRouter();
   const [content, setContent] = useState("");
@@ -90,7 +99,7 @@ function CreatePostBox({ currentUserId }: { currentUserId: string }) {
     const allTags = Array.from(new Set([...selectedTags, ...extractedTags]));
 
     startTransition(async () => {
-      await createPost(content.trim(), allTags, imageUrl || undefined);
+      await createPost(content.trim(), allTags, imageUrl || undefined, communityId);
       setContent(""); setSelectedTags([]); setFocused(false); setImageUrl(null);
       router.refresh();
     });
@@ -112,7 +121,7 @@ function CreatePostBox({ currentUserId }: { currentUserId: string }) {
             value={content}
             onChange={(e) => setContent(e.target.value)}
             onFocus={() => setFocused(true)}
-            placeholder="Finansal deneyimlerinizi paylaşın... 💡"
+            placeholder={communityName ? `${communityName} topluluğunda paylaş... 👥` : "Finansal deneyimlerinizi paylaşın... 💡"}
             rows={focused || content ? 3 : 2}
             className="w-full bg-muted/30 border border-border/20 rounded-xl p-3 text-sm text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all duration-200"
           />
@@ -498,7 +507,9 @@ export function BlogFeed({
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoadingMore, startLoadMore] = useTransition();
-  const [feedType, setFeedType] = useState<"explore" | "following">("explore");
+  const [feedType, setFeedType] = useState<"explore" | "following" | "communities">("explore");
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [selectedCommunity, setSelectedCommunity] = useState<{ id: string, name: string } | null>(null);
 
   // Fast Polling - Arka planda yeni postları kontrol et (Her 30 saniyede bir)
   useEffect(() => {
@@ -536,14 +547,26 @@ export function BlogFeed({
     }, 30000); // 30 saniye
 
     return () => clearInterval(pollInterval);
-  }, [currentUserId, feedType, mode, profileId]);
+  }, [currentUserId, feedType, mode, profileId, selectedCommunity]);
 
   // Feed tipi değiştiğinde veriyi sıfırla ve yeniden çek
-  const switchFeed = (type: "explore" | "following") => {
-    if (type === feedType) return;
+  const switchFeed = (type: "explore" | "following" | "communities") => {
+    if (type === feedType && !selectedCommunity) return;
     setFeedType(type);
+    setSelectedCommunity(null);
+    if (type !== "communities") {
+      startLoadMore(async () => {
+        const result = await getPosts(currentUserId, undefined, type);
+        setPosts(result.posts);
+        setNextCursor(result.nextCursor);
+      });
+    }
+  };
+
+  const handleSelectCommunity = (id: string, name: string) => {
+    setSelectedCommunity({ id, name });
     startLoadMore(async () => {
-      const result = await getPosts(currentUserId, undefined, type);
+      const result = await getPosts(currentUserId, undefined, "community", id);
       setPosts(result.posts);
       setNextCursor(result.nextCursor);
     });
@@ -555,8 +578,10 @@ export function BlogFeed({
       let result;
       if (mode === "profile" && profileId) {
         result = await getProfilePosts(profileId, nextCursor);
+      } else if (selectedCommunity) {
+        result = await getPosts(currentUserId, nextCursor, "community", selectedCommunity.id);
       } else {
-        result = await getPosts(currentUserId, nextCursor, feedType);
+        result = await getPosts(currentUserId, nextCursor, feedType as any);
       }
       setPosts((prev) => [...prev, ...result.posts]);
       setNextCursor(result.nextCursor);
@@ -578,8 +603,6 @@ export function BlogFeed({
     <div className="space-y-5">
       {mode === "feed" && (
         <>
-          <CreatePostBox currentUserId={currentUserId} />
-
           {/* Feed Tipi Seçimi */}
           <div className="flex p-1 bg-muted/30 rounded-2xl border border-border/20">
             <button
@@ -600,22 +623,86 @@ export function BlogFeed({
             >
               Takip Ettiklerim
             </button>
+            <button
+              onClick={() => switchFeed("communities")}
+              className={cn(
+                "flex-1 py-2 text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2",
+                feedType === "communities" ? "bg-card text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <Users className="h-4 w-4" />
+              Topluluklar
+            </button>
           </div>
+
+          <CommunityCreateModal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} />
+          
+          {feedType === "communities" && !selectedCommunity && (
+            <div className="flex justify-between items-center px-1 animate-in fade-in duration-300">
+               <div>
+                 <h2 className="text-lg font-black text-foreground">Toplulukları Keşfet</h2>
+                 <p className="text-xs text-muted-foreground">İlgi alanlarınıza göre bir topluluğa katılın veya yenisini oluşturun.</p>
+               </div>
+               <Button 
+                onClick={() => setIsCreateModalOpen(true)}
+                className="rounded-2xl h-10 px-4 text-xs font-bold bg-primary/10 text-primary hover:bg-primary/20 border-none"
+               >
+                 <Plus className="h-4 w-4 mr-1.5" /> Yeni Kur
+               </Button>
+            </div>
+          )}
         </>
       )}
 
-      {/* Arama */}
-      <div className="relative">
-        <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-        </svg>
-        <input
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Gönderi veya kullanıcı ara..."
-          className="w-full pl-9 pr-4 py-2.5 bg-card border border-border/20 rounded-xl text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+      {/* Seçili Topluluk Header */}
+      {selectedCommunity && (
+        <div className="bg-primary/5 border border-primary/20 rounded-[28px] p-5 flex items-center justify-between animate-in slide-in-from-top-4 duration-500">
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={() => setSelectedCommunity(null)}
+              className="p-2 bg-white dark:bg-zinc-900 rounded-full shadow-sm hover:scale-110 transition-transform"
+            >
+              <ArrowLeft className="h-4 w-4 text-primary" />
+            </button>
+            <div>
+              <h2 className="text-lg font-black text-foreground">{selectedCommunity.name}</h2>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full uppercase">Topluluk Sayfası</span>
+                <span className="text-[10px] font-medium text-muted-foreground">{posts.length} Paylaşım</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Arama (Topluluk keşfinde gizleyebiliriz veya arama topluluklarda da çalışır) */}
+      {feedType !== "communities" || selectedCommunity ? (
+        <div className="relative">
+          <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={selectedCommunity ? `${selectedCommunity.name} içinde ara...` : "Gönderi veya kullanıcı ara..."}
+            className="w-full pl-9 pr-4 py-2.5 bg-card border border-border/20 rounded-xl text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+          />
+        </div>
+      ) : null}
+
+      {/* Topluluk Keşif Ekranı */}
+      {feedType === "communities" && !selectedCommunity && (
+        <CommunityDiscovery onSelectCommunity={handleSelectCommunity} />
+      )}
+
+      {/* Gönderi Yazma Alanı (Sadece feed veya topluluk içindeyken) */}
+      {(feedType !== "communities" || selectedCommunity) && mode === "feed" && (
+        <CreatePostBox 
+          currentUserId={currentUserId} 
+          communityId={selectedCommunity?.id}
+          communityName={selectedCommunity?.name}
         />
-      </div>
+      )}
 
       {/* Etiket filtresi */}
       {availableTags.length > 0 && (
