@@ -218,3 +218,20 @@ export async function getInboxConversations() {
 
   return Array.from(conversationsMap.values());
 }
+
+export async function getUnreadMessageCount() {
+  const { userId } = await auth();
+  if (!userId) return 0;
+  
+  const currentUser = await getInternalUser(userId);
+  if (!currentUser) return 0;
+
+  const count = await prisma.message.count({
+    where: {
+      receiverId: currentUser.id,
+      isRead: false
+    }
+  });
+
+  return count;
+}
