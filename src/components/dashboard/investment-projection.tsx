@@ -8,6 +8,7 @@ import { format, addMonths } from "date-fns";
 import { tr } from "date-fns/locale";
 import { predictGrowthRate } from "@/app/actions/insights";
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 
 interface InvestmentProjectionProps {
   currentValue: number;
