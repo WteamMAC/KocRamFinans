@@ -15,6 +15,15 @@ export const DISPLAY_CURRENCIES_LIST: CurrencyInfo[] = [
   { code: "USD", label: "$ USD", symbol: "$", flag: "🇺🇸" },
   { code: "EUR", label: "€ EUR", symbol: "€", flag: "🇪🇺" },
   { code: "GBP", label: "£ GBP", symbol: "£", flag: "🇬🇧" },
+  { code: "CHF", label: "₣ CHF", symbol: "₣", flag: "🇨🇭" },
+  { code: "JPY", label: "¥ JPY", symbol: "¥", flag: "🇯🇵" },
+  { code: "AED", label: "د.إ AED", symbol: "د.إ", flag: "🇦🇪" },
+  { code: "SAR", label: "﷼ SAR", symbol: "﷼", flag: "🇸🇦" },
+  { code: "RUB", label: "₽ RUB", symbol: "₽", flag: "🇷🇺" },
+  { code: "CAD", label: "CA$ CAD", symbol: "CA$", flag: "🇨🇦" },
+  { code: "AUD", label: "A$ AUD", symbol: "A$", flag: "🇦🇺" },
+  { code: "CNY", label: "¥ CNY", symbol: "¥", flag: "🇨🇳" },
+  { code: "SGD", label: "S$ SGD", symbol: "S$", flag: "🇸🇬" },
   { code: "XAU", label: "🪙 ALT", symbol: "ALT", flag: "🟡" },
 ];
 
@@ -36,6 +45,15 @@ const defaultRates: Record<string, number> = {
   USD: 34.20,
   EUR: 37.10,
   GBP: 43.50,
+  CHF: 38.60,
+  JPY: 0.23,
+  AED: 9.31,
+  SAR: 9.11,
+  RUB: 0.35,
+  CAD: 24.80,
+  AUD: 22.50,
+  CNY: 4.80,
+  SGD: 26.10,
   XAU: 2850,
 };
 

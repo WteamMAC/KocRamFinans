@@ -11,6 +11,15 @@ export const DISPLAY_CURRENCIES: Record<string, { symbol: string }> = {
   USD: { symbol: "$" },
   EUR: { symbol: "€" },
   GBP: { symbol: "£" },
+  CHF: { symbol: "₣" },
+  JPY: { symbol: "¥" },
+  AED: { symbol: "د.إ" },
+  SAR: { symbol: "﷼" },
+  RUB: { symbol: "₽" },
+  CAD: { symbol: "CA$" },
+  AUD: { symbol: "A$" },
+  CNY: { symbol: "¥" },
+  SGD: { symbol: "S$" },
   XAU: { symbol: "ALT" },
 };
 
@@ -22,14 +31,18 @@ export async function getUserCurrencyConfig(userCurrency?: string | null): Promi
     return { code, symbol, rate: 1 };
   }
 
+  const fallbackRates: Record<string, number> = {
+    USD: 34.20, EUR: 37.10, GBP: 43.50, CHF: 38.60, JPY: 0.23,
+    AED: 9.31, SAR: 9.11, RUB: 0.35, CAD: 24.80, AUD: 22.50,
+    CNY: 4.80, SGD: 26.10, XAU: 2850
+  };
+
   try {
     const marketRates = await getExchangeRatesAction();
-    const fallbackRates: Record<string, number> = { USD: 34.20, EUR: 37.10, GBP: 43.50, XAU: 2850 };
     const rate = (marketRates && (marketRates as Record<string, number>)[code]) || fallbackRates[code] || 1;
     return { code, symbol, rate };
   } catch (error) {
     console.error("Döviz kurları alınamadı, varsayılan kurlar kullanılıyor:", error);
-    const fallbackRates: Record<string, number> = { USD: 34.20, EUR: 37.10, GBP: 43.50, XAU: 2850 };
     const rate = fallbackRates[code] || 1;
     return { code, symbol, rate };
   }
