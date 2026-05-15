@@ -74,8 +74,8 @@ export async function getLivePrices(symbols: string[]): Promise<Map<string, Pric
       if (quote && quote.symbol) {
         let currentPrice = quote.regularMarketPrice || quote.postMarketPrice || quote.preMarketPrice || 0;
 
-        // Yabancı para birimi kontrolü (Eğer USD ise TL'ye çevir)
-        if (quote.currency === "USD" && quote.symbol !== "TRY=X") {
+        // Yabancı para birimi kontrolü (Hisse ve kriptoları TL'ye çevir; döviz ve emtia paritelerine dokunma)
+        if (quote.currency === "USD" && !quote.symbol.endsWith("=X") && quote.symbol !== "GC=F") {
           currentPrice = currentPrice * usdToTryRate;
         }
 

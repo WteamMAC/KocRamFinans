@@ -26,31 +26,37 @@ export async function searchSymbolsAction(query: string, category: string) {
 export async function getExchangeRatesAction() {
   try {
     const symbols = [
-      "TRY=X", "EURTRY=X", "GBPTRY=X", "CHFTRY=X", "JPYTRY=X",
-      "AEDTRY=X", "SARTRY=X", "RUBTRY=X", "CADTRY=X", "AUDTRY=X",
-      "CNYTRY=X", "SGDTRY=X", "GC=F"
+      "TRY=X", "EURUSD=X", "GBPUSD=X", "CHF=X", "JPY=X",
+      "AED=X", "SAR=X", "RUB=X", "CAD=X", "AUD=X",
+      "CNY=X", "SGD=X", "GC=F"
     ];
     const results = await getLivePrices(symbols);
     
     const usdRate = results.get("TRY=X")?.price || 34.20;
     const rawGold = results.get("GC=F")?.price || 2850;
-    const xauTryPerGram = rawGold > 10000 
-      ? rawGold / 31.1035 
-      : (rawGold / 31.1035) * usdRate;
+    const xauTryPerGram = (rawGold / 31.1035) * usdRate;
     
+    const getTryFromUsd = (symbol: string, defaultRate: number) => {
+      const quote = results.get(symbol)?.price || defaultRate;
+      return quote > 0 ? usdRate / quote : (usdRate / defaultRate);
+    };
+
+    const eurUsd = results.get("EURUSD=X")?.price || 1.085;
+    const gbpUsd = results.get("GBPUSD=X")?.price || 1.275;
+
     return {
       USD: usdRate,
-      EUR: results.get("EURTRY=X")?.price || 37.10,
-      GBP: results.get("GBPTRY=X")?.price || 43.50,
-      CHF: results.get("CHFTRY=X")?.price || 38.60,
-      JPY: results.get("JPYTRY=X")?.price || 0.23,
-      AED: results.get("AEDTRY=X")?.price || 9.31,
-      SAR: results.get("SARTRY=X")?.price || 9.11,
-      RUB: results.get("RUBTRY=X")?.price || 0.35,
-      CAD: results.get("CADTRY=X")?.price || 24.80,
-      AUD: results.get("AUDTRY=X")?.price || 22.50,
-      CNY: results.get("CNYTRY=X")?.price || 4.80,
-      SGD: results.get("SGDTRY=X")?.price || 26.10,
+      EUR: eurUsd * usdRate,
+      GBP: gbpUsd * usdRate,
+      CHF: getTryFromUsd("CHF=X", 0.885),
+      JPY: getTryFromUsd("JPY=X", 154.5),
+      AED: getTryFromUsd("AED=X", 3.6725),
+      SAR: getTryFromUsd("SAR=X", 3.75),
+      RUB: getTryFromUsd("RUB=X", 99.5),
+      CAD: getTryFromUsd("CAD=X", 1.39),
+      AUD: getTryFromUsd("AUD=X", 1.52),
+      CNY: getTryFromUsd("CNY=X", 7.24),
+      SGD: getTryFromUsd("SGD=X", 1.34),
       XAU: xauTryPerGram || 3150,
     };
   } catch (error) {
