@@ -23,6 +23,7 @@ type Post = {
   authorId: string; authorName: string; authorImage: string;
   likeCount: number; isLikedByMe: boolean; isMyPost: boolean;
   comments: Comment[];
+  imageUrl?: string | null;
 };
 
 function formatTimeAgo(date: Date): string {
