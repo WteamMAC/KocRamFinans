@@ -31,6 +31,9 @@ model User {
   followers    Follow[] @relation("following")
   following    Follow[] @relation("follower")
 
+  // Topluluk İlişkileri
+  createdCommunities Community[] @relation("CreatedCommunities")
+  communities        CommunityMember[]
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -135,6 +138,10 @@ model BlogPost {
   imageUrl  String?
   tags      String[]
 
+  // Topluluk İlişkisi
+  communityId String?
+  community   Community? @relation(fields: [communityId], references: [id])
+
   likes     BlogLike[]
   comments  BlogComment[]
 
@@ -178,4 +185,34 @@ model Follow {
   createdAt   DateTime @default(now())
 
   @@unique([followerId, followingId])
+}
+
+model Community {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  imageUrl    String?
+  isPrivate   Boolean  @default(false)
+  
+  creatorId   String
+  creator     User     @relation("CreatedCommunities", fields: [creatorId], references: [id])
+  
+  members     CommunityMember[]
+  posts       BlogPost[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model CommunityMember {
+  id          String   @id @default(cuid())
+  communityId String
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role        String    @default("MEMBER") // "ADMIN", "MODERATOR", "MEMBER"
+
+  createdAt   DateTime @default(now())
+
+  @@unique([communityId, userId])
 }

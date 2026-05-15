@@ -1,0 +1,122 @@
+"use client";
+
+import { useState, useTransition } from "react";
+import { Users, Plus, Shield, Globe, Info, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { createCommunity } from "@/app/actions/communities";
+import { cn } from "@/lib/utils";
+import { useRouter } from "next/navigation";
+
+export function CommunityCreateModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  const router = useRouter();
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [isPrivate, setIsPrivate] = useState(false);
+  const [isPending, startTransition] = useTransition();
+
+  if (!isOpen) return null;
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) return;
+
+    startTransition(async () => {
+      try {
+        await createCommunity(name, description, undefined, isPrivate);
+        onClose();
+        router.refresh();
+      } catch (error) {
+        alert("Topluluk oluşturulurken hata oluştu: " + (error as Error).message);
+      }
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+      <div className="bg-card border border-border/20 rounded-[32px] w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+        <div className="p-6 space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-primary/10 rounded-2xl text-primary">
+                <Users className="h-6 w-6" />
+              </div>
+              <h2 className="text-xl font-black text-foreground">Topluluk Kur</h2>
+            </div>
+            <button onClick={onClose} className="p-2 hover:bg-muted rounded-full transition-colors">
+              <X className="h-5 w-5 text-muted-foreground" />
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-muted-foreground ml-1">Topluluk Adı</label>
+              <input
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Örn: BIST Yatırımcıları"
+                className="w-full bg-muted/30 border border-border/20 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-muted-foreground ml-1">Açıklama</label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Topluluğun amacını kısaca açıklayın..."
+                rows={3}
+                className="w-full bg-muted/30 border border-border/20 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all resize-none"
+              />
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setIsPrivate(false)}
+                className={cn(
+                  "flex-1 p-4 rounded-2xl border transition-all text-left space-y-1",
+                  !isPrivate ? "bg-primary/5 border-primary" : "bg-muted/30 border-border/20 hover:border-primary/40"
+                )}
+              >
+                <div className="flex items-center gap-2">
+                  <Globe className={cn("h-4 w-4", !isPrivate ? "text-primary" : "text-muted-foreground")} />
+                  <span className={cn("text-xs font-bold", !isPrivate ? "text-primary" : "text-foreground")}>Herkese Açık</span>
+                </div>
+                <p className="text-[10px] text-muted-foreground leading-tight">Herkes görebilir ve katılabilir.</p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsPrivate(true)}
+                className={cn(
+                  "flex-1 p-4 rounded-2xl border transition-all text-left space-y-1",
+                  isPrivate ? "bg-primary/5 border-primary" : "bg-muted/30 border-border/20 hover:border-primary/40"
+                )}
+              >
+                <div className="flex items-center gap-2">
+                  <Shield className={cn("h-4 w-4", isPrivate ? "text-primary" : "text-muted-foreground")} />
+                  <span className={cn("text-xs font-bold", isPrivate ? "text-primary" : "text-foreground")}>Gizli</span>
+                </div>
+                <p className="text-[10px] text-muted-foreground leading-tight">Sadece üyeler görebilir.</p>
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2 p-3 bg-amber-500/10 rounded-2xl text-amber-600">
+              <Info className="h-4 w-4 flex-shrink-0" />
+              <p className="text-[10px] font-medium">Topluluk kurucusu olarak ilk üye ve yönetici siz olacaksınız.</p>
+            </div>
+
+            <Button
+              type="submit"
+              disabled={isPending || !name.trim()}
+              className="w-full h-12 rounded-2xl font-bold bg-primary text-primary-foreground hover:bg-primary/90 shadow-ambient-medium"
+            >
+              {isPending ? "Oluşturuluyor..." : "Topluluğu Oluştur"}
+            </Button>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}
