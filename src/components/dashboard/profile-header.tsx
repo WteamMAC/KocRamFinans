@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { Users, BookOpen, UserPlus, UserMinus, ShieldAlert, Ban, Pencil, Check, X } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
+import { NotificationBell } from "@/components/dashboard/notification-bell";
 
 interface ProfileHeaderProps {
   profile: {
@@ -171,7 +172,12 @@ export function ProfileHeader({ profile, initialIsFollowing, currentUserRole }: 
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-3 items-center">
+            {profile.isMe && (
+              <div className="bg-card border border-border/20 rounded-full shadow-ambient-low">
+                <NotificationBell />
+              </div>
+            )}
             {currentUserRole === "ADMIN" && !profile.isMe && (
               <Button
                 onClick={handleBan}

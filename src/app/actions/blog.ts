@@ -44,6 +44,36 @@ async function processAiMentions(content: string, postId: string) {
   }
 }
 
+async function processMentionsAndNotify(content: string, postId: string, sourceUserId: string) {
+  const MENTION_REGEX = /@([a-zA-Z0-9_]+)/g;
+  let match;
+  const usernames = new Set<string>();
+  
+  while ((match = MENTION_REGEX.exec(content)) !== null) {
+    const username = match[1].toLowerCase();
+    if (username !== "ai" && username !== "bot" && username !== "wteam" && username !== "asistan") {
+      usernames.add(username);
+    }
+  }
+
+  const sourceUser = await prisma.user.findUnique({ where: { id: sourceUserId } });
+  if (!sourceUser) return;
+
+  for (const username of usernames) {
+    const targetUser = await prisma.user.findUnique({ where: { username } });
+    if (targetUser && targetUser.id !== sourceUserId) {
+      await prisma.notification.create({
+        data: {
+          userId: targetUser.id,
+          type: "MENTION",
+          title: "Yeni Bahsetme",
+          message: `${sourceUser.username || "Bir kullanıcı"} senden bahsetti.`,
+        }
+      });
+    }
+  }
+}
+
 async function getInternalUser(clerkUserId: string) {
   const user = await prisma.user.findUnique({ where: { clerkUserId } });
   
@@ -93,8 +123,11 @@ export async function createPost(
 
   // AI etiketlemesi kontrolü
   await processAiMentions(content, newPost.id);
+  // Normal kullanıcı etiketlemesi ve bildirimler
+  await processMentionsAndNotify(content, newPost.id, user.id);
 
   revalidatePath("/dashboard/blog");
+
 }
 
 
@@ -143,6 +176,8 @@ export async function addComment(postId: string, content: string) {
 
   // AI etiketlemesi kontrolü
   await processAiMentions(content, postId);
+  // Normal kullanıcı etiketlemesi ve bildirimler
+  await processMentionsAndNotify(content, postId, user.id);
 
   revalidatePath("/dashboard/blog");
 }
@@ -207,6 +242,16 @@ export async function getPosts(
   const me = currentInternalUserId ? await prisma.user.findUnique({ where: { id: currentInternalUserId }, select: { role: true } }) : null;
 
   try {
+    // 1 saatten eski duyuruların sabitliğini kaldır (isAnnouncement = false yap)
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+    await prisma.blogPost.updateMany({
+      where: {
+        isAnnouncement: true,
+        createdAt: { lt: oneHourAgo }
+      },
+      data: { isAnnouncement: false }
+    });
+
     const posts = await prisma.blogPost.findMany({
       where: whereClause,
       orderBy: [
