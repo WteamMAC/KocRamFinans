@@ -18,6 +18,7 @@ import { useState, useEffect } from "react";
 import { CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatAmount } from "@/lib/currency-formatter";
 
 type TimeRange = '1w' | '1m' | '3m' | '6m' | '1y' | '10y';
 
@@ -25,9 +26,10 @@ interface PerformanceChartProps {
   incomes: any[];
   expenses: any[];
   investments: any[];
+  currencyConfig?: { symbol: string; rate: number };
 }
 
-export function PerformanceChart({ incomes, expenses, investments }: PerformanceChartProps) {
+export function PerformanceChart({ incomes, expenses, investments, currencyConfig = { symbol: "₺", rate: 1 } }: PerformanceChartProps) {
   const { theme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [timeRange, setTimeRange] = useState<TimeRange>('1m');
@@ -35,6 +37,7 @@ export function PerformanceChart({ incomes, expenses, investments }: Performance
   useEffect(() => {
     setMounted(true);
   }, []);
+
   const chartData = useMemo(() => {
     let steps: number;
     let stepFn: (date: Date, amount: number) => Date;
@@ -58,24 +61,26 @@ export function PerformanceChart({ incomes, expenses, investments }: Performance
       
       const cumulativeIncome = incomes
         .filter(inc => !inc.createdAt || isAfter(date, startOfDay(new Date(inc.createdAt))) || date.getTime() === startOfDay(new Date(inc.createdAt)).getTime())
-        .reduce((sum, inc) => sum + inc.amount, 0);
+        .reduce((sum, inc) => sum + inc.amount, 0) / currencyConfig.rate;
 
       const cumulativeExpense = expenses
         .filter(exp => !exp.createdAt || isAfter(date, startOfDay(new Date(exp.createdAt))) || date.getTime() === startOfDay(new Date(exp.createdAt)).getTime())
-        .reduce((sum, exp) => sum + exp.amount, 0);
+        .reduce((sum, exp) => sum + exp.amount, 0) / currencyConfig.rate;
 
       const cumulativeInvestment = investments
         .filter(inv => !inv.createdAt || isAfter(date, startOfDay(new Date(inv.createdAt))) || date.getTime() === startOfDay(new Date(inv.createdAt)).getTime())
-        .reduce((sum, inv) => sum + (inv.amount || (inv.quantity * (inv.purchasePrice || 0))), 0);
+        .reduce((sum, inv) => sum + (inv.amount || (inv.quantity * (inv.purchasePrice || 0))), 0) / currencyConfig.rate;
 
       data.push({
         name: format(date, formatStr, { locale: tr }),
-        Bakiye: cumulativeIncome - cumulativeExpense,
-        Yatırım: cumulativeInvestment,
+        Bakiye: Math.round(cumulativeIncome - cumulativeExpense),
+        Yatırım: Math.round(cumulativeInvestment),
+        rawBakiye: (cumulativeIncome - cumulativeExpense) * currencyConfig.rate,
+        rawYatirim: cumulativeInvestment * currencyConfig.rate
       });
     }
     return data;
-  }, [incomes, expenses, investments, timeRange]);
+  }, [incomes, expenses, investments, timeRange, currencyConfig.rate]);
 
   if (!mounted) return <div className="h-[300px] w-full" />;
 
@@ -153,13 +158,13 @@ export function PerformanceChart({ incomes, expenses, investments }: Performance
                 axisLine={false}
                 tickLine={false}
                 tick={{ fontSize: 10, fill: textColor, fontWeight: "bold" }}
-                tickFormatter={(value) => {
-                  if (value >= 1000000) return `${(value / 1000000).toFixed(1).replace(/\\.0$/, '')}m`;
-                  if (value >= 1000) return `${(value / 1000).toFixed(0)}k`;
-                  return value;
-                }}
+                tickFormatter={(value) => `${value}${currencyConfig.symbol}`}
               />
               <Tooltip 
+                formatter={(value: any, name: any, props: any) => [
+                  formatAmount(name === "Nakit Bakiyesi" ? props.payload.rawBakiye : props.payload.rawYatirim, currencyConfig),
+                  name
+                ]}
                 contentStyle={{ 
                   backgroundColor: tooltipBg, 
                   borderRadius: "16px", 

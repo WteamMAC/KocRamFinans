@@ -16,21 +16,14 @@ import { FinancialCalendar } from "@/components/dashboard/financial-calendar";
 import { InvestmentProjection } from "@/components/dashboard/investment-projection";
 import { cn } from "@/lib/utils";
 import { getLivePrices, calculatePortfolioMetrics } from "@/lib/price-service";
-import { processAutoPayments } from "@/app/actions/debts";
+import { getUserCurrencyConfig, formatAmount } from "@/lib/currency-formatter";
 
 export default async function DashboardPage() {
   await cookies();
   const { userId } = await auth();
-  
 
   if (!userId) {
     redirect("/");
-  }
-
-  // Get internal user id
-  const internalUser = await prisma.user.findUnique({ where: { clerkUserId: userId } });
-  if (internalUser) {
-    await processAutoPayments(internalUser.id);
   }
 
   const user = await prisma.user.findUnique({
@@ -50,6 +43,9 @@ export default async function DashboardPage() {
     redirect("/onboarding");
     return null;
   }
+
+  // Kullanıcının Profilindeki Para Birimi Yapılandırmasını Al (Örn: USD, EUR, TRY)
+  const currencyConfig = await getUserCurrencyConfig(user.currency);
 
   let portfolioMetrics = { totalCurrentValue: 0, totalProfit: 0, profitPercent: 0, assets: [] as any[] };
   let livePrices = new Map();
@@ -99,7 +95,7 @@ export default async function DashboardPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <h2 className="text-4xl font-heading font-bold text-primary tracking-tight">
-            Finansal Özet
+            Finansal Özet <span className="text-sm font-black text-muted-foreground bg-muted px-3 py-1 rounded-full uppercase ml-2 tracking-widest">{currencyConfig.code} ({currencyConfig.symbol})</span>
           </h2>
           <p className="text-muted-foreground mt-1 font-medium italic opacity-80">Geleceğinizi verilerle inşa ediyoruz.</p>
         </div>
@@ -131,7 +127,7 @@ export default async function DashboardPage() {
             <CardTitle className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Net Varlık</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-heading font-bold text-primary">{netWorth.toLocaleString('tr-TR')} ₺</div>
+            <div className="text-3xl font-heading font-bold text-primary">{formatAmount(netWorth, currencyConfig)}</div>
             <div className="mt-3 flex items-center gap-2">
               <div className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse"></div>
               <span className="text-[10px] font-bold text-muted-foreground opacity-60">GÜNCEL DURUM</span>
@@ -145,10 +141,10 @@ export default async function DashboardPage() {
             <CardTitle className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Aylık Nakit Akışı</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-heading font-bold text-primary">{(totalIncome - totalExpense).toLocaleString('tr-TR')} ₺</div>
+            <div className="text-3xl font-heading font-bold text-primary">{formatAmount(totalIncome - totalExpense, currencyConfig)}</div>
             <div className="mt-3 text-[10px] font-bold text-emerald-500 flex items-center gap-1">
               <ArrowUpRight className="h-3 w-3" />
-              Gelir: {totalIncome.toLocaleString('tr-TR')} ₺
+              Gelir: {formatAmount(totalIncome, currencyConfig)}
             </div>
           </CardContent>
         </Card>
@@ -159,7 +155,7 @@ export default async function DashboardPage() {
             <CardTitle className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Toplam Borç</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-heading font-bold text-primary">{totalDebt.toLocaleString('tr-TR')} ₺</div>
+            <div className="text-3xl font-heading font-bold text-primary">{formatAmount(totalDebt, currencyConfig)}</div>
             <div className="mt-3 text-[10px] font-bold text-destructive flex items-center gap-1">
               <ArrowDownRight className="h-3 w-3" />
               Borç Yükü: %{((totalDebt / (totalIncome || 1)) * 100).toFixed(1)}
@@ -177,7 +173,7 @@ export default async function DashboardPage() {
               "text-3xl font-heading font-bold",
               totalProfit >= 0 ? "text-accent" : "text-destructive-foreground"
             )}>
-              {totalProfit.toLocaleString('tr-TR')} ₺
+              {formatAmount(totalProfit, currencyConfig)}
             </div>
             <div className={cn(
               "mt-3 text-[10px] font-bold flex items-center gap-1",
@@ -189,18 +185,18 @@ export default async function DashboardPage() {
             <div className="mt-4 pt-3 border-t border-primary-foreground/10 space-y-1">
                <div className="flex justify-between items-center text-[10px]">
                  <span className="text-primary-foreground/70">Gerçekleşen Kar:</span>
-                 <span className="text-emerald-400 font-bold">+{totalRealizedProfit.toLocaleString('tr-TR')} ₺</span>
+                 <span className="text-emerald-400 font-bold">+{formatAmount(totalRealizedProfit, currencyConfig)}</span>
                </div>
                <div className="flex justify-between items-center text-[10px]">
                  <span className="text-primary-foreground/70">Bekleyen Kar:</span>
                  <span className={totalUnrealizedProfit >= 0 ? "text-emerald-400 font-bold" : "text-rose-400 font-bold"}>
-                   {totalUnrealizedProfit > 0 ? "+" : ""}{totalUnrealizedProfit.toLocaleString('tr-TR')} ₺
+                   {totalUnrealizedProfit > 0 ? "+" : ""}{formatAmount(totalUnrealizedProfit, currencyConfig)}
                  </span>
                </div>
                {totalDividends > 0 && (
                  <div className="flex justify-between items-center text-[10px]">
                    <span className="text-primary-foreground/70">Temettü Geliri:</span>
-                   <span className="text-accent font-bold">+{totalDividends.toLocaleString('tr-TR')} ₺</span>
+                   <span className="text-accent font-bold">+{formatAmount(totalDividends, currencyConfig)}</span>
                  </div>
                )}
             </div>
@@ -214,7 +210,8 @@ export default async function DashboardPage() {
           <PerformanceChart 
             incomes={user.incomes} 
             expenses={user.expenses} 
-            investments={user.investments} 
+            investments={user.investments}
+            currencyConfig={currencyConfig}
           />
         </Card>
 
@@ -225,7 +222,7 @@ export default async function DashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-4 md:p-8">
-            <BudgetOverview incomes={user.incomes} expenses={user.expenses} />
+            <BudgetOverview incomes={user.incomes} expenses={user.expenses} currencyConfig={currencyConfig} />
           </CardContent>
         </Card>
       </div>
@@ -239,12 +236,12 @@ export default async function DashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-4 md:p-8 flex-1">
-            <UpcomingPayments expenses={user.expenses} />
+            <UpcomingPayments expenses={user.expenses} currencyConfig={currencyConfig} />
           </CardContent>
         </Card>
         
         <div className="col-span-3 h-full">
-          <FinancialCalendar incomes={user.incomes} expenses={user.expenses} debts={user.debts} userChildren={user.children} marriageDate={user.marriageDate} specialEvents={user.specialEvents} />
+          <FinancialCalendar incomes={user.incomes} expenses={user.expenses} debts={user.debts} userChildren={user.children} marriageDate={user.marriageDate} specialEvents={user.specialEvents} currencyConfig={currencyConfig} />
         </div>
       </div>
 
@@ -261,7 +258,8 @@ export default async function DashboardPage() {
           <CardContent className="p-4 md:p-8 flex-1">
             <InvestmentSummary 
               investments={portfolioMetrics.assets} 
-              fixedAssets={user.fixedAssets} 
+              fixedAssets={user.fixedAssets}
+              currencyConfig={currencyConfig}
             />
           </CardContent>
         </Card>
@@ -272,6 +270,7 @@ export default async function DashboardPage() {
              investments={portfolioMetrics.assets}
              fixedAssets={user.fixedAssets}
              monthlySavings={(totalIncome - totalExpense) > 0 ? (totalIncome - totalExpense) : 0}
+             currencyConfig={currencyConfig}
            />
         </div>
       </div>
@@ -287,7 +286,7 @@ export default async function DashboardPage() {
           </div>
         </CardHeader>
         <CardContent className="p-4 md:p-8">
-          <FixedAssetsSummary fixedAssets={user.fixedAssets} />
+          <FixedAssetsSummary fixedAssets={user.fixedAssets} currencyConfig={currencyConfig} />
         </CardContent>
       </Card>
     </div>

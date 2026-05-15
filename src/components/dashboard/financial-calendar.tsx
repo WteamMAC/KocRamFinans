@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { addSpecialEvent, deleteSpecialEvent } from "@/app/actions/special-events";
+import { formatAmount } from "@/lib/currency-formatter";
 
 interface FinancialCalendarProps {
   incomes: any[];
@@ -18,20 +19,19 @@ interface FinancialCalendarProps {
   userChildren?: any[];
   marriageDate?: Date | null;
   specialEvents?: any[];
+  currencyConfig?: { symbol: string; rate: number };
 }
 
-export function FinancialCalendar({ incomes, expenses, debts, userChildren = [], marriageDate, specialEvents = [] }: FinancialCalendarProps) {
+export function FinancialCalendar({ incomes, expenses, debts, userChildren = [], marriageDate, specialEvents = [], currencyConfig = { symbol: "₺", rate: 1 } }: FinancialCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
 
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
   const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
-  // Haritayı özel eventler ile birlikte güncelle
   const eventsByDate = new Map<string, { incomes: any[], expenses: any[], debts: any[], birthdays: any[], anniversary: boolean, specialEvents: any[] }>();
 
   const getDateKey = (date: Date) => format(date, "yyyy-MM-dd");
-  const getMonthDayKey = (date: Date) => format(date, "MM-dd");
 
   const addEvent = (dateStr: string, type: 'incomes' | 'expenses' | 'debts' | 'birthdays' | 'anniversary' | 'specialEvents', event: any) => {
     if (!eventsByDate.has(dateStr)) {
@@ -68,8 +68,6 @@ export function FinancialCalendar({ incomes, expenses, debts, userChildren = [],
     addEvent(getDateKey(anniversaryThisYear), 'anniversary', true);
   }
 
-  // Özel etkinlikleri (specialEvents) ekle
-  // Eğer isAnnual true ise, current year'a göre adapte et
   specialEvents.forEach(evt => {
     const evtDate = new Date(evt.date);
     let targetDate = evtDate;
@@ -86,7 +84,6 @@ export function FinancialCalendar({ incomes, expenses, debts, userChildren = [],
 
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   
-  // Özel Gün Ekleme Modalı State'leri
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [newEventTitle, setNewEventTitle] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -218,7 +215,7 @@ export function FinancialCalendar({ incomes, expenses, debts, userChildren = [],
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {selectedEvents.specialEvents.map((evt, i) => (
+                  {selectedEvents.specialEvents.map((evt) => (
                     <div key={`spe-${evt.id}`} className="flex justify-between items-center text-sm bg-sky-500/10 p-2 rounded-lg border border-sky-500/20">
                       <div className="flex items-center gap-2">
                         <Star className="h-4 w-4 text-sky-500 fill-sky-500" />
@@ -236,7 +233,7 @@ export function FinancialCalendar({ incomes, expenses, debts, userChildren = [],
                         <span className="w-2 h-2 rounded-full bg-emerald-500" />
                         <span className="font-medium text-foreground">{inc.type} (Gelir)</span>
                       </div>
-                      <span className="font-bold text-emerald-600">+{inc.amount.toLocaleString("tr-TR")} ₺</span>
+                      <span className="font-bold text-emerald-600">+{formatAmount(inc.amount, currencyConfig)}</span>
                     </div>
                   ))}
                   {selectedEvents.expenses.map((exp, i) => (
@@ -245,7 +242,7 @@ export function FinancialCalendar({ incomes, expenses, debts, userChildren = [],
                         <span className="w-2 h-2 rounded-full bg-rose-500" />
                         <span className="font-medium text-foreground">{exp.type} (Gider)</span>
                       </div>
-                      <span className="font-bold text-rose-600">-{exp.amount.toLocaleString("tr-TR")} ₺</span>
+                      <span className="font-bold text-rose-600">-{formatAmount(exp.amount, currencyConfig)}</span>
                     </div>
                   ))}
                   {selectedEvents.debts.map((debt, i) => (
@@ -254,7 +251,7 @@ export function FinancialCalendar({ incomes, expenses, debts, userChildren = [],
                         <span className="w-2 h-2 rounded-full bg-orange-500" />
                         <span className="font-medium text-foreground">{debt.type} (Borç/Ödeme)</span>
                       </div>
-                      <span className="font-bold text-orange-600">-{debt.amount.toLocaleString("tr-TR")} ₺</span>
+                      <span className="font-bold text-orange-600">-{formatAmount(debt.amount, currencyConfig)}</span>
                     </div>
                   ))}
                   {selectedEvents.birthdays.map((child, i) => {

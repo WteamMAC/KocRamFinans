@@ -3,10 +3,6 @@ import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { getLivePrices, calculatePortfolioMetrics } from "@/lib/price-service";
 import { AssetList } from "@/components/dashboard/asset-list";
-import { InvestmentSummary } from "@/components/dashboard/investment-summary";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingUp, Wallet, Banknote, ArrowUpRight, BarChart3 } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 export default async function AssetsPage() {
   const { userId } = await auth();
@@ -51,6 +47,7 @@ export default async function AssetsPage() {
         allInvestments={user.investments} 
         fixedAssets={user.fixedAssets}
         metrics={metrics}
+        userCurrency={user.currency}
       />
     </div>
   );

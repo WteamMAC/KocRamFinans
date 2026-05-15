@@ -10,12 +10,18 @@ import { CreditCard, Plus, X, Landmark, TrendingDown, Clock, AlertCircle } from 
 import { addDebt, payDebtInstallment, closeDebt } from "@/app/actions/debts";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { formatAmount } from "@/lib/currency-formatter";
 
-export function DebtList({ debts }: { debts: any[] }) {
+interface DebtListProps {
+  debts: any[];
+  currencyConfig?: { symbol: string; rate: number };
+}
+
+export function DebtList({ debts, currencyConfig = { symbol: "₺", rate: 1 } }: DebtListProps) {
     const router = useRouter();
     const [isAdding, setIsAdding] = useState(false);
     const [loading, setLoading] = useState(false);
-    const [payModal, setPayModal] = useState<{ id: string, amount: number, isClose: boolean, description: string } | null>(null);
+    const [payModal, setPayModal] = useState<{ id: string, amount: number, isClose: boolean, description: string, rawAmount: number } | null>(null);
     const [error, setError] = useState<string | null>(null);
 
     const [formData, setFormData] = useState({
@@ -32,10 +38,11 @@ export function DebtList({ debts }: { debts: any[] }) {
         if (!formData.amount) return;
         setLoading(true);
         setError(null);
+        const amountInTry = Number(formData.amount) * currencyConfig.rate;
         try {
             await addDebt({
                 type: formData.type,
-                amount: Number(formData.amount),
+                amount: amountInTry,
                 remainingInstallments: formData.remainingInstallments ? Number(formData.remainingInstallments) : undefined,
                 description: formData.description
             });
@@ -53,11 +60,12 @@ export function DebtList({ debts }: { debts: any[] }) {
         if (!payModal) return;
         setLoading(true);
         setError(null);
+        const payAmountTry = payModal.amount * currencyConfig.rate;
         try {
             if (payModal.isClose) {
                 await closeDebt(payModal.id);
             } else {
-                await payDebtInstallment(payModal.id, payModal.amount);
+                await payDebtInstallment(payModal.id, payAmountTry);
             }
             setPayModal(null);
             router.refresh();
@@ -75,7 +83,7 @@ export function DebtList({ debts }: { debts: any[] }) {
                     <TrendingDown className="w-5 h-5 text-rose-600" />
                     <div>
                         <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">Toplam Yükümlülük</p>
-                        <p className="text-xl font-heading font-bold text-primary">₺{totalDebt.toLocaleString('tr-TR')}</p>
+                        <p className="text-xl font-heading font-bold text-primary">{formatAmount(totalDebt, currencyConfig)}</p>
                     </div>
                 </div>
                 <Button 
@@ -107,7 +115,7 @@ export function DebtList({ debts }: { debts: any[] }) {
                             </Select>
                         </div>
                         <div className="space-y-3">
-                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Toplam Tutar (₺)</Label>
+                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Toplam Tutar ({currencyConfig.symbol})</Label>
                             <Input
                                 type="number"
                                 value={formData.amount}
@@ -155,7 +163,9 @@ export function DebtList({ debts }: { debts: any[] }) {
 
             {/* Debt Cards Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {activeDebts.map((debt) => (
+                {activeDebts.map((debt) => {
+                    const monthlyTry = debt.remainingInstallments ? debt.amount / debt.remainingInstallments : debt.amount;
+                    return (
                     <Card key={debt.id} className="bg-card border-border/30 shadow-ambient-low hover:shadow-ambient-medium transition-all rounded-[32px] overflow-hidden group">
                         <div className="p-8">
                             <div className="flex justify-between items-start mb-6">
@@ -167,7 +177,7 @@ export function DebtList({ debts }: { debts: any[] }) {
                                 </div>
                                 <div className="text-right">
                                     <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">Kalan Borç</span>
-                                    <p className="text-2xl font-heading font-bold text-primary">₺{debt.amount.toLocaleString('tr-TR')}</p>
+                                    <p className="text-2xl font-heading font-bold text-primary">{formatAmount(debt.amount, currencyConfig)}</p>
                                 </div>
                             </div>
                             
@@ -188,7 +198,7 @@ export function DebtList({ debts }: { debts: any[] }) {
                                         <TrendingDown className="w-4 h-4 opacity-40" /> Aylık Ödeme (Tahmini)
                                     </div>
                                     <span className="font-bold text-rose-600">
-                                        ₺{(debt.remainingInstallments ? debt.amount / debt.remainingInstallments : debt.amount).toLocaleString('tr-TR')}
+                                        {formatAmount(monthlyTry, currencyConfig)}
                                     </span>
                                 </div>
                             </div>
@@ -197,20 +207,21 @@ export function DebtList({ debts }: { debts: any[] }) {
                                 <Button 
                                     variant="outline" 
                                     className="rounded-xl border-destructive/20 text-destructive hover:bg-destructive/5 font-bold h-11"
-                                    onClick={() => setPayModal({ id: debt.id, amount: debt.remainingInstallments ? debt.amount / debt.remainingInstallments : 0, isClose: false, description: debt.description || debt.type })}
+                                    onClick={() => setPayModal({ id: debt.id, amount: monthlyTry / currencyConfig.rate, rawAmount: monthlyTry, isClose: false, description: debt.description || debt.type })}
                                 >
                                     Taksit Öde
                                 </Button>
                                 <Button 
                                     className="rounded-xl bg-destructive hover:bg-destructive/90 text-destructive-foreground font-bold h-11"
-                                    onClick={() => setPayModal({ id: debt.id, amount: debt.amount, isClose: true, description: debt.description || debt.type })}
+                                    onClick={() => setPayModal({ id: debt.id, amount: debt.amount / currencyConfig.rate, rawAmount: debt.amount, isClose: true, description: debt.description || debt.type })}
                                 >
                                     Borcu Kapat
                                 </Button>
                             </div>
                         </div>
                     </Card>
-                ))}
+                );
+                })}
 
                 {activeDebts.length === 0 && !isAdding && (
                     <div className="col-span-full py-20 flex flex-col items-center justify-center text-muted-foreground opacity-50 italic">
@@ -239,7 +250,7 @@ export function DebtList({ debts }: { debts: any[] }) {
                             </div>
 
                             <div className="space-y-3">
-                                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Ödenecek Tutar (₺)</Label>
+                                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Ödenecek Tutar ({currencyConfig.symbol})</Label>
                                 <Input
                                     type="number"
                                     value={payModal.amount}

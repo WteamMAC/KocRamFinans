@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { DebtList } from "@/components/dashboard/debt-list";
+import { getUserCurrencyConfig } from "@/lib/currency-formatter";
 
 export default async function DebtsPage() {
   await cookies();
@@ -26,18 +27,20 @@ export default async function DebtsPage() {
     return null;
   }
 
+  const currencyConfig = await getUserCurrencyConfig(user.currency);
+
   return (
     <div className="flex-1 space-y-10 p-8 pt-10 bg-background min-h-screen">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <h2 className="text-4xl font-heading font-bold text-primary tracking-tight">
-            Borç ve Krediler
+            Borç ve Krediler <span className="text-sm font-black text-muted-foreground bg-muted px-3 py-1 rounded-full uppercase ml-2 tracking-widest">{currencyConfig.code} ({currencyConfig.symbol})</span>
           </h2>
           <p className="text-muted-foreground mt-1 font-medium italic opacity-80">Yükümlülüklerinizi yönetin ve ödeme planınızı takip edin.</p>
         </div>
       </div>
 
-      <DebtList debts={user.debts} />
+      <DebtList debts={user.debts} currencyConfig={currencyConfig} />
     </div>
   );
 }
