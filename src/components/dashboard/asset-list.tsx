@@ -86,9 +86,7 @@ export function AssetList({ assets, allInvestments, fixedAssets, defaultTab = "f
   const [isAdding, setIsAdding] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [showSearch, setShowSearch] = useState(false);
+
   const [expandedSymbol, setExpandedSymbol] = useState<string | null>(null);
   const [filterQuery, setFilterQuery] = useState("");
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -97,42 +95,10 @@ export function AssetList({ assets, allInvestments, fixedAssets, defaultTab = "f
   const [activeTab, setActiveTab] = useState<"financial" | "fixed">(defaultTab);
   const [sellModalState, setSellModalState] = useState<{ assetId: string | null }>({ assetId: null });
 
-  const [fixedAssetFormData, setFixedAssetFormData] = useState({
-    name: "",
-    type: "Gayrimenkul",
-    value: 0
-  });
+  // No internal form state needed here as it's managed by AssetForm component
 
-  const [formData, setFormData] = useState({
-    type: "BIST" as string,
-    symbol: "",
-    quantity: 0,
-    purchasePrice: 0,
-    useCurrentPrice: false,
-    description: "",
-  });
 
-  // Search results positioning logic
-  const inputRef = useRef<HTMLDivElement>(null);
-  const [rect, setRect] = useState<DOMRect | null>(null);
 
-  const updateRect = () => {
-    if (inputRef.current) {
-      setRect(inputRef.current.getBoundingClientRect());
-    }
-  };
-
-  useEffect(() => {
-    if (showSearch) {
-      updateRect();
-      window.addEventListener("scroll", updateRect);
-      window.addEventListener("resize", updateRect);
-    }
-    return () => {
-      window.removeEventListener("scroll", updateRect);
-      window.removeEventListener("resize", updateRect);
-    };
-  }, [showSearch]);
 
   useEffect(() => {
     setMounted(true);
@@ -190,19 +156,7 @@ export function AssetList({ assets, allInvestments, fixedAssets, defaultTab = "f
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 
-  useEffect(() => {
-    const delayDebounceFn = setTimeout(async () => {
-      if (searchQuery.length >= 2 && formData.type !== "BES" && formData.type !== "FAIZ") {
-        const results = await searchSymbolsAction(searchQuery, formData.type);
-        setSearchResults(results);
-        setShowSearch(true);
-      } else {
-        setSearchResults([]);
-        setShowSearch(false);
-      }
-    }, 300);
-    return () => clearTimeout(delayDebounceFn);
-  }, [searchQuery, formData.type]);
+
 
   const handleExportCSV = () => {
     const headers = ["Sembol", "Tur", "Miktar", "Maliyet", "Anlik Fiyat", "Toplam Deger", "Kar/Zarar"];
@@ -235,16 +189,14 @@ export function AssetList({ assets, allInvestments, fixedAssets, defaultTab = "f
     setTimeout(() => setIsRefreshing(false), 1000);
   };
 
-  const handleNumberChange = (field: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value === "" ? 0 : parseFloat(value) }));
-  };
 
-  async function handleAdd() {
-    if (!formData.symbol || !formData.quantity || isNaN(formData.quantity) || formData.quantity <= 0) {
+
+  async function handleAdd(data: any) {
+    if (!data.symbol || !data.quantity || isNaN(data.quantity) || data.quantity <= 0) {
       setError("Lütfen sembol seçin ve geçerli bir miktar girin.");
       return;
     }
-    if (!formData.useCurrentPrice && (isNaN(formData.purchasePrice) || formData.purchasePrice < 0)) {
+    if (!data.useCurrentPrice && (isNaN(data.purchasePrice) || data.purchasePrice < 0)) {
       setError("Lütfen geçerli bir alış fiyatı girin.");
       return;
     }
@@ -252,13 +204,12 @@ export function AssetList({ assets, allInvestments, fixedAssets, defaultTab = "f
     setLoading(true);
     setError(null);
     try {
-      let finalSymbol = formData.symbol;
+      let finalSymbol = data.symbol;
       if (finalSymbol.includes("(")) finalSymbol = finalSymbol.split(" ")[0];
 
-      await addAsset({ ...formData, symbol: finalSymbol.toUpperCase() });
+      await addAsset({ ...data, symbol: finalSymbol.toUpperCase() });
       setIsAdding(false);
-      setFormData({ type: "BIST", symbol: "", quantity: 0, purchasePrice: 0, useCurrentPrice: false, description: "" });
-      setSearchQuery("");
+
 
       await new Promise(r => setTimeout(r, 500));
       router.refresh();
@@ -320,8 +271,8 @@ export function AssetList({ assets, allInvestments, fixedAssets, defaultTab = "f
     document.body.removeChild(link);
   };
 
-  async function handleAddFixed() {
-    if (!fixedAssetFormData.name || !fixedAssetFormData.value || fixedAssetFormData.value <= 0) {
+  async function handleAddFixed(data: any) {
+    if (!data.name || !data.value || data.value <= 0) {
       setError("Lütfen isim girin ve geçerli bir değer belirtin.");
       return;
     }
@@ -329,9 +280,8 @@ export function AssetList({ assets, allInvestments, fixedAssets, defaultTab = "f
     setLoading(true);
     setError(null);
     try {
-      await addFixedAsset(fixedAssetFormData);
+      await addFixedAsset(data);
       setIsAdding(false);
-      setFixedAssetFormData({ name: "", type: "Gayrimenkul", value: 0 });
       await new Promise(r => setTimeout(r, 500));
       router.refresh();
     } catch (err: any) {
