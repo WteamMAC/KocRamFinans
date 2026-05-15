@@ -7,6 +7,7 @@ import {
   getCommunities, 
   getCommunityDetails, 
   getCommunityRequests, 
+  getCommunityMembers,
   handleJoinRequest, 
   deleteCommunity, 
   removeMember 
