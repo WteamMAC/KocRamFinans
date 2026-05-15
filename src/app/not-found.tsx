@@ -14,26 +14,22 @@ export default function NotFound() {
     >
       {/* Sky Clouds */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        {/* Large cloud left */}
         <svg className="absolute top-4 left-[-60px] opacity-80" width="340" height="180" viewBox="0 0 340 180" fill="none">
           <ellipse cx="140" cy="110" rx="140" ry="70" fill="#F9A825" fillOpacity="0.7"/>
           <ellipse cx="230" cy="90" rx="110" ry="60" fill="#F9A825" fillOpacity="0.6"/>
           <ellipse cx="80" cy="120" rx="80" ry="50" fill="#FFB74D" fillOpacity="0.5"/>
           <ellipse cx="300" cy="120" rx="60" ry="40" fill="#F9A825" fillOpacity="0.5"/>
         </svg>
-        {/* Large cloud right */}
         <svg className="absolute top-2 right-[-40px] opacity-80" width="300" height="160" viewBox="0 0 300 160" fill="none">
           <ellipse cx="160" cy="100" rx="130" ry="65" fill="#F9A825" fillOpacity="0.7"/>
           <ellipse cx="80" cy="80" rx="90" ry="55" fill="#FFB74D" fillOpacity="0.6"/>
           <ellipse cx="240" cy="110" rx="70" ry="45" fill="#F9A825" fillOpacity="0.5"/>
         </svg>
-        {/* Small cloud center-left */}
         <svg className="absolute top-16 left-[20%] opacity-60" width="180" height="100" viewBox="0 0 180 100" fill="none">
           <ellipse cx="90" cy="60" rx="90" ry="45" fill="#FFB74D" fillOpacity="0.6"/>
           <ellipse cx="50" cy="50" rx="60" ry="35" fill="#F9A825" fillOpacity="0.5"/>
           <ellipse cx="140" cy="55" rx="50" ry="30" fill="#FFB74D" fillOpacity="0.4"/>
         </svg>
-        {/* Small cloud center-right */}
         <svg className="absolute top-8 right-[22%] opacity-60" width="160" height="90" viewBox="0 0 160 90" fill="none">
           <ellipse cx="80" cy="55" rx="80" ry="40" fill="#FFB74D" fillOpacity="0.6"/>
           <ellipse cx="40" cy="45" rx="50" ry="30" fill="#F9A825" fillOpacity="0.5"/>
@@ -43,21 +39,17 @@ export default function NotFound() {
 
       {/* Ground / Dunes */}
       <div className="absolute bottom-0 left-0 w-full pointer-events-none">
-        {/* Back dune */}
         <svg className="absolute bottom-0 left-0 w-full" viewBox="0 0 1440 380" preserveAspectRatio="none">
           <path d="M0,180 C200,80 400,260 720,160 C1040,60 1280,200 1440,140 L1440,380 L0,380 Z" fill="#F5DEB3" fillOpacity="0.5"/>
         </svg>
-        {/* Middle dune */}
         <svg className="absolute bottom-0 left-0 w-full" viewBox="0 0 1440 340" preserveAspectRatio="none">
           <path d="M0,220 C300,120 500,280 780,180 C1060,80 1300,240 1440,170 L1440,340 L0,340 Z" fill="#FAEBD7" fillOpacity="0.8"/>
         </svg>
-        {/* Front dune */}
         <svg className="absolute bottom-0 left-0 w-full" viewBox="0 0 1440 300" preserveAspectRatio="none">
           <path d="M0,260 C250,160 500,300 760,220 C1020,140 1250,280 1440,210 L1440,300 L0,300 Z" fill="#FFF8F0"/>
         </svg>
 
-        {/* Small plants */}
-        {/* Left plants */}
+        {/* Plants Left */}
         <svg className="absolute bottom-[110px] left-[6%]" width="60" height="80" viewBox="0 0 60 80">
           <rect x="28" y="30" width="4" height="50" fill="#D4851A" rx="2"/>
           <ellipse cx="30" cy="28" rx="14" ry="20" fill="#E8960F" opacity="0.85"/>
@@ -74,7 +66,7 @@ export default function NotFound() {
           <ellipse cx="25" cy="23" rx="12" ry="17" fill="#E8960F" opacity="0.8"/>
         </svg>
 
-        {/* Right plants */}
+        {/* Plants Right */}
         <svg className="absolute bottom-[105px] right-[5%]" width="65" height="85" viewBox="0 0 65 85">
           <rect x="30" y="32" width="4" height="53" fill="#D4851A" rx="2"/>
           <ellipse cx="32" cy="30" rx="15" ry="22" fill="#E8960F" opacity="0.85"/>
@@ -91,8 +83,7 @@ export default function NotFound() {
           <ellipse cx="15" cy="34" rx="9" ry="13" fill="#C97A10" opacity="0.65"/>
         </svg>
 
-        {/* Scattered Coins */}
-        {/* Cracked coin center */}
+        {/* Coins */}
         <svg className="absolute bottom-[160px] left-[44%]" width="100" height="32" viewBox="0 0 100 32">
           <ellipse cx="50" cy="16" rx="50" ry="16" fill="#D4A017" opacity="0.9"/>
           <ellipse cx="50" cy="14" rx="46" ry="13" fill="#F0C040"/>
@@ -100,17 +91,14 @@ export default function NotFound() {
           <line x1="35" y1="8" x2="60" y2="24" stroke="#C8940D" strokeWidth="1.5" strokeLinecap="round"/>
           <line x1="55" y1="6" x2="45" y2="22" stroke="#C8940D" strokeWidth="1" strokeLinecap="round"/>
         </svg>
-        {/* Small coin left */}
         <svg className="absolute bottom-[148px] left-[30%]" width="50" height="16" viewBox="0 0 50 16">
           <ellipse cx="25" cy="8" rx="25" ry="8" fill="#D4A017" opacity="0.75"/>
           <ellipse cx="25" cy="7" rx="22" ry="6.5" fill="#F0C040" opacity="0.85"/>
         </svg>
-        {/* Small coin right */}
         <svg className="absolute bottom-[142px] right-[28%]" width="45" height="14" viewBox="0 0 45 14">
           <ellipse cx="22" cy="7" rx="22" ry="7" fill="#D4A017" opacity="0.7"/>
           <ellipse cx="22" cy="6" rx="19" ry="5.5" fill="#F0C040" opacity="0.8"/>
         </svg>
-        {/* Tiny fragments */}
         <svg className="absolute bottom-[152px] left-[38%]" width="20" height="12" viewBox="0 0 20 12">
           <ellipse cx="10" cy="6" rx="10" ry="6" fill="#E8B820" opacity="0.65"/>
         </svg>
@@ -121,7 +109,6 @@ export default function NotFound() {
 
       {/* Main Content */}
       <div className="relative z-10 flex flex-col items-center justify-center text-center px-4 w-full" style={{marginTop: '-60px'}}>
-        {/* Top Text */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -136,7 +123,6 @@ export default function NotFound() {
           </p>
         </motion.div>
 
-        {/* 404 Number */}
         <motion.div
           initial={{ scale: 0.7, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -162,7 +148,6 @@ export default function NotFound() {
           </h1>
         </motion.div>
 
-        {/* Button */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
