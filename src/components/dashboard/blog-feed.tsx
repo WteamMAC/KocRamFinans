@@ -20,7 +20,7 @@ import { CommunityCreateModal } from "./community-create-modal";
 import { CommunityDiscovery } from "./community-discovery";
 import { 
   Heart, MessageCircle, Trash2, Send, X, ChevronDown, 
-  Filter, Image as ImageIcon, Plus, Users, LayoutGrid, ArrowLeft, Settings, Check, UserMinus, ShieldAlert
+  Filter, Image as ImageIcon, Plus, Users, LayoutGrid, ArrowLeft, Settings, Check, UserMinus, ShieldAlert, Ban
 } from "lucide-react";
 
 const ALL_TAGS = ["#yatırım", "#kripto", "#hisse", "#tasarruf", "#borç", "#bes", "#faiz", "#altın", "#bütçe"];
