@@ -28,13 +28,9 @@ export default async function SettingsPage() {
   };
 
   return (
-    <div 
-      className="relative min-h-screen py-10 overflow-hidden"
-      style={{ background: "#F5EDD8" }}
-    >
-      {/* Dot pattern — 404 ile aynı */}
-      <div 
-        className="absolute inset-0 opacity-[0.08] pointer-events-none"
+    <div className="relative min-h-screen py-10 overflow-hidden bg-[#F5EDD8] dark:bg-[#120d0a] transition-colors duration-300">
+      {/* Dot pattern */}
+      <div className="absolute inset-0 opacity-[0.08] dark:opacity-[0.15] pointer-events-none"
         style={{
           backgroundImage: "radial-gradient(circle, #8C5000 1px, transparent 1px)",
           backgroundSize: "36px 36px",
@@ -42,11 +38,11 @@ export default async function SettingsPage() {
       />
 
       <div className="relative z-10 max-w-3xl mx-auto px-4 space-y-8">
-        <div className="bg-[#fbf9f4] border border-[#8C5000]/15 rounded-3xl p-8 shadow-sm">
-          <h1 className="text-3xl font-black font-heading tracking-tight text-[#5a3100] drop-shadow-sm">
+        <div className="bg-[#fbf9f4] dark:bg-[#1c140e] border border-[#8C5000]/15 dark:border-[#ffb874]/20 rounded-3xl p-8 shadow-sm transition-colors duration-300">
+          <h1 className="text-3xl font-black font-heading tracking-tight text-[#5a3100] dark:text-[#ffb874] drop-shadow-sm">
             Profil Ayarları
           </h1>
-          <p className="text-[#887364] mt-1 text-sm font-bold">
+          <p className="text-[#887364] dark:text-[#dbc2b0] mt-1 text-sm font-bold">
             Bilgilerini tek bir ekranda kolayca yönet — değişiklik yaptığında Kaydet butonu aktif olur.
           </p>
         </div>

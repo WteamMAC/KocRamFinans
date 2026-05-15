@@ -9,12 +9,9 @@ import { cn } from "@/lib/utils";
 
 export default function NotFound() {
   return (
-    <div
-      className="relative min-h-screen w-full flex flex-col items-center justify-center overflow-hidden"
-      style={{ background: "#F5EDD8" }}
-    >
+    <div className="relative min-h-screen w-full flex flex-col items-center justify-center overflow-hidden bg-[#F5EDD8] dark:bg-[#120d0a] transition-colors duration-300">
       {/* Subtle dot pattern */}
-      <div className="absolute inset-0 opacity-[0.08]"
+      <div className="absolute inset-0 opacity-[0.08] dark:opacity-[0.15]"
         style={{
           backgroundImage: "radial-gradient(circle, #8C5000 1px, transparent 1px)",
           backgroundSize: "36px 36px",
@@ -36,7 +33,7 @@ export default function NotFound() {
             alt="Balıkçı 404 illüstrasyonu"
             width={800}
             height={450}
-            className="w-full h-auto rounded-3xl"
+            className="w-full h-auto rounded-3xl shadow-2xl dark:shadow-black/60"
             priority
           />
         </motion.div>
@@ -52,10 +49,9 @@ export default function NotFound() {
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="font-black leading-none mb-3"
+            className="font-black leading-none mb-3 text-[#5a3100] dark:text-[#ffb874]"
             style={{
               fontSize: "clamp(80px, 12vw, 130px)",
-              color: "#5a3100",
               textShadow: "0 4px 0 #C07828, 0 8px 20px rgba(140,80,0,0.2)",
             }}
           >
@@ -66,8 +62,7 @@ export default function NotFound() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4 }}
-            className="text-xl md:text-2xl font-bold mb-2"
-            style={{ color: "#5a3100" }}
+            className="text-xl md:text-2xl font-bold mb-2 text-[#5a3100] dark:text-[#fbf9f4]"
           >
             Sayfayı Balıkladık!
           </motion.p>
@@ -76,8 +71,7 @@ export default function NotFound() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5 }}
-            className="text-sm md:text-base mb-8 max-w-xs leading-relaxed"
-            style={{ color: "#887364" }}
+            className="text-sm md:text-base mb-8 max-w-xs leading-relaxed text-[#887364] dark:text-[#dbc2b0]"
           >
             Aradığınız sayfa finansal derinliklerde kaybolmuş. Sizi güvenli sulara geri alalım.
           </motion.p>
@@ -91,10 +85,9 @@ export default function NotFound() {
               href="/"
               className={cn(
                 buttonVariants({ variant: "default" }),
-                "h-12 px-8 font-bold rounded-full text-white flex items-center gap-2.5 text-base shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl active:scale-95"
+                "h-12 px-8 font-bold rounded-full text-white flex items-center gap-2.5 text-base shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl active:scale-95 bg-gradient-to-r from-[#f18d02] to-[#8C5000] dark:from-[#ffb874] dark:to-[#8C5000] dark:text-[#120d0a] dark:font-black"
               )}
               style={{
-                background: "linear-gradient(135deg, #f18d02 0%, #8c5000 100%)",
                 border: "none",
                 boxShadow: "0 6px 20px rgba(140,80,0,0.35)",
               }}
@@ -105,15 +98,14 @@ export default function NotFound() {
           </motion.div>
 
           {/* Decorative dots */}
-          <div className="flex gap-2 mt-8 opacity-25">
+          <div className="flex gap-2 mt-8 opacity-25 dark:opacity-40">
             {[...Array(5)].map((_, i) => (
               <div
                 key={i}
-                className="rounded-full"
+                className="rounded-full bg-[#8C5000] dark:bg-[#ffb874]"
                 style={{
                   width: i === 2 ? 10 : 6,
                   height: i === 2 ? 10 : 6,
-                  background: "#8C5000",
                 }}
               />
             ))}
