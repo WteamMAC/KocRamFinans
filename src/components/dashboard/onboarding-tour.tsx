@@ -206,6 +206,8 @@ export function OnboardingTour() {
         textColor: theme === 'dark' ? '#f3f4f6' : '#111827',
         arrowColor: theme === 'dark' ? '#1f2937' : '#ffffff',
         showProgress: false,
+        spotlightRadius: 20,
+        spotlightPadding: 12,
       }}
     />
   );
