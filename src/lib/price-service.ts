@@ -141,14 +141,10 @@ export async function searchSymbols(query: string, category: string) {
       };
     });
 
-    // Seçili kategoriye göre sıralama yap (Seçili olanlar en üstte)
-    const sortedQuotes = processedQuotes.sort((a: any, b: any) => {
-      if (a.suggestedCategory === category && b.suggestedCategory !== category) return -1;
-      if (a.suggestedCategory !== category && b.suggestedCategory === category) return 1;
-      return 0;
-    });
+    // Seçili kategoriye göre FİLTRELEME yap (Sadece seçili kategoridekiler kalsın)
+    const filteredQuotes = processedQuotes.filter((q: any) => q.suggestedCategory === category);
 
-    return sortedQuotes.slice(0, 8);
+    return filteredQuotes.slice(0, 8);
   } catch (error: any) {
     console.error("CRITICAL: Search API Error:", error.message);
     return [];
