@@ -26,6 +26,7 @@ import {
 const ALL_TAGS = ["#yatırım", "#kripto", "#hisse", "#tasarruf", "#borç", "#bes", "#faiz", "#altın", "#bütçe"];
 const MAX_CHARS = 500;
 const HASHTAG_REGEX = /#([a-zA-Z0-9çşğüöıÇŞĞÜÖİ]+)/g;
+const MENTION_REGEX = /@([a-zA-Z0-9_]+)/g;
 
 // ─── Types ────────────────────────────────────────────────────────────
 type Comment = {
@@ -267,7 +268,7 @@ function CommentSection({ post, onTagClick }: { post: Post; onTagClick?: (tag: s
                 {c.isMyComment && <button onClick={() => handleDelete(c.id)} className="opacity-0 group-hover:opacity-100 transition-opacity ml-1 text-rose-400 hover:text-rose-600"><X className="h-3 w-3" /></button>}
               </div>
             </div>
-            <div className="text-xs text-foreground mt-0.5 leading-relaxed">{contentWithHashtags(c.content, onTagClick)}</div>
+            <div className="text-xs text-foreground mt-0.5 leading-relaxed">{contentWithTagsAndMentions(c.content, onTagClick)}</div>
           </div>
         </div>
       ))}
@@ -280,16 +281,35 @@ function CommentSection({ post, onTagClick }: { post: Post; onTagClick?: (tag: s
 }
 
 // ─── Content Highlighter ─────────────────────────────────────────────
-function contentWithHashtags(text: string, onTagClick?: (tag: string) => void) {
+function contentWithTagsAndMentions(text: string, onTagClick?: (tag: string) => void) {
   if (!text) return null;
   const parts = [];
   let lastIndex = 0;
+  
+  // Combine hashtags and mentions into one regex
+  const regex = /(#([a-zA-Z0-9çşğüöıÇŞĞÜÖİ]+))|(@([a-zA-Z0-9_]+))/g;
   let match;
-  HASHTAG_REGEX.lastIndex = 0;
-  while ((match = HASHTAG_REGEX.exec(text)) !== null) {
+  
+  while ((match = regex.exec(text)) !== null) {
     if (match.index > lastIndex) parts.push(text.substring(lastIndex, match.index));
     const tag = match[0];
-    parts.push(<button key={match.index} onClick={(e) => { e.stopPropagation(); onTagClick?.(tag); }} className="text-primary font-bold hover:underline transition-all">{tag}</button>);
+    const isHashtag = tag.startsWith("#");
+    
+    parts.push(
+      <button 
+        key={match.index} 
+        onClick={(e) => { 
+          e.stopPropagation(); 
+          if(isHashtag) onTagClick?.(tag); 
+        }} 
+        className={cn(
+          "font-bold hover:underline transition-all",
+          isHashtag ? "text-primary" : "text-amber-500"
+        )}
+      >
+        {tag}
+      </button>
+    );
     lastIndex = match.index + tag.length;
   }
   if (lastIndex < text.length) parts.push(text.substring(lastIndex));
@@ -371,7 +391,7 @@ function PostCard({ post, currentUserId, onTagClick, onCommunityClick }: {
           <img src={post.imageUrl} alt="Paylaşım görseli" className="w-full h-auto max-h-[500px] object-cover hover:scale-[1.02] transition-transform duration-500" />
         </div>
       )}
-      <div className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">{contentWithHashtags(post.content, onTagClick)}</div>
+      <div className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">{contentWithTagsAndMentions(post.content, onTagClick)}</div>
       <div className="flex items-center gap-4 pt-2">
         <button onClick={handleLike} className={cn("flex items-center gap-1.5 text-xs font-bold transition-all", liked ? "text-rose-500" : "text-muted-foreground hover:text-rose-500")}>
           <Heart className={cn("h-4 w-4", liked && "fill-current", likeAnim && "animate-ping")} /> {likeCount}
