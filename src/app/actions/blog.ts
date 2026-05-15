@@ -68,6 +68,7 @@ async function processMentionsAndNotify(content: string, postId: string, sourceU
           type: "MENTION",
           title: "Yeni Bahsetme",
           message: `${sourceUser.username || "Bir kullanıcı"} senden bahsetti.`,
+          link: "/dashboard/blog"
         }
       });
     }

@@ -14,6 +14,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { getUserNotifications, markNotificationAsRead, markAllNotificationsAsRead } from "@/app/actions/notifications";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 type AppNotification = {
@@ -119,6 +120,10 @@ export function NotificationBell() {
             ))
           )}
         </div>
+        <DropdownMenuSeparator />
+        <Link href="/dashboard/notifications" className="block w-full py-2 text-center text-[10px] font-bold text-primary hover:bg-primary/5 transition-all">
+          Tüm Bildirimleri Gör
+        </Link>
       </DropdownMenuContent>
     </DropdownMenu>
   );

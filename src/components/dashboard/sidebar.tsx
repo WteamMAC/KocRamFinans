@@ -29,7 +29,8 @@ import {
   Landmark,
   Rss,
   User,
-  PlayCircle
+  PlayCircle,
+  Bell
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -102,6 +103,12 @@ const routes = [
     icon: Newspaper,
     href: "/dashboard/news",
     color: "text-blue-500",
+  },
+  {
+    label: "Bildirimler",
+    icon: Bell,
+    href: "/dashboard/notifications",
+    color: "text-amber-500",
   },
   {
     label: "Bilgileri Düzenle",
