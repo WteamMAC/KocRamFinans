@@ -22,7 +22,7 @@ interface ProfileHeaderProps {
   currentUserRole?: string;
 }
 
-export function ProfileHeader({ profile, initialIsFollowing }: ProfileHeaderProps) {
+export function ProfileHeader({ profile, initialIsFollowing, currentUserRole }: ProfileHeaderProps) {
   const [isFollowing, setIsFollowing] = useState(initialIsFollowing);
   const [followerCount, setFollowerCount] = useState(profile.followerCount);
   const [isPending, startTransition] = useTransition();
