@@ -11,6 +11,7 @@ import Link from "next/link";
 
 const ALL_TAGS = ["#yatırım", "#kripto", "#hisse", "#tasarruf", "#borç", "#bes", "#faiz", "#altın", "#bütçe"];
 const MAX_CHARS = 500;
+const HASHTAG_REGEX = /#([a-zA-Z0-9çşğüöıÇŞĞÜÖİ]+)/g;
 
 // ─── Types ────────────────────────────────────────────────────────────
 type Comment = {
@@ -65,8 +66,13 @@ function CreatePostBox({ currentUserId }: { currentUserId: string }) {
 
   const handleSubmit = () => {
     if (!content.trim() || content.length > MAX_CHARS) return;
+    
+    // Otomatik hashtag ayıklama
+    const extractedTags = content.match(HASHTAG_REGEX) || [];
+    const allTags = Array.from(new Set([...selectedTags, ...extractedTags]));
+
     startTransition(async () => {
-      await createPost(content.trim(), selectedTags);
+      await createPost(content.trim(), allTags);
       setContent(""); setSelectedTags([]); setFocused(false);
       router.refresh();
     });
@@ -92,20 +98,33 @@ function CreatePostBox({ currentUserId }: { currentUserId: string }) {
             rows={focused || content ? 3 : 2}
             className="w-full bg-muted/30 border border-border/20 rounded-xl p-3 text-sm text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all duration-200"
           />
-          {/* Karakter göstergesi */}
-          {(focused || content) && (
-            <div className="flex items-center justify-between animate-in fade-in duration-200">
-              <div className="w-full bg-muted/50 rounded-full h-1 mr-3">
-                <div
-                  className={cn("h-1 rounded-full transition-all duration-300", overLimit ? "bg-rose-500" : nearLimit ? "bg-amber-500" : "bg-primary")}
-                  style={{ width: `${Math.min((content.length / MAX_CHARS) * 100, 100)}%` }}
-                />
+          {/* Karakter göstergesi ve Otomatik Tag Tespiti */}
+          <div className="flex items-center justify-between animate-in fade-in duration-200">
+            {(focused || content) && (
+              <div className="flex-1 flex items-center">
+                <div className="w-full bg-muted/50 rounded-full h-1 mr-3">
+                  <div
+                    className={cn("h-1 rounded-full transition-all duration-300", overLimit ? "bg-rose-500" : nearLimit ? "bg-amber-500" : "bg-primary")}
+                    style={{ width: `${Math.min((content.length / MAX_CHARS) * 100, 100)}%` }}
+                  />
+                </div>
+                <span className={cn("text-[11px] font-bold flex-shrink-0 mr-3", overLimit ? "text-rose-500" : nearLimit ? "text-amber-500" : "text-muted-foreground")}>
+                  {remaining}
+                </span>
               </div>
-              <span className={cn("text-[11px] font-bold flex-shrink-0", overLimit ? "text-rose-500" : nearLimit ? "text-amber-500" : "text-muted-foreground")}>
-                {remaining}
-              </span>
-            </div>
-          )}
+            )}
+            
+            {/* Canlı Hashtag Tespiti İpucu */}
+            {content.includes("#") && (
+              <div className="flex gap-1 items-center">
+                {Array.from(new Set(content.match(HASHTAG_REGEX) || [])).slice(0, 3).map(tag => (
+                  <span key={tag} className="text-[10px] font-black text-primary bg-primary/10 px-1.5 py-0.5 rounded-md animate-pulse">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -173,7 +192,7 @@ function TagFilterBar({ availableTags, activeTag, onSelect }: {
 }
 
 // ─── Comment Section ──────────────────────────────────────────────────
-function CommentSection({ post }: { post: Post }) {
+function CommentSection({ post, onTagClick }: { post: Post; onTagClick?: (tag: string) => void }) {
   const router = useRouter();
   const [newComment, setNewComment] = useState("");
   const [isPending, startTransition] = useTransition();
@@ -213,7 +232,9 @@ function CommentSection({ post }: { post: Post }) {
                 )}
               </div>
             </div>
-            <p className="text-xs text-foreground mt-0.5 leading-relaxed">{c.content}</p>
+            <div className="text-xs text-foreground mt-0.5 leading-relaxed">
+              {contentWithHashtags(c.content, onTagClick)}
+            </div>
           </div>
         </div>
       ))}
@@ -234,8 +255,45 @@ function CommentSection({ post }: { post: Post }) {
   );
 }
 
+// ─── Content Highlighter ─────────────────────────────────────────────
+function contentWithHashtags(text: string, onTagClick?: (tag: string) => void) {
+  if (!text) return null;
+  const parts = [];
+  let lastIndex = 0;
+  let match;
+
+  // Reset regex index
+  HASHTAG_REGEX.lastIndex = 0;
+
+  while ((match = HASHTAG_REGEX.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(text.substring(lastIndex, match.index));
+    }
+    const tag = match[0];
+    parts.push(
+      <button
+        key={match.index}
+        onClick={(e) => {
+          e.stopPropagation();
+          onTagClick?.(tag);
+        }}
+        className="text-primary font-bold hover:underline transition-all"
+      >
+        {tag}
+      </button>
+    );
+    lastIndex = match.index + tag.length;
+  }
+
+  if (lastIndex < text.length) {
+    parts.push(text.substring(lastIndex));
+  }
+
+  return parts;
+}
+
 // ─── Post Card ────────────────────────────────────────────────────────
-function PostCard({ post, currentUserId }: { post: Post; currentUserId: string }) {
+function PostCard({ post, currentUserId, onTagClick }: { post: Post; currentUserId: string; onTagClick?: (tag: string) => void }) {
   const router = useRouter();
   const [liked, setLiked] = useState(post.isLikedByMe);
   const [likeCount, setLikeCount] = useState(post.likeCount);
@@ -312,7 +370,14 @@ function PostCard({ post, currentUserId }: { post: Post; currentUserId: string }
       </div>
 
       {/* İçerik */}
-      <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">{post.content}</p>
+      <div className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">
+        {contentWithHashtags(post.content, (tag) => {
+          // Bu fonksiyon BlogFeed içindeki setActiveTag'e ulaşmalı. 
+          // Şimdilik window event veya prop drilling yerine context-like bir yapı lazım.
+          // Basitlik için BlogFeed içinde tanımlanan bir handler'ı prop olarak geçeceğiz.
+          onTagClick?.(tag);
+        })}
+      </div>
 
       {/* Etiketler */}
       {post.tags.length > 0 && (
@@ -347,7 +412,7 @@ function PostCard({ post, currentUserId }: { post: Post; currentUserId: string }
         </button>
       </div>
 
-      {showComments && <CommentSection post={post} />}
+      {showComments && <CommentSection post={post} onTagClick={onTagClick} />}
     </div>
   );
 }
@@ -524,7 +589,17 @@ export function BlogFeed({
         </div>
       ) : (
         <div className={cn("space-y-4 transition-opacity", isLoadingMore && posts.length === 0 ? "opacity-50" : "opacity-100")}>
-          {filtered.map((post) => <PostCard key={post.id} post={post} currentUserId={currentUserId} />)}
+          {filtered.map((post) => (
+            <PostCard 
+              key={post.id} 
+              post={post} 
+              currentUserId={currentUserId} 
+              onTagClick={(tag) => {
+                setActiveTag(tag);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }} 
+            />
+          ))}
         </div>
       )}
 
