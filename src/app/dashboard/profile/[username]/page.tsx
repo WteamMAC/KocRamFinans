@@ -6,25 +6,25 @@ import { ProfileHeader } from "@/components/dashboard/profile-header";
 import { BlogFeed } from "@/components/dashboard/blog-feed";
 
 interface ProfilePageProps {
-  params: Promise<{ id: string }>;
+  params: Promise<{ username: string }>;
 }
 
 export default async function ProfilePage({ params }: ProfilePageProps) {
-  const { id } = await params;
+  const { username } = await params;
   const { userId: clerkUserId } = await auth();
   if (!clerkUserId) redirect("/");
 
   // Mevcut kullanıcının rolünü al
   const me = await prisma.user.findUnique({
     where: { clerkUserId },
-    select: { role: true, isBanned: true }
+    select: { id: true, role: true, isBanned: true }
   });
 
-  const profile = await getUserProfile(id);
+  const profile = await getUserProfile(username);
   if (!profile) notFound();
 
-  const isFollowing = await getFollowStatus(id);
-  const { posts, nextCursor } = await getProfilePosts(id);
+  const isFollowing = await getFollowStatus(profile.id);
+  const { posts, nextCursor } = await getProfilePosts(profile.id);
 
   return (
     <div className="flex-1 p-6 pt-10 bg-background min-h-screen">
@@ -44,11 +44,11 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
           <BlogFeed 
             initialPosts={posts} 
             initialNextCursor={nextCursor} 
-            currentUserId={id} 
+            currentUserId={profile.id} 
             userRole={me?.role}
             isBanned={me?.isBanned}
             mode="profile"
-            profileId={id}
+            profileId={profile.id}
           />
         </div>
       </div>

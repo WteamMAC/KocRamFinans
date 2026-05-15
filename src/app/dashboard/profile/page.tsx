@@ -8,10 +8,10 @@ export default async function ProfileRedirectPage() {
 
   const user = await prisma.user.findUnique({
     where: { clerkUserId: userId },
-    select: { id: true },
+    select: { username: true },
   });
 
-  if (!user) redirect("/onboarding");
+  if (!user || !user.username) redirect("/onboarding");
 
-  redirect(`/dashboard/profile/${user.id}`);
+  redirect(`/dashboard/profile/${user.username}`);
 }

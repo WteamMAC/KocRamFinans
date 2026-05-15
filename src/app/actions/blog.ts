@@ -5,7 +5,23 @@ import { auth, clerkClient } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 
 async function getInternalUser(clerkUserId: string) {
-  return prisma.user.findUnique({ where: { clerkUserId } });
+  const user = await prisma.user.findUnique({ where: { clerkUserId } });
+  
+  // Eğer username yoksa Clerk'ten çek ve güncelle (Geriye dönük uyumluluk için)
+  if (user && !user.username) {
+    const clerk = await clerkClient();
+    const clerkUser = await clerk.users.getUser(clerkUserId);
+    const username = clerkUser.username || clerkUser.emailAddresses[0]?.emailAddress.split("@")[0];
+    
+    if (username) {
+      return prisma.user.update({
+        where: { id: user.id },
+        data: { username }
+      });
+    }
+  }
+  
+  return user;
 }
 
 export async function createPost(
@@ -153,7 +169,7 @@ export async function getPosts(
       take: PAGE_SIZE + 1,
       ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
       include: {
-        author: { select: { id: true, clerkUserId: true } },
+        author: { select: { id: true, clerkUserId: true, username: true } },
         likes: { select: { id: true, userId: true } },
         community: { select: { id: true, name: true } },
         comments: {
@@ -191,6 +207,7 @@ export async function getPosts(
         isAnnouncement: post.isAnnouncement,
         createdAt: post.createdAt,
         authorId: post.author.id,
+        authorUsername: post.author.username,
         communityId: post.community?.id,
         communityName: post.community?.name,
         authorName:
@@ -211,6 +228,7 @@ export async function getPosts(
             content: comment.content,
             createdAt: comment.createdAt,
             authorId: comment.author.id,
+            authorUsername: comment.author.username,
             authorName:
               commentUser
                 ? `${commentUser.firstName || ""} ${commentUser.lastName || ""}`.trim() || "Kullanıcı"
@@ -282,9 +300,9 @@ export async function getFollowStatus(targetInternalUserId: string) {
   return !!follow;
 }
 
-export async function getUserProfile(targetInternalUserId: string) {
+export async function getUserProfile(username: string) {
   const user = await prisma.user.findUnique({
-    where: { id: targetInternalUserId },
+    where: { username: username },
     include: {
       _count: {
         select: { followers: true, following: true, blogPosts: true },
@@ -299,6 +317,7 @@ export async function getUserProfile(targetInternalUserId: string) {
 
   return {
     id: user.id,
+    username: user.username,
     name: `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim() || "Kullanıcı",
     imageUrl: clerkUser.imageUrl,
     followerCount: user._count.followers,
@@ -322,12 +341,12 @@ export async function getProfilePosts(targetInternalUserId: string, cursor?: str
       take: PAGE_SIZE + 1,
       ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
       include: {
-        author: { select: { id: true, clerkUserId: true } },
+        author: { select: { id: true, clerkUserId: true, username: true } },
         likes: { select: { id: true, userId: true } },
         community: { select: { id: true, name: true } },
         comments: {
           orderBy: { createdAt: "asc" },
-          include: { author: { select: { id: true, clerkUserId: true } } },
+          include: { author: { select: { id: true, clerkUserId: true, username: true } } },
         },
       },
     });
@@ -362,6 +381,7 @@ export async function getProfilePosts(targetInternalUserId: string, cursor?: str
         isAnnouncement: post.isAnnouncement,
         createdAt: post.createdAt,
         authorId: post.author.id,
+        authorUsername: post.author.username,
         communityId: post.community?.id,
         communityName: post.community?.name,
         authorName:
@@ -380,6 +400,7 @@ export async function getProfilePosts(targetInternalUserId: string, cursor?: str
             content: comment.content,
             createdAt: comment.createdAt,
             authorId: comment.author.id,
+            authorUsername: comment.author.username,
             authorName:
               commentUser
                 ? `${commentUser.firstName || ""} ${commentUser.lastName || ""}`.trim() || "Kullanıcı"
@@ -416,7 +437,7 @@ export async function toggleUserBan(targetInternalUserId: string) {
     data: { isBanned: !targetUser.isBanned }
   });
 
-  revalidatePath(`/dashboard/profile/${targetInternalUserId}`);
+  revalidatePath(`/dashboard/profile/${targetUser.username}`);
   revalidatePath("/dashboard/blog");
 }
 
