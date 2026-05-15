@@ -31,7 +31,6 @@ import { PortfolioChart } from "./portfolio-chart";
 import { CompactCurrencyCalculator } from "./compact-currency-calculator";
 import { AssetForm } from "./asset-form";
 import { useCurrency } from "@/context/currency-context";
-import { CurrencySwitcher } from "./currency-switcher";
 
 interface Asset {
   id: string;
@@ -96,7 +95,14 @@ export function AssetList({
   const [sellModalState, setSellModalState] = useState<{ assetId: string | null }>({ assetId: null });
 
   // Dinamik Para Birimi Çevirme State'i (Global Context'ten)
-  const { displayCurrency, formatAmount: formatCur, rates } = useCurrency();
+  const { displayCurrency, setDisplayCurrency, formatAmount: formatCur, rates } = useCurrency();
+
+  useEffect(() => {
+    if (userCurrency && !sessionStorage.getItem("user_curr_synced")) {
+      setDisplayCurrency(userCurrency);
+      sessionStorage.setItem("user_curr_synced", "true");
+    }
+  }, [userCurrency, setDisplayCurrency]);
 
   const groupedAssets = assets.reduce((acc: Record<string, {
     symbol: string;
@@ -310,7 +316,7 @@ export function AssetList({
 
   return (
     <div className="space-y-8 pb-20">
-      {/* Top Bar: View Tabs & Display Currency Switcher */}
+      {/* Top Bar: View Tabs */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         {!hideTabs && (
           <div className="flex p-1 bg-muted rounded-2xl border border-border/20 w-fit">
@@ -338,9 +344,6 @@ export function AssetList({
             </button>
           </div>
         )}
-
-        {/* Canlı Döviz Çevirme (Display Currency) Barı */}
-        <CurrencySwitcher className="ml-auto" />
       </div>
 
       {/* Header & Stats Summary */}

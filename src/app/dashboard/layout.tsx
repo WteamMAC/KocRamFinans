@@ -134,20 +134,6 @@ export default function DashboardLayout({
         "md:pl-0", // Default pl
         !isCollapsed ? "md:ml-72" : "md:ml-20"
       )}>
-        {/* Desktop Top Header Bar */}
-        <div className="hidden md:flex items-center justify-between px-8 py-4 bg-card/80 backdrop-blur-md border-b border-border/30 sticky top-0 z-50 shadow-ambient-low">
-          <div className="flex items-center gap-3">
-            <span className="text-sm font-bold text-muted-foreground">Aktif Portföy Görünümü:</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <CurrencySwitcher />
-          </div>
-        </div>
-
-        <div className="p-4 md:hidden">
-          <CurrencySwitcher className="w-full justify-center" />
-        </div>
-
         {children}
       </main>
       <ChatAI />

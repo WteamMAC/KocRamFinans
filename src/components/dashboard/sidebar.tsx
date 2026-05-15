@@ -36,6 +36,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/dashboard/notification-bell";
 import { MessageBell } from "@/components/dashboard/message-bell";
+import { CurrencySwitcher } from "@/components/dashboard/currency-switcher";
 
 const routes = [
   {
@@ -292,7 +293,8 @@ export function Sidebar({ isCollapsed, onToggle, hideToggle, theme, onToggleThem
           )}
         </div>
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1.5 flex-wrap justify-end">
+          <CurrencySwitcher className={cn(isCollapsed && "px-1.5 py-1 text-[10px]")} />
           <MessageBell className="h-8 w-8" />
           <NotificationBell />
           {theme && onToggleTheme && (
