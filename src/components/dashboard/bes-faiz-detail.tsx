@@ -351,6 +351,12 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
                           <p className={cn("text-[11px] font-bold mt-0.5", accentColor)}>
                             {isBES ? `Devlet Katkısı: %${g.rate}` : `Faiz: %${g.rate} / Yıl`}
                           </p>
+                          {!isBES && (
+                            <p className="text-[10px] font-black text-emerald-500 mt-1 uppercase tracking-tighter flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                              Günlük Getiri: ~{((g.totalQuantity * g.rate) / 365 / 100).toLocaleString("tr-TR", { maximumFractionDigits: 2 })} ₺
+                            </p>
+                          )}
                         </div>
                       </div>
                       <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", isExp && "rotate-180")} />

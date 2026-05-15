@@ -144,16 +144,28 @@ export function AssetList({ assets, allInvestments, fixedAssets, defaultTab = "f
     totalQuantity: number;
     totalCost: number;
     currentPrice?: number;
+    rate?: number;
     items: Asset[];
   }>, asset: Asset) => {
     const symbol = asset.symbol || "Diğer";
     if (!acc[symbol]) {
+      let rate = 0;
+      if (asset.type === "BES" || asset.type === "FAIZ") {
+        try {
+          const meta = JSON.parse(asset.description || "{}");
+          rate = meta.rate || asset.purchasePrice || 0;
+        } catch {
+          rate = asset.purchasePrice || 0;
+        }
+      }
+
       acc[symbol] = {
         symbol,
         type: asset.type,
         totalQuantity: 0,
         totalCost: 0,
         currentPrice: asset.currentPrice,
+        rate,
         items: [] as Asset[]
       };
     }
@@ -439,6 +451,15 @@ export function AssetList({ assets, allInvestments, fixedAssets, defaultTab = "f
                 <div className="text-sm font-medium text-muted-foreground relative z-10">
                   Maliyet: {Object.values(groupedAssets).reduce((sum: number, g) => sum + g.totalCost, 0).toLocaleString("tr-TR")} ₺
                 </div>
+                {activeTab === "financial" && Object.values(groupedAssets).some((g: any) => g.type === "FAIZ") && (
+                  <div className="text-xs font-bold text-emerald-500 mt-1 relative z-10 flex items-center gap-1 bg-emerald-500/5 w-fit px-2 py-0.5 rounded-md border border-emerald-500/10">
+                    <TrendingUp className="h-3 w-3" />
+                    Günlük Faiz Getirisi: {Object.values(groupedAssets)
+                      .filter((g: any) => g.type === "FAIZ")
+                      .reduce((sum: number, g: any) => sum + ((g.totalQuantity * (g.rate || 0)) / 365 / 100), 0)
+                      .toLocaleString("tr-TR", { maximumFractionDigits: 2 })} ₺
+                  </div>
+                )}
                 {(() => {
                   const totalCost = Object.values(groupedAssets).reduce((sum: number, g) => sum + g.totalCost, 0);
                   const currentVal = Object.values(groupedAssets).reduce((sum: number, g) => sum + (g.totalQuantity * (g.currentPrice || 0)), 0);
@@ -556,6 +577,12 @@ export function AssetList({ assets, allInvestments, fixedAssets, defaultTab = "f
                                   <h4 className="font-heading font-bold text-xl text-primary">{group.symbol}</h4>
                                   <span className="text-[10px] font-bold text-muted-foreground bg-muted px-2 py-0.5 rounded-full uppercase">{group.type}</span>
                                 </div>
+                                {group.type === "FAIZ" && (
+                                  <div className="flex items-center gap-1.5 mt-1 bg-emerald-500/10 text-emerald-600 px-2 py-0.5 rounded-lg w-fit border border-emerald-500/10 shadow-sm border-emerald-500/20">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                    <span className="text-[10px] font-black uppercase tracking-tighter">Günlük Getiri: ~{((group.totalQuantity * (group.rate || 0)) / 365 / 100).toLocaleString("tr-TR", { maximumFractionDigits: 2 })} ₺</span>
+                                  </div>
+                                )}
                                 <p className="text-muted-foreground text-sm font-medium mt-1">
                                   {group.type === "BES" || group.type === "FAIZ" 
                                     ? `${group.totalQuantity.toLocaleString("tr-TR")} ₺` 
