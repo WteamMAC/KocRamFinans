@@ -165,8 +165,11 @@ export function OnboardingForm() {
     if (ok) setStep(s=>s+1);
   };
 
+  const [dbError, setDbError]     = useState<string|null>(null);
+
   const onSubmit = async (data: F) => {
     setLoading(true);
+    setDbError(null);
     try {
       const result = await completeOnboarding({
         ...data,
@@ -184,11 +187,11 @@ export function OnboardingForm() {
       if (result?.success) {
         window.location.replace("/dashboard");
       } else {
-        window.location.href = "/dashboard";
+        setDbError(result?.error || "Kayıt sırasında bir sorun oluştu.");
       }
     } catch(e:any) {
       console.error("Onboarding error:", e);
-      window.location.href = "/dashboard";
+      setDbError(e?.message || "Sunucu bağlantı hatası.");
     } finally {
       setLoading(false);
     }
@@ -228,6 +231,15 @@ export function OnboardingForm() {
 
         {/* Content */}
         <div className="p-8 bg-white">
+          {dbError && (
+            <div className="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold flex items-center gap-2 animate-in fade-in duration-300">
+              <AlertCircle className="h-5 w-5 flex-shrink-0 text-rose-600" />
+              <div>
+                <p className="font-extrabold">Kayıt Hatası</p>
+                <p className="font-normal opacity-90">{dbError}</p>
+              </div>
+            </div>
+          )}
           <form onSubmit={form.handleSubmit(onSubmit)}>
 
             {/* STEP 1 */}
