@@ -32,23 +32,26 @@ export async function getExchangeRatesAction() {
     ];
     const results = await getLivePrices(symbols);
     
-    const usdRate = results.get("TRY=X")?.price || 0;
-    const goldUsdPerOunce = results.get("GC=F")?.price || 0;
+    const usdRate = results.get("TRY=X")?.price || 34.20;
+    const rawGold = results.get("GC=F")?.price || 2850;
+    const xauTryPerGram = rawGold > 10000 
+      ? rawGold / 31.1035 
+      : (rawGold / 31.1035) * usdRate;
     
     return {
       USD: usdRate,
-      EUR: results.get("EURTRY=X")?.price || 0,
-      GBP: results.get("GBPTRY=X")?.price || 0,
-      CHF: results.get("CHFTRY=X")?.price || 0,
-      JPY: results.get("JPYTRY=X")?.price || 0,
-      AED: results.get("AEDTRY=X")?.price || 0,
-      SAR: results.get("SARTRY=X")?.price || 0,
-      RUB: results.get("RUBTRY=X")?.price || 0,
-      CAD: results.get("CADTRY=X")?.price || 0,
-      AUD: results.get("AUDTRY=X")?.price || 0,
-      CNY: results.get("CNYTRY=X")?.price || 0,
-      SGD: results.get("SGDTRY=X")?.price || 0,
-      XAU: (goldUsdPerOunce / 31.1035) * usdRate,
+      EUR: results.get("EURTRY=X")?.price || 37.10,
+      GBP: results.get("GBPTRY=X")?.price || 43.50,
+      CHF: results.get("CHFTRY=X")?.price || 38.60,
+      JPY: results.get("JPYTRY=X")?.price || 0.23,
+      AED: results.get("AEDTRY=X")?.price || 9.31,
+      SAR: results.get("SARTRY=X")?.price || 9.11,
+      RUB: results.get("RUBTRY=X")?.price || 0.35,
+      CAD: results.get("CADTRY=X")?.price || 24.80,
+      AUD: results.get("AUDTRY=X")?.price || 22.50,
+      CNY: results.get("CNYTRY=X")?.price || 4.80,
+      SGD: results.get("SGDTRY=X")?.price || 26.10,
+      XAU: xauTryPerGram || 3150,
     };
   } catch (error) {
     console.error("Exchange Rates Error:", error);

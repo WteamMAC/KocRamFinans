@@ -20,6 +20,15 @@ const CURRENCIES = [
   { code: "USD", name: "USD", icon: "🇺🇸", color: "text-emerald-500" },
   { code: "EUR", name: "EUR", icon: "🇪🇺", color: "text-blue-500" },
   { code: "GBP", name: "GBP", icon: "🇬🇧", color: "text-purple-500" },
+  { code: "CHF", name: "CHF", icon: "🇨🇭", color: "text-red-400" },
+  { code: "JPY", name: "JPY", icon: "🇯🇵", color: "text-red-500" },
+  { code: "AED", name: "AED", icon: "🇦🇪", color: "text-emerald-600" },
+  { code: "SAR", name: "SAR", icon: "🇸🇦", color: "text-green-600" },
+  { code: "RUB", name: "RUB", icon: "🇷🇺", color: "text-blue-400" },
+  { code: "CAD", name: "CAD", icon: "🇨🇦", color: "text-red-600" },
+  { code: "AUD", name: "AUD", icon: "🇦🇺", color: "text-blue-600" },
+  { code: "CNY", name: "CNY", icon: "🇨🇳", color: "text-rose-600" },
+  { code: "SGD", name: "SGD", icon: "🇸🇬", color: "text-amber-600" },
   { code: "XAU", name: "ALT", icon: "🪙", color: "text-amber-500" },
 ];
 
@@ -28,11 +37,9 @@ export function CompactCurrencyCalculator() {
   const [fromCurrency, setFromCurrency] = useState("USD");
   const [toCurrency, setToCurrency] = useState("TRY");
   const [rates, setRates] = useState<Record<string, number>>({
-    TRY: 1,
-    USD: 34.20,
-    EUR: 37.10,
-    GBP: 43.50,
-    XAU: 2850,
+    TRY: 1, USD: 34.20, EUR: 37.10, GBP: 43.50, CHF: 38.60,
+    JPY: 0.23, AED: 9.31, SAR: 9.11, RUB: 0.35, CAD: 24.80,
+    AUD: 22.50, CNY: 4.80, SGD: 26.10, XAU: 3150,
   });
   const [loading, setLoading] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
