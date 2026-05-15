@@ -5,7 +5,23 @@ import { auth, clerkClient } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 
 async function getInternalUser(clerkUserId: string) {
-  return prisma.user.findUnique({ where: { clerkUserId } });
+  const user = await prisma.user.findUnique({ where: { clerkUserId } });
+  
+  // Eğer username yoksa Clerk'ten çek ve güncelle (Geriye dönük uyumluluk için)
+  if (user && !user.username) {
+    const clerk = await clerkClient();
+    const clerkUser = await clerk.users.getUser(clerkUserId);
+    const username = clerkUser.username || clerkUser.emailAddresses[0]?.emailAddress.split("@")[0];
+    
+    if (username) {
+      return prisma.user.update({
+        where: { id: user.id },
+        data: { username }
+      });
+    }
+  }
+  
+  return user;
 }
 
 export async function createPost(
@@ -153,7 +169,7 @@ export async function getPosts(
       take: PAGE_SIZE + 1,
       ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
       include: {
-        author: { select: { id: true, clerkUserId: true } },
+        author: { select: { id: true, clerkUserId: true, username: true } },
         likes: { select: { id: true, userId: true } },
         community: { select: { id: true, name: true } },
         comments: {
@@ -191,6 +207,7 @@ export async function getPosts(
         isAnnouncement: post.isAnnouncement,
         createdAt: post.createdAt,
         authorId: post.author.id,
+        authorUsername: post.author.username,
         communityId: post.community?.id,
         communityName: post.community?.name,
         authorName:
@@ -211,6 +228,7 @@ export async function getPosts(
             content: comment.content,
             createdAt: comment.createdAt,
             authorId: comment.author.id,
+            authorUsername: comment.author.username,
             authorName:
               commentUser
                 ? `${commentUser.firstName || ""} ${commentUser.lastName || ""}`.trim() || "Kullanıcı"
@@ -282,9 +300,9 @@ export async function getFollowStatus(targetInternalUserId: string) {
   return !!follow;
 }
 
-export async function getUserProfile(targetInternalUserId: string) {
+export async function getUserProfile(username: string) {
   const user = await prisma.user.findUnique({
-    where: { id: targetInternalUserId },
+    where: { username: username },
     include: {
       _count: {
         select: { followers: true, following: true, blogPosts: true },
@@ -299,6 +317,8 @@ export async function getUserProfile(targetInternalUserId: string) {
 
   return {
     id: user.id,
+    username: user.username,
+    bio: user.bio,
     name: `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim() || "Kullanıcı",
     imageUrl: clerkUser.imageUrl,
     followerCount: user._count.followers,
@@ -307,6 +327,94 @@ export async function getUserProfile(targetInternalUserId: string) {
     isMe: (await auth()).userId === user.clerkUserId,
     isBanned: user.isBanned,
   };
+}
+
+export async function updateBio(bio: string) {
+  const { userId: clerkUserId } = await auth();
+  if (!clerkUserId) throw new Error("Unauthorized");
+  const user = await getInternalUser(clerkUserId);
+  if (!user) throw new Error("User not found");
+
+  if (bio.length > 160) throw new Error("Açıklama 160 karakterden uzun olamaz.");
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { bio }
+  });
+
+  revalidatePath(`/dashboard/profile/${user.username}`);
+}
+
+export async function getUserFollowers(username: string) {
+  const user = await prisma.user.findUnique({
+    where: { username },
+    select: {
+      followers: {
+        include: {
+          follower: {
+            select: { id: true, username: true, clerkUserId: true }
+          }
+        }
+      }
+    }
+  });
+
+  if (!user) return [];
+
+  const clerk = await clerkClient();
+  const clerkUserIds = user.followers.map(f => f.follower.clerkUserId);
+  
+  let userMap = new Map();
+  if (clerkUserIds.length > 0) {
+    const clerkUsers = await clerk.users.getUserList({ userId: clerkUserIds });
+    userMap = new Map(clerkUsers.data.map(u => [u.id, u]));
+  }
+
+  return user.followers.map(f => {
+    const cu = userMap.get(f.follower.clerkUserId);
+    return {
+      id: f.follower.id,
+      username: f.follower.username,
+      name: `${cu?.firstName || ""} ${cu?.lastName || ""}`.trim() || "Kullanıcı",
+      imageUrl: cu?.imageUrl || ""
+    };
+  });
+}
+
+export async function getUserFollowing(username: string) {
+  const user = await prisma.user.findUnique({
+    where: { username },
+    select: {
+      following: {
+        include: {
+          following: {
+            select: { id: true, username: true, clerkUserId: true }
+          }
+        }
+      }
+    }
+  });
+
+  if (!user) return [];
+
+  const clerk = await clerkClient();
+  const clerkUserIds = user.following.map(f => f.following.clerkUserId);
+  
+  let userMap = new Map();
+  if (clerkUserIds.length > 0) {
+    const clerkUsers = await clerk.users.getUserList({ userId: clerkUserIds });
+    userMap = new Map(clerkUsers.data.map(u => [u.id, u]));
+  }
+
+  return user.following.map(f => {
+    const cu = userMap.get(f.following.clerkUserId);
+    return {
+      id: f.following.id,
+      username: f.following.username,
+      name: `${cu?.firstName || ""} ${cu?.lastName || ""}`.trim() || "Kullanıcı",
+      imageUrl: cu?.imageUrl || ""
+    };
+  });
 }
 
 export async function getProfilePosts(targetInternalUserId: string, cursor?: string) {
@@ -322,12 +430,12 @@ export async function getProfilePosts(targetInternalUserId: string, cursor?: str
       take: PAGE_SIZE + 1,
       ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
       include: {
-        author: { select: { id: true, clerkUserId: true } },
+        author: { select: { id: true, clerkUserId: true, username: true } },
         likes: { select: { id: true, userId: true } },
         community: { select: { id: true, name: true } },
         comments: {
           orderBy: { createdAt: "asc" },
-          include: { author: { select: { id: true, clerkUserId: true } } },
+          include: { author: { select: { id: true, clerkUserId: true, username: true } } },
         },
       },
     });
@@ -362,6 +470,7 @@ export async function getProfilePosts(targetInternalUserId: string, cursor?: str
         isAnnouncement: post.isAnnouncement,
         createdAt: post.createdAt,
         authorId: post.author.id,
+        authorUsername: post.author.username,
         communityId: post.community?.id,
         communityName: post.community?.name,
         authorName:
@@ -380,6 +489,7 @@ export async function getProfilePosts(targetInternalUserId: string, cursor?: str
             content: comment.content,
             createdAt: comment.createdAt,
             authorId: comment.author.id,
+            authorUsername: comment.author.username,
             authorName:
               commentUser
                 ? `${commentUser.firstName || ""} ${commentUser.lastName || ""}`.trim() || "Kullanıcı"
@@ -416,7 +526,7 @@ export async function toggleUserBan(targetInternalUserId: string) {
     data: { isBanned: !targetUser.isBanned }
   });
 
-  revalidatePath(`/dashboard/profile/${targetInternalUserId}`);
+  revalidatePath(`/dashboard/profile/${targetUser.username}`);
   revalidatePath("/dashboard/blog");
 }
 

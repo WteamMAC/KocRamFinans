@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { auth } from "@clerk/nextjs/server";
+import { auth, currentUser } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -34,10 +34,14 @@ export async function completeOnboarding(formData: {
       throw new Error("Oturum açmanız gerekiyor.");
     }
   
+    const userFromClerk = await currentUser();
+    const username = userFromClerk?.username || userFromClerk?.emailAddresses[0]?.emailAddress.split("@")[0];
+  
     // 1. Kullanıcıyı oluştur veya güncelle
     const user = await prisma.user.upsert({
       where: { clerkUserId: userId },
       update: {
+        username: username,
         familyCount: formData.familyCount,
         maritalStatus: formData.maritalStatus,
         marriageDate: formData.marriageDate ? new Date(formData.marriageDate) : null,
@@ -45,6 +49,7 @@ export async function completeOnboarding(formData: {
       },
       create: {
         clerkUserId: userId,
+        username: username,
         familyCount: formData.familyCount,
         maritalStatus: formData.maritalStatus,
         marriageDate: formData.marriageDate ? new Date(formData.marriageDate) : null,

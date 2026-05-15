@@ -30,11 +30,11 @@ const HASHTAG_REGEX = /#([a-zA-Z0-9çşğüöıÇŞĞÜÖİ]+)/g;
 // ─── Types ────────────────────────────────────────────────────────────
 type Comment = {
   id: string; content: string; createdAt: Date;
-  authorId: string; authorName: string; authorImage: string; isMyComment: boolean;
+  authorId: string; authorUsername: string; authorName: string; authorImage: string; isMyComment: boolean;
 };
 type Post = {
   id: string; content: string; tags: string[]; createdAt: Date;
-  authorId: string; authorName: string; authorImage: string;
+  authorId: string; authorUsername: string; authorName: string; authorImage: string;
   likeCount: number; isLikedByMe: boolean; isMyPost: boolean;
   isAdmin: boolean;
   isAnnouncement: boolean;
@@ -53,7 +53,7 @@ function formatTimeAgo(date: Date): string {
   return new Date(date).toLocaleDateString("tr-TR");
 }
 
-function Avatar({ src, name, id, size = "md" }: { src: string; name: string; id: string; size?: "sm" | "md" }) {
+function Avatar({ src, name, username, size = "md" }: { src: string; name: string; username: string; size?: "sm" | "md" }) {
   const sz = size === "sm" ? "w-7 h-7 text-[10px]" : "w-10 h-10 text-sm";
   const content = src ? (
     // eslint-disable-next-line @next/next/no-img-element
@@ -65,7 +65,7 @@ function Avatar({ src, name, id, size = "md" }: { src: string; name: string; id:
   );
 
   return (
-    <Link href={`/dashboard/profile/${id}`} className="hover:opacity-80 transition-opacity">
+    <Link href={`/dashboard/profile/${username}`} className="hover:opacity-80 transition-opacity">
       {content}
     </Link>
   );
@@ -128,7 +128,7 @@ function CreatePostBox({ currentUserId, communityId, communityName, userRole }: 
       focused ? "border-primary/30 shadow-ambient-high" : "border-border/20"
     )}>
       <div className="flex gap-3 items-start">
-        {user && <Avatar src={user.imageUrl} name={user.firstName || "K"} id={currentUserId} />}
+        {user && <Avatar src={user.imageUrl} name={user.firstName || "K"} username={user.username || currentUserId} />}
         <div className="flex-1 space-y-2">
           <textarea
             value={content}
@@ -256,10 +256,10 @@ function CommentSection({ post, onTagClick }: { post: Post; onTagClick?: (tag: s
       {post.comments.length === 0 && <p className="text-xs text-muted-foreground opacity-50 text-center py-2">Henüz yorum yok. İlk yorumu yap!</p>}
       {post.comments.map((c) => (
         <div key={c.id} className="flex gap-2 items-start group">
-          <Avatar src={c.authorImage} name={c.authorName} id={c.authorId} size="sm" />
+          <Avatar src={c.authorImage} name={c.authorName} username={c.authorUsername} size="sm" />
           <div className="flex-1 bg-muted/30 rounded-xl px-3 py-2">
             <div className="flex items-center justify-between">
-              <Link href={`/dashboard/profile/${c.authorId}`} className="text-[11px] font-bold text-primary hover:underline">{c.authorName}</Link>
+              <Link href={`/dashboard/profile/${c.authorUsername}`} className="text-[11px] font-bold text-primary hover:underline">{c.authorName}</Link>
               <div className="flex items-center gap-1">
                 <span className="text-[10px] text-muted-foreground opacity-50">{formatTimeAgo(c.createdAt)}</span>
                 {c.isMyComment && <button onClick={() => handleDelete(c.id)} className="opacity-0 group-hover:opacity-100 transition-opacity ml-1 text-rose-400 hover:text-rose-600"><X className="h-3 w-3" /></button>}
@@ -341,10 +341,10 @@ function PostCard({ post, currentUserId, onTagClick, onCommunityClick }: {
       )}
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
-          <Avatar src={post.authorImage} name={post.authorName} id={post.authorId} />
+          <Avatar src={post.authorImage} name={post.authorName} username={post.authorUsername} />
           <div className="flex flex-col">
             <div className="flex items-center gap-2">
-              <Link href={`/dashboard/profile/${post.authorId}`} className="font-bold text-sm text-foreground hover:text-primary transition-colors">{post.authorName}</Link>
+              <Link href={`/dashboard/profile/${post.authorUsername}`} className="font-bold text-sm text-foreground hover:text-primary transition-colors">{post.authorName}</Link>
               {post.communityName && (
                 <div className="flex items-center gap-1.5">
                   <span className="text-muted-foreground/30">•</span>
@@ -356,7 +356,7 @@ function PostCard({ post, currentUserId, onTagClick, onCommunityClick }: {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {!post.isMyPost && <Link href={`/dashboard/profile/${post.authorId}`}><Button variant="ghost" size="sm" className="h-8 rounded-xl text-[11px] font-bold text-primary hover:bg-primary/10">Profili Gör</Button></Link>}
+          {!post.isMyPost && <Link href={`/dashboard/profile/${post.authorUsername}`}><Button variant="ghost" size="sm" className="h-8 rounded-xl text-[11px] font-bold text-primary hover:bg-primary/10">Profili Gör</Button></Link>}
           {(post.isMyPost || post.isAdmin) && (
             <button onClick={handleDelete} disabled={isPending} className="p-2 rounded-xl text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 transition-all duration-200">
               <Trash2 className="h-4 w-4" />
@@ -463,7 +463,7 @@ function CommunityAdminPanel({ communityId, onClose, onDeleteSuccess }: {
                   {requests.map(r => (
                     <div key={r.userId} className="flex items-center justify-between p-3 bg-muted/30 rounded-2xl border border-border/10">
                       <div className="flex items-center gap-3">
-                         <Avatar src={r.image} name={r.name} id={r.userId} size="sm" />
+                         <Avatar src={r.image} name={r.name} username={r.username || r.userId} size="sm" />
                          <span className="text-xs font-bold">{r.name}</span>
                       </div>
                       <div className="flex gap-2">
@@ -479,7 +479,7 @@ function CommunityAdminPanel({ communityId, onClose, onDeleteSuccess }: {
                 {members.map(m => (
                   <div key={m.userId} className="flex items-center justify-between p-3 bg-muted/30 rounded-2xl border border-border/10">
                     <div className="flex items-center gap-3">
-                       <Avatar src={m.image} name={m.name} id={m.userId} size="sm" />
+                       <Avatar src={m.image} name={m.name} username={m.username || m.userId} size="sm" />
                        <div className="flex flex-col">
                          <span className="text-xs font-bold">{m.name}</span>
                          <span className="text-[10px] text-muted-foreground">{m.role === 'ADMIN' ? 'Kurucu/Admin' : 'Üye'}</span>

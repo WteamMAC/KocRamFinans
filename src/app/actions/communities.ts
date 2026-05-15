@@ -209,7 +209,7 @@ export async function getCommunityRequests(communityId: string) {
 
   const requests = await prisma.communityMember.findMany({
     where: { communityId, status: "PENDING" },
-    include: { user: { select: { id: true, clerkUserId: true } } }
+    include: { user: { select: { id: true, clerkUserId: true, username: true } } }
   });
 
   const clerk = await clerkClient();
@@ -226,6 +226,7 @@ export async function getCommunityRequests(communityId: string) {
     return {
       id: r.id,
       userId: r.userId,
+      username: r.user.username,
       name: `${u?.firstName || ""} ${u?.lastName || ""}`.trim() || "Kullanıcı",
       image: u?.imageUrl || ""
     };
@@ -240,7 +241,7 @@ export async function getCommunityMembers(communityId: string) {
 
   const members = await prisma.communityMember.findMany({
     where: { communityId, status: "ACCEPTED" },
-    include: { user: { select: { id: true, clerkUserId: true } } }
+    include: { user: { select: { id: true, clerkUserId: true, username: true } } }
   });
 
   const clerk = await clerkClient();
@@ -257,6 +258,7 @@ export async function getCommunityMembers(communityId: string) {
     return {
       id: m.id,
       userId: m.userId,
+      username: m.user.username,
       name: `${u?.firstName || ""} ${u?.lastName || ""}`.trim() || "Kullanıcı",
       image: u?.imageUrl || "",
       role: m.role
