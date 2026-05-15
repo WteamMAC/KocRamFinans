@@ -18,7 +18,7 @@ export async function completeOnboarding(formData: {
   hasChildren?:   boolean;
   children?:      { birthDate: string }[];
   incomes:        { type: string; amount: number; date?: string; description?: string }[];
-  expenses:       { type: string; amount: number; dueDate?: number; isRecurring: boolean; description?: string }[];
+  expenses:       { type: string; amount: number; date?: string; isRecurring: boolean; description?: string }[];
   debts:          { type: string; amount: number; remainingInstallments?: number; description?: string }[];
   investments:    {
     type: string; symbol?: string; quantity: number;
@@ -45,6 +45,17 @@ export async function completeOnboarding(formData: {
       }
     } catch (clerkErr) {
       console.error("Clerk fetch error in onboarding:", clerkErr);
+    }
+
+    // E-posta ve Kullanıcı adı çakışmalarını benzersizleştir
+    const existingEmail = await prisma.user.findUnique({ where: { email } });
+    if (existingEmail && existingEmail.clerkUserId !== userId) {
+      email = `${email.split("@")[0]}_${Math.random().toString(36).substring(2, 8)}@kocramfinans.internal`;
+    }
+
+    const existingUsername = await prisma.user.findUnique({ where: { username } });
+    if (existingUsername && existingUsername.clerkUserId !== userId) {
+      username = `${username}_${Math.random().toString(36).substring(2, 8)}`;
     }
 
     // Mevcut bir kullanıcı var mı kontrol et
@@ -114,11 +125,14 @@ export async function completeOnboarding(formData: {
 
     if ((formData.expenses ?? []).length > 0) {
       await prisma.expense.createMany({
-        data: formData.expenses.map(exp => ({
-          type: exp.type, amount: Number(exp.amount) || 0,
-          dueDate: Number(exp.dueDate) || 15, isRecurring: exp.isRecurring ?? true,
-          description: exp.description, userId: user!.id,
-        })),
+        data: formData.expenses.map(exp => {
+          const d = exp.date ? new Date(exp.date) : new Date();
+          return {
+            type: exp.type, amount: Number(exp.amount) || 0,
+            date: d, dueDate: d.getDate(), isRecurring: exp.isRecurring ?? true,
+            description: exp.description, userId: user!.id,
+          };
+        }),
       });
     }
 
