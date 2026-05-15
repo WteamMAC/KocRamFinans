@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Joyride, Step, EventData, STATUS, TooltipRenderProps } from "react-joyride";
 import { useTheme } from "next-themes";
+import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { X, ChevronRight, ChevronLeft, Sparkles, Navigation, Wallet, TrendingUp, PieChart, CalendarDays, Palette, BotMessageSquare } from "lucide-react";
 
@@ -66,26 +67,34 @@ export function OnboardingTour() {
   const [run, setRun] = useState(false);
   const { theme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const pathname = usePathname();
+  const router = useRouter();
 
   useEffect(() => {
     setMounted(true);
     const hasCompletedTour = localStorage.getItem("hasCompletedTour");
-    if (!hasCompletedTour) {
+    if (!hasCompletedTour && pathname === "/dashboard") {
       const timer = setTimeout(() => {
         setRun(true);
       }, 1500);
       return () => clearTimeout(timer);
     }
-  }, []);
+  }, [pathname]);
 
   useEffect(() => {
     const handleStartTour = () => {
-      setRun(true);
+      if (pathname !== "/dashboard") {
+        router.push("/dashboard");
+        // Sayfanın yüklenmesi için biraz bekle
+        setTimeout(() => setRun(true), 800);
+      } else {
+        setRun(true);
+      }
     };
 
     window.addEventListener("start-tour", handleStartTour);
     return () => window.removeEventListener("start-tour", handleStartTour);
-  }, []);
+  }, [pathname, router]);
 
   const steps: Step[] = [
     {
