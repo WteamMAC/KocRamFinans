@@ -318,6 +318,7 @@ export async function getUserProfile(username: string) {
   return {
     id: user.id,
     username: user.username,
+    bio: user.bio,
     name: `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim() || "Kullanıcı",
     imageUrl: clerkUser.imageUrl,
     followerCount: user._count.followers,
@@ -326,6 +327,94 @@ export async function getUserProfile(username: string) {
     isMe: (await auth()).userId === user.clerkUserId,
     isBanned: user.isBanned,
   };
+}
+
+export async function updateBio(bio: string) {
+  const { userId: clerkUserId } = await auth();
+  if (!clerkUserId) throw new Error("Unauthorized");
+  const user = await getInternalUser(clerkUserId);
+  if (!user) throw new Error("User not found");
+
+  if (bio.length > 160) throw new Error("Açıklama 160 karakterden uzun olamaz.");
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { bio }
+  });
+
+  revalidatePath(`/dashboard/profile/${user.username}`);
+}
+
+export async function getUserFollowers(username: string) {
+  const user = await prisma.user.findUnique({
+    where: { username },
+    select: {
+      followers: {
+        include: {
+          follower: {
+            select: { id: true, username: true, clerkUserId: true }
+          }
+        }
+      }
+    }
+  });
+
+  if (!user) return [];
+
+  const clerk = await clerkClient();
+  const clerkUserIds = user.followers.map(f => f.follower.clerkUserId);
+  
+  let userMap = new Map();
+  if (clerkUserIds.length > 0) {
+    const clerkUsers = await clerk.users.getUserList({ userId: clerkUserIds });
+    userMap = new Map(clerkUsers.data.map(u => [u.id, u]));
+  }
+
+  return user.followers.map(f => {
+    const cu = userMap.get(f.follower.clerkUserId);
+    return {
+      id: f.follower.id,
+      username: f.follower.username,
+      name: `${cu?.firstName || ""} ${cu?.lastName || ""}`.trim() || "Kullanıcı",
+      imageUrl: cu?.imageUrl || ""
+    };
+  });
+}
+
+export async function getUserFollowing(username: string) {
+  const user = await prisma.user.findUnique({
+    where: { username },
+    select: {
+      following: {
+        include: {
+          following: {
+            select: { id: true, username: true, clerkUserId: true }
+          }
+        }
+      }
+    }
+  });
+
+  if (!user) return [];
+
+  const clerk = await clerkClient();
+  const clerkUserIds = user.following.map(f => f.following.clerkUserId);
+  
+  let userMap = new Map();
+  if (clerkUserIds.length > 0) {
+    const clerkUsers = await clerk.users.getUserList({ userId: clerkUserIds });
+    userMap = new Map(clerkUsers.data.map(u => [u.id, u]));
+  }
+
+  return user.following.map(f => {
+    const cu = userMap.get(f.following.clerkUserId);
+    return {
+      id: f.following.id,
+      username: f.following.username,
+      name: `${cu?.firstName || ""} ${cu?.lastName || ""}`.trim() || "Kullanıcı",
+      imageUrl: cu?.imageUrl || ""
+    };
+  });
 }
 
 export async function getProfilePosts(targetInternalUserId: string, cursor?: string) {
