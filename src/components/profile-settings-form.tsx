@@ -150,33 +150,33 @@ export function ProfileSettingsForm({ initialData }: Props) {
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
 
       {/* Ad / Soyad */}
-      <div className="bg-white/95 backdrop-blur-md border border-[#8C5000]/15 rounded-[32px] p-8 shadow-sm space-y-6 animate-in fade-in duration-500">
-        <h3 className="text-sm font-black text-[#8C5000] uppercase tracking-widest flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-[#f18d02]" /> Kişisel Bilgiler
+      <div className="bg-card border border-border/40 rounded-[32px] p-8 shadow-sm space-y-6">
+        <h3 className="text-sm font-black text-primary uppercase tracking-widest flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-accent" /> Kişisel Bilgiler
         </h3>
         <div className="grid grid-cols-2 gap-5">
           {(["firstName","lastName"] as const).map(f=>(
             <div key={f} className="space-y-2">
-              <Label className="text-[10px] font-extrabold text-[#887364] uppercase tracking-widest">{f==="firstName"?"Ad":"Soyad"}</Label>
-              <Input {...form.register(f)} className={cn("h-12 rounded-2xl bg-[#faf9f6] border-[#dbc2b0]/50 focus:border-[#8C5000] font-semibold text-[#191c1d]",errors[f]&&"border-rose-500 bg-rose-50/50")}/>
-              {errors[f]&&<p className="text-[10px] font-bold text-rose-600">{errors[f]?.message}</p>}
+              <Label className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-widest">{f==="firstName"?"Ad":"Soyad"}</Label>
+              <Input {...form.register(f)} className={cn("h-12 rounded-2xl bg-muted/40 border-border/50 focus:border-primary font-semibold",errors[f]&&"border-destructive bg-destructive/10")}/>
+              {errors[f]&&<p className="text-[10px] font-bold text-destructive">{errors[f]?.message}</p>}
             </div>
           ))}
         </div>
         <div className="grid grid-cols-2 gap-5">
           <div className="space-y-2">
-            <Label className="text-[10px] font-extrabold text-[#887364] uppercase tracking-widest">Doğum Tarihi</Label>
-            <Input type="date" {...form.register("birthDate")} max={getMaxDate()} className={cn("h-12 rounded-2xl bg-[#faf9f6] border-[#dbc2b0]/50 focus:border-[#8C5000] font-semibold text-[#191c1d]",errors.birthDate&&"border-rose-500 bg-rose-50/50")}/>
-            {errors.birthDate&&<p className="text-[10px] font-bold text-rose-600">{errors.birthDate.message}</p>}
+            <Label className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-widest">Doğum Tarihi</Label>
+            <Input type="date" {...form.register("birthDate")} max={getMaxDate()} className={cn("h-12 rounded-2xl bg-muted/40 border-border/50 focus:border-primary font-semibold",errors.birthDate&&"border-destructive bg-destructive/10")}/>
+            {errors.birthDate&&<p className="text-[10px] font-bold text-destructive">{errors.birthDate.message}</p>}
           </div>
           <div className="space-y-2">
-            <Label className="text-[10px] font-extrabold text-[#887364] uppercase tracking-widest">Cinsiyet</Label>
+            <Label className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-widest">Cinsiyet</Label>
             <div className="grid grid-cols-2 gap-2">
               {[{v:"male",label:"👨 Erkek"},{v:"female",label:"👩 Kadın"}].map(g=>(
                 <button key={g.v} type="button"
                   onClick={()=>form.setValue("gender",g.v as F["gender"],{shouldDirty:true,shouldValidate:true})}
                   className={cn("h-12 rounded-2xl border text-xs font-black transition-all duration-200",
-                    gender===g.v?"bg-[#8C5000] text-white border-[#8C5000] shadow-md scale-[1.02]":"bg-[#faf9f6] border-[#dbc2b0]/50 text-[#5a3100] hover:border-[#8C5000]/40")}>
+                    gender===g.v?"bg-primary text-primary-foreground border-primary shadow-md scale-[1.02]":"bg-muted/30 border-border/40 text-muted-foreground hover:border-primary/40")}>
                   {g.label}
                 </button>
               ))}
@@ -186,9 +186,9 @@ export function ProfileSettingsForm({ initialData }: Props) {
       </div>
 
       {/* Para Birimi */}
-      <div className="bg-white/95 backdrop-blur-md border border-[#8C5000]/15 rounded-[32px] p-8 shadow-sm space-y-5 animate-in fade-in duration-500">
-        <h3 className="text-sm font-black text-[#8C5000] uppercase tracking-widest flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-[#f18d02]" /> Para Birimi
+      <div className="bg-card border border-border/40 rounded-[32px] p-8 shadow-sm space-y-5">
+        <h3 className="text-sm font-black text-primary uppercase tracking-widest flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-accent" /> Para Birimi
         </h3>
         <Controller name="currency" control={form.control} render={({field})=>(
           <div className="space-y-3">
@@ -198,17 +198,17 @@ export function ProfileSettingsForm({ initialData }: Props) {
                 return (
                   <button key={c.code} type="button" onClick={()=>{field.onChange(c.code);form.trigger("currency");setShowOtherCur(false);}}
                     className={cn("p-4 rounded-3xl border text-center transition-all duration-200",
-                      isA?"bg-[#8C5000] text-white border-[#8C5000] shadow-lg scale-[1.03]":"bg-[#faf9f6] border-[#dbc2b0]/50 hover:border-[#8C5000]/40")}>
+                      isA?"bg-primary text-primary-foreground border-primary shadow-lg scale-[1.03]":"bg-muted/30 border-border/40 hover:border-primary/40")}>
                     <div className="text-2xl mb-1">{c.flag}</div>
-                    <div className={cn("text-xl font-black",isA?"text-white":"text-[#5a3100]")}>{c.symbol}</div>
-                    <div className={cn("text-[11px] font-bold",isA?"text-white/80":"text-[#887364]")}>{c.code}</div>
+                    <div className={cn("text-xl font-black",isA?"text-primary-foreground":"text-foreground")}>{c.symbol}</div>
+                    <div className={cn("text-[11px] font-bold",isA?"text-primary-foreground/80":"text-muted-foreground")}>{c.code}</div>
                   </button>
                 );
               })}
             </div>
             <button type="button" onClick={()=>setShowOtherCur(v=>!v)}
               className={cn("w-full flex items-center justify-between px-5 py-3.5 rounded-2xl border text-sm font-extrabold transition-all",
-                showOtherCur||OTHER_CURRENCIES.some(c=>c.code===field.value)?"bg-[#8C5000]/10 border-[#8C5000]/30 text-[#8C5000]":"bg-[#faf9f6] border-[#dbc2b0]/40 text-[#887364] hover:border-[#8C5000]/30")}>
+                showOtherCur||OTHER_CURRENCIES.some(c=>c.code===field.value)?"bg-primary/10 border-primary/30 text-primary":"bg-muted/30 border-border/40 text-muted-foreground hover:border-primary/30")}>
               <span>{OTHER_CURRENCIES.find(c=>c.code===field.value)?`${OTHER_CURRENCIES.find(c=>c.code===field.value)!.flag} ${OTHER_CURRENCIES.find(c=>c.code===field.value)!.label}`:"Diğer..."}</span>
               <ChevronDown className={cn("w-4 h-4 transition-transform",showOtherCur&&"rotate-180")}/>
             </button>
@@ -219,9 +219,9 @@ export function ProfileSettingsForm({ initialData }: Props) {
                   return (
                     <button key={c.code} type="button" onClick={()=>{field.onChange(c.code);form.setValue("currency",c.code,{shouldDirty:true});}}
                       className={cn("flex items-center gap-3 p-3.5 rounded-2xl border text-left transition-all font-bold",
-                        isA?"bg-[#8C5000] text-white border-[#8C5000] shadow":"bg-[#faf9f6] border-[#dbc2b0]/40 hover:border-[#8C5000]/30")}>
+                        isA?"bg-primary text-primary-foreground border-primary shadow":"bg-muted/30 border-border/40 hover:border-primary/30")}>
                       <span className="text-xl">{c.flag}</span>
-                      <div><div className={cn("text-xs font-black",isA?"text-white":"text-[#5a3100]")}>{c.code}</div><div className={cn("text-[10px]",isA?"text-white/80":"text-[#887364]")}>{c.label}</div></div>
+                      <div><div className={cn("text-xs font-black",isA?"text-primary-foreground":"text-foreground")}>{c.code}</div><div className={cn("text-[10px]",isA?"text-primary-foreground/80":"text-muted-foreground")}>{c.label}</div></div>
                     </button>
                   );
                 })}
@@ -232,16 +232,16 @@ export function ProfileSettingsForm({ initialData }: Props) {
       </div>
 
       {/* Ülke */}
-      <div className="bg-white/95 backdrop-blur-md border border-[#8C5000]/15 rounded-[32px] p-8 shadow-sm space-y-4 animate-in fade-in duration-500">
-        <h3 className="text-sm font-black text-[#8C5000] uppercase tracking-widest flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-[#f18d02]" /> Ülke
+      <div className="bg-card border border-border/40 rounded-[32px] p-8 shadow-sm space-y-4">
+        <h3 className="text-sm font-black text-primary uppercase tracking-widest flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-accent" /> Ülke
         </h3>
         <Controller name="country" control={form.control} render={({field})=>(
           <div className="space-y-3">
             <button type="button" onClick={()=>setShowCountries(v=>!v)}
-              className="w-full flex items-center justify-between px-5 py-3.5 rounded-2xl border bg-[#faf9f6] border-[#dbc2b0]/50 hover:border-[#8C5000]/40 transition-all">
-              <span className="text-sm font-extrabold text-[#5a3100]">{countryLabel?`${countryLabel.flag} ${countryLabel.label}`:"Ülke seçiniz..."}</span>
-              <ChevronDown className={cn("w-4 h-4 text-[#887364] transition-transform",showCountries&&"rotate-180")}/>
+              className="w-full flex items-center justify-between px-5 py-3.5 rounded-2xl border bg-muted/30 border-border/40 hover:border-primary/40 transition-all">
+              <span className="text-sm font-extrabold text-foreground">{countryLabel?`${countryLabel.flag} ${countryLabel.label}`:"Ülke seçiniz..."}</span>
+              <ChevronDown className={cn("w-4 h-4 text-muted-foreground transition-transform",showCountries&&"rotate-180")}/>
             </button>
             {showCountries&&(
               <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-300 pr-1">
@@ -250,10 +250,10 @@ export function ProfileSettingsForm({ initialData }: Props) {
                   return (
                     <button key={c.code} type="button" onClick={()=>{field.onChange(c.code);form.setValue("country",c.code,{shouldDirty:true});setShowCountries(false);}}
                       className={cn("flex items-center gap-2.5 p-3 rounded-2xl border text-left transition-all font-bold",
-                        isA?"bg-[#8C5000] text-white border-[#8C5000] shadow":"bg-[#faf9f6] border-[#dbc2b0]/40 hover:border-[#8C5000]/30")}>
+                        isA?"bg-primary text-primary-foreground border-primary shadow":"bg-muted/30 border-border/40 hover:border-primary/30")}>
                       <span className="text-lg">{c.flag}</span>
-                      <span className={cn("text-xs font-black",isA?"text-white":"text-[#5a3100]")}>{c.label}</span>
-                      {isA&&<Check className="w-3.5 h-3.5 ml-auto text-white"/>}
+                      <span className={cn("text-xs font-black",isA?"text-primary-foreground":"text-foreground")}>{c.label}</span>
+                      {isA&&<Check className="w-3.5 h-3.5 ml-auto text-primary-foreground"/>}
                     </button>
                   );
                 })}
@@ -264,18 +264,18 @@ export function ProfileSettingsForm({ initialData }: Props) {
       </div>
 
       {/* İlgi Alanları */}
-      <div className="bg-white/95 backdrop-blur-md border border-[#8C5000]/15 rounded-[32px] p-8 shadow-sm space-y-5 animate-in fade-in duration-500">
-        <h3 className="text-sm font-black text-[#8C5000] uppercase tracking-widest flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-[#f18d02]" /> İlgi Alanları
+      <div className="bg-card border border-border/40 rounded-[32px] p-8 shadow-sm space-y-5">
+        <h3 className="text-sm font-black text-primary uppercase tracking-widest flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-accent" /> İlgi Alanları
         </h3>
-        {errors.interests&&<p className="text-[10px] font-bold text-rose-600 flex items-center gap-1"><AlertCircle className="h-3 w-3"/>{errors.interests.message}</p>}
+        {errors.interests&&<p className="text-[10px] font-bold text-destructive flex items-center gap-1"><AlertCircle className="h-3 w-3"/>{errors.interests.message}</p>}
         <div className="flex flex-wrap gap-2.5">
           {HASHTAGS.map(h=>{
             const isA=interests.includes(h.tag);
             return (
               <button key={h.tag} type="button" onClick={()=>toggleTag(h.tag)}
                 className={cn("flex items-center gap-2 px-4 py-2.5 rounded-full border text-xs font-black transition-all duration-200",
-                  isA?"bg-[#8C5000] text-white border-[#8C5000] shadow-md scale-105":"bg-[#faf9f6] border-[#dbc2b0]/50 text-[#5a3100] hover:border-[#8C5000]/40 hover:scale-[1.02]")}>
+                  isA?"bg-primary text-primary-foreground border-primary shadow-md scale-105":"bg-muted/30 border-border/50 text-muted-foreground hover:border-primary/40 hover:scale-[1.02]")}>
                 <span className="text-base">{h.emoji}</span><span>#{h.label}</span>{isA&&<Check className="w-3.5 h-3.5"/>}
               </button>
             );
@@ -285,18 +285,18 @@ export function ProfileSettingsForm({ initialData }: Props) {
 
       {/* Save Bar */}
       <div className={cn("sticky bottom-6 flex items-center justify-between px-8 py-5 rounded-3xl border backdrop-blur-xl transition-all duration-300 shadow-2xl",
-        isDirty?"bg-white/95 border-[#8C5000]/30 shadow-[#8C5000]/15":"bg-[#fbf9f4]/95 border-[#dbc2b0]/30 shadow-none")}>
+        isDirty?"bg-card border-primary/40 shadow-primary/10":"bg-muted/80 border-border/30 shadow-none")}>
         <div>
           {isDirty
-            ? <p className="text-sm font-black text-[#8C5000] flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-[#f18d02] animate-ping" /> Kaydedilmemiş değişiklikler var</p>
+            ? <p className="text-sm font-black text-primary flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-accent animate-ping" /> Kaydedilmemiş değişiklikler var</p>
             : saved
-              ? <p className="text-sm font-black text-[#36684d] flex items-center gap-2"><Check className="w-4 h-4"/>Değişiklikler başarıyla kaydedildi!</p>
-              : <p className="text-sm font-bold text-[#887364]">Değişiklik yapılmadı</p>
+              ? <p className="text-sm font-black text-emerald-600 flex items-center gap-2"><Check className="w-4 h-4"/>Değişiklikler başarıyla kaydedildi!</p>
+              : <p className="text-sm font-bold text-muted-foreground">Değişiklik yapılmadı</p>
           }
         </div>
         <Button type="submit" disabled={!isDirty||saving}
           className={cn("h-12 px-8 rounded-2xl font-extrabold transition-all duration-200 shadow-lg",
-            isDirty?"bg-gradient-to-r from-[#f18d02] to-[#8C5000] text-white shadow-[#8C5000]/25 hover:scale-[1.03]":"bg-[#dbc2b0]/30 text-[#887364] shadow-none cursor-not-allowed")}>
+            isDirty?"bg-primary text-primary-foreground shadow-primary/20 hover:scale-[1.03]":"bg-muted-foreground/20 text-muted-foreground shadow-none cursor-not-allowed")}>
           {saving?"Kaydediliyor...":<><Save className="w-5 h-5 mr-2"/>Değişiklikleri Kaydet</>}
         </Button>
       </div>

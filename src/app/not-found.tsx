@@ -36,7 +36,7 @@ export default function NotFound() {
             alt="Balıkçı 404 illüstrasyonu"
             width={800}
             height={450}
-            className="w-full h-auto rounded-3xl"
+            className="w-full h-auto rounded-3xl shadow-2xl"
             priority
           />
         </motion.div>
@@ -66,8 +66,7 @@ export default function NotFound() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4 }}
-            className="text-xl md:text-2xl font-bold mb-2"
-            style={{ color: "#5a3100" }}
+            className="text-xl md:text-2xl font-bold mb-2 text-[#5a3100]"
           >
             Sayfayı Balıkladık!
           </motion.p>
@@ -76,8 +75,7 @@ export default function NotFound() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5 }}
-            className="text-sm md:text-base mb-8 max-w-xs leading-relaxed"
-            style={{ color: "#887364" }}
+            className="text-sm md:text-base mb-8 max-w-xs leading-relaxed text-[#887364]"
           >
             Aradığınız sayfa finansal derinliklerde kaybolmuş. Sizi güvenli sulara geri alalım.
           </motion.p>
@@ -99,8 +97,8 @@ export default function NotFound() {
                 boxShadow: "0 6px 20px rgba(140,80,0,0.35)",
               }}
             >
-              <Home className="w-5 h-5" />
-              Ana Menüye Dön
+              <Home className="w-5 h-5 text-white" />
+              <span className="text-white">Ana Menüye Dön</span>
             </Link>
           </motion.div>
 
@@ -109,11 +107,10 @@ export default function NotFound() {
             {[...Array(5)].map((_, i) => (
               <div
                 key={i}
-                className="rounded-full"
+                className="rounded-full bg-[#8C5000]"
                 style={{
                   width: i === 2 ? 10 : 6,
                   height: i === 2 ? 10 : 6,
-                  background: "#8C5000",
                 }}
               />
             ))}

@@ -4,9 +4,11 @@ import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { toggleFollow, toggleUserBan, updateBio, getUserFollowers, getUserFollowing } from "@/app/actions/blog";
 import { cn } from "@/lib/utils";
-import { Users, BookOpen, UserPlus, UserMinus, ShieldAlert, Ban, Pencil, Check, X, Camera } from "lucide-react";
+import { Users, BookOpen, UserPlus, UserMinus, ShieldAlert, Ban, Pencil, Check, X, Camera, MessageCircle } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
+import { useUser } from "@clerk/nextjs";
+import { MessageModal } from "./message-modal";
 
 interface ProfileHeaderProps {
   profile: {
@@ -36,6 +38,8 @@ export function ProfileHeader({ profile, initialIsFollowing, currentUserRole }: 
   const [showFollowing, setShowFollowing] = useState(false);
   const [followList, setFollowList] = useState<any[]>([]);
   const [isLoadingList, setIsLoadingList] = useState(false);
+  const [isMessageModalOpen, setIsMessageModalOpen] = useState(false);
+  const { user } = useUser();
 
   const handleFollow = () => {
     startTransition(async () => {
@@ -237,27 +241,54 @@ export function ProfileHeader({ profile, initialIsFollowing, currentUserRole }: 
                  )}
 
                  {!profile.isMe && (
-                   <Button
-                     onClick={handleFollow}
-                     disabled={isPending}
-                     className={cn(
-                       "rounded-[20px] px-8 h-12 text-sm font-black uppercase tracking-widest transition-all active:scale-95",
-                       isFollowing 
-                         ? "bg-muted/50 border border-border/20 text-foreground hover:bg-rose-500/10 hover:text-rose-500 hover:border-rose-500/20" 
-                         : "bg-primary text-primary-foreground shadow-xl shadow-primary/30 hover:bg-primary/90"
-                     )}
-                   >
-                     {isPending ? "..." : isFollowing ? "Takibi Bırak" : "Takip Et"}
-                   </Button>
+                   <>
+                     <Button
+                       onClick={() => setIsMessageModalOpen(true)}
+                       variant="outline"
+                       className="rounded-[20px] px-4 h-12 text-sm font-bold border-border/20 hover:bg-muted/50 text-foreground transition-all"
+                     >
+                       <MessageCircle className="h-5 w-5 mr-2" />
+                       Mesaj
+                     </Button>
+                     <Button
+                       onClick={handleFollow}
+                       disabled={isPending}
+                       className={cn(
+                         "rounded-[20px] px-8 h-12 text-sm font-black uppercase tracking-widest transition-all active:scale-95",
+                         isFollowing 
+                           ? "bg-muted/50 border border-border/20 text-foreground hover:bg-rose-500/10 hover:text-rose-500 hover:border-rose-500/20" 
+                           : "bg-primary text-primary-foreground shadow-xl shadow-primary/30 hover:bg-primary/90"
+                       )}
+                     >
+                       {isPending ? "..." : isFollowing ? "Takibi Bırak" : "Takip Et"}
+                     </Button>
+                   </>
                  )}
                  
                  {profile.isMe && (
-                    <Button variant="outline" className="rounded-[20px] px-6 h-12 text-xs font-bold border-border/20 hover:bg-muted/50">
-                       Profili Düzenle
-                    </Button>
+                    <>
+                      <Button 
+                        onClick={() => setIsMessageModalOpen(true)}
+                        variant="outline" 
+                        className="rounded-[20px] px-4 h-12 text-xs font-bold border-border/20 hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-all"
+                      >
+                        <MessageCircle className="h-4 w-4 mr-2" />
+                        Mesaj Kutusu
+                      </Button>
+                      <Button variant="outline" className="rounded-[20px] px-6 h-12 text-xs font-bold border-border/20 hover:bg-muted/50">
+                         Profili Düzenle
+                      </Button>
+                    </>
                  )}
                </div>
             </div>
+            
+            <MessageModal 
+              isOpen={isMessageModalOpen}
+              onClose={() => setIsMessageModalOpen(false)}
+              initialTargetUsername={profile.isMe ? null : profile.username}
+              currentUsername={user?.username || ""}
+            />
           </div>
 
           {/* Stats Bar */}
