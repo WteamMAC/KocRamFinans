@@ -30,11 +30,9 @@ function CustomTooltip({
         <div className="font-heading font-bold text-xl text-primary flex items-center gap-2">
           {step.title}
         </div>
-        {index !== 0 && (
-           <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-muted-foreground hover:bg-muted" {...closeProps}>
-             <X className="h-4 w-4" />
-           </Button>
-        )}
+        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-muted-foreground hover:bg-muted" {...closeProps}>
+          <X className="h-4 w-4" />
+        </Button>
       </div>
 
       <div className="text-sm text-muted-foreground/90 leading-relaxed relative z-10 font-medium">
@@ -249,6 +247,9 @@ export function OnboardingTour() {
         showProgress: false,
         spotlightRadius: 20,
         spotlightPadding: 12,
+        blockTargetInteraction: true,
+        overlayClickAction: false,
+        skipBeacon: true,
       }}
     />
   );
