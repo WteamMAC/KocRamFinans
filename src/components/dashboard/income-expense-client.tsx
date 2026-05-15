@@ -35,7 +35,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { formatAmount } from "@/lib/currency-formatter";
+import { useCurrency, DISPLAY_CURRENCIES_LIST } from "@/context/currency-context";
 
 interface Transaction {
   id: string;
@@ -44,6 +44,9 @@ interface Transaction {
   description: string;
   amount: number;
   createdAt: string;
+  currency?: string;
+  originalAmount?: number;
+  fxRate?: number;
 }
 
 interface IncomeExpenseClientProps {
@@ -57,7 +60,6 @@ interface IncomeExpenseClientProps {
   incomeCategoryMap: Record<string, number>;
   recentTransactions: Transaction[];
   debts: any[];
-  currencyConfig?: { symbol: string; rate: number };
 }
 
 export function IncomeExpenseClient({
@@ -68,12 +70,11 @@ export function IncomeExpenseClient({
   monthlyData,
   maxMonthly,
   expenseCategoryMap,
-  incomeCategoryMap,
   recentTransactions,
   debts,
-  currencyConfig = { symbol: "₺", rate: 1 }
 }: IncomeExpenseClientProps) {
   const router = useRouter();
+  const { formatAmount, rates } = useCurrency();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -82,6 +83,7 @@ export function IncomeExpenseClient({
   const [formData, setFormData] = useState({
     type: "",
     amount: "",
+    currency: "TRY",
     description: "",
     debtId: "",
     remainingInstallments: "",
@@ -111,7 +113,11 @@ export function IncomeExpenseClient({
   const handleSave = async () => {
     if (!formData.amount) return;
     setLoading(true);
-    const amountInTry = Number(formData.amount) * currencyConfig.rate;
+
+    const selectedRate = rates[formData.currency] || 1;
+    const originalAmount = Number(formData.amount);
+    const amountInTry = originalAmount * selectedRate;
+
     try {
         if (transactionType === "income") {
             await addIncome({
@@ -120,7 +126,10 @@ export function IncomeExpenseClient({
                 isRecurring: formData.isRecurring,
                 dueDate: formData.dueDate ? Number(formData.dueDate) : undefined,
                 date: new Date(formData.date),
-                description: formData.description
+                description: formData.description,
+                currency: formData.currency,
+                originalAmount: originalAmount,
+                fxRate: selectedRate,
             });
         } else if (transactionType === "expense") {
             await addExpense({
@@ -129,10 +138,13 @@ export function IncomeExpenseClient({
                 isRecurring: formData.isRecurring,
                 dueDate: formData.dueDate ? Number(formData.dueDate) : undefined,
                 date: new Date(formData.date),
-                description: formData.description
+                description: formData.description,
+                currency: formData.currency,
+                originalAmount: originalAmount,
+                fxRate: selectedRate,
             });
         } else if (transactionType === "debt_payment") {
-            await payDebtInstallment(formData.debtId, amountInTry);
+            await payDebtInstallment(formData.debtId, amountInTry, false, formData.currency, originalAmount, selectedRate);
         } else if (transactionType === "new_debt") {
             await addDebt({
                 type: formData.type || "Diğer",
@@ -140,11 +152,14 @@ export function IncomeExpenseClient({
                 remainingInstallments: formData.remainingInstallments ? Number(formData.remainingInstallments) : undefined,
                 interestRate: formData.interestRate ? Number(formData.interestRate) : undefined,
                 paymentDay: formData.paymentDay ? Number(formData.paymentDay) : undefined,
-                description: formData.description
+                description: formData.description,
+                currency: formData.currency,
+                originalAmount: originalAmount,
+                fxRate: selectedRate,
             });
         }
         setIsModalOpen(false);
-        setFormData({ type: "", amount: "", description: "", debtId: "", remainingInstallments: "", interestRate: "", paymentDay: "", isRecurring: false, dueDate: "", date: new Date().toISOString().split('T')[0] });
+        setFormData({ type: "", amount: "", currency: "TRY", description: "", debtId: "", remainingInstallments: "", interestRate: "", paymentDay: "", isRecurring: false, dueDate: "", date: new Date().toISOString().split('T')[0] });
         router.refresh();
     } catch (err) {
         console.error(err);
@@ -233,7 +248,7 @@ export function IncomeExpenseClient({
                                 <SelectContent className="rounded-xl bg-card">
                                     {debts.map(debt => (
                                         <SelectItem key={debt.id} value={debt.id}>
-                                            {debt.description || debt.type} (Kalan: {formatAmount(debt.amount, currencyConfig)})
+                                            {debt.description || debt.type} (Kalan: {formatAmount(debt.amount)})
                                         </SelectItem>
                                     ))}
                                     {debts.length === 0 && <SelectItem value="none" disabled>Aktif borç bulunamadı</SelectItem>}
@@ -318,15 +333,32 @@ export function IncomeExpenseClient({
                         </>
                     )}
 
-                    <div className="space-y-3">
-                        <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Tutar ({currencyConfig.symbol})</Label>
-                        <Input 
-                            type="number" 
-                            placeholder="0.00" 
-                            value={formData.amount}
-                            onChange={(e) => setFormData(p => ({ ...p, amount: e.target.value }))}
-                            className="bg-muted border-border/30 h-12 rounded-xl font-bold text-lg"
-                        />
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="col-span-2 space-y-3">
+                          <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Tutar</Label>
+                          <Input 
+                              type="number" 
+                              placeholder="0.00" 
+                              value={formData.amount}
+                              onChange={(e) => setFormData(p => ({ ...p, amount: e.target.value }))}
+                              className="bg-muted border-border/30 h-12 rounded-xl font-bold text-lg"
+                          />
+                      </div>
+                      <div className="space-y-3">
+                          <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Para Birimi</Label>
+                          <Select value={formData.currency} onValueChange={(v) => setFormData(p => ({ ...p, currency: String(v) }))}>
+                              <SelectTrigger className="bg-muted border-border/30 h-12 rounded-xl font-bold">
+                                  <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent className="rounded-xl bg-card font-bold">
+                                  {DISPLAY_CURRENCIES_LIST.map(c => (
+                                      <SelectItem key={c.code} value={c.code}>
+                                          {c.flag} {c.code}
+                                      </SelectItem>
+                                  ))}
+                              </SelectContent>
+                          </Select>
+                      </div>
                     </div>
 
                     <div className="space-y-3">
@@ -406,7 +438,7 @@ export function IncomeExpenseClient({
             </div>
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-heading font-bold text-foreground">{formatAmount(totalIncome, currencyConfig)}</span>
+            <span className="text-3xl font-heading font-bold text-foreground">{formatAmount(totalIncome)}</span>
           </div>
           <p className="text-emerald-600 text-[13px] font-semibold mt-4 flex items-center gap-1">
             <ArrowUpRight className="w-4 h-4" /> Pozitif nakit akışı
@@ -422,7 +454,7 @@ export function IncomeExpenseClient({
             </div>
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-heading font-bold text-foreground">{formatAmount(totalExpense, currencyConfig)}</span>
+            <span className="text-3xl font-heading font-bold text-foreground">{formatAmount(totalExpense)}</span>
           </div>
           <p className="text-rose-600 text-[13px] font-semibold mt-4 flex items-center gap-1">
             <ArrowDownRight className="w-4 h-4" /> Bütçe takibi
@@ -438,12 +470,12 @@ export function IncomeExpenseClient({
             </div>
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-heading font-bold text-foreground">{formatAmount(netBalance, currencyConfig)}</span>
+            <span className="text-3xl font-heading font-bold text-foreground">{formatAmount(netBalance)}</span>
           </div>
           <div className="mt-4 pt-4 border-t border-border/10">
             <div className="flex justify-between items-center text-[11px] font-bold">
               <span className="text-muted-foreground uppercase tracking-wider">Ay Sonu Beklenen:</span>
-              <span className={cn(projectedBalance >= 0 ? "text-emerald-500" : "text-rose-500")}>{formatAmount(projectedBalance, currencyConfig)}</span>
+              <span className={cn(projectedBalance >= 0 ? "text-emerald-500" : "text-rose-500")}>{formatAmount(projectedBalance)}</span>
             </div>
           </div>
         </div>
@@ -478,8 +510,8 @@ export function IncomeExpenseClient({
                       <div className={cn("flex-1 rounded-t-md transition-all duration-500", isCurrentMonth ? "bg-primary shadow-lg shadow-primary/20" : "bg-primary/40 group-hover:bg-primary/60")} style={{ height: `${expHeight}%` }}></div>
                       
                       <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-card px-3 py-2 rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 whitespace-nowrap text-xs font-bold flex flex-col gap-1 border border-border/30">
-                        <span className="text-emerald-500">Gelir: {formatAmount(d.income, currencyConfig)}</span>
-                        <span className="text-primary">Gider: {formatAmount(d.expense, currencyConfig)}</span>
+                        <span className="text-emerald-500">Gelir: {formatAmount(d.income)}</span>
+                        <span className="text-primary">Gider: {formatAmount(d.expense)}</span>
                       </div>
                     </div>
                     <span className={cn("text-xs", isCurrentMonth ? "font-bold text-foreground" : "font-semibold text-muted-foreground")}>{d.month}</span>
@@ -509,8 +541,13 @@ export function IncomeExpenseClient({
                       </div>
                       <div className="text-right">
                         <p className={cn("font-bold text-lg", tx.type === 'income' ? "text-emerald-500" : "text-primary")}>
-                          {tx.type === 'income' ? '+' : '-'}{formatAmount(tx.amount, currencyConfig)}
+                          {tx.type === 'income' ? '+' : '-'}{formatAmount(tx.amount)}
                         </p>
+                        {tx.currency && tx.currency !== "TRY" && (
+                          <p className="text-[11px] text-muted-foreground font-semibold">
+                            (Orijinal: {tx.originalAmount?.toLocaleString()} {tx.currency})
+                          </p>
+                        )}
                         <p className="text-[11px] text-muted-foreground uppercase tracking-wide mt-1">
                           {new Date(tx.createdAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })}
                         </p>
@@ -555,7 +592,7 @@ export function IncomeExpenseClient({
                 })()}
               </svg>
               <div className="absolute text-center">
-                <p className="text-2xl font-heading font-bold text-foreground">{formatAmount(totalExpense, currencyConfig)}</p>
+                <p className="text-2xl font-heading font-bold text-foreground">{formatAmount(totalExpense)}</p>
                 <p className="text-[12px] text-muted-foreground uppercase tracking-widest mt-1">Toplam</p>
               </div>
             </div>
@@ -638,8 +675,15 @@ export function IncomeExpenseClient({
                     <td className="px-8 py-6 text-[13px] text-muted-foreground font-semibold">
                       {new Date(tx.createdAt).toLocaleDateString('tr-TR', { day: '2-digit', month: 'short', year: 'numeric' })}
                     </td>
-                    <td className={cn("px-8 py-6 text-right font-bold text-lg", isIncome ? "text-emerald-500" : "text-primary")}>
-                      {isIncome ? '+' : '-'} {formatAmount(tx.amount, currencyConfig)}
+                    <td className="px-8 py-6 text-right">
+                      <p className={cn("font-bold text-lg", isIncome ? "text-emerald-500" : "text-primary")}>
+                        {isIncome ? '+' : '-'} {formatAmount(tx.amount)}
+                      </p>
+                      {tx.currency && tx.currency !== "TRY" && (
+                        <p className="text-[11px] text-muted-foreground font-semibold">
+                          (Orijinal: {tx.originalAmount?.toLocaleString()} {tx.currency})
+                        </p>
+                      )}
                     </td>
                   </tr>
                 );

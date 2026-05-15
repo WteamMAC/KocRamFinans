@@ -10,23 +10,24 @@ import { CreditCard, Plus, X, Landmark, TrendingDown, Clock, AlertCircle } from 
 import { addDebt, payDebtInstallment, closeDebt } from "@/app/actions/debts";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { formatAmount } from "@/lib/currency-formatter";
+import { useCurrency, DISPLAY_CURRENCIES_LIST } from "@/context/currency-context";
 
 interface DebtListProps {
   debts: any[];
-  currencyConfig?: { symbol: string; rate: number };
 }
 
-export function DebtList({ debts, currencyConfig = { symbol: "₺", rate: 1 } }: DebtListProps) {
+export function DebtList({ debts }: DebtListProps) {
     const router = useRouter();
+    const { formatAmount, rates } = useCurrency();
     const [isAdding, setIsAdding] = useState(false);
     const [loading, setLoading] = useState(false);
-    const [payModal, setPayModal] = useState<{ id: string, amount: number, isClose: boolean, description: string, rawAmount: number } | null>(null);
+    const [payModal, setPayModal] = useState<{ id: string, amount: number, isClose: boolean, description: string, rawAmount: number, currency?: string, originalAmount?: number, fxRate?: number } | null>(null);
     const [error, setError] = useState<string | null>(null);
 
     const [formData, setFormData] = useState({
         type: "Kredi Kartı",
         amount: "",
+        currency: "TRY",
         remainingInstallments: "",
         description: "",
     });
@@ -38,16 +39,23 @@ export function DebtList({ debts, currencyConfig = { symbol: "₺", rate: 1 } }:
         if (!formData.amount) return;
         setLoading(true);
         setError(null);
-        const amountInTry = Number(formData.amount) * currencyConfig.rate;
+
+        const selectedRate = rates[formData.currency] || 1;
+        const originalAmount = Number(formData.amount);
+        const amountInTry = originalAmount * selectedRate;
+
         try {
             await addDebt({
                 type: formData.type,
                 amount: amountInTry,
                 remainingInstallments: formData.remainingInstallments ? Number(formData.remainingInstallments) : undefined,
-                description: formData.description
+                description: formData.description,
+                currency: formData.currency,
+                originalAmount: originalAmount,
+                fxRate: selectedRate,
             });
             setIsAdding(false);
-            setFormData({ type: "Kredi Kartı", amount: "", remainingInstallments: "", description: "" });
+            setFormData({ type: "Kredi Kartı", amount: "", currency: "TRY", remainingInstallments: "", description: "" });
             router.refresh();
         } catch (err: any) {
             setError(err.message);
@@ -60,12 +68,20 @@ export function DebtList({ debts, currencyConfig = { symbol: "₺", rate: 1 } }:
         if (!payModal) return;
         setLoading(true);
         setError(null);
-        const payAmountTry = payModal.amount * currencyConfig.rate;
+
         try {
             if (payModal.isClose) {
                 await closeDebt(payModal.id);
             } else {
-                await payDebtInstallment(payModal.id, payAmountTry);
+                // Taksit ödemesini borcun kendi para birimi ve kuru ile kaydedelim
+                await payDebtInstallment(
+                  payModal.id, 
+                  payModal.rawAmount, 
+                  false, 
+                  payModal.currency, 
+                  payModal.originalAmount ? payModal.originalAmount / (payModal.fxRate || 1) : undefined, 
+                  payModal.fxRate
+                );
             }
             setPayModal(null);
             router.refresh();
@@ -77,18 +93,20 @@ export function DebtList({ debts, currencyConfig = { symbol: "₺", rate: 1 } }:
     };
 
     return (
-        <div className="space-y-8 pb-12">
+        <div className="space-y-8 pb-12 max-w-[1440px] mx-auto">
             <div className="flex justify-between items-center">
-                <div className="bg-card px-4 py-2 rounded-2xl border border-border/30 shadow-sm flex items-center gap-3">
-                    <TrendingDown className="w-5 h-5 text-rose-600" />
+                <div className="bg-card px-6 py-3 rounded-2xl border border-border/30 shadow-sm flex items-center gap-4 animate-in fade-in slide-in-from-left-4 duration-500">
+                    <div className="p-3 bg-rose-500/10 rounded-xl">
+                      <TrendingDown className="w-6 h-6 text-rose-600" />
+                    </div>
                     <div>
                         <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">Toplam Yükümlülük</p>
-                        <p className="text-xl font-heading font-bold text-primary">{formatAmount(totalDebt, currencyConfig)}</p>
+                        <p className="text-2xl font-heading font-bold text-primary">{formatAmount(totalDebt)}</p>
                     </div>
                 </div>
                 <Button 
                     onClick={() => setIsAdding(!isAdding)}
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl px-6 h-12 font-bold shadow-lg shadow-destructive/20"
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl px-6 h-12 font-bold shadow-lg shadow-destructive/20 animate-in fade-in slide-in-from-right-4 duration-500"
                 >
                     {isAdding ? <X className="w-4 h-4 mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
                     {isAdding ? "Vazgeç" : "Yeni Borç Ekle"}
@@ -102,10 +120,10 @@ export function DebtList({ debts, currencyConfig = { symbol: "₺", rate: 1 } }:
                         <div className="space-y-3">
                             <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Borç Türü</Label>
                             <Select value={formData.type} onValueChange={(v) => setFormData((p) => ({ ...p, type: String(v ?? "") }))}>
-                                <SelectTrigger className="bg-muted border-border/30 h-12 rounded-xl focus:ring-destructive">
+                                <SelectTrigger className="bg-muted border-border/30 h-12 rounded-xl focus:ring-destructive font-bold">
                                     <SelectValue />
                                 </SelectTrigger>
-                                <SelectContent className="rounded-xl border-border/30 bg-card">
+                                <SelectContent className="rounded-xl border-border/30 bg-card font-bold">
                                     <SelectItem value="Kredi Kartı">Kredi Kartı</SelectItem>
                                     <SelectItem value="Banka Kredisi">Banka Kredisi</SelectItem>
                                     <SelectItem value="Şahsi Borç">Şahsi Borç</SelectItem>
@@ -115,14 +133,28 @@ export function DebtList({ debts, currencyConfig = { symbol: "₺", rate: 1 } }:
                             </Select>
                         </div>
                         <div className="space-y-3">
-                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Toplam Tutar ({currencyConfig.symbol})</Label>
-                            <Input
-                                type="number"
-                                value={formData.amount}
-                                onChange={(e) => setFormData(p => ({ ...p, amount: e.target.value }))}
-                                className="bg-muted border-border/30 h-12 rounded-xl focus:ring-destructive text-lg font-bold"
-                                placeholder="0.00"
-                            />
+                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Toplam Tutar</Label>
+                            <div className="flex gap-2">
+                              <Input
+                                  type="number"
+                                  value={formData.amount}
+                                  onChange={(e) => setFormData(p => ({ ...p, amount: e.target.value }))}
+                                  className="bg-muted border-border/30 h-12 rounded-xl focus:ring-destructive text-lg font-bold flex-1"
+                                  placeholder="0.00"
+                              />
+                              <Select value={formData.currency} onValueChange={(v) => setFormData(p => ({ ...p, currency: String(v) }))}>
+                                  <SelectTrigger className="bg-muted border-border/30 h-12 rounded-xl w-[110px] font-bold">
+                                      <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent className="rounded-xl bg-card font-bold">
+                                      {DISPLAY_CURRENCIES_LIST.map(c => (
+                                          <SelectItem key={c.code} value={c.code}>
+                                              {c.flag} {c.code}
+                                          </SelectItem>
+                                      ))}
+                                  </SelectContent>
+                              </Select>
+                            </div>
                         </div>
                         <div className="space-y-3">
                             <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Taksit Sayısı (Opsiyonel)</Label>
@@ -131,7 +163,7 @@ export function DebtList({ debts, currencyConfig = { symbol: "₺", rate: 1 } }:
                                     min="1"
                                     value={formData.remainingInstallments}
                                     onChange={(e) => setFormData(p => ({ ...p, remainingInstallments: e.target.value }))}
-                                    className="bg-muted border-border/30 h-12 rounded-xl focus:ring-destructive"
+                                    className="bg-muted border-border/30 h-12 rounded-xl focus:ring-destructive font-bold"
                                     placeholder="Örn: 12"
                                 />
                         </div>
@@ -140,7 +172,7 @@ export function DebtList({ debts, currencyConfig = { symbol: "₺", rate: 1 } }:
                                 <Input
                                     value={formData.description}
                                     onChange={(e) => setFormData(p => ({ ...p, description: e.target.value }))}
-                                    className="bg-muted border-border/30 h-12 rounded-xl focus:ring-destructive"
+                                    className="bg-muted border-border/30 h-12 rounded-xl focus:ring-destructive font-bold"
                                     placeholder="Örn: Ev Kredisi"
                                 />
                             <p className="text-[10px] text-muted-foreground/60 italic mt-1 px-1">
@@ -177,7 +209,12 @@ export function DebtList({ debts, currencyConfig = { symbol: "₺", rate: 1 } }:
                                 </div>
                                 <div className="text-right">
                                     <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">Kalan Borç</span>
-                                    <p className="text-2xl font-heading font-bold text-primary">{formatAmount(debt.amount, currencyConfig)}</p>
+                                    <p className="text-2xl font-heading font-bold text-primary">{formatAmount(debt.amount)}</p>
+                                    {debt.currency && debt.currency !== "TRY" && (
+                                        <p className="text-[11px] text-muted-foreground font-semibold">
+                                            (Orijinal: {debt.originalAmount?.toLocaleString()} {debt.currency})
+                                        </p>
+                                    )}
                                 </div>
                             </div>
                             
@@ -198,7 +235,7 @@ export function DebtList({ debts, currencyConfig = { symbol: "₺", rate: 1 } }:
                                         <TrendingDown className="w-4 h-4 opacity-40" /> Aylık Ödeme (Tahmini)
                                     </div>
                                     <span className="font-bold text-rose-600">
-                                        {formatAmount(monthlyTry, currencyConfig)}
+                                        {formatAmount(monthlyTry)}
                                     </span>
                                 </div>
                             </div>
@@ -207,13 +244,31 @@ export function DebtList({ debts, currencyConfig = { symbol: "₺", rate: 1 } }:
                                 <Button 
                                     variant="outline" 
                                     className="rounded-xl border-destructive/20 text-destructive hover:bg-destructive/5 font-bold h-11"
-                                    onClick={() => setPayModal({ id: debt.id, amount: monthlyTry / currencyConfig.rate, rawAmount: monthlyTry, isClose: false, description: debt.description || debt.type })}
+                                    onClick={() => setPayModal({ 
+                                      id: debt.id, 
+                                      amount: monthlyTry, 
+                                      rawAmount: monthlyTry, 
+                                      isClose: false, 
+                                      description: debt.description || debt.type,
+                                      currency: debt.currency,
+                                      originalAmount: debt.remainingInstallments ? debt.originalAmount / debt.remainingInstallments : debt.originalAmount,
+                                      fxRate: debt.fxRate
+                                    })}
                                 >
                                     Taksit Öde
                                 </Button>
                                 <Button 
                                     className="rounded-xl bg-destructive hover:bg-destructive/90 text-destructive-foreground font-bold h-11"
-                                    onClick={() => setPayModal({ id: debt.id, amount: debt.amount / currencyConfig.rate, rawAmount: debt.amount, isClose: true, description: debt.description || debt.type })}
+                                    onClick={() => setPayModal({ 
+                                      id: debt.id, 
+                                      amount: debt.amount, 
+                                      rawAmount: debt.amount, 
+                                      isClose: true, 
+                                      description: debt.description || debt.type,
+                                      currency: debt.currency,
+                                      originalAmount: debt.originalAmount,
+                                      fxRate: debt.fxRate
+                                    })}
                                 >
                                     Borcu Kapat
                                 </Button>
@@ -250,12 +305,12 @@ export function DebtList({ debts, currencyConfig = { symbol: "₺", rate: 1 } }:
                             </div>
 
                             <div className="space-y-3">
-                                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Ödenecek Tutar ({currencyConfig.symbol})</Label>
+                                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Ödenecek Tutar</Label>
                                 <Input
                                     type="number"
                                     value={payModal.amount}
                                     disabled={payModal.isClose}
-                                    onChange={(e) => setPayModal({ ...payModal, amount: Number(e.target.value) })}
+                                    onChange={(e) => setPayModal({ ...payModal, amount: Number(e.target.value), rawAmount: Number(e.target.value) })}
                                     className="bg-muted border-border/30 h-12 rounded-xl focus:ring-red-600 text-lg font-bold"
                                 />
                                 <p className="text-[10px] text-rose-600/70 italic mt-1">

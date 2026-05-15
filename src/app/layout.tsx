@@ -21,6 +21,7 @@ export const metadata: Metadata = {
 };
 
 import { ThemeProvider } from "@/components/theme-provider";
+import { CurrencyProvider } from "@/context/currency-context";
 
 export default function RootLayout({
   children,
@@ -70,7 +71,9 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
-            {children}
+            <CurrencyProvider>
+              {children}
+            </CurrencyProvider>
           </ThemeProvider>
         </body>
       </html>

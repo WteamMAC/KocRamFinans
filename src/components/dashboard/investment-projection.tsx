@@ -9,17 +9,17 @@ import { tr } from "date-fns/locale";
 import { predictGrowthRate } from "@/app/actions/insights";
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { formatAmount } from "@/lib/currency-formatter";
+import { useCurrency } from "@/context/currency-context";
 
 interface InvestmentProjectionProps {
   currentValue: number;
   investments?: any[];
   fixedAssets?: any[];
   monthlySavings?: number;
-  currencyConfig?: { symbol: string; rate: number };
 }
 
-export function InvestmentProjection({ currentValue, investments = [], fixedAssets = [], monthlySavings = 0, currencyConfig = { symbol: "₺", rate: 1 } }: InvestmentProjectionProps) {
+export function InvestmentProjection({ currentValue, investments = [], fixedAssets = [], monthlySavings = 0 }: InvestmentProjectionProps) {
+  const { formatAmount } = useCurrency();
   const [monthlyGrowthRate, setMonthlyGrowthRate] = useState(1.04);
   const [rationale, setRationale] = useState<string | null>(null);
   const [assetProjections, setAssetProjections] = useState<any[]>([]);
@@ -50,20 +50,19 @@ export function InvestmentProjection({ currentValue, investments = [], fixedAsse
     fetchAIProjection();
   }, [investments, fixedAssets, monthlySavings]);
 
-  let accumulatedValue = currentValue / currencyConfig.rate;
-  const monthlySavingsConverted = monthlySavings / currencyConfig.rate;
+  let accumulatedValue = currentValue;
   
   const data = Array.from({ length: 6 }).map((_, i) => {
     const date = addMonths(new Date(), i);
     
     if (i > 0) {
-      accumulatedValue = (accumulatedValue * monthlyGrowthRate) + monthlySavingsConverted;
+      accumulatedValue = (accumulatedValue * monthlyGrowthRate) + monthlySavings;
     }
     
     return {
       month: format(date, "MMM yyyy", { locale: tr }),
       deger: Math.round(accumulatedValue),
-      rawVal: accumulatedValue * currencyConfig.rate
+      rawVal: accumulatedValue
     };
   });
 
@@ -88,11 +87,11 @@ export function InvestmentProjection({ currentValue, investments = [], fixedAsse
         <div className="flex items-baseline justify-between mb-6">
           <div>
             <h3 className="text-3xl font-heading font-bold text-primary">
-               {formatAmount(sixMonthValue, currencyConfig)}
+               {formatAmount(sixMonthValue)}
             </h3>
             <div className="text-sm font-bold text-emerald-500 flex items-center mt-1">
                <TrendingUp className="h-4 w-4 mr-1" />
-               +{formatAmount(profit, currencyConfig)}
+               +{formatAmount(profit)}
             </div>
           </div>
           <div className="text-right">
@@ -138,7 +137,7 @@ export function InvestmentProjection({ currentValue, investments = [], fixedAsse
                 dy={10}
               />
               <Tooltip 
-                formatter={(value: any, name: any, props: any) => [formatAmount(props.payload.rawVal, currencyConfig), "Tahmini Değer"]}
+                formatter={(value: any, name: any, props: any) => [formatAmount(props.payload.rawVal), "Tahmini Değer"]}
                 contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 40px -10px rgba(0,0,0,0.1)' }}
               />
               <Area 
@@ -171,7 +170,7 @@ export function InvestmentProjection({ currentValue, investments = [], fixedAsse
                         </span>
                      </div>
                      <div className="text-xs font-medium text-foreground">
-                       {formatAmount(asset.projectedValue, currencyConfig)} <span className="text-[10px] text-muted-foreground line-through ml-1">{formatAmount(asset.currentValue, currencyConfig)}</span>
+                       {formatAmount(asset.projectedValue)} <span className="text-[10px] text-muted-foreground line-through ml-1">{formatAmount(asset.currentValue)}</span>
                      </div>
                      <div className="text-[10px] text-muted-foreground mt-1 leading-relaxed">
                         {asset.rationale}
@@ -188,7 +187,7 @@ export function InvestmentProjection({ currentValue, investments = [], fixedAsse
              ? "Yapay zeka portföyünüzü analiz ediyor..." 
              : apiError 
                ? "⚠️ Yapay zeka yapılandırması eksik olduğu için sabit %4 büyüme baz alınmıştır."
-               : `* Mevcut varlık dağılımınız${monthlySavings > 0 ? ' ve aylık ' + formatAmount(monthlySavings, currencyConfig) + ' düzenli tasarrufunuz ' : ' '}üzerinden AI tarafından tahmin edilmiştir.`}
+               : `* Mevcut varlık dağılımınız${monthlySavings > 0 ? ' ve aylık ' + formatAmount(monthlySavings) + ' düzenli tasarrufunuz ' : ' '}üzerinden AI tarafından tahmin edilmiştir.`}
         </p>
       </CardContent>
     </Card>

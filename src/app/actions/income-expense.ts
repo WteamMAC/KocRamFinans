@@ -4,7 +4,17 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 
-export async function addIncome(data: { type: string; amount: number; isRecurring?: boolean; dueDate?: number; date?: Date; description?: string }) {
+export async function addIncome(data: { 
+  type: string; 
+  amount: number; 
+  isRecurring?: boolean; 
+  dueDate?: number; 
+  date?: Date; 
+  description?: string;
+  currency?: string;
+  originalAmount?: number;
+  fxRate?: number;
+}) {
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthorized");
 
@@ -24,6 +34,9 @@ export async function addIncome(data: { type: string; amount: number; isRecurrin
       isRecurring: data.isRecurring ?? false,
       dueDate: data.dueDate,
       description: data.description,
+      currency: data.currency ?? "TRY",
+      originalAmount: data.originalAmount,
+      fxRate: data.fxRate ?? 1,
     },
   });
 
@@ -31,7 +44,17 @@ export async function addIncome(data: { type: string; amount: number; isRecurrin
   revalidatePath("/dashboard");
 }
 
-export async function addExpense(data: { type: string; amount: number; isRecurring: boolean; dueDate?: number; date?: Date; description?: string }) {
+export async function addExpense(data: { 
+  type: string; 
+  amount: number; 
+  isRecurring: boolean; 
+  dueDate?: number; 
+  date?: Date; 
+  description?: string;
+  currency?: string;
+  originalAmount?: number;
+  fxRate?: number;
+}) {
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthorized");
 
@@ -51,6 +74,9 @@ export async function addExpense(data: { type: string; amount: number; isRecurri
       isRecurring: data.isRecurring,
       dueDate: data.dueDate,
       description: data.description,
+      currency: data.currency ?? "TRY",
+      originalAmount: data.originalAmount,
+      fxRate: data.fxRate ?? 1,
     },
   });
 

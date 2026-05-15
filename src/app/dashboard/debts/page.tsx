@@ -34,13 +34,13 @@ export default async function DebtsPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <h2 className="text-4xl font-heading font-bold text-primary tracking-tight">
-            Borç ve Krediler <span className="text-sm font-black text-muted-foreground bg-muted px-3 py-1 rounded-full uppercase ml-2 tracking-widest">{currencyConfig.code} ({currencyConfig.symbol})</span>
+            Borç ve Krediler
           </h2>
           <p className="text-muted-foreground mt-1 font-medium italic opacity-80">Yükümlülüklerinizi yönetin ve ödeme planınızı takip edin.</p>
         </div>
       </div>
 
-      <DebtList debts={user.debts} currencyConfig={currencyConfig} />
+      <DebtList debts={user.debts} />
     </div>
   );
 }

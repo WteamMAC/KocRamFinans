@@ -30,6 +30,8 @@ import { getExchangeRatesAction } from "@/app/actions/market";
 import { PortfolioChart } from "./portfolio-chart";
 import { CompactCurrencyCalculator } from "./compact-currency-calculator";
 import { AssetForm } from "./asset-form";
+import { useCurrency } from "@/context/currency-context";
+import { CurrencySwitcher } from "./currency-switcher";
 
 interface Asset {
   id: string;
@@ -72,13 +74,6 @@ interface AssetListProps {
   userCurrency?: string;
 }
 
-const DISPLAY_CURRENCIES = [
-  { code: "TRY", label: "₺ TL", flag: "🇹🇷" },
-  { code: "USD", label: "$ USD", flag: "🇺🇸" },
-  { code: "EUR", label: "€ EUR", flag: "🇪🇺" },
-  { code: "GBP", label: "£ GBP", flag: "🇬🇧" },
-  { code: "XAU", label: "🪙 ALT", flag: "🟡" },
-];
 
 export function AssetList({
   assets,
@@ -100,38 +95,8 @@ export function AssetList({
   const [activeTab, setActiveTab] = useState<"financial" | "fixed">(defaultTab);
   const [sellModalState, setSellModalState] = useState<{ assetId: string | null }>({ assetId: null });
 
-  // Dinamik Para Birimi Çevirme State'i
-  const [displayCurrency, setDisplayCurrency] = useState(userCurrency || "TRY");
-  const [rates, setRates] = useState<Record<string, number>>({
-    TRY: 1, USD: 34.20, EUR: 37.10, GBP: 43.50, XAU: 2850
-  });
-
-  useEffect(() => {
-    async function fetchRates() {
-      try {
-        const data = await getExchangeRatesAction();
-        if (data && Object.keys(data).length > 0) {
-          setRates({ TRY: 1, ...data });
-        }
-      } catch (err) {
-        console.error("Rates fetch error:", err);
-      }
-    }
-    fetchRates();
-    const interval = setInterval(fetchRates, 60000 * 5);
-    return () => clearInterval(interval);
-  }, []);
-
-  const formatCur = (valInTry: number) => {
-    if (isNaN(valInTry)) return "0.00 ₺";
-    if (displayCurrency === "TRY") {
-      return `${valInTry.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺`;
-    }
-    const rate = rates[displayCurrency] || 1;
-    const converted = valInTry / rate;
-    const sym = displayCurrency === "USD" ? "$" : displayCurrency === "EUR" ? "€" : displayCurrency === "GBP" ? "£" : "ALT";
-    return `${converted.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: converted < 1 ? 4 : 2 })} ${sym}`;
-  };
+  // Dinamik Para Birimi Çevirme State'i (Global Context'ten)
+  const { displayCurrency, formatAmount: formatCur, rates } = useCurrency();
 
   const groupedAssets = assets.reduce((acc: Record<string, {
     symbol: string;
@@ -298,7 +263,7 @@ export function AssetList({
   }
 
   async function handleAddFixed(data: any) {
-    if (!data.name || !data.value || data.value <= 0) {
+    if (!data.name || (!data.value && !data.originalAmount)) {
       setError("Lütfen isim girin ve geçerli bir değer belirtin.");
       return;
     }
@@ -306,7 +271,19 @@ export function AssetList({
     setLoading(true);
     setError(null);
     try {
-      await addFixedAsset(data);
+      const origAmount = Number(data.originalAmount || data.value || 0);
+      const curr = data.currency || "TRY";
+      const currRate = rates[curr] || 1;
+      const tryValue = curr === "TRY" ? origAmount : origAmount * currRate;
+
+      await addFixedAsset({
+        name: data.name,
+        type: data.type,
+        value: tryValue,
+        currency: curr,
+        originalAmount: origAmount,
+        fxRate: currRate
+      });
       setIsAdding(false);
       await new Promise(r => setTimeout(r, 500));
       router.refresh();
@@ -363,29 +340,7 @@ export function AssetList({
         )}
 
         {/* Canlı Döviz Çevirme (Display Currency) Barı */}
-        <div className="flex items-center gap-1.5 p-1 bg-card border border-primary/20 rounded-2xl shadow-sm ml-auto">
-          <span className="text-[10px] font-black text-muted-foreground uppercase px-3 flex items-center gap-1">
-            <Globe className="w-3.5 h-3.5 text-primary" /> Birim:
-          </span>
-          {DISPLAY_CURRENCIES.map(c => {
-            const isActive = displayCurrency === c.code;
-            return (
-              <button
-                key={c.code}
-                onClick={() => setDisplayCurrency(c.code)}
-                className={cn(
-                  "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black transition-all",
-                  isActive
-                    ? "bg-primary text-primary-foreground shadow-md scale-105"
-                    : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
-                )}
-              >
-                <span>{c.flag}</span>
-                <span>{c.label}</span>
-              </button>
-            );
-          })}
-        </div>
+        <CurrencySwitcher className="ml-auto" />
       </div>
 
       {/* Header & Stats Summary */}

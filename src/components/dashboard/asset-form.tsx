@@ -16,6 +16,7 @@ import {
 import { Search, Clock, ArrowUpRight, X } from "lucide-react";
 import { searchSymbolsAction } from "@/app/actions/market";
 import { cn } from "@/lib/utils";
+import { useCurrency } from "@/context/currency-context";
 
 interface AssetFormProps {
   activeTab: "financial" | "fixed";
@@ -42,7 +43,8 @@ export function AssetForm({ activeTab, onAdd, onCancel, loading, error }: AssetF
   const [fixedAssetFormData, setFixedAssetFormData] = useState({
     name: "",
     type: "Gayrimenkul",
-    value: 0
+    originalAmount: 0,
+    currency: "TRY"
   });
 
   const inputRef = useRef<HTMLDivElement>(null);
@@ -279,11 +281,27 @@ export function AssetForm({ activeTab, onAdd, onCancel, loading, error }: AssetF
           </div>
 
           <div className="space-y-3">
-            <Label className="text-[10px] font-black text-primary uppercase tracking-widest px-1">Değer (₺)</Label>
+            <Label className="text-[10px] font-black text-primary uppercase tracking-widest px-1">Para Birimi</Label>
+            <Select value={fixedAssetFormData.currency} onValueChange={(v) => setFixedAssetFormData((p) => ({ ...p, currency: String(v) }))}>
+              <SelectTrigger className="bg-muted/50 border-primary/10 h-12 rounded-2xl focus:ring-primary">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="rounded-2xl border-primary/10">
+                <SelectItem value="TRY">TRY (₺)</SelectItem>
+                <SelectItem value="USD">USD ($)</SelectItem>
+                <SelectItem value="EUR">EUR (€)</SelectItem>
+                <SelectItem value="GBP">GBP (£)</SelectItem>
+                <SelectItem value="XAU">Altın (XAU)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-3">
+            <Label className="text-[10px] font-black text-primary uppercase tracking-widest px-1">Değer</Label>
             <Input
               type="number"
-              value={fixedAssetFormData.value === 0 ? "" : fixedAssetFormData.value}
-              onChange={(e) => setFixedAssetFormData(p => ({ ...p, value: parseFloat(e.target.value) || 0 }))}
+              value={fixedAssetFormData.originalAmount === 0 ? "" : fixedAssetFormData.originalAmount}
+              onChange={(e) => setFixedAssetFormData(p => ({ ...p, originalAmount: parseFloat(e.target.value) || 0 }))}
               className="bg-muted/50 border-primary/10 h-12 rounded-2xl focus:ring-primary"
             />
           </div>

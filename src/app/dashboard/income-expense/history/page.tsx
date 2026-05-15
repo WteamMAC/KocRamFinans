@@ -98,6 +98,9 @@ export default async function IncomeExpenseHistoryPage() {
       description: inc.description || inc.type,
       amount: inc.amount,
       createdAt: inc.date || inc.createdAt,
+      currency: inc.currency,
+      originalAmount: inc.originalAmount || undefined,
+      fxRate: inc.fxRate || undefined,
     })),
     ...user.expenses.slice(0, 10).map((exp) => ({
       id: exp.id,
@@ -106,6 +109,9 @@ export default async function IncomeExpenseHistoryPage() {
       description: exp.description || exp.type,
       amount: exp.amount,
       createdAt: exp.date || exp.createdAt,
+      currency: exp.currency,
+      originalAmount: exp.originalAmount || undefined,
+      fxRate: exp.fxRate || undefined,
     })),
   ]
     .sort(
@@ -133,7 +139,6 @@ export default async function IncomeExpenseHistoryPage() {
         createdAt: new Date(t.createdAt).toISOString(),
       }))}
       debts={user.debts}
-      currencyConfig={currencyConfig}
     />
   );
 }
