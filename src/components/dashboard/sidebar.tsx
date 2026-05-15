@@ -58,6 +58,7 @@ const routes = [
     icon: Calculator,
     href: "/dashboard/calculators",
     color: "text-emerald-500",
+    tourClass: "tour-step-calculators",
   },
   {
     label: "Varlıklarım",
@@ -65,6 +66,7 @@ const routes = [
     href: "/dashboard/assets",
     color: "text-primary",
     isExpandable: true,
+    tourClass: "tour-step-assets",
     subRoutes: [
       { label: "Kripto Para", icon: Bitcoin, href: "/dashboard/assets/crypto", color: "text-orange-500" },
       { label: "BIST (Hisse)", icon: TrendingUp, href: "/dashboard/assets/bist", color: "text-emerald-500" },
@@ -81,6 +83,7 @@ const routes = [
     href: "/dashboard/income-expense",
     color: "text-primary",
     isExpandable: true,
+    tourClass: "tour-step-income",
     subRoutes: [
         { label: "Gelir Ekle", icon: PlusCircle, href: "/dashboard/income-expense/add-income", color: "text-emerald-500" },
         { label: "Gider Ekle", icon: MinusCircle, href: "/dashboard/income-expense/add-expense", color: "text-rose-500" },
@@ -92,6 +95,7 @@ const routes = [
     icon: CreditCard,
     href: "/dashboard/debts",
     color: "text-destructive",
+    tourClass: "tour-step-debts",
   },
   {
     label: "Haberler",
@@ -170,7 +174,7 @@ export function Sidebar({ isCollapsed, onToggle, hideToggle, theme, onToggleThem
           {routes.map((route) => (
             <div key={route.href} className="space-y-1">
               {route.isExpandable && !isCollapsed ? (
-                <div className="flex items-center group">
+                <div className={cn("flex items-center group", (route as any).tourClass)}>
                   <Link
                     href={route.href}
                     className={cn(
@@ -209,7 +213,8 @@ export function Sidebar({ isCollapsed, onToggle, hideToggle, theme, onToggleThem
                     pathname === route.href
                       ? "bg-muted text-primary shadow-ambient-low"
                       : "text-muted-foreground hover:bg-muted/50 hover:text-primary",
-                    isCollapsed && "justify-center"
+                    isCollapsed && "justify-center",
+                    (route as any).tourClass
                   )}
                 >
                   <div className={cn(

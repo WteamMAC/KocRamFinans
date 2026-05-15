@@ -5,12 +5,13 @@ import { Joyride, Step, EventData, STATUS, TooltipRenderProps } from "react-joyr
 import { useTheme } from "next-themes";
 import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { X, ChevronRight, ChevronLeft, Sparkles, Navigation, Wallet, TrendingUp, PieChart, CalendarDays, Palette, BotMessageSquare } from "lucide-react";
+import { X, ChevronRight, ChevronLeft, Sparkles, Navigation, Wallet, TrendingUp, PieChart, CalendarDays, Palette, BotMessageSquare, ArrowRightLeft } from "lucide-react";
 
 function CustomTooltip({
   index,
   isLastStep,
   step,
+  size,
   backProps,
   closeProps,
   primaryProps,
@@ -42,7 +43,7 @@ function CustomTooltip({
 
       <div className="flex items-center justify-between mt-4 relative z-10 pt-4 border-t border-border/40">
         <div className="text-xs font-bold text-muted-foreground/40 uppercase tracking-widest">
-          Adım {index + 1} / 8
+          Adım {index + 1} / {size}
         </div>
         <div className="flex items-center gap-2">
           {index > 0 ? (
@@ -115,7 +116,47 @@ export function OnboardingTour() {
           <Navigation className="h-5 w-5" /> Ana Menü
         </div>
       ),
-      content: "Sol menüden tüm sayfalara hızlıca erişebilirsiniz. Varlıklarınızı, bütçenizi, kredi ve borçlarınızı buradan detaylı olarak yönetebilirsiniz.",
+      content: "Sol menüden tüm sayfalara hızlıca erişebilirsiniz. Şimdi menüdeki diğer ana bölümleri hızlıca tanıyalım.",
+    },
+    {
+      target: ".tour-step-assets",
+      placement: "right",
+      title: (
+        <div className="flex items-center gap-2">
+          <TrendingUp className="h-5 w-5" /> Varlık Yönetimi
+        </div>
+      ),
+      content: "Varlıklarım sayfasından hisse senedi, kripto para, altın ve hatta gayrimenkul/araç gibi tüm fiziksel ve dijital varlıklarınızı tek bir yerden ekleyip canlı fiyatlarla takip edebilirsiniz.",
+    },
+    {
+      target: ".tour-step-income",
+      placement: "right",
+      title: (
+        <div className="flex items-center gap-2">
+          <ArrowRightLeft className="h-5 w-5" /> Gelir ve Gider
+        </div>
+      ),
+      content: "Maaş, kira veya ek gelirlerinizi ekleyip fatura ve harcamalarınızı düştüğünüzde, sistem sizin için her ay ne kadar tasarruf ettiğinizi otomatik hesaplar.",
+    },
+    {
+      target: ".tour-step-debts",
+      placement: "right",
+      title: (
+        <div className="flex items-center gap-2">
+          <Wallet className="h-5 w-5" /> Borç ve Krediler
+        </div>
+      ),
+      content: "Mevcut kredilerinizi veya kişisel borçlarınızı buraya kaydederek aylık ödemelerinizi düzene sokun. Sistemin size ödeme yaklaşınca haber vermesine izin verin.",
+    },
+    {
+      target: ".tour-step-calculators",
+      placement: "right",
+      title: (
+        <div className="flex items-center gap-2">
+          <PieChart className="h-5 w-5" /> Hesaplayıcılar
+        </div>
+      ),
+      content: "Gelişmiş finansal hesaplama araçlarını kullanarak kredi taksitlerinizi, birikim hedeflerinizi ve yatırım getirilerinizi saniyeler içinde analiz edin.",
     },
     {
       target: ".tour-step-4",
@@ -125,7 +166,7 @@ export function OnboardingTour() {
           <Wallet className="h-5 w-5" /> Net Varlık
         </div>
       ),
-      content: "Burası finansal sağlığınızın kalbidir. Toplam gelir, gider, borç ve yatırımlarınızın güncel verileriyle hesaplanan anlık net varlığınızı buradan takip edebilirsiniz.",
+      content: "Finansal özet sayfasında yer alan bu kart, finansal sağlığınızın kalbidir. Toplam gelir, gider, borç ve yatırımlarınızın güncel verileriyle hesaplanan anlık net varlığınızı buradan takip edebilirsiniz.",
     },
     {
       target: ".tour-step-5",
@@ -135,7 +176,7 @@ export function OnboardingTour() {
           <TrendingUp className="h-5 w-5" /> Portföy Performansı
         </div>
       ),
-      content: "Yatırımlarınızın ne durumda olduğunu merak mı ediyorsunuz? Borsa, kripto ve altın gibi tüm piyasa varlıklarınızın toplam kar veya zarar durumu canlı verilerle burada hesaplanır.",
+      content: "Yatırımlarınızın ne durumda olduğunu merak mı ediyorsunuz? Tüm piyasa varlıklarınızın toplam kar veya zarar durumu canlı verilerle burada hesaplanır.",
     },
     {
       target: ".tour-step-6",
@@ -155,7 +196,7 @@ export function OnboardingTour() {
           <CalendarDays className="h-5 w-5" /> Ödeme Takvimi
         </div>
       ),
-      content: "Yaklaşan faturalarınızı, kira veya kredi taksitlerinizi asla kaçırmayın. Ödemeleriniz tarih sırasına göre otomatik olarak sıralanır ve size hatırlatılır.",
+      content: "Yaklaşan faturalarınızı, kira veya kredi taksitlerinizi asla kaçırmayın. Ödemeleriniz tarih sırasına göre otomatik olarak sıralanır.",
     },
     {
       target: ".tour-step-3",
@@ -175,7 +216,7 @@ export function OnboardingTour() {
           <BotMessageSquare className="h-5 w-5" /> Yapay Zeka Asistanı
         </div>
       ),
-      content: "Aklınıza takılan her şeyi finansal asistanınıza sorabilirsiniz. Yeni harcama eklemesini isteyebilir veya piyasa tavsiyeleri alabilirsiniz. Deneyiminizi iyileştirmek için her zaman yanınızda!",
+      content: "Son olarak, aklınıza takılan her şeyi yapay zeka finansal asistanınıza sorabilirsiniz. Yeni harcama eklemesini isteyebilir veya yatırımlarınız için piyasa tavsiyeleri alabilirsiniz. Başarılar!",
     },
   ];
 
