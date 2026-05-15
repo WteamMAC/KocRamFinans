@@ -202,7 +202,7 @@ model Community {
   posts       BlogPost[]
   
   createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  updatedAt   DateTime @default(now()) @updatedAt
 }
 
 model CommunityMember {
@@ -215,7 +215,7 @@ model CommunityMember {
   status      String    @default("ACCEPTED") // "ACCEPTED", "PENDING", "REJECTED"
 
   createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  updatedAt   DateTime @default(now()) @updatedAt
 
   @@unique([communityId, userId])
 }
