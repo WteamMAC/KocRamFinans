@@ -130,6 +130,7 @@ export default async function DashboardPage() {
         totalUnrealizedProfit={totalUnrealizedProfit}
         totalDividends={totalDividends}
         savingsRate={savingsRate}
+        userCurrency={user.currency}
       />
 
       {/* Performance & Budget Chart */}

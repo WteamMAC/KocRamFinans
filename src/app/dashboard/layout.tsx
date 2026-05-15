@@ -14,7 +14,6 @@ import { ChatAI } from "@/components/dashboard/chat-ai";
 import { OnboardingTour } from "@/components/dashboard/onboarding-tour";
 import { NotificationBell } from "@/components/dashboard/notification-bell";
 import { MessageBell } from "@/components/dashboard/message-bell";
-import { CurrencySwitcher } from "@/components/dashboard/currency-switcher";
 
 export default function DashboardLayout({
   children,

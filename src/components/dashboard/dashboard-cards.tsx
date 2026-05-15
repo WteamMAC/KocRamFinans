@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowDownRight, ArrowUpRight, TrendingUp, TrendingDown } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -17,6 +17,7 @@ interface DashboardCardsProps {
   totalUnrealizedProfit: number;
   totalDividends: number;
   savingsRate: number;
+  userCurrency?: string;
 }
 
 export function DashboardCards({
@@ -29,8 +30,16 @@ export function DashboardCards({
   totalRealizedProfit,
   totalUnrealizedProfit,
   totalDividends,
+  userCurrency,
 }: DashboardCardsProps) {
-  const { formatAmount } = useCurrency();
+  const { formatAmount, setDisplayCurrency } = useCurrency();
+
+  useEffect(() => {
+    if (userCurrency && !sessionStorage.getItem("user_curr_synced_main")) {
+      setDisplayCurrency(userCurrency);
+      sessionStorage.setItem("user_curr_synced_main", "true");
+    }
+  }, [userCurrency, setDisplayCurrency]);
 
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
