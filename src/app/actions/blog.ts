@@ -8,14 +8,14 @@ async function getInternalUser(clerkUserId: string) {
   return prisma.user.findUnique({ where: { clerkUserId } });
 }
 
-export async function createPost(content: string, tags: string[]) {
+export async function createPost(content: string, tags: string[], imageUrl?: string) {
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthorized");
   const user = await getInternalUser(userId);
   if (!user) throw new Error("User not found");
 
   await prisma.blogPost.create({
-    data: { authorId: user.id, content, tags },
+    data: { authorId: user.id, content, tags, imageUrl },
   });
 
   revalidatePath("/dashboard/blog");

@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Heart, MessageCircle, Trash2, Send, X, ChevronDown, Filter } from "lucide-react";
+import { Heart, MessageCircle, Trash2, Send, X, ChevronDown, Filter, Image as ImageIcon, Camera } from "lucide-react";
 import { createPost, toggleLike, addComment, deletePost, deleteComment, getPosts, getProfilePosts } from "@/app/actions/blog";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -60,20 +60,37 @@ function CreatePostBox({ currentUserId }: { currentUserId: string }) {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [isPending, startTransition] = useTransition();
   const [focused, setFocused] = useState(false);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
 
   const toggleTag = (tag: string) =>
     setSelectedTags((p) => p.includes(tag) ? p.filter((t) => t !== tag) : [...p, tag]);
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      alert("Resim boyutu 2MB'dan küçük olmalıdır.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImageUrl(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSubmit = () => {
-    if (!content.trim() || content.length > MAX_CHARS) return;
+    if ((!content.trim() && !imageUrl) || content.length > MAX_CHARS) return;
     
     // Otomatik hashtag ayıklama
     const extractedTags = content.match(HASHTAG_REGEX) || [];
     const allTags = Array.from(new Set([...selectedTags, ...extractedTags]));
 
     startTransition(async () => {
-      await createPost(content.trim(), allTags);
-      setContent(""); setSelectedTags([]); setFocused(false);
+      await createPost(content.trim(), allTags, imageUrl || undefined);
+      setContent(""); setSelectedTags([]); setFocused(false); setImageUrl(null);
       router.refresh();
     });
   };
@@ -125,6 +142,20 @@ function CreatePostBox({ currentUserId }: { currentUserId: string }) {
               </div>
             )}
           </div>
+
+          {/* Resim Önizleme */}
+          {imageUrl && (
+            <div className="relative mt-2 rounded-2xl overflow-hidden border border-border/20 group">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={imageUrl} alt="Önizleme" className="w-full h-auto max-h-[300px] object-cover" />
+              <button
+                onClick={() => setImageUrl(null)}
+                className="absolute top-2 right-2 p-1.5 bg-black/50 text-white rounded-full hover:bg-black/70 transition-colors backdrop-blur-sm"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -145,16 +176,34 @@ function CreatePostBox({ currentUserId }: { currentUserId: string }) {
       )}
 
       {(focused || content) && (
-        <div className="flex items-center justify-end gap-2 animate-in fade-in duration-200">
-          <Button variant="ghost" size="sm" onClick={() => { setFocused(false); setContent(""); setSelectedTags([]); }}
-            className="text-muted-foreground hover:text-foreground rounded-full">
-            <X className="h-4 w-4 mr-1" /> Vazgeç
-          </Button>
-          <Button onClick={handleSubmit} disabled={isPending || !content.trim() || overLimit}
-            className="rounded-full px-5 h-9 text-sm font-bold bg-primary text-primary-foreground hover:bg-primary/90 shadow-ambient-low">
-            <Send className="h-4 w-4 mr-2" />
-            {isPending ? "Paylaşılıyor..." : "Paylaş"}
-          </Button>
+        <div className="flex items-center justify-between gap-2 animate-in fade-in duration-200">
+          <div className="flex items-center gap-1">
+            <input
+              type="file"
+              id="post-image"
+              className="hidden"
+              accept="image/*"
+              onChange={handleImageUpload}
+            />
+            <label
+              htmlFor="post-image"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold text-muted-foreground hover:text-primary hover:bg-primary/10 cursor-pointer transition-all"
+            >
+              <ImageIcon className="h-4 w-4" />
+              Fotoğraf Ekle
+            </label>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={() => { setFocused(false); setContent(""); setSelectedTags([]); setImageUrl(null); }}
+              className="text-muted-foreground hover:text-foreground rounded-full">
+              <X className="h-4 w-4 mr-1" /> Vazgeç
+            </Button>
+            <Button onClick={handleSubmit} disabled={isPending || (!content.trim() && !imageUrl) || overLimit}
+              className="rounded-full px-5 h-9 text-sm font-bold bg-primary text-primary-foreground hover:bg-primary/90 shadow-ambient-low">
+              <Send className="h-4 w-4 mr-2" />
+              {isPending ? "Paylaşılıyor..." : "Paylaş"}
+            </Button>
+          </div>
         </div>
       )}
     </div>
@@ -368,6 +417,18 @@ function PostCard({ post, currentUserId, onTagClick }: { post: Post; currentUser
           )}
         </div>
       </div>
+
+      {/* Resim İçeriği */}
+      {post.imageUrl && (
+        <div className="rounded-[20px] overflow-hidden border border-border/10 bg-muted/20">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img 
+            src={post.imageUrl} 
+            alt="Paylaşım görseli" 
+            className="w-full h-auto max-h-[500px] object-cover hover:scale-[1.02] transition-transform duration-500" 
+          />
+        </div>
+      )}
 
       {/* İçerik */}
       <div className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">
