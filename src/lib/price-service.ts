@@ -56,16 +56,16 @@ export async function getLivePrices(symbols: string[]): Promise<Map<string, Pric
   try {
     let fetchWithCurrency = [...symbolsToFetch];
     // Kurları çevirmek için USD/TRY paritesini de mutlaka çekelim
-    if (!fetchWithCurrency.includes("TRY=X")) {
-      fetchWithCurrency.push("TRY=X");
+    if (!fetchWithCurrency.includes("USDTRY=X")) {
+      fetchWithCurrency.push("USDTRY=X");
     }
 
     const quotes = await yahooFinance.quote(fetchWithCurrency);
     const quotesArray = Array.isArray(quotes) ? quotes : [quotes];
 
     // Güncel USD/TRY kurunu bulalım
-    let usdToTryRate = 34; // Kaba varsayılan
-    const usdTryQuote = quotesArray.find((q: any) => q.symbol === "TRY=X");
+    let usdToTryRate = 45.50; // Güncel 2026 piyasa kuru varsayılanı
+    const usdTryQuote = quotesArray.find((q: any) => q.symbol === "USDTRY=X" || q.symbol === "TRY=X");
     if (usdTryQuote && usdTryQuote.regularMarketPrice) {
       usdToTryRate = usdTryQuote.regularMarketPrice;
     }

@@ -24,6 +24,8 @@ export const DISPLAY_CURRENCIES_LIST: CurrencyInfo[] = [
   { code: "AUD", label: "A$ AUD", symbol: "A$", flag: "🇦🇺" },
   { code: "CNY", label: "¥ CNY", symbol: "¥", flag: "🇨🇳" },
   { code: "SGD", label: "S$ SGD", symbol: "S$", flag: "🇸🇬" },
+  { code: "NOK", label: "kr NOK", symbol: "kr", flag: "🇳🇴" },
+  { code: "SEK", label: "kr SEK", symbol: "kr", flag: "🇸🇪" },
   { code: "XAU", label: "🪙 ALT", symbol: "ALT", flag: "🟡" },
 ];
 
@@ -42,19 +44,21 @@ interface CurrencyContextType {
 
 const defaultRates: Record<string, number> = {
   TRY: 1,
-  USD: 34.20,
-  EUR: 37.10,
-  GBP: 43.50,
-  CHF: 38.60,
-  JPY: 0.23,
-  AED: 9.31,
-  SAR: 9.11,
-  RUB: 0.35,
-  CAD: 24.80,
-  AUD: 22.50,
-  CNY: 4.80,
-  SGD: 26.10,
-  XAU: 2850,
+  USD: 45.50,
+  EUR: 49.36,
+  GBP: 58.01,
+  CHF: 51.41,
+  JPY: 0.294,
+  AED: 12.39,
+  SAR: 12.13,
+  RUB: 0.457,
+  CAD: 32.73,
+  AUD: 29.80,
+  CNY: 6.28,
+  SGD: 33.95,
+  NOK: 4.10,
+  SEK: 4.17,
+  XAU: 4315,
 };
 
 const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined);

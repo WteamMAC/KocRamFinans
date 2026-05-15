@@ -44,6 +44,9 @@ const OTHER_CURRENCIES = [
   { code:"AUD", label:"Avustralya Doları",symbol:"A$",  flag:"🇦🇺" },
   { code:"CNY", label:"Çin Yuanı",        symbol:"¥",   flag:"🇨🇳" },
   { code:"SGD", label:"Singapur Doları",  symbol:"S$",  flag:"🇸🇬" },
+  { code:"NOK", label:"Norveç Kronu",     symbol:"kr",  flag:"🇳🇴" },
+  { code:"SEK", label:"İsveç Kronu",      symbol:"kr",  flag:"🇸🇪" },
+  { code:"XAU", label:"Altın (Gram)",     symbol:"ALT", flag:"🪙" },
 ];
 
 const ALL_COUNTRIES = [
