@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Joyride, Step, EventData, STATUS, TooltipRenderProps } from "react-joyride";
+import { Joyride, Step, EventData, STATUS, EVENTS, TooltipRenderProps } from "react-joyride";
 import { useTheme } from "next-themes";
 import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -69,19 +69,10 @@ export function OnboardingTour() {
   const pathname = usePathname();
   const router = useRouter();
   const [steps, setSteps] = useState<Step[]>([]);
+  const [tourKey, setTourKey] = useState(0);
 
   useEffect(() => {
     setMounted(true);
-
-    const isMobile = window.innerWidth < 768;
-    const desktopOnlyTargets = [
-      ".tour-step-1",
-      ".tour-step-assets",
-      ".tour-step-income",
-      ".tour-step-debts",
-      ".tour-step-calculators",
-      ".tour-step-3"
-    ];
 
     const initialSteps: Step[] = [
       {
@@ -206,7 +197,7 @@ export function OnboardingTour() {
       },
     ];
 
-    setSteps(initialSteps.filter(step => !isMobile || !desktopOnlyTargets.includes(step.target as string)));
+    setSteps(initialSteps);
 
     const hasCompletedTour = localStorage.getItem("hasCompletedTour");
     if (!hasCompletedTour && pathname === "/dashboard") {
@@ -219,19 +210,7 @@ export function OnboardingTour() {
 
   useEffect(() => {
     const handleStartTour = () => {
-      // Yeniden hesapla ki eğer ekran boyutu değişmişse adımlar güncellensin
-      const isMobile = window.innerWidth < 768;
-      const desktopOnlyTargets = [
-        ".tour-step-1",
-        ".tour-step-assets",
-        ".tour-step-income",
-        ".tour-step-debts",
-        ".tour-step-calculators",
-        ".tour-step-3"
-      ];
-      
-      setSteps(prev => prev.filter(step => !isMobile || !desktopOnlyTargets.includes(step.target as string)));
-
+      setTourKey(prev => prev + 1); // Turu tamamen sıfırla
       if (pathname !== "/dashboard") {
         router.push("/dashboard");
         setTimeout(() => setRun(true), 800);
@@ -245,12 +224,34 @@ export function OnboardingTour() {
   }, [pathname, router]);
 
   const handleJoyrideCallback = (data: EventData) => {
-    const { status } = data;
+    const { status, type, step } = data;
     const finishedStatuses: string[] = [STATUS.FINISHED, STATUS.SKIPPED];
 
     if (finishedStatuses.includes(status)) {
       setRun(false);
       localStorage.setItem("hasCompletedTour", "true");
+      window.dispatchEvent(new Event("close-mobile-menu"));
+    }
+
+    // Mobil menüyü gerekli adımlarda açıp kapatma
+    if (type === EVENTS.STEP_BEFORE) {
+      const isMobile = window.innerWidth < 768;
+      const sidebarTargets = [
+        ".tour-step-1",
+        ".tour-step-assets",
+        ".tour-step-income",
+        ".tour-step-debts",
+        ".tour-step-calculators",
+        ".tour-step-3"
+      ];
+
+      if (isMobile) {
+        if (sidebarTargets.includes(step.target as string)) {
+          window.dispatchEvent(new Event("open-mobile-menu"));
+        } else {
+          window.dispatchEvent(new Event("close-mobile-menu"));
+        }
+      }
     }
   };
 
@@ -258,6 +259,7 @@ export function OnboardingTour() {
 
   return (
     <Joyride
+      key={tourKey}
       onEvent={handleJoyrideCallback}
       continuous
       run={run}

@@ -37,11 +37,21 @@ export default function DashboardLayout({
     setIsMobileOpen(false);
   }, [pathname]);
 
-  // Tur başladığında mobil menüyü kapat
+  // Tur esnasında mobil menüyü açıp kapatabilmek için
   useEffect(() => {
     const handleStartTour = () => setIsMobileOpen(false);
+    const handleOpenMenu = () => setIsMobileOpen(true);
+    const handleCloseMenu = () => setIsMobileOpen(false);
+    
     window.addEventListener("start-tour", handleStartTour);
-    return () => window.removeEventListener("start-tour", handleStartTour);
+    window.addEventListener("open-mobile-menu", handleOpenMenu);
+    window.addEventListener("close-mobile-menu", handleCloseMenu);
+    
+    return () => {
+      window.removeEventListener("start-tour", handleStartTour);
+      window.removeEventListener("open-mobile-menu", handleOpenMenu);
+      window.removeEventListener("close-mobile-menu", handleCloseMenu);
+    }
   }, []);
 
   return (
