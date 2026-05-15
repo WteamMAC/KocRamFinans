@@ -32,11 +32,13 @@ const schema = z.object({
   incomes:   z.array(z.object({
     type: z.string().min(1, "Gelir türü seçiniz"),
     amount: z.coerce.number().min(0, "Miktar giriniz"),
+    date: z.string().optional(),
     description: z.string().optional(),
   })),
   expenses:  z.array(z.object({
     type: z.string().min(1, "Gider türü seçiniz"),
     amount: z.coerce.number().min(0, "Miktar giriniz"),
+    dueDate: z.coerce.number().min(1).max(31).optional(),
     isRecurring: z.boolean().default(true),
     description: z.string().optional(),
   })),
@@ -137,8 +139,8 @@ const HASHTAGS = [
 const STEPS = [
   { id:1, icon:User,       title:"Profil Bilgileri",    desc:"Seni yakından tanıyalım" },
   { id:2, icon:Globe,      title:"Bölge & Para Birimi", desc:"Nerede, hangi parayla işlem yapıyorsun?" },
-  { id:3, icon:Wallet,     title:"Aylık Gelirler",      desc:"Düzenli kazançlarını ekle" },
-  { id:4, icon:CreditCard, title:"Aylık Giderler",      desc:"Sabit harcama ve faturalarını belirle" },
+  { id:3, icon:Wallet,     title:"Aylık Gelirler",      desc:"Düzenli kazançlarını ve tarihlerini ekle" },
+  { id:4, icon:CreditCard, title:"Aylık Giderler",      desc:"Sabit harcama ve ödeme günlerini belirle" },
   { id:5, icon:Hash,       title:"İlgi Alanları",       desc:"Sana en uygun finansal analizler için" },
 ];
 
@@ -155,8 +157,8 @@ export function OnboardingForm() {
     resolver: zodResolver(schema) as any,
     defaultValues: {
       firstName:"", lastName:"", birthDate:"", gender:undefined, currency:"TRY", country:"",
-      incomes:  [{ type:"Maaş", amount:0, description:"" }],
-      expenses: [{ type:"Ev Kirası / İpotek", amount:0, isRecurring:true, description:"" }],
+      incomes:  [{ type:"Maaş", amount:0, date:new Date().toISOString().split("T")[0], description:"" }],
+      expenses: [{ type:"Ev Kirası / İpotek", amount:0, dueDate:15, isRecurring:true, description:"" }],
       interests: []
     },
     mode:"onChange",
@@ -208,7 +210,8 @@ export function OnboardingForm() {
       } as any);
 
       if (result?.success) {
-        window.location.replace("/dashboard");
+        router.refresh();
+        router.push("/dashboard");
       } else {
         setDbError(result?.error || "Kayıt sırasında bir sorun oluştu.");
       }
@@ -224,39 +227,39 @@ export function OnboardingForm() {
 
   return (
     <div className="w-full max-w-xl mx-auto px-4">
-      <div className="bg-white/95 dark:bg-[#1c140e]/95 backdrop-blur-md border border-[#8C5000]/15 dark:border-[#ffb874]/20 rounded-[36px] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-700 transition-colors duration-300">
+      <div className="bg-card border border-border/40 rounded-[36px] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-700 transition-colors duration-300">
 
         {/* Premium Header */}
-        <div className="relative px-8 pt-8 pb-6 bg-[#fbf9f4] dark:bg-[#120d0a]/60 border-b border-[#8C5000]/10 dark:border-[#ffb874]/15 overflow-hidden transition-colors duration-300">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-[#f18d02]/10 dark:bg-[#ffb874]/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="relative px-8 pt-8 pb-6 bg-muted/30 border-b border-border/40 overflow-hidden transition-colors duration-300">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
           
           {/* Step indicator dots */}
           <div className="relative flex items-center justify-center gap-2 mb-6 z-10">
             {STEPS.map((s,i)=>(
               <div key={s.id} className="flex items-center">
                 <div className={cn("w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs transition-all duration-500",
-                  step===s.id?"bg-[#8C5000] dark:bg-[#ffb874] text-white dark:text-[#120d0a] scale-110 shadow-lg shadow-[#8C5000]/25 dark:shadow-black/50":
-                  step>s.id ?"bg-[#36684d] dark:bg-[#b8efcc] text-white dark:text-[#0d442b]":"bg-[#dbc2b0]/30 dark:bg-[#887364]/30 text-[#887364] dark:text-[#dbc2b0]")}>
+                  step===s.id?"bg-primary text-primary-foreground scale-110 shadow-lg shadow-primary/25":
+                  step>s.id ?"bg-emerald-600 text-white":"bg-muted border border-border text-muted-foreground")}>
                   {step>s.id?<Check className="w-3.5 h-3.5"/>:s.id}
                 </div>
-                {i<STEPS.length-1&&<div className={cn("w-6 sm:w-8 h-0.5 mx-1.5 rounded-full transition-all duration-500",step>s.id?"bg-[#36684d] dark:bg-[#b8efcc]":"bg-[#dbc2b0]/40 dark:bg-[#887364]/30")}/>}
+                {i<STEPS.length-1&&<div className={cn("w-6 sm:w-8 h-0.5 mx-1.5 rounded-full transition-all duration-500",step>s.id?"bg-emerald-600":"bg-border/60")}/>}
               </div>
             ))}
           </div>
 
-          <h1 className="relative z-10 text-2xl sm:text-3xl font-heading font-black text-center text-[#5a3100] dark:text-[#ffb874] tracking-tight">
+          <h1 className="relative z-10 text-2xl sm:text-3xl font-heading font-black text-center text-primary tracking-tight">
             {STEPS[step-1].title}
           </h1>
-          <p className="relative z-10 text-xs text-[#887364] dark:text-[#dbc2b0] text-center mt-1 font-medium tracking-wide">
+          <p className="relative z-10 text-xs text-muted-foreground text-center mt-1 font-medium tracking-wide">
             {STEPS[step-1].desc}
           </p>
         </div>
 
         {/* Content */}
-        <div className="p-8 bg-white dark:bg-[#1c140e] transition-colors duration-300">
+        <div className="p-8 bg-card transition-colors duration-300">
           {dbError && (
-            <div className="mb-6 p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs font-bold flex items-center gap-2 animate-in fade-in duration-300">
-              <AlertCircle className="h-5 w-5 flex-shrink-0 text-rose-600 dark:text-rose-400" />
+            <div className="mb-6 p-4 rounded-2xl bg-destructive/10 border border-destructive/20 text-destructive text-xs font-bold flex items-center gap-2 animate-in fade-in duration-300">
+              <AlertCircle className="h-5 w-5 flex-shrink-0 text-destructive" />
               <div>
                 <p className="font-extrabold">Kayıt Hatası</p>
                 <p className="font-normal opacity-90">{dbError}</p>
@@ -271,39 +274,39 @@ export function OnboardingForm() {
                 <div className="grid grid-cols-2 gap-4">
                   {(["firstName","lastName"] as const).map(f=>(
                     <div key={f} className="space-y-2">
-                      <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] uppercase tracking-widest">
-                        {f==="firstName"?"Ad":"Soyad"} <span className="text-rose-600 dark:text-rose-400">*</span>
+                      <Label className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-widest">
+                        {f==="firstName"?"Ad":"Soyad"} <span className="text-destructive">*</span>
                       </Label>
                       <Input {...form.register(f)} placeholder={f==="firstName"?"Adınız":"Soyadınız"}
-                        className={cn("h-12 rounded-2xl bg-[#faf9f6] dark:bg-[#120d0a] border-[#dbc2b0]/50 dark:border-[#887364]/40 focus:border-[#8C5000] dark:focus:border-[#ffb874] font-semibold text-[#191c1d] dark:text-[#fbf9f4] placeholder:text-[#887364]/50",errors[f]&&"border-rose-500 bg-rose-50/50 dark:bg-rose-950/20")}/>
-                      {errors[f]&&<p className="text-[10px] font-bold text-rose-600 dark:text-rose-400 flex items-center gap-1"><AlertCircle className="h-3 w-3"/>{errors[f]?.message}</p>}
+                        className={cn("h-12 rounded-2xl bg-muted/40 border-border/50 focus:border-primary font-semibold text-foreground placeholder:text-muted-foreground/50",errors[f]&&"border-destructive bg-destructive/10")}/>
+                      {errors[f]&&<p className="text-[10px] font-bold text-destructive flex items-center gap-1"><AlertCircle className="h-3 w-3"/>{errors[f]?.message}</p>}
                     </div>
                   ))}
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] uppercase tracking-widest">
-                    Doğum Tarihi <span className="text-rose-600 dark:text-rose-400">*</span>
+                  <Label className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-widest">
+                    Doğum Tarihi <span className="text-destructive">*</span>
                   </Label>
                   <Input type="date" {...form.register("birthDate")} max={getMaxDate()}
-                    className={cn("h-12 rounded-2xl bg-[#faf9f6] dark:bg-[#120d0a] border-[#dbc2b0]/50 dark:border-[#887364]/40 focus:border-[#8C5000] dark:focus:border-[#ffb874] font-semibold text-[#191c1d] dark:text-[#fbf9f4]",errors.birthDate&&"border-rose-500 bg-rose-50/50 dark:bg-rose-950/20")}/>
-                  {errors.birthDate&&<p className="text-[10px] font-bold text-rose-600 dark:text-rose-400 flex items-center gap-1"><AlertCircle className="h-3 w-3"/>{errors.birthDate.message}</p>}
+                    className={cn("h-12 rounded-2xl bg-muted/40 border-border/50 focus:border-primary font-semibold text-foreground",errors.birthDate&&"border-destructive bg-destructive/10")}/>
+                  {errors.birthDate&&<p className="text-[10px] font-bold text-destructive flex items-center gap-1"><AlertCircle className="h-3 w-3"/>{errors.birthDate.message}</p>}
                 </div>
 
                 <div className="space-y-3">
-                  <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] uppercase tracking-widest">
-                    Cinsiyet <span className="text-rose-600 dark:text-rose-400">*</span>
+                  <Label className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-widest">
+                    Cinsiyet <span className="text-destructive">*</span>
                   </Label>
                   <div className="grid grid-cols-2 gap-4">
                     {[
-                      {v:"male",   label:"Erkek", emoji:"👨", activeClass:"bg-[#8C5000] dark:bg-[#ffb874] text-white dark:text-[#120d0a] border-[#8C5000] dark:border-[#ffb874] shadow-lg", inactiveClass:"bg-[#faf9f6] dark:bg-[#120d0a] border-[#dbc2b0]/50 dark:border-[#887364]/40 text-[#5a3100] dark:text-[#fbf9f4]"},
-                      {v:"female", label:"Kadın", emoji:"👩", activeClass:"bg-[#f18d02] dark:bg-[#ffb874] text-white dark:text-[#120d0a] border-[#f18d02] dark:border-[#ffb874] shadow-lg", inactiveClass:"bg-[#faf9f6] dark:bg-[#120d0a] border-[#dbc2b0]/50 dark:border-[#887364]/40 text-[#5a3100] dark:text-[#fbf9f4]"},
+                      {v:"male",   label:"Erkek", emoji:"👨"},
+                      {v:"female", label:"Kadın", emoji:"👩"},
                     ].map(g=>{
                       const isActive = selectedGender===g.v;
                       return (
                         <button key={g.v} type="button" onClick={()=>handleGender(g.v as F["gender"])}
                           className={cn("relative p-5 rounded-3xl border transition-all duration-300 overflow-hidden font-bold flex flex-col items-center justify-center",
-                            isActive?`${g.activeClass} scale-[1.03]`:`${g.inactiveClass} hover:border-[#8C5000]/40 hover:scale-[1.01] text-xs font-black`)}>
+                            isActive?"bg-primary text-primary-foreground border-primary shadow-lg scale-[1.03]":"bg-muted/30 border-border/40 text-muted-foreground hover:border-primary/40 hover:scale-[1.01] text-xs font-black")}>
                           {isActive&&genderAnim&&<span className="absolute inset-0 rounded-3xl bg-white/30 dark:bg-black/20 animate-ping"/>}
                           <span className="text-3xl block mb-2">{g.emoji}</span>
                           <span className="text-sm font-black">{g.label}</span>
@@ -312,7 +315,7 @@ export function OnboardingForm() {
                       );
                     })}
                   </div>
-                  {errors.gender&&<p className="text-[10px] font-bold text-rose-600 dark:text-rose-400 flex items-center gap-1"><AlertCircle className="h-3 w-3"/>{errors.gender.message}</p>}
+                  {errors.gender&&<p className="text-[10px] font-bold text-destructive flex items-center gap-1"><AlertCircle className="h-3 w-3"/>{errors.gender.message}</p>}
                 </div>
               </div>
             )}
@@ -321,7 +324,7 @@ export function OnboardingForm() {
             {step===2&&(
               <div className="space-y-7 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <div className="space-y-3">
-                  <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] uppercase tracking-widest">Para Birimi <span className="text-rose-600 dark:text-rose-400">*</span></Label>
+                  <Label className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-widest">Para Birimi <span className="text-destructive">*</span></Label>
                   <Controller name="currency" control={form.control} render={({field})=>(
                     <div className="space-y-3">
                       <div className="grid grid-cols-3 gap-3">
@@ -330,10 +333,10 @@ export function OnboardingForm() {
                           return (
                             <button key={c.code} type="button" onClick={()=>{field.onChange(c.code);setShowOtherCur(false);}}
                               className={cn("p-4 rounded-3xl border text-center transition-all duration-200",
-                                isActive?"bg-[#8C5000] dark:bg-[#ffb874] text-white dark:text-[#120d0a] border-[#8C5000] dark:border-[#ffb874] shadow-xl scale-[1.03]":"bg-[#faf9f6] dark:bg-[#120d0a] border-[#dbc2b0]/50 dark:border-[#887364]/40 hover:border-[#8C5000]/40 dark:hover:border-[#ffb874]/40")}>
+                                isActive?"bg-primary text-primary-foreground border-primary shadow-xl scale-[1.03]":"bg-muted/30 border-border/40 hover:border-primary/40")}>
                               <div className="text-2xl mb-1">{c.flag}</div>
-                              <div className={cn("text-xl font-black",isActive?"text-white dark:text-[#120d0a]":"text-[#5a3100] dark:text-[#fbf9f4]")}>{c.symbol}</div>
-                              <div className={cn("text-[11px] font-bold",isActive?"text-white/80 dark:text-[#120d0a]/80":"text-[#887364] dark:text-[#dbc2b0]")}>{c.code}</div>
+                              <div className={cn("text-xl font-black",isActive?"text-primary-foreground":"text-foreground")}>{c.symbol}</div>
+                              <div className={cn("text-[11px] font-bold",isActive?"text-primary-foreground/80":"text-muted-foreground")}>{c.code}</div>
                             </button>
                           );
                         })}
@@ -341,7 +344,7 @@ export function OnboardingForm() {
                       <button type="button" onClick={()=>setShowOtherCur(v=>!v)}
                         className={cn("w-full flex items-center justify-between px-5 py-3.5 rounded-2xl border text-sm font-extrabold transition-all",
                           showOtherCur||OTHER_CURRENCIES.some(c=>c.code===field.value)
-                            ?"bg-[#8C5000]/10 dark:bg-[#ffb874]/10 border-[#8C5000]/30 dark:border-[#ffb874]/30 text-[#8C5000] dark:text-[#ffb874]":"bg-[#faf9f6] dark:bg-[#120d0a] border-[#dbc2b0]/40 dark:border-[#887364]/40 text-[#887364] dark:text-[#dbc2b0] hover:border-[#8C5000]/30")}>
+                            ?"bg-primary/10 border-primary/30 text-primary":"bg-muted/30 border-border/40 text-muted-foreground hover:border-primary/30")}>
                         <span>
                           {OTHER_CURRENCIES.find(c=>c.code===field.value)
                             ? `${OTHER_CURRENCIES.find(c=>c.code===field.value)!.flag} ${OTHER_CURRENCIES.find(c=>c.code===field.value)!.label}`
@@ -356,11 +359,11 @@ export function OnboardingForm() {
                             return (
                               <button key={c.code} type="button" onClick={()=>{field.onChange(c.code);}}
                                 className={cn("flex items-center gap-3 p-3.5 rounded-2xl border text-left transition-all font-bold",
-                                  isActive?"bg-[#8C5000] dark:bg-[#ffb874] text-white dark:text-[#120d0a] border-[#8C5000] dark:border-[#ffb874] shadow":"bg-[#faf9f6] dark:bg-[#120d0a] border-[#dbc2b0]/40 dark:border-[#887364]/40 hover:border-[#8C5000]/30")}>
+                                  isActive?"bg-primary text-primary-foreground border-primary shadow":"bg-muted/30 border-border/40 hover:border-primary/30")}>
                                 <span className="text-xl">{c.flag}</span>
                                 <div>
-                                  <div className={cn("text-xs font-black",isActive?"text-white dark:text-[#120d0a]":"text-[#5a3100] dark:text-[#fbf9f4]")}>{c.code}</div>
-                                  <div className={cn("text-[10px]",isActive?"text-white/80 dark:text-[#120d0a]/80":"text-[#887364] dark:text-[#dbc2b0]")}>{c.label}</div>
+                                  <div className={cn("text-xs font-black",isActive?"text-primary-foreground":"text-foreground")}>{c.code}</div>
+                                  <div className={cn("text-[10px]",isActive?"text-primary-foreground/80":"text-muted-foreground")}>{c.label}</div>
                                 </div>
                               </button>
                             );
@@ -372,7 +375,7 @@ export function OnboardingForm() {
                 </div>
 
                 <div className="space-y-3">
-                  <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] uppercase tracking-widest">Kıta / Bölge <span className="text-rose-600 dark:text-rose-400">*</span></Label>
+                  <Label className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-widest">Kıta / Bölge <span className="text-destructive">*</span></Label>
                   <Controller name="country" control={form.control} render={({field})=>(
                     <div className="space-y-3">
                       <div className="grid grid-cols-2 gap-2">
@@ -383,9 +386,9 @@ export function OnboardingForm() {
                             <button key={r.id} type="button"
                               onClick={()=>setSelectedRegion(active?null:r.id)}
                               className={cn("p-3.5 rounded-2xl border text-center text-xs font-bold transition-all duration-200",
-                                active||hasSelected?"bg-[#8C5000] dark:bg-[#ffb874] text-white dark:text-[#120d0a] border-[#8C5000] dark:border-[#ffb874] shadow-md scale-[1.02]":"bg-[#faf9f6] dark:bg-[#120d0a] border-[#dbc2b0]/50 dark:border-[#887364]/40 hover:border-[#8C5000]/30")}>
+                                active||hasSelected?"bg-primary text-primary-foreground border-primary shadow-md scale-[1.02]":"bg-muted/30 border-border/40 hover:border-primary/30")}>
                               <div className="text-2xl mb-1">{r.emoji}</div>
-                              <div className={cn("text-xs font-extrabold",active||hasSelected?"text-white dark:text-[#120d0a]":"text-[#5a3100] dark:text-[#fbf9f4]")}>{r.label}</div>
+                              <div className={cn("text-xs font-extrabold",active||hasSelected?"text-primary-foreground":"text-foreground")}>{r.label}</div>
                             </button>
                           );
                         })}
@@ -397,10 +400,10 @@ export function OnboardingForm() {
                             return (
                               <button key={c.code} type="button" onClick={()=>field.onChange(c.code)}
                                 className={cn("flex items-center gap-2.5 p-3 rounded-2xl border text-left transition-all duration-200 font-bold",
-                                  isActive?"bg-[#8C5000] dark:bg-[#ffb874] text-white dark:text-[#120d0a] border-[#8C5000] dark:border-[#ffb874] shadow-md scale-[1.02]":"bg-[#faf9f6] dark:bg-[#120d0a] border-[#dbc2b0]/50 dark:border-[#887364]/40 hover:border-[#8C5000]/30")}>
+                                  isActive?"bg-primary text-primary-foreground border-primary shadow-md scale-[1.02]":"bg-muted/30 border-border/40 hover:border-primary/30")}>
                                 <span className="text-lg">{c.flag}</span>
-                                <span className={cn("text-xs font-black",isActive?"text-white dark:text-[#120d0a]":"text-[#5a3100] dark:text-[#fbf9f4]")}>{c.label}</span>
-                                {isActive&&<Check className="w-3.5 h-3.5 ml-auto text-white dark:text-[#120d0a]"/>}
+                                <span className={cn("text-xs font-black",isActive?"text-primary-foreground":"text-foreground")}>{c.label}</span>
+                                {isActive&&<Check className="w-3.5 h-3.5 ml-auto text-primary-foreground"/>}
                               </button>
                             );
                           })}
@@ -408,43 +411,47 @@ export function OnboardingForm() {
                       )}
                     </div>
                   )}/>
-                  {errors.country&&<p className="text-[10px] font-bold text-rose-600 dark:text-rose-400 flex items-center gap-1"><AlertCircle className="h-3 w-3"/>{errors.country.message}</p>}
+                  {errors.country&&<p className="text-[10px] font-bold text-destructive flex items-center gap-1"><AlertCircle className="h-3 w-3"/>{errors.country.message}</p>}
                 </div>
               </div>
             )}
 
-            {/* STEP 3: Aylık Gelirler */}
+            {/* STEP 3: Aylık Gelirler (Tarihli) */}
             {step===3&&(
               <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <div className="flex items-center justify-between">
-                  <Label className="text-xs font-extrabold text-[#887364] dark:text-[#dbc2b0]">Düzenli Gelir Kaynakları</Label>
-                  <Button type="button" size="sm" variant="outline" onClick={()=>incomesField.append({type:"Maaş", amount:0, description:""})}
-                    className="rounded-xl border-[#8C5000]/30 dark:border-[#ffb874]/30 text-[#8C5000] dark:text-[#ffb874] font-bold">
+                  <Label className="text-xs font-extrabold text-muted-foreground">Düzenli Gelir Kaynakları & Tarihleri</Label>
+                  <Button type="button" size="sm" variant="outline" onClick={()=>incomesField.append({type:"Maaş", amount:0, date:new Date().toISOString().split("T")[0], description:""})}
+                    className="rounded-xl border-primary/30 text-primary font-bold">
                     <Plus className="w-4 h-4 mr-1"/> Gelir Ekle
                   </Button>
                 </div>
                 <div className="space-y-4">
                   {incomesField.fields.map((item, i) => (
-                    <div key={item.id} className="p-4 rounded-2xl bg-[#faf9f6] dark:bg-[#120d0a] border border-[#dbc2b0]/40 dark:border-[#887364]/40 space-y-3 relative">
+                    <div key={item.id} className="p-4 rounded-2xl bg-muted/20 border border-border/40 space-y-3 relative">
                       <div className="flex items-center justify-between gap-3">
                         <select {...form.register(`incomes.${i}.type`)}
-                          className="flex-1 h-11 px-3 rounded-xl bg-white dark:bg-[#1c140e] border border-[#dbc2b0]/50 dark:border-[#887364]/40 font-bold text-sm text-[#191c1d] dark:text-[#fbf9f4]">
+                          className="flex-1 h-11 px-3 rounded-xl bg-card border border-border/50 font-bold text-sm text-foreground">
                           {INCOME_TYPES.map(t=><option key={t} value={t}>{t}</option>)}
                         </select>
                         {incomesField.fields.length > 1 && (
-                          <Button type="button" variant="ghost" size="icon" onClick={()=>incomesField.remove(i)} className="text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30">
+                          <Button type="button" variant="ghost" size="icon" onClick={()=>incomesField.remove(i)} className="text-destructive hover:bg-destructive/10">
                             <Trash2 className="w-4 h-4" />
                           </Button>
                         )}
                       </div>
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <div>
-                          <Label className="text-[10px] font-bold text-[#887364] dark:text-[#dbc2b0]">Miktar ({selectedCurrency})</Label>
-                          <Input type="number" {...form.register(`incomes.${i}.amount`, { valueAsNumber: true })} placeholder="0" className="h-11 rounded-xl bg-white dark:bg-[#1c140e] font-black text-[#191c1d] dark:text-[#fbf9f4]" />
+                          <Label className="text-[10px] font-bold text-muted-foreground">Miktar ({selectedCurrency})</Label>
+                          <Input type="number" {...form.register(`incomes.${i}.amount`, { valueAsNumber: true })} placeholder="0" className="h-11 rounded-xl bg-card font-black text-foreground" />
                         </div>
                         <div>
-                          <Label className="text-[10px] font-bold text-[#887364] dark:text-[#dbc2b0]">Açıklama (İsteğe bağlı)</Label>
-                          <Input {...form.register(`incomes.${i}.description`)} placeholder="Örn: X Kurumu Maaşı" className="h-11 rounded-xl bg-white dark:bg-[#1c140e] font-medium text-[#191c1d] dark:text-[#fbf9f4]" />
+                          <Label className="text-[10px] font-bold text-muted-foreground">Kazanım Tarihi</Label>
+                          <Input type="date" {...form.register(`incomes.${i}.date`)} className="h-11 rounded-xl bg-card font-semibold text-foreground" />
+                        </div>
+                        <div>
+                          <Label className="text-[10px] font-bold text-muted-foreground">Açıklama</Label>
+                          <Input {...form.register(`incomes.${i}.description`)} placeholder="Örn: Kurum / Şirket" className="h-11 rounded-xl bg-card font-medium text-foreground" />
                         </div>
                       </div>
                     </div>
@@ -453,38 +460,42 @@ export function OnboardingForm() {
               </div>
             )}
 
-            {/* STEP 4: Aylık Giderler */}
+            {/* STEP 4: Aylık Giderler (Ödeme Günlü) */}
             {step===4&&(
               <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <div className="flex items-center justify-between">
-                  <Label className="text-xs font-extrabold text-[#887364] dark:text-[#dbc2b0]">Düzenli Giderler & Faturalar</Label>
-                  <Button type="button" size="sm" variant="outline" onClick={()=>expensesField.append({type:"Ev Kirası / İpotek", amount:0, isRecurring:true, description:""})}
-                    className="rounded-xl border-[#8C5000]/30 dark:border-[#ffb874]/30 text-[#8C5000] dark:text-[#ffb874] font-bold">
+                  <Label className="text-xs font-extrabold text-muted-foreground">Düzenli Giderler & Ödeme Günleri</Label>
+                  <Button type="button" size="sm" variant="outline" onClick={()=>expensesField.append({type:"Ev Kirası / İpotek", amount:0, dueDate:15, isRecurring:true, description:""})}
+                    className="rounded-xl border-primary/30 text-primary font-bold">
                     <Plus className="w-4 h-4 mr-1"/> Gider Ekle
                   </Button>
                 </div>
                 <div className="space-y-4">
                   {expensesField.fields.map((item, i) => (
-                    <div key={item.id} className="p-4 rounded-2xl bg-[#faf9f6] dark:bg-[#120d0a] border border-[#dbc2b0]/40 dark:border-[#887364]/40 space-y-3 relative">
+                    <div key={item.id} className="p-4 rounded-2xl bg-muted/20 border border-border/40 space-y-3 relative">
                       <div className="flex items-center justify-between gap-3">
                         <select {...form.register(`expenses.${i}.type`)}
-                          className="flex-1 h-11 px-3 rounded-xl bg-white dark:bg-[#1c140e] border border-[#dbc2b0]/50 dark:border-[#887364]/40 font-bold text-sm text-[#191c1d] dark:text-[#fbf9f4]">
+                          className="flex-1 h-11 px-3 rounded-xl bg-card border border-border/50 font-bold text-sm text-foreground">
                           {EXPENSE_TYPES.map(t=><option key={t} value={t}>{t}</option>)}
                         </select>
                         {expensesField.fields.length > 1 && (
-                          <Button type="button" variant="ghost" size="icon" onClick={()=>expensesField.remove(i)} className="text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30">
+                          <Button type="button" variant="ghost" size="icon" onClick={()=>expensesField.remove(i)} className="text-destructive hover:bg-destructive/10">
                             <Trash2 className="w-4 h-4" />
                           </Button>
                         )}
                       </div>
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <div>
-                          <Label className="text-[10px] font-bold text-[#887364] dark:text-[#dbc2b0]">Miktar ({selectedCurrency})</Label>
-                          <Input type="number" {...form.register(`expenses.${i}.amount`, { valueAsNumber: true })} placeholder="0" className="h-11 rounded-xl bg-white dark:bg-[#1c140e] font-black text-[#191c1d] dark:text-[#fbf9f4]" />
+                          <Label className="text-[10px] font-bold text-muted-foreground">Miktar ({selectedCurrency})</Label>
+                          <Input type="number" {...form.register(`expenses.${i}.amount`, { valueAsNumber: true })} placeholder="0" className="h-11 rounded-xl bg-card font-black text-foreground" />
                         </div>
                         <div>
-                          <Label className="text-[10px] font-bold text-[#887364] dark:text-[#dbc2b0]">Açıklama (İsteğe bağlı)</Label>
-                          <Input {...form.register(`expenses.${i}.description`)} placeholder="Örn: Elektrik Faturası" className="h-11 rounded-xl bg-white dark:bg-[#1c140e] font-medium text-[#191c1d] dark:text-[#fbf9f4]" />
+                          <Label className="text-[10px] font-bold text-muted-foreground">Ödeme Günü (1-31)</Label>
+                          <Input type="number" min={1} max={31} {...form.register(`expenses.${i}.dueDate`, { valueAsNumber: true })} placeholder="15" className="h-11 rounded-xl bg-card font-semibold text-foreground text-center" />
+                        </div>
+                        <div>
+                          <Label className="text-[10px] font-bold text-muted-foreground">Açıklama</Label>
+                          <Input {...form.register(`expenses.${i}.description`)} placeholder="Örn: Kira / Elektrik" className="h-11 rounded-xl bg-card font-medium text-foreground" />
                         </div>
                       </div>
                     </div>
@@ -496,48 +507,37 @@ export function OnboardingForm() {
             {/* STEP 5: İlgi Alanları */}
             {step===5&&(
               <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <p className="text-xs font-bold text-[#887364] dark:text-[#dbc2b0]">Sana uygun finansal analizler, içerikler ve topluluklar önerebilmemiz için en az bir ilgi alanı seç.</p>
+                <p className="text-xs font-bold text-muted-foreground">Sana uygun finansal analizler, içerikler ve topluluklar önerebilmemiz için en az bir ilgi alanı seç.</p>
                 <div className="flex flex-wrap gap-2.5">
                   {HASHTAGS.map(h=>{
                     const isActive=selectedInterests.includes(h.tag);
                     return (
                       <button key={h.tag} type="button" onClick={()=>toggleTag(h.tag)}
                         className={cn("flex items-center gap-2 px-4 py-2.5 rounded-full border text-xs font-black transition-all duration-200",
-                          isActive?"bg-[#8C5000] dark:bg-[#ffb874] text-white dark:text-[#120d0a] border-[#8C5000] dark:border-[#ffb874] shadow-lg scale-105":"bg-[#faf9f6] dark:bg-[#120d0a] border-[#dbc2b0]/50 dark:border-[#887364]/40 text-[#5a3100] dark:text-[#dbc2b0] hover:border-[#8C5000]/40 dark:hover:border-[#ffb874]/40 hover:scale-[1.02]")}>
+                          isActive?"bg-primary text-primary-foreground border-primary shadow-lg scale-105":"bg-muted/30 border-border/50 text-muted-foreground hover:border-primary/40 hover:scale-[1.02]")}>
                         <span className="text-base">{h.emoji}</span><span>#{h.label}</span>
                         {isActive&&<Check className="w-3.5 h-3.5"/>}
                       </button>
                     );
                   })}
                 </div>
-                {errors.interests&&<p className="text-[10px] font-bold text-rose-600 dark:text-rose-400 flex items-center gap-1"><AlertCircle className="h-3 w-3"/>{errors.interests.message}</p>}
-                {selectedInterests.length>0&&(
-                  <div className="p-4 bg-[#f18d02]/10 dark:bg-[#ffb874]/10 border border-[#f18d02]/25 dark:border-[#ffb874]/25 rounded-2xl animate-in fade-in duration-300">
-                    <p className="text-[10px] font-black text-[#8C5000] dark:text-[#ffb874] uppercase tracking-widest mb-2">{selectedInterests.length} ilgi alanı seçildi</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {selectedInterests.map(t=>{
-                        const h=HASHTAGS.find(x=>x.tag===t);
-                        return <span key={t} className="text-xs font-black text-[#8C5000] dark:text-[#ffb874] bg-white dark:bg-[#120d0a] px-2.5 py-1 rounded-xl border border-[#8C5000]/20 dark:border-[#ffb874]/20 shadow-sm">{h?.emoji} #{h?.label??t}</span>;
-                      })}
-                    </div>
-                  </div>
-                )}
+                {errors.interests&&<p className="text-[10px] font-bold text-destructive flex items-center gap-1"><AlertCircle className="h-3 w-3"/>{errors.interests.message}</p>}
               </div>
             )}
           </form>
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between px-8 py-5 bg-[#fbf9f4] dark:bg-[#120d0a]/60 border-t border-[#8C5000]/10 dark:border-[#ffb874]/15 transition-colors duration-300">
-          <Button type="button" variant="ghost" onClick={()=>setStep(s=>Math.max(s-1,1))} disabled={step===1||loading} className="h-12 px-6 rounded-2xl font-bold text-[#5a3100] dark:text-[#dbc2b0] hover:bg-[#dbc2b0]/30 dark:hover:bg-[#887364]/20">
+        <div className="flex items-center justify-between px-8 py-5 bg-muted/30 border-t border-border/40 transition-colors duration-300">
+          <Button type="button" variant="ghost" onClick={()=>setStep(s=>Math.max(s-1,1))} disabled={step===1||loading} className="h-12 px-6 rounded-2xl font-bold text-foreground hover:bg-muted">
             <ChevronLeft className="w-4 h-4 mr-1"/> Geri
           </Button>
           {step<5?(
-            <Button type="button" onClick={nextStep} className="h-12 px-8 rounded-2xl bg-gradient-to-r from-[#f18d02] to-[#8C5000] dark:from-[#ffb874] dark:to-[#8C5000] text-white dark:text-[#120d0a] font-extrabold sm:font-black shadow-lg shadow-[#8C5000]/25 dark:shadow-black/50 hover:scale-[1.02] transition-all">
+            <Button type="button" onClick={nextStep} className="h-12 px-8 rounded-2xl bg-primary text-primary-foreground font-extrabold sm:font-black shadow-lg shadow-primary/25 hover:scale-[1.02] transition-all">
               Devam Et <ChevronRight className="w-5 h-5 ml-1"/>
             </Button>
           ):(
-            <Button type="button" onClick={form.handleSubmit(onSubmit)} disabled={loading} className="h-12 px-8 sm:px-10 rounded-2xl bg-gradient-to-r from-[#36684d] to-[#1c5036] dark:from-[#b8efcc] dark:to-[#36684d] text-white dark:text-[#0d442b] font-extrabold sm:font-black shadow-xl shadow-[#36684d]/30 dark:shadow-black/50 hover:scale-[1.03] transition-all">
+            <Button type="button" onClick={form.handleSubmit(onSubmit)} disabled={loading} className="h-12 px-8 sm:px-10 rounded-2xl bg-emerald-600 text-white font-extrabold sm:font-black shadow-xl shadow-emerald-600/30 hover:scale-[1.03] transition-all">
               {loading?"Kaydediliyor...":"Kurulumu Tamamla 🚀"}{!loading&&<Check className="w-5 h-5 ml-2"/>}
             </Button>
           )}

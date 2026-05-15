@@ -17,7 +17,7 @@ export async function completeOnboarding(formData: {
   marriageDate?:  string;
   hasChildren?:   boolean;
   children?:      { birthDate: string }[];
-  incomes:        { type: string; amount: number; description?: string }[];
+  incomes:        { type: string; amount: number; date?: string; description?: string }[];
   expenses:       { type: string; amount: number; dueDate?: number; isRecurring: boolean; description?: string }[];
   debts:          { type: string; amount: number; remainingInstallments?: number; description?: string }[];
   investments:    {
@@ -106,6 +106,7 @@ export async function completeOnboarding(formData: {
       await prisma.income.createMany({
         data: formData.incomes.map(inc => ({
           type: inc.type, amount: Number(inc.amount) || 0,
+          date: inc.date ? new Date(inc.date) : new Date(),
           description: inc.description, userId: user!.id,
         })),
       });
@@ -115,7 +116,7 @@ export async function completeOnboarding(formData: {
       await prisma.expense.createMany({
         data: formData.expenses.map(exp => ({
           type: exp.type, amount: Number(exp.amount) || 0,
-          dueDate: exp.dueDate, isRecurring: exp.isRecurring,
+          dueDate: Number(exp.dueDate) || 15, isRecurring: exp.isRecurring ?? true,
           description: exp.description, userId: user!.id,
         })),
       });
@@ -169,9 +170,9 @@ export async function completeOnboarding(formData: {
       });
     }
 
-    // Cache'i temizle
-    revalidatePath("/dashboard", "layout");
+    // Cache'i temizle ve Next.js router'ı tam yenile
     revalidatePath("/", "layout");
+    revalidatePath("/dashboard", "layout");
 
     return { success: true };
   } catch (err: any) {
