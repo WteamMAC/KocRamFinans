@@ -11,7 +11,7 @@ import Image from "next/image";
 interface ProfileHeaderProps {
   profile: {
     id: string;
-    username: string;
+    username: string | null;
     name: string;
     imageUrl: string;
     bio?: string | null;
@@ -72,6 +72,7 @@ export function ProfileHeader({ profile, initialIsFollowing, currentUserRole }: 
   };
 
   const openFollowers = async () => {
+    if (!profile.username) return;
     setShowFollowers(true);
     setIsLoadingList(true);
     try {
@@ -83,6 +84,7 @@ export function ProfileHeader({ profile, initialIsFollowing, currentUserRole }: 
   };
 
   const openFollowing = async () => {
+    if (!profile.username) return;
     setShowFollowing(true);
     setIsLoadingList(true);
     try {
@@ -125,7 +127,7 @@ export function ProfileHeader({ profile, initialIsFollowing, currentUserRole }: 
                     <Ban className="h-3.5 w-3.5" /> Hesabı Askıya Alındı
                   </span>
                 ) : (
-                  <span className="text-primary/70 font-medium">@{profile.username}</span>
+                  profile.username && <span className="text-primary/70 font-medium">@{profile.username}</span>
                 )}
               </p>
               
