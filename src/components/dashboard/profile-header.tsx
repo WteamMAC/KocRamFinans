@@ -7,7 +7,6 @@ import { cn } from "@/lib/utils";
 import { Users, BookOpen, UserPlus, UserMinus, ShieldAlert, Ban, Pencil, Check, X, Camera } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
-import { NotificationBell } from "@/components/dashboard/notification-bell";
 
 interface ProfileHeaderProps {
   profile: {
@@ -220,11 +219,7 @@ export function ProfileHeader({ profile, initialIsFollowing, currentUserRole }: 
 
             {/* Action Group */}
             <div className="flex flex-row md:flex-col items-center md:items-end gap-3 mt-4 md:mt-0">
-               {profile.isMe && (
-                 <div className="mb-0 md:mb-4">
-                   <NotificationBell />
-                 </div>
-               )}
+
                
                <div className="flex items-center gap-3">
                  {currentUserRole === "ADMIN" && !profile.isMe && (

@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { NotificationBell } from "@/components/dashboard/notification-bell";
 
 const routes = [
   {
@@ -290,16 +291,19 @@ export function Sidebar({ isCollapsed, onToggle, hideToggle, theme, onToggleThem
           )}
         </div>
 
-        {theme && onToggleTheme && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onToggleTheme}
-            className="tour-step-3 rounded-full h-8 w-8 text-primary hover:bg-primary/10 flex-shrink-0"
-          >
-            {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-          </Button>
-        )}
+        <div className="flex items-center gap-1">
+          <NotificationBell />
+          {theme && onToggleTheme && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onToggleTheme}
+              className="tour-step-3 rounded-full h-8 w-8 text-primary hover:bg-primary/10 flex-shrink-0"
+            >
+              {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );
