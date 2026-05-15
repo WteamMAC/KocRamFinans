@@ -3,6 +3,77 @@
 import { prisma } from "@/lib/prisma";
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
+import { generateText } from "ai";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
+
+const google = createGoogleGenerativeAI({
+  apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY || "",
+});
+
+async function processAiMentions(content: string, postId: string) {
+  const lowerContent = content.toLowerCase();
+  if (lowerContent.includes("@ai") || lowerContent.includes("@bot") || lowerContent.includes("@wteam") || lowerContent.includes("@asistan")) {
+    try {
+      let aiUser = await prisma.user.findUnique({ where: { clerkUserId: "system_ai_user" } });
+      if (!aiUser) {
+        aiUser = await prisma.user.create({
+          data: {
+            clerkUserId: "system_ai_user",
+            username: "wteam_ai",
+            role: "ADMIN",
+            bio: "Wteam Yapay Zeka Asistanı",
+          }
+        });
+      }
+
+      const { text } = await generateText({
+        model: google("gemini-1.5-flash"),
+        prompt: `Sen Wteam adlı finansal asistan uygulamasında "Wteam AI" isimli bir yapay zekasın. Bir kullanıcı post veya yorumunda senden ("@ai", "@bot" gibi) bahsederek yardım/görüş istiyor veya soru soruyor:\n\nKullanıcı mesajı: "${content}"\n\nLütfen buna profesyonel, samimi ve finansal tavsiye içermeyen (sadece bilgi veren, analiz yapan veya yorumlayan) bir dille, kısa ve öz bir cevap ver.`,
+      });
+
+      await prisma.blogComment.create({
+        data: {
+          postId: postId,
+          authorId: aiUser.id,
+          content: text
+        }
+      });
+    } catch (e) {
+      console.error("AI mention processing error:", e);
+    }
+  }
+}
+
+async function processMentionsAndNotify(content: string, postId: string, sourceUserId: string) {
+  const MENTION_REGEX = /@([a-zA-Z0-9_]+)/g;
+  let match;
+  const usernames = new Set<string>();
+  
+  while ((match = MENTION_REGEX.exec(content)) !== null) {
+    const username = match[1].toLowerCase();
+    if (username !== "ai" && username !== "bot" && username !== "wteam" && username !== "asistan") {
+      usernames.add(username);
+    }
+  }
+
+  const sourceUser = await prisma.user.findUnique({ where: { id: sourceUserId } });
+  if (!sourceUser) return;
+
+  for (const username of usernames) {
+    const targetUser = await prisma.user.findUnique({ where: { username } });
+    if (targetUser && targetUser.id !== sourceUserId) {
+      await prisma.notification.create({
+        data: {
+          userId: targetUser.id,
+          type: "MENTION",
+          title: "Yeni Bahsetme",
+          message: `${sourceUser.username || "Bir kullanıcı"} senden bahsetti.`,
+          link: "/dashboard/blog"
+        }
+      });
+    }
+  }
+}
 
 async function getInternalUser(clerkUserId: string) {
   const user = await prisma.user.findUnique({ where: { clerkUserId } });
@@ -40,7 +111,7 @@ export async function createPost(
   // Duyuru yetkisi sadece adminlerde
   const announcementFlag = isAnnouncement && user.role === "ADMIN";
 
-  await prisma.blogPost.create({
+  const newPost = await prisma.blogPost.create({
     data: { 
       authorId: user.id, 
       content, 
@@ -51,7 +122,13 @@ export async function createPost(
     },
   });
 
+  // AI etiketlemesi kontrolü
+  await processAiMentions(content, newPost.id);
+  // Normal kullanıcı etiketlemesi ve bildirimler
+  await processMentionsAndNotify(content, newPost.id, user.id);
+
   revalidatePath("/dashboard/blog");
+
 }
 
 
@@ -97,6 +174,12 @@ export async function addComment(postId: string, content: string) {
   await prisma.blogComment.create({
     data: { postId, authorId: user.id, content },
   });
+
+  // AI etiketlemesi kontrolü
+  await processAiMentions(content, postId);
+  // Normal kullanıcı etiketlemesi ve bildirimler
+  await processMentionsAndNotify(content, postId, user.id);
+
   revalidatePath("/dashboard/blog");
 }
 
@@ -160,6 +243,16 @@ export async function getPosts(
   const me = currentInternalUserId ? await prisma.user.findUnique({ where: { id: currentInternalUserId }, select: { role: true } }) : null;
 
   try {
+    // 1 saatten eski duyuruların sabitliğini kaldır (isAnnouncement = false yap)
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+    await prisma.blogPost.updateMany({
+      where: {
+        isAnnouncement: true,
+        createdAt: { lt: oneHourAgo }
+      },
+      data: { isAnnouncement: false }
+    });
+
     const posts = await prisma.blogPost.findMany({
       where: whereClause,
       orderBy: [
@@ -211,10 +304,10 @@ export async function getPosts(
         communityId: post.community?.id,
         communityName: post.community?.name,
         authorName:
-          clerkUser
+          post.author.clerkUserId === "system_ai_user" ? "Wteam AI" : (clerkUser
             ? `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim() || "Kullanıcı"
-            : "Kullanıcı",
-        authorImage: clerkUser?.imageUrl || "",
+            : "Kullanıcı"),
+        authorImage: post.author.clerkUserId === "system_ai_user" ? "https://api.dicebear.com/7.x/bottts/svg?seed=wteam&backgroundColor=10b981" : (clerkUser?.imageUrl || ""),
         likeCount: post.likes.length,
         isLikedByMe: currentInternalUserId
           ? post.likes.some((l: any) => l.userId === currentInternalUserId)
@@ -230,10 +323,10 @@ export async function getPosts(
             authorId: comment.author.id,
             authorUsername: comment.author.username,
             authorName:
-              commentUser
+              comment.author.clerkUserId === "system_ai_user" ? "Wteam AI" : (commentUser
                 ? `${commentUser.firstName || ""} ${commentUser.lastName || ""}`.trim() || "Kullanıcı"
-                : "Kullanıcı",
-            authorImage: commentUser?.imageUrl || "",
+                : "Kullanıcı"),
+            authorImage: comment.author.clerkUserId === "system_ai_user" ? "https://api.dicebear.com/7.x/bottts/svg?seed=wteam&backgroundColor=10b981" : (commentUser?.imageUrl || ""),
             isMyComment: currentInternalUserId
               ? comment.author.id === currentInternalUserId
               : false,
@@ -474,10 +567,10 @@ export async function getProfilePosts(targetInternalUserId: string, cursor?: str
         communityId: post.community?.id,
         communityName: post.community?.name,
         authorName:
-          clerkUser
+          post.author.clerkUserId === "system_ai_user" ? "Wteam AI" : (clerkUser
             ? `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim() || "Kullanıcı"
-            : "Kullanıcı",
-        authorImage: clerkUser?.imageUrl || "",
+            : "Kullanıcı"),
+        authorImage: post.author.clerkUserId === "system_ai_user" ? "https://api.dicebear.com/7.x/bottts/svg?seed=wteam&backgroundColor=10b981" : (clerkUser?.imageUrl || ""),
         likeCount: post.likes.length,
         isLikedByMe: me ? post.likes.some((l: any) => l.userId === me.id) : false,
         isMyPost: me ? post.author.id === me.id : false,
@@ -491,10 +584,10 @@ export async function getProfilePosts(targetInternalUserId: string, cursor?: str
             authorId: comment.author.id,
             authorUsername: comment.author.username,
             authorName:
-              commentUser
+              comment.author.clerkUserId === "system_ai_user" ? "Wteam AI" : (commentUser
                 ? `${commentUser.firstName || ""} ${commentUser.lastName || ""}`.trim() || "Kullanıcı"
-                : "Kullanıcı",
-            authorImage: commentUser?.imageUrl || "",
+                : "Kullanıcı"),
+            authorImage: comment.author.clerkUserId === "system_ai_user" ? "https://api.dicebear.com/7.x/bottts/svg?seed=wteam&backgroundColor=10b981" : (commentUser?.imageUrl || ""),
             isMyComment: me ? comment.author.id === me.id : false,
           };
         }),
@@ -530,3 +623,22 @@ export async function toggleUserBan(targetInternalUserId: string) {
   revalidatePath("/dashboard/blog");
 }
 
+export async function searchUsers(query: string) {
+  if (!query || query.length < 1) return [];
+  
+  const users = await prisma.user.findMany({
+    where: {
+      username: {
+        contains: query,
+        mode: "insensitive"
+      }
+    },
+    select: {
+      id: true,
+      username: true,
+    },
+    take: 5
+  });
+  
+  return users;
+}

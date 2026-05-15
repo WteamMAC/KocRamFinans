@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { createPost, toggleLike, addComment, deletePost, deleteComment, getPosts, getProfilePosts } from "@/app/actions/blog";
+import { createPost, toggleLike, addComment, deletePost, deleteComment, getPosts, getProfilePosts, searchUsers } from "@/app/actions/blog";
 import { 
   getCommunities, 
   getCommunityDetails, 
@@ -26,6 +26,7 @@ import {
 const ALL_TAGS = ["#yatırım", "#kripto", "#hisse", "#tasarruf", "#borç", "#bes", "#faiz", "#altın", "#bütçe"];
 const MAX_CHARS = 500;
 const HASHTAG_REGEX = /#([a-zA-Z0-9çşğüöıÇŞĞÜÖİ]+)/g;
+const MENTION_REGEX = /@([a-zA-Z0-9_]+)/g;
 
 // ─── Types ────────────────────────────────────────────────────────────
 type Comment = {
@@ -88,6 +89,39 @@ function CreatePostBox({ currentUserId, communityId, communityName, userRole }: 
   const [focused, setFocused] = useState(false);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [isAnnouncement, setIsAnnouncement] = useState(false);
+  const [mentionSuggestions, setMentionSuggestions] = useState<any[]>([]);
+  const [showMentionList, setShowMentionList] = useState(false);
+  const [mentionQuery, setMentionQuery] = useState("");
+  const [cursorPosition, setCursorPosition] = useState(0);
+
+  const handleContentChange = async (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    const pos = e.target.selectionStart;
+    setContent(value);
+    setCursorPosition(pos);
+
+    const lastAtIdx = value.lastIndexOf("@", pos - 1);
+    if (lastAtIdx !== -1) {
+      const query = value.substring(lastAtIdx + 1, pos);
+      if (!query.includes(" ") && !query.includes("\n")) {
+        setMentionQuery(query);
+        setShowMentionList(true);
+        const users = await searchUsers(query);
+        setMentionSuggestions(users);
+        return;
+      }
+    }
+    setShowMentionList(false);
+  };
+
+  const selectMention = (username: string) => {
+    const lastAtIdx = content.lastIndexOf("@", cursorPosition - 1);
+    const before = content.substring(0, lastAtIdx);
+    const after = content.substring(cursorPosition);
+    const newContent = `${before}@${username} ${after}`;
+    setContent(newContent);
+    setShowMentionList(false);
+  };
 
   const toggleTag = (tag: string) =>
     setSelectedTags((p) => p.includes(tag) ? p.filter((t) => t !== tag) : [...p, tag]);
@@ -132,14 +166,39 @@ function CreatePostBox({ currentUserId, communityId, communityName, userRole }: 
       <div className="flex gap-3 items-start">
         {user && <Avatar src={user.imageUrl} name={user.firstName || "K"} username={user.username || null} userId={currentUserId} />}
         <div className="flex-1 space-y-2">
-          <textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            onFocus={() => setFocused(true)}
-            placeholder={communityName ? `${communityName} topluluğunda paylaş... 👥` : "Finansal deneyimlerinizi paylaşın... 💡"}
-            rows={focused || content ? 3 : 2}
-            className="w-full bg-muted/30 border border-border/20 rounded-xl p-3 text-sm text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all duration-200"
-          />
+          <div className="relative">
+            <textarea
+              value={content}
+              onChange={handleContentChange}
+              onKeyUp={(e: any) => setCursorPosition(e.target.selectionStart)}
+              onClick={(e: any) => setCursorPosition(e.target.selectionStart)}
+              onFocus={() => setFocused(true)}
+              placeholder={communityName ? `${communityName} topluluğunda paylaş... 👥` : "Finansal deneyimlerinizi paylaşın... 💡"}
+              rows={focused || content ? 3 : 2}
+              className="w-full bg-muted/30 border border-border/20 rounded-xl p-3 text-sm text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all duration-200"
+            />
+            {showMentionList && mentionSuggestions.length > 0 && (
+              <div className="absolute z-50 left-0 bottom-full mb-2 w-64 bg-card border border-border/30 rounded-2xl shadow-ambient-high overflow-hidden animate-in slide-in-from-bottom-2 duration-200">
+                <div className="p-2 border-b border-border/10 bg-muted/20">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-2">Kullanıcı Etiketle</span>
+                </div>
+                <div className="max-h-48 overflow-y-auto">
+                  {mentionSuggestions.map((u) => (
+                    <button
+                      key={u.id}
+                      onClick={() => selectMention(u.username)}
+                      className="w-full flex items-center gap-3 p-3 hover:bg-primary/5 text-left transition-colors group"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-bold text-xs group-hover:bg-primary/20">
+                        {u.username?.[0].toUpperCase()}
+                      </div>
+                      <span className="text-sm font-bold text-foreground">@{u.username}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
           <div className="flex items-center justify-between animate-in fade-in duration-200">
             {(focused || content) && (
               <div className="flex-1 flex items-center">
@@ -240,6 +299,36 @@ function CommentSection({ post, onTagClick }: { post: Post; onTagClick?: (tag: s
   const router = useRouter();
   const [newComment, setNewComment] = useState("");
   const [isPending, startTransition] = useTransition();
+  const [mentionSuggestions, setMentionSuggestions] = useState<any[]>([]);
+  const [showMentionList, setShowMentionList] = useState(false);
+  const [cursorPosition, setCursorPosition] = useState(0);
+
+  const handleContentChange = async (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    const pos = e.target.selectionStart;
+    setNewComment(value);
+    setCursorPosition(pos);
+
+    const lastAtIdx = value.lastIndexOf("@", pos - 1);
+    if (lastAtIdx !== -1) {
+      const query = value.substring(lastAtIdx + 1, pos);
+      if (!query.includes(" ") && !query.includes("\n")) {
+        setShowMentionList(true);
+        const users = await searchUsers(query);
+        setMentionSuggestions(users);
+        return;
+      }
+    }
+    setShowMentionList(false);
+  };
+
+  const selectMention = (username: string) => {
+    const lastAtIdx = newComment.lastIndexOf("@", cursorPosition - 1);
+    const before = newComment.substring(0, lastAtIdx);
+    const after = newComment.substring(cursorPosition);
+    setNewComment(`${before}@${username} ${after}`);
+    setShowMentionList(false);
+  };
 
   const handleAdd = () => {
     if (!newComment.trim()) return;
@@ -254,42 +343,98 @@ function CommentSection({ post, onTagClick }: { post: Post; onTagClick?: (tag: s
   };
 
   return (
-    <div className="space-y-3 pt-3 border-t border-border/10 animate-in fade-in slide-in-from-top-2 duration-300">
-      {post.comments.length === 0 && <p className="text-xs text-muted-foreground opacity-50 text-center py-2">Henüz yorum yok. İlk yorumu yap!</p>}
-      {post.comments.map((c) => (
-        <div key={c.id} className="flex gap-2 items-start group">
-          <Avatar src={c.authorImage} name={c.authorName} username={c.authorUsername} userId={c.authorId} size="sm" />
-          <div className="flex-1 bg-muted/30 rounded-xl px-3 py-2">
-            <div className="flex items-center justify-between">
-              <Link href={c.authorUsername ? `/dashboard/profile/${c.authorUsername}` : `/dashboard/profile/${c.authorId}`} className="text-[11px] font-bold text-primary hover:underline">{c.authorName}</Link>
-              <div className="flex items-center gap-1">
-                <span className="text-[10px] text-muted-foreground opacity-50">{formatTimeAgo(c.createdAt)}</span>
-                {c.isMyComment && <button onClick={() => handleDelete(c.id)} className="opacity-0 group-hover:opacity-100 transition-opacity ml-1 text-rose-400 hover:text-rose-600"><X className="h-3 w-3" /></button>}
+    <div className="space-y-4 pt-3 border-t border-border/10 animate-in fade-in slide-in-from-top-2 duration-300">
+      <div className="space-y-3">
+        {post.comments.length === 0 && <p className="text-xs text-muted-foreground opacity-50 text-center py-2">Henüz yorum yok. İlk yorumu yap!</p>}
+        {post.comments.map((c) => (
+          <div key={c.id} className="flex gap-2 items-start group">
+            <Avatar src={c.authorImage} name={c.authorName} username={c.authorUsername} userId={c.authorId} size="sm" />
+            <div className="flex-1 bg-muted/30 rounded-xl px-3 py-2">
+              <div className="flex items-center justify-between">
+                <Link href={c.authorUsername ? `/dashboard/profile/${c.authorUsername}` : `/dashboard/profile/${c.authorId}`} className="text-[11px] font-bold text-primary hover:underline">{c.authorName}</Link>
+                <div className="flex items-center gap-1">
+                  <span className="text-[10px] text-muted-foreground opacity-50">{formatTimeAgo(c.createdAt)}</span>
+                  {c.isMyComment && <button onClick={() => handleDelete(c.id)} className="opacity-0 group-hover:opacity-100 transition-opacity ml-1 text-rose-400 hover:text-rose-600"><X className="h-3 w-3" /></button>}
+                </div>
               </div>
+              <div className="text-xs text-foreground mt-0.5 leading-relaxed">{contentWithTagsAndMentions(c.content, onTagClick)}</div>
             </div>
-            <div className="text-xs text-foreground mt-0.5 leading-relaxed">{contentWithHashtags(c.content, onTagClick)}</div>
           </div>
-        </div>
-      ))}
-      <div className="flex gap-2 items-center">
-        <input value={newComment} onChange={(e) => setNewComment(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleAdd()} placeholder="Yorum yaz... (Enter)" className="flex-1 bg-muted/30 border border-border/20 rounded-xl px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all" />
-        <button onClick={handleAdd} disabled={isPending || !newComment.trim()} className="p-2 rounded-xl bg-primary/10 text-primary hover:bg-primary/20 transition-all disabled:opacity-40 hover:scale-110"><Send className="h-4 w-4" /></button>
+        ))}
+      </div>
+
+      <div className="flex gap-3 relative">
+        <textarea
+          value={newComment}
+          onChange={handleContentChange}
+          onKeyUp={(e: any) => setCursorPosition(e.target.selectionStart)}
+          onClick={(e: any) => setCursorPosition(e.target.selectionStart)}
+          placeholder="Yorum yap..."
+          className="flex-1 bg-muted/20 border border-border/10 rounded-xl p-2.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary/30 min-h-[40px] max-h-[120px] resize-none"
+        />
+        {showMentionList && mentionSuggestions.length > 0 && (
+          <div className="absolute z-50 left-0 bottom-full mb-2 w-48 bg-card border border-border/30 rounded-xl shadow-ambient-high overflow-hidden animate-in slide-in-from-bottom-2 duration-200">
+            {mentionSuggestions.map((u) => (
+              <button
+                key={u.id}
+                onClick={() => selectMention(u.username)}
+                className="w-full flex items-center gap-2 p-2 hover:bg-primary/5 text-left transition-colors"
+              >
+                <div className="w-6 h-6 rounded bg-primary/10 flex items-center justify-center text-primary font-bold text-[10px]">
+                  {u.username?.[0].toUpperCase()}
+                </div>
+                <span className="text-[11px] font-bold text-foreground">@{u.username}</span>
+              </button>
+            ))}
+          </div>
+        )}
+        <Button 
+          size="icon" 
+          onClick={handleAdd} 
+          disabled={isPending || !newComment.trim()} 
+          className="h-10 w-10 rounded-xl bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-all shrink-0"
+        >
+          <Send className="h-4 w-4" />
+        </Button>
       </div>
     </div>
   );
 }
 
 // ─── Content Highlighter ─────────────────────────────────────────────
-function contentWithHashtags(text: string, onTagClick?: (tag: string) => void) {
+function contentWithTagsAndMentions(text: string, onTagClick?: (tag: string) => void) {
   if (!text) return null;
   const parts = [];
   let lastIndex = 0;
+  
+  // Combine hashtags and mentions into one regex
+  const regex = /(#([a-zA-Z0-9çşğüöıÇŞĞÜÖİ]+))|(@([a-zA-Z0-9_]+))/g;
   let match;
-  HASHTAG_REGEX.lastIndex = 0;
-  while ((match = HASHTAG_REGEX.exec(text)) !== null) {
+  
+  while ((match = regex.exec(text)) !== null) {
     if (match.index > lastIndex) parts.push(text.substring(lastIndex, match.index));
     const tag = match[0];
-    parts.push(<button key={match.index} onClick={(e) => { e.stopPropagation(); onTagClick?.(tag); }} className="text-primary font-bold hover:underline transition-all">{tag}</button>);
+    const isHashtag = tag.startsWith("#");
+    
+    parts.push(
+      <button 
+        key={match.index} 
+        onClick={(e) => { 
+          e.stopPropagation(); 
+          if (isHashtag) {
+            onTagClick?.(tag); 
+          } else {
+            window.location.href = `/dashboard/profile/${tag.substring(1)}`;
+          }
+        }} 
+        className={cn(
+          "font-bold hover:underline transition-all",
+          isHashtag ? "text-primary" : "text-amber-500"
+        )}
+      >
+        {tag}
+      </button>
+    );
     lastIndex = match.index + tag.length;
   }
   if (lastIndex < text.length) parts.push(text.substring(lastIndex));
@@ -371,7 +516,7 @@ function PostCard({ post, currentUserId, onTagClick, onCommunityClick }: {
           <img src={post.imageUrl} alt="Paylaşım görseli" className="w-full h-auto max-h-[500px] object-cover hover:scale-[1.02] transition-transform duration-500" />
         </div>
       )}
-      <div className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">{contentWithHashtags(post.content, onTagClick)}</div>
+      <div className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">{contentWithTagsAndMentions(post.content, onTagClick)}</div>
       <div className="flex items-center gap-4 pt-2">
         <button onClick={handleLike} className={cn("flex items-center gap-1.5 text-xs font-bold transition-all", liked ? "text-rose-500" : "text-muted-foreground hover:text-rose-500")}>
           <Heart className={cn("h-4 w-4", liked && "fill-current", likeAnim && "animate-ping")} /> {likeCount}

@@ -21,7 +21,7 @@ function CustomTooltip({
   return (
     <div
       {...tooltipProps}
-      className="bg-card text-card-foreground border border-border/50 shadow-2xl rounded-[24px] w-[calc(100vw-2rem)] max-w-[400px] p-6 flex flex-col gap-4 relative overflow-hidden"
+      className="bg-card text-card-foreground border border-border/50 shadow-2xl rounded-[24px] w-full p-6 flex flex-col gap-4 relative overflow-hidden"
     >
       {/* Decorative gradient overlay */}
       <div className="absolute top-0 right-0 w-48 h-48 bg-primary/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
@@ -197,7 +197,16 @@ export function OnboardingTour() {
       },
     ];
 
-    setSteps(initialSteps);
+    // Mobil için yerleşimi (placement) ve genişliği düzelt
+    const isMobile = window.innerWidth < 768;
+    const adjustedSteps = initialSteps.map(step => {
+      if (isMobile && step.target !== "body") {
+        return { ...step, placement: "bottom" as const };
+      }
+      return step;
+    });
+
+    setSteps(adjustedSteps);
 
     const hasCompletedTour = localStorage.getItem("hasCompletedTour");
     if (!hasCompletedTour && pathname === "/dashboard") {
@@ -279,6 +288,16 @@ export function OnboardingTour() {
         overlayClickAction: false,
         skipBeacon: true,
         closeButtonAction: "skip",
+        // Genişliği mobilde ekrana sığacak şekilde dinamik yap
+        width: typeof window !== 'undefined' && window.innerWidth < 768 ? window.innerWidth - 48 : 400,
+      }}
+      styles={{
+        tooltipContainer: {
+          textAlign: "left",
+        },
+        tooltip: {
+          padding: 0, // CustomTooltip padding'i kendi yönetiyor
+        }
       }}
     />
   );

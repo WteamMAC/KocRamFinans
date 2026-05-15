@@ -35,6 +35,7 @@ export default async function DashboardPage() {
       investments: true,
       fixedAssets: true,
       children: true,
+      specialEvents: true,
     } as any,
   }) as any;
 
@@ -86,7 +87,7 @@ export default async function DashboardPage() {
   };
 
   return (
-    <div className="flex-1 space-y-10 p-8 pt-10 bg-background min-h-screen">
+    <div className="flex-1 space-y-10 p-4 md:p-8 pt-6 md:pt-10 bg-background min-h-screen overflow-x-hidden">
       {/* Welcome Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
@@ -216,7 +217,7 @@ export default async function DashboardPage() {
               <PieChart className="h-5 w-5 text-accent fill-accent" /> Bütçe Dengesi
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-8">
+          <CardContent className="p-4 md:p-8">
             <BudgetOverview incomes={user.incomes} expenses={user.expenses} />
           </CardContent>
         </Card>
@@ -230,13 +231,13 @@ export default async function DashboardPage() {
               <Calendar className="h-5 w-5 text-primary" /> Ödeme Takvimi
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-8 flex-1">
+          <CardContent className="p-4 md:p-8 flex-1">
             <UpcomingPayments expenses={user.expenses} />
           </CardContent>
         </Card>
         
         <div className="col-span-3 h-full">
-          <FinancialCalendar incomes={user.incomes} expenses={user.expenses} debts={user.debts} userChildren={user.children} marriageDate={user.marriageDate} />
+          <FinancialCalendar incomes={user.incomes} expenses={user.expenses} debts={user.debts} userChildren={user.children} marriageDate={user.marriageDate} specialEvents={user.specialEvents} />
         </div>
       </div>
 
@@ -250,7 +251,7 @@ export default async function DashboardPage() {
                <span className="text-[10px] font-bold text-primary-foreground/80 uppercase tracking-widest">Canlı Piyasa</span>
             </div>
           </CardHeader>
-          <CardContent className="p-8 flex-1">
+          <CardContent className="p-4 md:p-8 flex-1">
             <InvestmentSummary 
               investments={portfolioMetrics.assets} 
               fixedAssets={user.fixedAssets} 
@@ -278,7 +279,7 @@ export default async function DashboardPage() {
             Taşınmaz & Araçlar
           </div>
         </CardHeader>
-        <CardContent className="p-8">
+        <CardContent className="p-4 md:p-8">
           <FixedAssetsSummary fixedAssets={user.fixedAssets} />
         </CardContent>
       </Card>

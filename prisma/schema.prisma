@@ -37,6 +37,7 @@ model User {
   debts       Debt[]
   investments Investment[]
   fixedAssets FixedAsset[]
+  specialEvents SpecialEvent[]
 
   // Blog ilişkileri
   blogPosts    BlogPost[]    @relation("BlogPosts")
@@ -50,6 +51,9 @@ model User {
   // Topluluk İlişkileri
   createdCommunities Community[] @relation("CreatedCommunities")
   communities        CommunityMember[]
+
+  // Bildirimler
+  notifications Notification[]
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -72,6 +76,18 @@ model Child {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   birthDate DateTime
 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model SpecialEvent {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  date      DateTime // Sadece gün ve ay kullanılır
+  isAnnual  Boolean  @default(true) // Her yıl aynı ay/gün tekrar etme ayarı
+  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -235,4 +251,17 @@ model CommunityMember {
   updatedAt   DateTime @default(now()) @updatedAt
 
   @@unique([communityId, userId])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String   // "MENTION", "PAYMENT_REMINDER", "SYSTEM", "LIKE", "COMMENT"
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  link      String?
+  
+  createdAt DateTime @default(now())
 }
