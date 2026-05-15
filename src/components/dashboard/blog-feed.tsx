@@ -515,6 +515,7 @@ export function BlogFeed({
   initialPosts,
   initialNextCursor,
   currentUserId,
+  userRole,
   mode = "feed",
   profileId,
 }: {
