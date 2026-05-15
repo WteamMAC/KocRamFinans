@@ -158,7 +158,7 @@ export function Sidebar({ isCollapsed, onToggle, hideToggle, theme, onToggleThem
         </Button>
       )}
 
-      <div className="px-3 py-2 flex-1 overflow-hidden">
+      <div className="px-3 py-2 flex-1 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
         <Link href="/dashboard" className={cn(
           "flex items-center mb-10 transition-all duration-300",
           isCollapsed ? "justify-center" : "px-4"

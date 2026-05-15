@@ -550,17 +550,7 @@ export function IncomeExpenseClient({
             </ul>
           </div>
 
-          <div className="bg-primary/5 p-6 rounded-2xl border border-primary/20 relative overflow-hidden group mt-auto animate-in fade-in slide-in-from-bottom-4 duration-700">
-            <div className="relative z-10">
-              <p className="font-bold text-foreground text-lg mb-2">Merhaba!</p>
-              <p className="text-[13px] text-muted-foreground leading-relaxed">
-                {netBalance >= 0 ? "Bu ay gelirlerin giderlerinden fazla. Harikasın! Finansal koçun seninle gurur duyuyor." : "Bu ay giderlerin biraz artmış gibi görünüyor. Bütçeni tekrar gözden geçirelim mi?"}
-              </p>
-            </div>
-            <div className="absolute -bottom-6 -right-6 opacity-30 group-hover:scale-105 group-hover:opacity-50 transition-all duration-700">
-              <img alt="Ram Mascot" className="w-32 h-32 object-contain" src="/mascot.png" />
-            </div>
-          </div>
+
         </div>
       </div>
 
