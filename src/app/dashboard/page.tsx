@@ -159,7 +159,7 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="relative overflow-hidden bg-primary border-none shadow-ambient-high hover:shadow-ambient-high transition-all duration-300 group rounded-[24px]">
+        <Card className="tour-step-5 relative overflow-hidden bg-primary border-none shadow-ambient-high hover:shadow-ambient-high transition-all duration-300 group rounded-[24px]">
           <div className="absolute -right-4 -top-4 p-8 bg-primary-foreground/10 rounded-full group-hover:scale-110 transition-transform"></div>
           <CardHeader className="pb-2">
             <CardTitle className="text-[10px] font-bold text-primary-foreground/60 uppercase tracking-widest">Portföy Kar/Zarar</CardTitle>
@@ -210,7 +210,7 @@ export default async function DashboardPage() {
           />
         </Card>
 
-        <Card className="col-span-3 bg-card border-border/20 shadow-ambient-medium rounded-[32px] overflow-hidden">
+        <Card className="tour-step-6 col-span-3 bg-card border-border/20 shadow-ambient-medium rounded-[32px] overflow-hidden">
           <CardHeader className="bg-muted/30 border-b border-border/10 py-6">
             <CardTitle className="text-xl font-heading font-bold text-primary flex items-center gap-2">
               <PieChart className="h-5 w-5 text-accent fill-accent" /> Bütçe Dengesi
@@ -224,7 +224,7 @@ export default async function DashboardPage() {
 
       {/* Upcoming Payments & Calendar */}
       <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="col-span-4 bg-card border-border/20 shadow-ambient-medium rounded-[32px] overflow-hidden flex flex-col h-full">
+        <Card className="tour-step-7 col-span-4 bg-card border-border/20 shadow-ambient-medium rounded-[32px] overflow-hidden flex flex-col h-full">
           <CardHeader className="bg-muted/30 border-b border-border/10 py-6">
             <CardTitle className="text-xl font-heading font-bold text-primary flex items-center gap-2">
               <Calendar className="h-5 w-5 text-primary" /> Ödeme Takvimi
