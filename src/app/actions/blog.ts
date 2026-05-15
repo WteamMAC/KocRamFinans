@@ -115,82 +115,87 @@ export async function getPosts(
     };
   }
 
-  const posts = await prisma.blogPost.findMany({
-    where: whereClause,
-    orderBy: { createdAt: "desc" },
-    take: PAGE_SIZE + 1, // 1 fazla çek → daha fazlası var mı anlamak için
-    ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
-    include: {
-      author: { select: { id: true, clerkUserId: true } },
-      likes: { select: { id: true, userId: true } },
-      comments: {
-        orderBy: { createdAt: "asc" },
-        include: { author: { select: { id: true, clerkUserId: true } } },
+  try {
+    const posts = await prisma.blogPost.findMany({
+      where: whereClause,
+      orderBy: { createdAt: "desc" },
+      take: PAGE_SIZE + 1,
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      include: {
+        author: { select: { id: true, clerkUserId: true } },
+        likes: { select: { id: true, userId: true } },
+        comments: {
+          orderBy: { createdAt: "asc" },
+          include: { author: { select: { id: true, clerkUserId: true } } },
+        },
       },
-    },
-  });
+    });
 
-  const hasMore = posts.length > PAGE_SIZE;
-  const pagePosts = hasMore ? posts.slice(0, PAGE_SIZE) : posts;
+    const hasMore = posts.length > PAGE_SIZE;
+    const pagePosts = hasMore ? posts.slice(0, PAGE_SIZE) : posts;
 
-  const clerkUserIds = [
-    ...new Set([
-      ...pagePosts.map((p: any) => p.author.clerkUserId),
-      ...pagePosts.flatMap((p: any) => p.comments.map((c: any) => c.author.clerkUserId)),
-    ]),
-  ];
+    const clerkUserIds = [
+      ...new Set([
+        ...pagePosts.map((p: any) => p.author.clerkUserId),
+        ...pagePosts.flatMap((p: any) => p.comments.map((c: any) => c.author.clerkUserId)),
+      ]),
+    ];
 
-  const clerk = await clerkClient();
-  let userMap = new Map();
-  
-  if (clerkUserIds.length > 0) {
-    const clerkUserList = await clerk.users.getUserList({ userId: clerkUserIds, limit: 100 });
-    userMap = new Map(clerkUserList.data.map((u) => [u.id, u]));
-  }
+    const clerk = await clerkClient();
+    let userMap = new Map();
+    
+    if (clerkUserIds.length > 0) {
+      const clerkUserList = await clerk.users.getUserList({ userId: clerkUserIds, limit: 100 });
+      userMap = new Map(clerkUserList.data.map((u) => [u.id, u]));
+    }
 
-  const enrichedPosts = pagePosts.map((post: any) => {
-    const clerkUser = userMap.get(post.author.clerkUserId);
+    const enrichedPosts = pagePosts.map((post: any) => {
+      const clerkUser = userMap.get(post.author.clerkUserId);
+      return {
+        id: post.id,
+        content: post.content,
+        tags: post.tags,
+        imageUrl: post.imageUrl,
+        createdAt: post.createdAt,
+        authorId: post.author.id,
+        authorName:
+          clerkUser
+            ? `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim() || "Kullanıcı"
+            : "Kullanıcı",
+        authorImage: clerkUser?.imageUrl || "",
+        likeCount: post.likes.length,
+        isLikedByMe: currentInternalUserId
+          ? post.likes.some((l: any) => l.userId === currentInternalUserId)
+          : false,
+        isMyPost: currentInternalUserId ? post.author.id === currentInternalUserId : false,
+        comments: post.comments.map((comment: any) => {
+          const commentUser = userMap.get(comment.author.clerkUserId);
+          return {
+            id: comment.id,
+            content: comment.content,
+            createdAt: comment.createdAt,
+            authorId: comment.author.id,
+            authorName:
+              commentUser
+                ? `${commentUser.firstName || ""} ${commentUser.lastName || ""}`.trim() || "Kullanıcı"
+                : "Kullanıcı",
+            authorImage: commentUser?.imageUrl || "",
+            isMyComment: currentInternalUserId
+              ? comment.author.id === currentInternalUserId
+              : false,
+          };
+        }),
+      };
+    });
+
     return {
-      id: post.id,
-      content: post.content,
-      tags: post.tags,
-      imageUrl: post.imageUrl,
-      createdAt: post.createdAt,
-      authorId: post.author.id,
-      authorName:
-        clerkUser
-          ? `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim() || "Kullanıcı"
-          : "Kullanıcı",
-      authorImage: clerkUser?.imageUrl || "",
-      likeCount: post.likes.length,
-      isLikedByMe: currentInternalUserId
-        ? post.likes.some((l: any) => l.userId === currentInternalUserId)
-        : false,
-      isMyPost: currentInternalUserId ? post.author.id === currentInternalUserId : false,
-      comments: post.comments.map((comment: any) => {
-        const commentUser = userMap.get(comment.author.clerkUserId);
-        return {
-          id: comment.id,
-          content: comment.content,
-          createdAt: comment.createdAt,
-          authorId: comment.author.id,
-          authorName:
-            commentUser
-              ? `${commentUser.firstName || ""} ${commentUser.lastName || ""}`.trim() || "Kullanıcı"
-              : "Kullanıcı",
-          authorImage: commentUser?.imageUrl || "",
-          isMyComment: currentInternalUserId
-            ? comment.author.id === currentInternalUserId
-            : false,
-        };
-      }),
+      posts: enrichedPosts,
+      nextCursor: hasMore ? pagePosts[pagePosts.length - 1].id : null,
     };
-  });
-
-  return {
-    posts: enrichedPosts,
-    nextCursor: hasMore ? pagePosts[pagePosts.length - 1].id : null,
-  };
+  } catch (error) {
+    console.error("getPosts error (Check if DB is pushed):", error);
+    return { posts: [], nextCursor: null };
+  }
 }
 
 export async function toggleFollow(targetInternalUserId: string) {
@@ -270,81 +275,84 @@ export async function getUserProfile(targetInternalUserId: string) {
 export async function getProfilePosts(targetInternalUserId: string, cursor?: string) {
   const PAGE_SIZE = 10;
 
-  const posts = await prisma.blogPost.findMany({
-    where: { authorId: targetInternalUserId },
-    orderBy: { createdAt: "desc" },
-    take: PAGE_SIZE + 1,
-    ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
-    include: {
-      author: { select: { id: true, clerkUserId: true } },
-      likes: { select: { id: true, userId: true } },
-      comments: {
-        orderBy: { createdAt: "asc" },
-        include: { author: { select: { id: true, clerkUserId: true } } },
+  try {
+    const posts = await prisma.blogPost.findMany({
+      where: { authorId: targetInternalUserId },
+      orderBy: { createdAt: "desc" },
+      take: PAGE_SIZE + 1,
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      include: {
+        author: { select: { id: true, clerkUserId: true } },
+        likes: { select: { id: true, userId: true } },
+        comments: {
+          orderBy: { createdAt: "asc" },
+          include: { author: { select: { id: true, clerkUserId: true } } },
+        },
       },
-    },
-  });
+    });
 
-  const hasMore = posts.length > PAGE_SIZE;
-  const pagePosts = hasMore ? posts.slice(0, PAGE_SIZE) : posts;
+    const hasMore = posts.length > PAGE_SIZE;
+    const pagePosts = hasMore ? posts.slice(0, PAGE_SIZE) : posts;
 
-  // Profil sayfasında olduğumuz için tüm postların yazarı zaten belli, 
-  // sadece yorum yapanları getirmemiz yeterli.
-  const clerkUserIds = [
-    ...new Set([
-      pagePosts[0]?.author.clerkUserId,
-      ...pagePosts.flatMap((p: any) => p.comments.map((c: any) => c.author.clerkUserId)),
-    ]),
-  ].filter(Boolean) as string[];
+    const clerkUserIds = [
+      ...new Set([
+        pagePosts[0]?.author.clerkUserId,
+        ...pagePosts.flatMap((p: any) => p.comments.map((c: any) => c.author.clerkUserId)),
+      ]),
+    ].filter(Boolean) as string[];
 
-  const clerk = await clerkClient();
-  let userMap = new Map();
-  if (clerkUserIds.length > 0) {
-    const clerkUserList = await clerk.users.getUserList({ userId: clerkUserIds, limit: 100 });
-    userMap = new Map(clerkUserList.data.map((u) => [u.id, u]));
-  }
+    const clerk = await clerkClient();
+    let userMap = new Map();
+    if (clerkUserIds.length > 0) {
+      const clerkUserList = await clerk.users.getUserList({ userId: clerkUserIds, limit: 100 });
+      userMap = new Map(clerkUserList.data.map((u) => [u.id, u]));
+    }
 
-  const { userId: myClerkId } = await auth();
-  const me = myClerkId ? await getInternalUser(myClerkId) : null;
+    const { userId: myClerkId } = await auth();
+    const me = myClerkId ? await getInternalUser(myClerkId) : null;
 
-  const enrichedPosts = pagePosts.map((post: any) => {
-    const clerkUser = userMap.get(post.author.clerkUserId);
+    const enrichedPosts = pagePosts.map((post: any) => {
+      const clerkUser = userMap.get(post.author.clerkUserId);
+      return {
+        id: post.id,
+        content: post.content,
+        tags: post.tags,
+        imageUrl: post.imageUrl,
+        createdAt: post.createdAt,
+        authorId: post.author.id,
+        authorName:
+          clerkUser
+            ? `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim() || "Kullanıcı"
+            : "Kullanıcı",
+        authorImage: clerkUser?.imageUrl || "",
+        likeCount: post.likes.length,
+        isLikedByMe: me ? post.likes.some((l: any) => l.userId === me.id) : false,
+        isMyPost: me ? post.author.id === me.id : false,
+        comments: post.comments.map((comment: any) => {
+          const commentUser = userMap.get(comment.author.clerkUserId);
+          return {
+            id: comment.id,
+            content: comment.content,
+            createdAt: comment.createdAt,
+            authorId: comment.author.id,
+            authorName:
+              commentUser
+                ? `${commentUser.firstName || ""} ${commentUser.lastName || ""}`.trim() || "Kullanıcı"
+                : "Kullanıcı",
+            authorImage: commentUser?.imageUrl || "",
+            isMyComment: me ? comment.author.id === me.id : false,
+          };
+        }),
+      };
+    });
+
     return {
-      id: post.id,
-      content: post.content,
-      tags: post.tags,
-      imageUrl: post.imageUrl,
-      createdAt: post.createdAt,
-      authorId: post.author.id,
-      authorName:
-        clerkUser
-          ? `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim() || "Kullanıcı"
-          : "Kullanıcı",
-      authorImage: clerkUser?.imageUrl || "",
-      likeCount: post.likes.length,
-      isLikedByMe: me ? post.likes.some((l: any) => l.userId === me.id) : false,
-      isMyPost: me ? post.author.id === me.id : false,
-      comments: post.comments.map((comment: any) => {
-        const commentUser = userMap.get(comment.author.clerkUserId);
-        return {
-          id: comment.id,
-          content: comment.content,
-          createdAt: comment.createdAt,
-          authorId: comment.author.id,
-          authorName:
-            commentUser
-              ? `${commentUser.firstName || ""} ${commentUser.lastName || ""}`.trim() || "Kullanıcı"
-              : "Kullanıcı",
-          authorImage: commentUser?.imageUrl || "",
-          isMyComment: me ? comment.author.id === me.id : false,
-        };
-      }),
+      posts: enrichedPosts,
+      nextCursor: hasMore ? pagePosts[pagePosts.length - 1].id : null,
     };
-  });
-
-  return {
-    posts: enrichedPosts,
-    nextCursor: hasMore ? pagePosts[pagePosts.length - 1].id : null,
-  };
+  } catch (error) {
+    console.error("getProfilePosts error (Check if DB is pushed):", error);
+    return { posts: [], nextCursor: null };
+  }
 }
 

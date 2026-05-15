@@ -74,28 +74,33 @@ export async function leaveCommunity(communityId: string) {
 }
 
 export async function getCommunities() {
-  const { userId: clerkUserId } = await auth();
-  const internalUser = clerkUserId ? await getInternalUser(clerkUserId) : null;
+  try {
+    const { userId: clerkUserId } = await auth();
+    const internalUser = clerkUserId ? await getInternalUser(clerkUserId) : null;
 
-  const communities = await prisma.community.findMany({
-    where: {
-      OR: [
-        { isPrivate: false },
-        ...(internalUser ? [{ members: { some: { userId: internalUser.id } } }] : [])
-      ]
-    },
-    include: {
-      _count: { select: { members: true, posts: true } },
-      members: internalUser ? { where: { userId: internalUser.id } } : false
-    }
-  });
+    const communities = await prisma.community.findMany({
+      where: {
+        OR: [
+          { isPrivate: false },
+          ...(internalUser ? [{ members: { some: { userId: internalUser.id } } }] : [])
+        ]
+      },
+      include: {
+        _count: { select: { members: true, posts: true } },
+        members: internalUser ? { where: { userId: internalUser.id } } : false
+      }
+    });
 
-  return communities.map(c => ({
-    ...c,
-    isMember: c.members && c.members.length > 0,
-    memberCount: c._count.members,
-    postCount: c._count.posts
-  }));
+    return communities.map(c => ({
+      ...c,
+      isMember: c.members && c.members.length > 0,
+      memberCount: c._count.members,
+      postCount: c._count.posts
+    }));
+  } catch (error) {
+    console.error("getCommunities error (Check if DB is pushed):", error);
+    return [];
+  }
 }
 
 export async function getCommunityDetails(communityId: string) {
