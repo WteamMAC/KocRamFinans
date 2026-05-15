@@ -78,6 +78,15 @@ export function OnboardingTour() {
     }
   }, []);
 
+  useEffect(() => {
+    const handleStartTour = () => {
+      setRun(true);
+    };
+
+    window.addEventListener("start-tour", handleStartTour);
+    return () => window.removeEventListener("start-tour", handleStartTour);
+  }, []);
+
   const steps: Step[] = [
     {
       target: "body",

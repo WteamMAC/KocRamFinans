@@ -28,7 +28,8 @@ import {
   Shield,
   Landmark,
   Rss,
-  User
+  User,
+  PlayCircle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -245,6 +246,21 @@ export function Sidebar({ isCollapsed, onToggle, hideToggle, theme, onToggleThem
               )}
             </div>
           ))}
+
+          {/* Start Tour Button */}
+          <button
+            onClick={() => window.dispatchEvent(new Event("start-tour"))}
+            className={cn(
+              "text-sm group flex p-3 w-full justify-start font-bold cursor-pointer rounded-xl transition-all duration-200 mt-4",
+              "text-emerald-500 hover:bg-emerald-500/10",
+              isCollapsed && "justify-center"
+            )}
+          >
+            <div className={cn("flex items-center flex-1", isCollapsed && "flex-none")}>
+              <PlayCircle className={cn("h-5 w-5 flex-shrink-0 transition-transform group-hover:scale-110", !isCollapsed && "mr-3")} />
+              {!isCollapsed && <span className="truncate">Turu Tekrar Başlat</span>}
+            </div>
+          </button>
         </div>
       </div>
 
