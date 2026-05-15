@@ -243,6 +243,14 @@ export function ProfileHeader({ profile, initialIsFollowing, currentUserRole }: 
                  {!profile.isMe && (
                    <>
                      <Button
+                       onClick={() => setIsMessageModalOpen(true)}
+                       variant="outline"
+                       className="rounded-[20px] px-4 h-12 text-sm font-bold border-border/20 hover:bg-muted/50 text-foreground transition-all"
+                     >
+                       <MessageCircle className="h-5 w-5 mr-2" />
+                       Mesaj
+                     </Button>
+                     <Button
                        onClick={handleFollow}
                        disabled={isPending}
                        className={cn(
@@ -257,7 +265,21 @@ export function ProfileHeader({ profile, initialIsFollowing, currentUserRole }: 
                    </>
                  )}
                  
-
+                 {profile.isMe && (
+                    <>
+                      <Button 
+                        onClick={() => setIsMessageModalOpen(true)}
+                        variant="outline" 
+                        className="rounded-[20px] px-4 h-12 text-xs font-bold border-border/20 hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-all"
+                      >
+                        <MessageCircle className="h-4 w-4 mr-2" />
+                        Mesaj Kutusu
+                      </Button>
+                      <Button variant="outline" className="rounded-[20px] px-6 h-12 text-xs font-bold border-border/20 hover:bg-muted/50">
+                         Profili Düzenle
+                      </Button>
+                    </>
+                 )}
                </div>
             </div>
             
