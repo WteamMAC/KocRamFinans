@@ -300,7 +300,11 @@ function contentWithTagsAndMentions(text: string, onTagClick?: (tag: string) => 
         key={match.index} 
         onClick={(e) => { 
           e.stopPropagation(); 
-          if(isHashtag) onTagClick?.(tag); 
+          if (isHashtag) {
+            onTagClick?.(tag); 
+          } else {
+            window.location.href = `/dashboard/profile/${tag.substring(1)}`;
+          }
         }} 
         className={cn(
           "font-bold hover:underline transition-all",
