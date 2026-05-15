@@ -8,7 +8,13 @@ async function getInternalUser(clerkUserId: string) {
   return prisma.user.findUnique({ where: { clerkUserId } });
 }
 
-export async function createCommunity(name: string, description: string, imageUrl?: string, isPrivate: boolean = false) {
+export async function createCommunity(
+  name: string, 
+  description: string, 
+  tags: string[], 
+  imageUrl?: string, 
+  isPrivate: boolean = false
+) {
   const { userId: clerkUserId } = await auth();
   if (!clerkUserId) throw new Error("Unauthorized");
   const user = await getInternalUser(clerkUserId);
@@ -20,11 +26,13 @@ export async function createCommunity(name: string, description: string, imageUr
       description,
       imageUrl,
       isPrivate,
+      tags,
       creatorId: user.id,
       members: {
         create: {
           userId: user.id,
-          role: "ADMIN"
+          role: "ADMIN",
+          status: "ACCEPTED"
         }
       }
     }
@@ -42,17 +50,27 @@ export async function joinCommunity(communityId: string) {
 
   const community = await prisma.community.findUnique({ where: { id: communityId } });
   if (!community) throw new Error("Topluluk bulunamadı");
-  if (community.isPrivate) throw new Error("Bu topluluk gizli, katılım için davet gereklidir");
+
+  const existingMember = await prisma.communityMember.findUnique({
+    where: { communityId_userId: { communityId, userId: user.id } }
+  });
+
+  if (existingMember) {
+    if (existingMember.status === "PENDING") throw new Error("Başvurunuz zaten beklemede");
+    if (existingMember.status === "ACCEPTED") throw new Error("Zaten üyesiniz");
+  }
 
   await prisma.communityMember.create({
     data: {
       communityId,
       userId: user.id,
-      role: "MEMBER"
+      role: "MEMBER",
+      status: community.isPrivate ? "PENDING" : "ACCEPTED"
     }
   });
 
   revalidatePath("/dashboard/blog");
+  return community.isPrivate ? "PENDING" : "ACCEPTED";
 }
 
 export async function leaveCommunity(communityId: string) {
@@ -73,34 +91,49 @@ export async function leaveCommunity(communityId: string) {
   revalidatePath("/dashboard/blog");
 }
 
-export async function getCommunities() {
-  try {
-    const { userId: clerkUserId } = await auth();
-    const internalUser = clerkUserId ? await getInternalUser(clerkUserId) : null;
+export async function getCommunities(params?: { 
+  query?: string, 
+  tag?: string, 
+  limit?: number, 
+  random?: boolean 
+}) {
+  const { userId: clerkUserId } = await auth();
+  const internalUser = clerkUserId ? await getInternalUser(clerkUserId) : null;
 
-    const communities = await prisma.community.findMany({
-      where: {
-        OR: [
-          { isPrivate: false },
-          ...(internalUser ? [{ members: { some: { userId: internalUser.id } } }] : [])
-        ]
-      },
-      include: {
-        _count: { select: { members: true, posts: true } },
-        members: internalUser ? { where: { userId: internalUser.id } } : false
-      }
-    });
-
-    return communities.map(c => ({
-      ...c,
-      isMember: c.members && c.members.length > 0,
-      memberCount: c._count.members,
-      postCount: c._count.posts
-    }));
-  } catch (error) {
-    console.error("getCommunities error (Check if DB is pushed):", error);
-    return [];
+  let where: any = {};
+  
+  if (params?.query) {
+    where.OR = [
+      { name: { contains: params.query, mode: 'insensitive' } },
+      { description: { contains: params.query, mode: 'insensitive' } }
+    ];
   }
+
+  if (params?.tag) {
+    where.tags = { has: params.tag };
+  }
+
+  let communities = await prisma.community.findMany({
+    where,
+    take: params?.limit || 100,
+    include: {
+      _count: { select: { members: true, posts: true } },
+      members: internalUser ? { where: { userId: internalUser.id } } : false
+    }
+  });
+
+  // Basit randomizasyon (Eğer limit varsa ve random istenmişse)
+  if (params?.random && communities.length > 0) {
+    communities = communities.sort(() => 0.5 - Math.random()).slice(0, params.limit || 2);
+  }
+
+  return communities.map(c => ({
+    ...c,
+    isMember: c.members && c.members.length > 0 && c.members[0].status === "ACCEPTED",
+    isPending: c.members && c.members.length > 0 && c.members[0].status === "PENDING",
+    memberCount: c._count.members,
+    postCount: c._count.posts
+  }));
 }
 
 export async function getCommunityDetails(communityId: string) {
@@ -117,19 +150,49 @@ export async function getCommunityDetails(communityId: string) {
   });
 
   if (!community) return null;
-  if (community.isPrivate && (!internalUser || !community.members.length)) {
-    throw new Error("Bu topluluk gizlidir");
-  }
+  
+  const isMember = community.members && community.members.length > 0 && community.members[0].status === "ACCEPTED";
+  
+  // Gizli topluluklarda üye olmayan sadece ismi görebilsin (postları göremesin)
+  // Bu kontrol frontend'de yapılacak ama veriyi burada kısıtlayabiliriz.
 
   const clerk = await clerkClient();
   const creatorClerk = await clerk.users.getUser(community.creator.clerkUserId);
 
   return {
     ...community,
-    isMember: community.members && community.members.length > 0,
+    isMember,
+    isPending: community.members && community.members.length > 0 && community.members[0].status === "PENDING",
     memberCount: community._count.members,
     postCount: community._count.posts,
     creatorName: `${creatorClerk.firstName || ""} ${creatorClerk.lastName || ""}`.trim() || "Kullanıcı",
     creatorImage: creatorClerk.imageUrl
   };
+}
+
+export async function handleJoinRequest(communityId: string, targetUserId: string, action: 'ACCEPT' | 'REJECT') {
+  const { userId: clerkUserId } = await auth();
+  if (!clerkUserId) throw new Error("Unauthorized");
+  const me = await getInternalUser(clerkUserId);
+  if (!me) throw new Error("User not found");
+
+  // İstek atılan toplulukta admin miyiz?
+  const myMemberInfo = await prisma.communityMember.findUnique({
+    where: { communityId_userId: { communityId, userId: me.id } }
+  });
+
+  if (!myMemberInfo || myMemberInfo.role !== "ADMIN") throw new Error("Yetkiniz yok");
+
+  if (action === 'ACCEPT') {
+    await prisma.communityMember.update({
+      where: { communityId_userId: { communityId, userId: targetUserId } },
+      data: { status: "ACCEPTED" }
+    });
+  } else {
+    await prisma.communityMember.delete({
+      where: { communityId_userId: { communityId, userId: targetUserId } }
+    });
+  }
+
+  revalidatePath("/dashboard/blog");
 }

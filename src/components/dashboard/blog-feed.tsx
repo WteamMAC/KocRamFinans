@@ -507,7 +507,7 @@ export function BlogFeed({
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoadingMore, startLoadMore] = useTransition();
-  const [feedType, setFeedType] = useState<"explore" | "following" | "communities">("explore");
+  const [feedType, setFeedType] = useState<"explore" | "following" | "my-communities" | "communities">("explore");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedCommunity, setSelectedCommunity] = useState<{ id: string, name: string } | null>(null);
 
@@ -554,7 +554,7 @@ export function BlogFeed({
   }, [currentUserId, feedType, mode, profileId, selectedCommunity]);
 
   // Feed tipi değiştiğinde veriyi sıfırla ve yeniden çek
-  const switchFeed = (type: "explore" | "following" | "communities") => {
+  const switchFeed = (type: "explore" | "following" | "my-communities" | "communities") => {
     if (type === feedType && !selectedCommunity) return;
     setFeedType(type);
     setSelectedCommunity(null);
@@ -629,7 +629,16 @@ export function BlogFeed({
                 feedType === "following" ? "bg-card text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"
               )}
             >
-              Takip Ettiklerim
+              Takip
+            </button>
+            <button
+              onClick={() => switchFeed("my-communities")}
+              className={cn(
+                "flex-1 py-2 text-sm font-bold rounded-xl transition-all",
+                feedType === "my-communities" ? "bg-card text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              Topluluklar
             </button>
             <button
               onClick={() => switchFeed("communities")}
@@ -639,7 +648,7 @@ export function BlogFeed({
               )}
             >
               <Users className="h-4 w-4" />
-              Topluluklar
+              Keşfet
             </button>
           </div>
 
@@ -732,16 +741,22 @@ export function BlogFeed({
       {/* Gönderiler */}
       {filtered.length === 0 && !isLoadingMore ? (
         <div className="text-center py-16 bg-card border border-dashed border-border/30 rounded-[24px] animate-in fade-in duration-500">
-          <p className="text-5xl mb-4">{activeTag || searchQuery || feedType === "following" ? "🔍" : "💬"}</p>
-          <p className="font-bold text-foreground text-lg">
-            {feedType === "following" && posts.length === 0 
-              ? "Henüz kimseyi takip etmiyorsun" 
-              : (activeTag || searchQuery ? "Sonuç bulunamadı" : "Henüz paylaşım yok")}
+          <p className="text-5xl mb-4">
+            {selectedCommunity ? "🔒" : (activeTag || searchQuery || feedType === "following" ? "🔍" : "💬")}
           </p>
-          <p className="text-sm text-muted-foreground mt-1">
-            {feedType === "following" && posts.length === 0
-              ? "Yeni kişiler keşfederek akışını canlandır!"
-              : (activeTag || searchQuery ? "Farklı filtre veya arama terimi deneyin." : "Topluluğa katıl, ilk paylaşımı sen yap!")}
+          <p className="font-bold text-foreground text-lg">
+            {selectedCommunity 
+              ? `${selectedCommunity.name} Gizli Olabilir` 
+              : (feedType === "following" && posts.length === 0 
+                ? "Henüz kimseyi takip etmiyorsun" 
+                : (activeTag || searchQuery ? "Sonuç bulunamadı" : "Henüz paylaşım yok"))}
+          </p>
+          <p className="text-sm text-muted-foreground mt-1 px-8">
+            {selectedCommunity 
+              ? "Bu topluluktaki gönderileri sadece üyeler görebilir. Eğer üyeyseniz ve içerik göremiyorsanız henüz paylaşım yapılmamış olabilir."
+              : (feedType === "following" && posts.length === 0
+                ? "Yeni kişiler keşfederek akışını canlandır!"
+                : (activeTag || searchQuery ? "Farklı filtre veya arama terimi deneyin." : "Topluluğa katıl, ilk paylaşımı sen yap!"))}
           </p>
         </div>
       ) : (

@@ -1,20 +1,29 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Users, Plus, Shield, Globe, Info, X } from "lucide-react";
+import { Users, Plus, Shield, Globe, Info, X, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { createCommunity } from "@/app/actions/communities";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
+
+const COMMUNITY_TAGS = ["altın", "kripto", "bes", "faiz", "ekonomi", "genel", "borsa", "tasarruf"];
 
 export function CommunityCreateModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const router = useRouter();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [isPrivate, setIsPrivate] = useState(false);
+  const [selectedTags, setSelectedTags] = useState<string[]>(["genel"]);
   const [isPending, startTransition] = useTransition();
 
   if (!isOpen) return null;
+
+  const toggleTag = (tag: string) => {
+    setSelectedTags(prev => 
+      prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
+    );
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,7 +31,7 @@ export function CommunityCreateModal({ isOpen, onClose }: { isOpen: boolean; onC
 
     startTransition(async () => {
       try {
-        await createCommunity(name, description, undefined, isPrivate);
+        await createCommunity(name, description, selectedTags, undefined, isPrivate);
         onClose();
         router.refresh();
       } catch (error) {
@@ -65,9 +74,33 @@ export function CommunityCreateModal({ isOpen, onClose }: { isOpen: boolean; onC
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Topluluğun amacını kısaca açıklayın..."
-                rows={3}
+                rows={2}
                 className="w-full bg-muted/30 border border-border/20 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all resize-none"
               />
+            </div>
+
+            {/* Etiketler */}
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-muted-foreground ml-1 flex items-center gap-1.5">
+                <Tag className="h-3.5 w-3.5" /> Etiketler
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {COMMUNITY_TAGS.map(tag => (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => toggleTag(tag)}
+                    className={cn(
+                      "text-[10px] font-bold px-3 py-1.5 rounded-xl border transition-all",
+                      selectedTags.includes(tag)
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-muted/30 text-muted-foreground border-border/10 hover:border-primary/40"
+                    )}
+                  >
+                    {tag}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="flex gap-2">
@@ -83,7 +116,7 @@ export function CommunityCreateModal({ isOpen, onClose }: { isOpen: boolean; onC
                   <Globe className={cn("h-4 w-4", !isPrivate ? "text-primary" : "text-muted-foreground")} />
                   <span className={cn("text-xs font-bold", !isPrivate ? "text-primary" : "text-foreground")}>Herkese Açık</span>
                 </div>
-                <p className="text-[10px] text-muted-foreground leading-tight">Herkes görebilir ve katılabilir.</p>
+                <p className="text-[10px] text-muted-foreground leading-tight">Herkes görebilir.</p>
               </button>
 
               <button
@@ -98,13 +131,13 @@ export function CommunityCreateModal({ isOpen, onClose }: { isOpen: boolean; onC
                   <Shield className={cn("h-4 w-4", isPrivate ? "text-primary" : "text-muted-foreground")} />
                   <span className={cn("text-xs font-bold", isPrivate ? "text-primary" : "text-foreground")}>Gizli</span>
                 </div>
-                <p className="text-[10px] text-muted-foreground leading-tight">Sadece üyeler görebilir.</p>
+                <p className="text-[10px] text-muted-foreground leading-tight">Başvuru ile alım.</p>
               </button>
             </div>
 
             <div className="flex items-center gap-2 p-3 bg-amber-500/10 rounded-2xl text-amber-600">
               <Info className="h-4 w-4 flex-shrink-0" />
-              <p className="text-[10px] font-medium">Topluluk kurucusu olarak ilk üye ve yönetici siz olacaksınız.</p>
+              <p className="text-[10px] font-medium leading-tight">Gizli topluluklarda postlar sadece üyeler tarafından görülür.</p>
             </div>
 
             <Button

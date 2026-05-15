@@ -87,7 +87,7 @@ export async function deleteComment(commentId: string) {
 export async function getPosts(
   currentInternalUserId?: string, 
   cursor?: string, 
-  type: "explore" | "following" | "community" = "explore",
+  type: "explore" | "following" | "my-communities" | "community" = "explore",
   communityId?: string
 ) {
   const PAGE_SIZE = 10;
@@ -100,17 +100,28 @@ export async function getPosts(
       select: { followingId: true },
     });
     const followingIds = following.map((f) => f.followingId);
-    whereClause = { authorId: { in: followingIds } };
+    whereClause = { authorId: { in: followingIds }, communityId: null };
+  } else if (type === "my-communities" && currentInternalUserId) {
+    const myCommunities = await prisma.communityMember.findMany({
+      where: { userId: currentInternalUserId, status: "ACCEPTED" },
+      select: { communityId: true },
+    });
+    const communityIds = myCommunities.map((c) => c.communityId);
+    whereClause = { communityId: { in: communityIds } };
   } else if (type === "community" && communityId) {
-    whereClause = { communityId };
+    whereClause = { 
+      communityId,
+      OR: [
+        { community: { isPrivate: false } },
+        ...(currentInternalUserId ? [{ community: { members: { some: { userId: currentInternalUserId, status: "ACCEPTED" } } } }] : [])
+      ]
+    };
   } else {
-    // Keşfet kısmında topluluk postlarını gizleyelim mi? 
-    // Kullanıcı aksini belirtmediği sürece genel feed'de topluluk postlarını da görebilir (eğer topluluk gizli değilse)
+    // Keşfet: Genel postlar (topluluk dışı olanlar ve gizli olmayan topluluk postları)
     whereClause = {
       OR: [
         { communityId: null },
-        { community: { isPrivate: false } },
-        ...(currentInternalUserId ? [{ community: { members: { some: { userId: currentInternalUserId } } } }] : [])
+        { community: { isPrivate: false } }
       ]
     };
   }

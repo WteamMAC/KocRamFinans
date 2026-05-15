@@ -193,6 +193,7 @@ model Community {
   description String?
   imageUrl    String?
   isPrivate   Boolean  @default(false)
+  tags        String[] // ["altın", "kripto", "bes", "faiz", "ekonomi", "genel"]
   
   creatorId   String
   creator     User     @relation("CreatedCommunities", fields: [creatorId], references: [id])
@@ -211,8 +212,10 @@ model CommunityMember {
   userId      String
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   role        String    @default("MEMBER") // "ADMIN", "MODERATOR", "MEMBER"
+  status      String    @default("ACCEPTED") // "ACCEPTED", "PENDING", "REJECTED"
 
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@unique([communityId, userId])
 }
