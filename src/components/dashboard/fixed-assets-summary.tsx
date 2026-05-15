@@ -2,7 +2,7 @@
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { useEffect, useState } from "react";
-import { formatAmount } from "@/lib/currency-formatter";
+import { useCurrency } from "@/context/currency-context";
 
 interface FixedAsset {
   id: string;
@@ -13,7 +13,6 @@ interface FixedAsset {
 
 interface FixedAssetsSummaryProps {
   fixedAssets: FixedAsset[];
-  currencyConfig?: { symbol: string; rate: number };
 }
 
 const COLORS = [
@@ -25,8 +24,9 @@ const COLORS = [
   "#f43f5e",
 ];
 
-export function FixedAssetsSummary({ fixedAssets, currencyConfig = { symbol: "â‚º", rate: 1 } }: FixedAssetsSummaryProps) {
+export function FixedAssetsSummary({ fixedAssets }: FixedAssetsSummaryProps) {
   const [isMounted, setIsMounted] = useState(false);
+  const { formatAmount } = useCurrency();
 
   useEffect(() => {
     setIsMounted(true);
@@ -42,7 +42,7 @@ export function FixedAssetsSummary({ fixedAssets, currencyConfig = { symbol: "â‚
 
   const groupedData = fixedAssets.reduce((acc: any, asset) => {
     const existing = acc.find((item: any) => item.name === asset.type);
-    const val = asset.value / currencyConfig.rate;
+    const val = asset.value;
     if (existing) {
       existing.value += val;
       existing.rawVal += asset.value;
@@ -85,7 +85,7 @@ export function FixedAssetsSummary({ fixedAssets, currencyConfig = { symbol: "â‚
                     <div className="bg-card/95 backdrop-blur-md p-4 border border-border/30 rounded-2xl shadow-ambient-high">
                       <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">{data.name}</p>
                       <p className="text-xl font-heading font-bold text-primary">
-                        {formatAmount(data.rawVal, currencyConfig)}
+                        {formatAmount(data.rawVal)}
                       </p>
                       <p className="text-[11px] font-bold text-emerald-500 mt-1">%{percent} Pay</p>
                     </div>
@@ -101,7 +101,7 @@ export function FixedAssetsSummary({ fixedAssets, currencyConfig = { symbol: "â‚
       <div className="w-full lg:w-1/2 space-y-4">
         <div className="bg-primary/5 p-6 rounded-[24px] border border-primary/10 mb-4">
           <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block mb-1">Toplam Sabit VarlÄ±k DeÄŸeri</span>
-          <span className="text-3xl font-heading font-bold text-primary">{formatAmount(totalValue, currencyConfig)}</span>
+          <span className="text-3xl font-heading font-bold text-primary">{formatAmount(totalValue)}</span>
         </div>
 
         <div className="grid gap-2 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
@@ -114,7 +114,7 @@ export function FixedAssetsSummary({ fixedAssets, currencyConfig = { symbol: "â‚
                   <span className="text-xs font-bold text-muted-foreground">{item.name}</span>
                 </div>
                 <div className="flex items-center gap-4">
-                  <span className="text-xs font-bold text-primary">{formatAmount(item.rawVal, currencyConfig)}</span>
+                  <span className="text-xs font-bold text-primary">{formatAmount(item.rawVal)}</span>
                   <span className="text-[10px] font-bold text-white bg-emerald-500/80 px-2 py-0.5 rounded-full">%{percent}</span>
                 </div>
               </div>

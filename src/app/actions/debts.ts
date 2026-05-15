@@ -10,7 +10,10 @@ export async function addDebt(data: {
   interestRate?: number; // Aylık Faiz Oranı (%)
   remainingInstallments?: number; 
   paymentDay?: number; 
-  description?: string 
+  description?: string;
+  currency?: string;
+  originalAmount?: number;
+  fxRate?: number;
 }) {
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthorized");
@@ -52,6 +55,9 @@ export async function addDebt(data: {
       remainingInstallments: data.remainingInstallments,
       paymentDay: data.paymentDay,
       description: data.description,
+      currency: data.currency ?? "TRY",
+      originalAmount: data.originalAmount,
+      fxRate: data.fxRate ?? 1,
     },
   });
 
@@ -62,6 +68,9 @@ export async function addDebt(data: {
       type: "Alınan Borç / Kredi",
       amount: data.amount, // Sadece gelen ana parayı gelir sayıyoruz
       description: `Yeni borç kaydı: ${data.description || data.type}`,
+      currency: data.currency ?? "TRY",
+      originalAmount: data.originalAmount,
+      fxRate: data.fxRate ?? 1,
     },
   });
 
@@ -70,7 +79,7 @@ export async function addDebt(data: {
   revalidatePath("/dashboard");
 }
 
-export async function payDebtInstallment(debtId: string, amount: number, isAuto: boolean = false) {
+export async function payDebtInstallment(debtId: string, amount: number, isAuto: boolean = false, currency?: string, originalAmount?: number, fxRate?: number) {
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthorized");
 
@@ -103,6 +112,9 @@ export async function payDebtInstallment(debtId: string, amount: number, isAuto:
       isRecurring: false,
       description: `${debt.description || debt.type} için ${isAuto ? "otomatik " : ""}ödeme yapıldı.`,
       date: new Date(),
+      currency: currency ?? "TRY",
+      originalAmount: originalAmount ?? amount,
+      fxRate: fxRate ?? 1,
     },
   });
 
@@ -139,7 +151,14 @@ export async function processAutoPayments(userId: string) {
     });
 
     if (!alreadyPaid && debt.installmentAmount) {
-      await payDebtInstallment(debt.id, debt.installmentAmount, true);
+      await payDebtInstallment(
+        debt.id, 
+        debt.installmentAmount, 
+        true, 
+        debt.currency ?? undefined, 
+        debt.installmentAmount / (debt.fxRate || 1), 
+        debt.fxRate ?? undefined
+      );
     }
   }
 }
@@ -173,6 +192,9 @@ export async function closeDebt(debtId: string) {
       amount: closingAmount,
       isRecurring: false,
       description: `${debt.description || debt.type} borcu tamamen kapatıldı.`,
+      currency: debt.currency,
+      originalAmount: closingAmount / (debt.fxRate || 1),
+      fxRate: debt.fxRate,
     },
   });
 

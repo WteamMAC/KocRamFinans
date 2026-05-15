@@ -389,6 +389,9 @@ export async function addFixedAsset(data: {
   name: string;
   type: string;
   value: number;
+  currency?: string;
+  originalAmount?: number;
+  fxRate?: number;
 }) {
   try {
     const { userId } = await auth();
@@ -406,6 +409,9 @@ export async function addFixedAsset(data: {
         name: data.name,
         type: data.type,
         value: Number(data.value),
+        currency: data.currency ?? "TRY",
+        originalAmount: data.originalAmount ?? Number(data.value),
+        fxRate: data.fxRate ?? 1.0,
       }
     });
 

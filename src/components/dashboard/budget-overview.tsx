@@ -3,28 +3,28 @@
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Cell } from "recharts";
 import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
-import { formatAmount } from "@/lib/currency-formatter";
+import { useCurrency } from "@/context/currency-context";
 
 interface BudgetOverviewProps {
   incomes: any[];
   expenses: any[];
-  currencyConfig?: { symbol: string; rate: number };
 }
 
-export function BudgetOverview({ incomes, expenses, currencyConfig = { symbol: "₺", rate: 1 } }: BudgetOverviewProps) {
+export function BudgetOverview({ incomes, expenses }: BudgetOverviewProps) {
   const [isMounted, setIsMounted] = useState(false);
   const { theme } = useTheme();
+  const { formatAmount } = useCurrency();
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
-  const totalIncome = incomes.reduce((acc, inc) => acc + inc.amount, 0) / currencyConfig.rate;
-  const totalExpense = expenses.reduce((acc, exp) => acc + exp.amount, 0) / currencyConfig.rate;
+  const totalIncome = incomes.reduce((acc, inc) => acc + inc.amount, 0);
+  const totalExpense = expenses.reduce((acc, exp) => acc + exp.amount, 0);
 
   const data = [
-    { name: "Gelir", total: totalIncome, rawTotal: totalIncome * currencyConfig.rate, gradient: "url(#colorIncome)" },
-    { name: "Gider", total: totalExpense, rawTotal: totalExpense * currencyConfig.rate, gradient: "url(#colorExpense)" },
+    { name: "Gelir", total: totalIncome, rawTotal: totalIncome, gradient: "url(#colorIncome)" },
+    { name: "Gider", total: totalExpense, rawTotal: totalExpense, gradient: "url(#colorExpense)" },
   ];
 
   if (!isMounted) {
@@ -60,7 +60,7 @@ export function BudgetOverview({ incomes, expenses, currencyConfig = { symbol: "
             fontWeight={600}
             tickLine={false}
             axisLine={false}
-            tickFormatter={(value) => `${Math.round(value)}${currencyConfig.symbol}`}
+            tickFormatter={(value) => `${formatAmount(value)}`}
           />
           <Tooltip 
             cursor={{ fill: theme === "dark" ? "rgba(255, 255, 255, 0.1)" : "#edeeef", radius: 12 }}
@@ -71,7 +71,7 @@ export function BudgetOverview({ incomes, expenses, currencyConfig = { symbol: "
                   <div className="bg-card/95 backdrop-blur-md p-4 border border-border/30 rounded-2xl shadow-ambient-high">
                     <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">{item.name}</p>
                     <p className="text-xl font-heading font-bold text-primary">
-                      {formatAmount(item.rawTotal, currencyConfig)}
+                      {formatAmount(item.rawTotal)}
                     </p>
                   </div>
                 );
