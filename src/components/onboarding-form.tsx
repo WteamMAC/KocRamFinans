@@ -10,6 +10,7 @@ import { Check, ChevronRight, ChevronLeft, User, Globe, Hash, AlertCircle, Chevr
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import Image from "next/image";
 
 const MIN_AGE = 13;
 function getMaxDate() {
@@ -119,9 +120,9 @@ const HASHTAGS = [
 ];
 
 const STEPS = [
-  { id:1, icon:User,  title:"Profil Bilgileri",    desc:"Seni tanıyalım" },
-  { id:2, icon:Globe, title:"Bölge & Para Birimi", desc:"Nerede, hangi parayla?" },
-  { id:3, icon:Hash,  title:"İlgi Alanları",       desc:"Sana uygun içerik için" },
+  { id:1, icon:User,  title:"Profil Bilgileri",    desc:"Seni tanıyalım",          img:"/onboarding-step1.png" },
+  { id:2, icon:Globe, title:"Bölge & Para Birimi", desc:"Nerede, hangi parayla?", img:"/onboarding-step2.png" },
+  { id:3, icon:Hash,  title:"İlgi Alanları",       desc:"Sana uygun içerik için",  img:"/onboarding-step3.png" },
 ];
 
 export function OnboardingForm() {
@@ -177,32 +178,50 @@ export function OnboardingForm() {
 
   return (
     <div className="w-full max-w-xl mx-auto px-4">
-      <div className="bg-card border border-border/20 rounded-[32px] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-700">
+      <div className="bg-white/95 backdrop-blur-md border border-[#8C5000]/15 rounded-[36px] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-700">
 
-        {/* Header */}
-        <div className="px-8 pt-8 pb-5 bg-muted/30 border-b border-border/10">
-          <div className="flex items-center justify-center gap-3 mb-6">
+        {/* Premium Amber / Cream Header */}
+        <div className="relative px-8 pt-8 pb-6 bg-[#fbf9f4] border-b border-[#8C5000]/10 overflow-hidden">
+          {/* Subtle bg glow */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-[#f18d02]/10 rounded-full blur-3xl pointer-events-none" />
+          
+          {/* Step indicator dots */}
+          <div className="relative flex items-center justify-center gap-3 mb-6 z-10">
             {STEPS.map((s,i)=>(
               <div key={s.id} className="flex items-center">
                 <div className={cn("w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm transition-all duration-500",
-                  step===s.id?"bg-primary text-primary-foreground scale-110 shadow-lg shadow-primary/20":
-                  step>s.id ?"bg-emerald-500 text-white":"bg-muted text-muted-foreground")}>
+                  step===s.id?"bg-[#8C5000] text-white scale-110 shadow-lg shadow-[#8C5000]/25":
+                  step>s.id ?"bg-[#36684d] text-white":"bg-[#dbc2b0]/30 text-[#887364]")}>
                   {step>s.id?<Check className="w-4 h-4"/>:s.id}
                 </div>
-                {i<STEPS.length-1&&<div className={cn("w-10 h-0.5 mx-2 rounded-full transition-all duration-500",step>s.id?"bg-emerald-500":"bg-border/40")}/>}
+                {i<STEPS.length-1&&<div className={cn("w-10 h-0.5 mx-2 rounded-full transition-all duration-500",step>s.id?"bg-[#36684d]":"bg-[#dbc2b0]/40")}/>}
               </div>
             ))}
           </div>
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <img src="/mascot.png" alt="Logo" className="h-8 w-8 object-contain"/>
-            <span className="text-[9px] font-bold text-primary uppercase tracking-[0.2em]">Koç Ram Finans</span>
+
+          {/* Step Illustration */}
+          <div className="relative z-10 flex justify-center mb-3">
+            <div className="w-36 h-36 relative transition-all duration-500 hover:scale-105">
+              <Image 
+                src={STEPS[step-1].img} 
+                alt={STEPS[step-1].title} 
+                fill 
+                className="object-contain drop-shadow-md animate-in fade-in duration-300" 
+                priority
+              />
+            </div>
           </div>
-          <h1 className="text-2xl font-heading font-bold text-center text-foreground">{STEPS[step-1].title}</h1>
-          <p className="text-xs text-muted-foreground text-center mt-1">{STEPS[step-1].desc}</p>
+
+          <h1 className="relative z-10 text-3xl font-heading font-black text-center text-[#5a3100] tracking-tight">
+            {STEPS[step-1].title}
+          </h1>
+          <p className="relative z-10 text-xs text-[#887364] text-center mt-1 font-medium tracking-wide">
+            {STEPS[step-1].desc}
+          </p>
         </div>
 
         {/* Content */}
-        <div className="p-8">
+        <div className="p-8 bg-white">
           <form onSubmit={form.handleSubmit(onSubmit)}>
 
             {/* STEP 1 */}
@@ -211,48 +230,48 @@ export function OnboardingForm() {
                 <div className="grid grid-cols-2 gap-4">
                   {(["firstName","lastName"] as const).map(f=>(
                     <div key={f} className="space-y-2">
-                      <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                        {f==="firstName"?"Ad":"Soyad"} <span className="text-destructive">*</span>
+                      <Label className="text-[10px] font-extrabold text-[#887364] uppercase tracking-widest">
+                        {f==="firstName"?"Ad":"Soyad"} <span className="text-rose-600">*</span>
                       </Label>
                       <Input {...form.register(f)} placeholder={f==="firstName"?"Adınız":"Soyadınız"}
-                        className={cn("h-11 rounded-xl bg-muted/40 border-border/30",errors[f]&&"border-destructive/50")}/>
-                      {errors[f]&&<p className="text-[10px] text-destructive flex items-center gap-1"><AlertCircle className="h-3 w-3"/>{errors[f]?.message}</p>}
+                        className={cn("h-12 rounded-2xl bg-[#faf9f6] border-[#dbc2b0]/50 focus:border-[#8C5000] focus:ring-[#8C5000]/20 font-semibold text-[#191c1d] placeholder:text-[#887364]/50",errors[f]&&"border-rose-500 bg-rose-50/50")}/>
+                      {errors[f]&&<p className="text-[10px] font-bold text-rose-600 flex items-center gap-1"><AlertCircle className="h-3 w-3"/>{errors[f]?.message}</p>}
                     </div>
                   ))}
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                    Doğum Tarihi <span className="text-destructive">*</span>
+                  <Label className="text-[10px] font-extrabold text-[#887364] uppercase tracking-widest">
+                    Doğum Tarihi <span className="text-rose-600">*</span>
                   </Label>
                   <Input type="date" {...form.register("birthDate")} max={getMaxDate()}
-                    className={cn("h-11 rounded-xl bg-muted/40 border-border/30",errors.birthDate&&"border-destructive/50")}/>
-                  {errors.birthDate&&<p className="text-[10px] text-destructive flex items-center gap-1"><AlertCircle className="h-3 w-3"/>{errors.birthDate.message}</p>}
+                    className={cn("h-12 rounded-2xl bg-[#faf9f6] border-[#dbc2b0]/50 focus:border-[#8C5000] focus:ring-[#8C5000]/20 font-semibold text-[#191c1d]",errors.birthDate&&"border-rose-500 bg-rose-50/50")}/>
+                  {errors.birthDate&&<p className="text-[10px] font-bold text-rose-600 flex items-center gap-1"><AlertCircle className="h-3 w-3"/>{errors.birthDate.message}</p>}
                 </div>
 
                 <div className="space-y-3">
-                  <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                    Cinsiyet <span className="text-destructive">*</span>
+                  <Label className="text-[10px] font-extrabold text-[#887364] uppercase tracking-widest">
+                    Cinsiyet <span className="text-rose-600">*</span>
                   </Label>
                   <div className="grid grid-cols-2 gap-4">
                     {[
-                      {v:"male",   label:"Erkek", emoji:"👨", activeClass:"from-blue-500 to-blue-700 border-blue-500",  inactiveClass:"from-blue-400/10 to-blue-600/5 border-blue-200/50"},
-                      {v:"female", label:"Kadın", emoji:"👩", activeClass:"from-rose-500 to-rose-700 border-rose-500", inactiveClass:"from-rose-400/10 to-rose-600/5 border-rose-200/50"},
+                      {v:"male",   label:"Erkek", emoji:"👨", activeClass:"bg-[#8C5000] text-white border-[#8C5000] shadow-lg shadow-[#8C5000]/20",  inactiveClass:"bg-[#faf9f6] border-[#dbc2b0]/50 text-[#5a3100]"},
+                      {v:"female", label:"Kadın", emoji:"👩", activeClass:"bg-[#f18d02] text-white border-[#f18d02] shadow-lg shadow-[#f18d02]/20", inactiveClass:"bg-[#faf9f6] border-[#dbc2b0]/50 text-[#5a3100]"},
                     ].map(g=>{
                       const isActive = selectedGender===g.v;
                       return (
                         <button key={g.v} type="button" onClick={()=>handleGender(g.v as F["gender"])}
-                          className={cn("relative p-5 rounded-2xl border bg-gradient-to-br transition-all duration-300 overflow-hidden",
-                            isActive?`${g.activeClass} text-white shadow-lg scale-[1.02]`:`${g.inactiveClass} hover:scale-[1.01]`)}>
-                          {isActive&&genderAnim&&<span className="absolute inset-0 rounded-2xl bg-white/20 animate-ping"/>}
+                          className={cn("relative p-5 rounded-3xl border transition-all duration-300 overflow-hidden font-bold flex flex-col items-center justify-center",
+                            isActive?`${g.activeClass} scale-[1.03]`:`${g.inactiveClass} hover:border-[#8C5000]/40 hover:scale-[1.01]`)}>
+                          {isActive&&genderAnim&&<span className="absolute inset-0 rounded-3xl bg-white/30 animate-ping"/>}
                           <span className="text-3xl block mb-2">{g.emoji}</span>
-                          <span className={cn("text-sm font-bold",isActive?"text-white":"text-foreground")}>{g.label}</span>
-                          {isActive&&<span className="absolute top-3 right-3 w-5 h-5 rounded-full bg-white/30 flex items-center justify-center"><Check className="w-3 h-3 text-white"/></span>}
+                          <span className="text-sm font-black">{g.label}</span>
+                          {isActive&&<span className="absolute top-3 right-3 w-5 h-5 rounded-full bg-white/30 flex items-center justify-center"><Check className="w-3.5 h-3.5 text-white"/></span>}
                         </button>
                       );
                     })}
                   </div>
-                  {errors.gender&&<p className="text-[10px] text-destructive flex items-center gap-1"><AlertCircle className="h-3 w-3"/>{errors.gender.message}</p>}
+                  {errors.gender&&<p className="text-[10px] font-bold text-rose-600 flex items-center gap-1"><AlertCircle className="h-3 w-3"/>{errors.gender.message}</p>}
                 </div>
               </div>
             )}
@@ -263,7 +282,7 @@ export function OnboardingForm() {
 
                 {/* Para Birimi */}
                 <div className="space-y-3">
-                  <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Para Birimi <span className="text-destructive">*</span></Label>
+                  <Label className="text-[10px] font-extrabold text-[#887364] uppercase tracking-widest">Para Birimi <span className="text-rose-600">*</span></Label>
                   <Controller name="currency" control={form.control} render={({field})=>(
                     <div className="space-y-3">
                       <div className="grid grid-cols-3 gap-3">
@@ -271,23 +290,23 @@ export function OnboardingForm() {
                           const isActive=field.value===c.code;
                           return (
                             <button key={c.code} type="button" onClick={()=>{field.onChange(c.code);setShowOtherCur(false);}}
-                              className={cn("p-4 rounded-2xl border text-center transition-all duration-200",
-                                isActive?"bg-primary text-primary-foreground border-primary shadow-md scale-[1.03]":"bg-muted/40 border-border/30 hover:border-primary/30")}>
+                              className={cn("p-4 rounded-3xl border text-center transition-all duration-200",
+                                isActive?"bg-[#8C5000] text-white border-[#8C5000] shadow-xl shadow-[#8C5000]/20 scale-[1.03]":"bg-[#faf9f6] border-[#dbc2b0]/50 hover:border-[#8C5000]/40")}>
                               <div className="text-2xl mb-1">{c.flag}</div>
-                              <div className={cn("text-lg font-bold",isActive?"text-primary-foreground":"text-foreground")}>{c.symbol}</div>
-                              <div className={cn("text-[10px] font-semibold",isActive?"text-primary-foreground/80":"text-muted-foreground")}>{c.code}</div>
+                              <div className={cn("text-xl font-black",isActive?"text-white":"text-[#5a3100]")}>{c.symbol}</div>
+                              <div className={cn("text-[11px] font-bold",isActive?"text-white/80":"text-[#887364]")}>{c.code}</div>
                             </button>
                           );
                         })}
                       </div>
                       <button type="button" onClick={()=>setShowOtherCur(v=>!v)}
-                        className={cn("w-full flex items-center justify-between px-4 py-3 rounded-xl border text-sm font-semibold transition-all",
+                        className={cn("w-full flex items-center justify-between px-5 py-3.5 rounded-2xl border text-sm font-extrabold transition-all",
                           showOtherCur||OTHER_CURRENCIES.some(c=>c.code===field.value)
-                            ?"bg-muted border-primary/30 text-primary":"bg-muted/30 border-border/20 text-muted-foreground hover:border-primary/20")}>
+                            ?"bg-[#8C5000]/10 border-[#8C5000]/30 text-[#8C5000]":"bg-[#faf9f6] border-[#dbc2b0]/40 text-[#887364] hover:border-[#8C5000]/30")}>
                         <span>
                           {OTHER_CURRENCIES.find(c=>c.code===field.value)
                             ? `${OTHER_CURRENCIES.find(c=>c.code===field.value)!.flag} ${OTHER_CURRENCIES.find(c=>c.code===field.value)!.label}`
-                            : "Diğer para birimi…"}
+                            : "Diğer para birimi..."}
                         </span>
                         <ChevronDown className={cn("w-4 h-4 transition-transform",showOtherCur&&"rotate-180")}/>
                       </button>
@@ -297,12 +316,12 @@ export function OnboardingForm() {
                             const isActive=field.value===c.code;
                             return (
                               <button key={c.code} type="button" onClick={()=>{field.onChange(c.code);}}
-                                className={cn("flex items-center gap-2 p-3 rounded-xl border text-left transition-all",
-                                  isActive?"bg-primary text-primary-foreground border-primary":"bg-muted/30 border-border/20 hover:border-primary/20")}>
-                                <span className="text-lg">{c.flag}</span>
+                                className={cn("flex items-center gap-3 p-3.5 rounded-2xl border text-left transition-all font-bold",
+                                  isActive?"bg-[#8C5000] text-white border-[#8C5000] shadow-md":"bg-[#faf9f6] border-[#dbc2b0]/40 hover:border-[#8C5000]/30")}>
+                                <span className="text-xl">{c.flag}</span>
                                 <div>
-                                  <div className={cn("text-xs font-bold",isActive?"text-primary-foreground":"text-foreground")}>{c.code}</div>
-                                  <div className={cn("text-[10px]",isActive?"text-primary-foreground/80":"text-muted-foreground")}>{c.label}</div>
+                                  <div className={cn("text-xs font-black",isActive?"text-white":"text-[#5a3100]")}>{c.code}</div>
+                                  <div className={cn("text-[10px]",isActive?"text-white/80":"text-[#887364]")}>{c.label}</div>
                                 </div>
                               </button>
                             );
@@ -313,12 +332,11 @@ export function OnboardingForm() {
                   )}/>
                 </div>
 
-                {/* Ülke — Bölge → Ülke drill-down */}
+                {/* Ülke */}
                 <div className="space-y-3">
-                  <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Ülke <span className="text-destructive">*</span></Label>
+                  <Label className="text-[10px] font-extrabold text-[#887364] uppercase tracking-widest">Ülke / Bölge <span className="text-rose-600">*</span></Label>
                   <Controller name="country" control={form.control} render={({field})=>(
                     <div className="space-y-3">
-                      {/* Bölge seçimi */}
                       <div className="grid grid-cols-3 gap-2">
                         {REGIONS.map(r=>{
                           const active=selectedRegion===r.id;
@@ -326,68 +344,67 @@ export function OnboardingForm() {
                           return (
                             <button key={r.id} type="button"
                               onClick={()=>setSelectedRegion(active?null:r.id)}
-                              className={cn("p-3 rounded-xl border text-center text-sm font-semibold transition-all duration-200",
-                                active||hasSelected?"bg-primary text-primary-foreground border-primary shadow-sm scale-[1.02]":"bg-muted/40 border-border/30 hover:border-primary/30")}>
+                              className={cn("p-3 rounded-2xl border text-center text-xs font-bold transition-all duration-200",
+                                active||hasSelected?"bg-[#8C5000] text-white border-[#8C5000] shadow-md scale-[1.02]":"bg-[#faf9f6] border-[#dbc2b0]/50 hover:border-[#8C5000]/30")}>
                               <div className="text-xl mb-1">{r.emoji}</div>
-                              <div className={cn("text-[11px] font-bold",active||hasSelected?"text-primary-foreground":"text-foreground")}>{r.label}</div>
+                              <div className={cn("text-[11px] font-extrabold",active||hasSelected?"text-white":"text-[#5a3100]")}>{r.label}</div>
                             </button>
                           );
                         })}
                       </div>
-                      {/* Ülke listesi */}
                       {selectedRegion&&(
                         <div className="grid grid-cols-2 gap-2 animate-in fade-in slide-in-from-top-3 duration-300">
                           {regionCountries.map(c=>{
                             const isActive=field.value===c.code;
                             return (
                               <button key={c.code} type="button" onClick={()=>field.onChange(c.code)}
-                                className={cn("flex items-center gap-2 p-3 rounded-xl border text-left transition-all duration-200",
-                                  isActive?"bg-primary text-primary-foreground border-primary shadow-sm scale-[1.02]":"bg-muted/40 border-border/30 hover:border-primary/20")}>
+                                className={cn("flex items-center gap-2.5 p-3 rounded-2xl border text-left transition-all duration-200 font-bold",
+                                  isActive?"bg-[#8C5000] text-white border-[#8C5000] shadow-md scale-[1.02]":"bg-[#faf9f6] border-[#dbc2b0]/50 hover:border-[#8C5000]/30")}>
                                 <span className="text-lg">{c.flag}</span>
-                                <span className={cn("text-xs font-semibold",isActive?"text-primary-foreground":"text-foreground")}>{c.label}</span>
-                                {isActive&&<Check className="w-3 h-3 ml-auto text-primary-foreground"/>}
+                                <span className={cn("text-xs font-black",isActive?"text-white":"text-[#5a3100]")}>{c.label}</span>
+                                {isActive&&<Check className="w-3.5 h-3.5 ml-auto text-white"/>}
                               </button>
                             );
                           })}
                         </div>
                       )}
                       {field.value&&!selectedRegion&&(
-                        <p className="text-xs text-primary font-semibold px-1">
-                          ✓ {REGIONS.flatMap(r=>r.countries).find(c=>c.code===field.value)?.flag} {REGIONS.flatMap(r=>r.countries).find(c=>c.code===field.value)?.label} seçildi
+                        <p className="text-xs text-[#8C5000] font-black px-1 flex items-center gap-1">
+                          <Check className="w-3.5 h-3.5 text-[#36684d]" /> {REGIONS.flatMap(r=>r.countries).find(c=>c.code===field.value)?.flag} {REGIONS.flatMap(r=>r.countries).find(c=>c.code===field.value)?.label} seçildi
                         </p>
                       )}
                     </div>
                   )}/>
-                  {errors.country&&<p className="text-[10px] text-destructive flex items-center gap-1"><AlertCircle className="h-3 w-3"/>{errors.country.message}</p>}
+                  {errors.country&&<p className="text-[10px] font-bold text-rose-600 flex items-center gap-1"><AlertCircle className="h-3 w-3"/>{errors.country.message}</p>}
                 </div>
               </div>
             )}
 
             {/* STEP 3 */}
             {step===3&&(
-              <div className="space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <p className="text-xs text-muted-foreground">Sana uygun içerik ve topluluklar önerebilelim.</p>
-                <div className="flex flex-wrap gap-2">
+              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <p className="text-xs font-bold text-[#887364]">Sana uygun finansal analizler, içerikler ve topluluklar önerebilmemiz için en az bir ilgi alanı seç.</p>
+                <div className="flex flex-wrap gap-2.5">
                   {HASHTAGS.map(h=>{
                     const isActive=selectedInterests.includes(h.tag);
                     return (
                       <button key={h.tag} type="button" onClick={()=>toggleTag(h.tag)}
-                        className={cn("flex items-center gap-1.5 px-3.5 py-2 rounded-full border text-xs font-semibold transition-all duration-200",
-                          isActive?"bg-primary text-primary-foreground border-primary shadow-md scale-105":"bg-muted/40 border-border/30 hover:border-primary/30 hover:scale-[1.02]")}>
-                        <span>{h.emoji}</span><span>#{h.label}</span>
-                        {isActive&&<Check className="w-3 h-3"/>}
+                        className={cn("flex items-center gap-2 px-4 py-2.5 rounded-full border text-xs font-black transition-all duration-200",
+                          isActive?"bg-[#8C5000] text-white border-[#8C5000] shadow-lg shadow-[#8C5000]/25 scale-105":"bg-[#faf9f6] border-[#dbc2b0]/50 text-[#5a3100] hover:border-[#8C5000]/40 hover:scale-[1.02]")}>
+                        <span className="text-base">{h.emoji}</span><span>#{h.label}</span>
+                        {isActive&&<Check className="w-3.5 h-3.5"/>}
                       </button>
                     );
                   })}
                 </div>
-                {errors.interests&&<p className="text-[10px] text-destructive flex items-center gap-1"><AlertCircle className="h-3 w-3"/>{errors.interests.message}</p>}
+                {errors.interests&&<p className="text-[10px] font-bold text-rose-600 flex items-center gap-1"><AlertCircle className="h-3 w-3"/>{errors.interests.message}</p>}
                 {selectedInterests.length>0&&(
-                  <div className="p-3 bg-primary/5 border border-primary/15 rounded-xl">
-                    <p className="text-[10px] font-bold text-primary uppercase tracking-widest mb-1.5">{selectedInterests.length} alan seçildi</p>
-                    <div className="flex flex-wrap gap-1">
+                  <div className="p-4 bg-[#f18d02]/10 border border-[#f18d02]/25 rounded-2xl animate-in fade-in duration-300">
+                    <p className="text-[10px] font-black text-[#8C5000] uppercase tracking-widest mb-2">{selectedInterests.length} ilgi alanı seçildi</p>
+                    <div className="flex flex-wrap gap-1.5">
                       {selectedInterests.map(t=>{
                         const h=HASHTAGS.find(x=>x.tag===t);
-                        return <span key={t} className="text-[11px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-lg">{h?.emoji} #{h?.label??t}</span>;
+                        return <span key={t} className="text-xs font-black text-[#8C5000] bg-white px-2.5 py-1 rounded-xl border border-[#8C5000]/20 shadow-sm">{h?.emoji} #{h?.label??t}</span>;
                       })}
                     </div>
                   </div>
@@ -398,17 +415,17 @@ export function OnboardingForm() {
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between px-8 py-5 bg-muted/20 border-t border-border/10">
-          <Button type="button" variant="ghost" onClick={()=>setStep(s=>Math.max(s-1,1))} disabled={step===1||loading} className="h-11 px-6 rounded-xl font-bold">
+        <div className="flex items-center justify-between px-8 py-5 bg-[#fbf9f4] border-t border-[#8C5000]/10">
+          <Button type="button" variant="ghost" onClick={()=>setStep(s=>Math.max(s-1,1))} disabled={step===1||loading} className="h-12 px-6 rounded-2xl font-bold text-[#5a3100] hover:bg-[#dbc2b0]/30">
             <ChevronLeft className="w-4 h-4 mr-1"/> Geri
           </Button>
           {step<3?(
-            <Button type="button" onClick={nextStep} className="h-11 px-7 rounded-xl bg-primary text-primary-foreground font-bold shadow-lg shadow-primary/15">
-              Devam Et <ChevronRight className="w-4 h-4 ml-1"/>
+            <Button type="button" onClick={nextStep} className="h-12 px-8 rounded-2xl bg-gradient-to-r from-[#f18d02] to-[#8C5000] text-white font-extrabold shadow-lg shadow-[#8C5000]/25 hover:opacity-95 hover:scale-[1.02] transition-all">
+              Devam Et <ChevronRight className="w-5 h-5 ml-1"/>
             </Button>
           ):(
-            <Button type="button" onClick={form.handleSubmit(onSubmit)} disabled={loading} className="h-11 px-8 rounded-xl bg-primary text-primary-foreground font-bold shadow-xl hover:scale-[1.02] transition-transform">
-              {loading?"Kaydediliyor...":"Başlayalım! 🚀"}{!loading&&<Check className="w-4 h-4 ml-2"/>}
+            <Button type="button" onClick={form.handleSubmit(onSubmit)} disabled={loading} className="h-12 px-10 rounded-2xl bg-gradient-to-r from-[#36684d] to-[#1c5036] text-white font-extrabold shadow-xl shadow-[#36684d]/30 hover:scale-[1.03] transition-all">
+              {loading?"Kaydediliyor...":"Kurulumu Tamamla 🚀"}{!loading&&<Check className="w-5 h-5 ml-2"/>}
             </Button>
           )}
         </div>

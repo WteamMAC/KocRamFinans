@@ -28,12 +28,26 @@ export default async function SettingsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background py-10">
-      <div className="max-w-2xl mx-auto px-4 space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold font-heading tracking-tight text-primary">Profil Ayarları</h1>
-          <p className="text-muted-foreground mt-1 text-sm">
-            Bilgilerini düzenle — değişiklik yaptığında Kaydet butonu aktif olur.
+    <div 
+      className="relative min-h-screen py-10 overflow-hidden"
+      style={{ background: "#F5EDD8" }}
+    >
+      {/* Dot pattern — 404 ile aynı */}
+      <div 
+        className="absolute inset-0 opacity-[0.08] pointer-events-none"
+        style={{
+          backgroundImage: "radial-gradient(circle, #8C5000 1px, transparent 1px)",
+          backgroundSize: "36px 36px",
+        }}
+      />
+
+      <div className="relative z-10 max-w-3xl mx-auto px-4 space-y-8">
+        <div className="bg-[#fbf9f4] border border-[#8C5000]/15 rounded-3xl p-8 shadow-sm">
+          <h1 className="text-3xl font-black font-heading tracking-tight text-[#5a3100] drop-shadow-sm">
+            Profil Ayarları
+          </h1>
+          <p className="text-[#887364] mt-1 text-sm font-bold">
+            Bilgilerini tek bir ekranda kolayca yönet — değişiklik yaptığında Kaydet butonu aktif olur.
           </p>
         </div>
         <ProfileSettingsForm initialData={initialData} />
