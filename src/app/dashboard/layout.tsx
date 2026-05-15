@@ -37,6 +37,13 @@ export default function DashboardLayout({
     setIsMobileOpen(false);
   }, [pathname]);
 
+  // Tur başladığında mobil menüyü kapat
+  useEffect(() => {
+    const handleStartTour = () => setIsMobileOpen(false);
+    window.addEventListener("start-tour", handleStartTour);
+    return () => window.removeEventListener("start-tour", handleStartTour);
+  }, []);
+
   return (
     <div className="h-full relative flex flex-col md:flex-row bg-background">
       {/* Mobile Header */}
