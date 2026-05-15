@@ -3,9 +3,8 @@
 import { useEffect } from 'react';
 import { motion } from "framer-motion";
 import Link from "next/link";
-import Image from "next/image";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { Home, RefreshCcw } from "lucide-react";
+import { Home, RefreshCcw, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function Error({
