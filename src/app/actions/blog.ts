@@ -623,3 +623,22 @@ export async function toggleUserBan(targetInternalUserId: string) {
   revalidatePath("/dashboard/blog");
 }
 
+export async function searchUsers(query: string) {
+  if (!query || query.length < 1) return [];
+  
+  const users = await prisma.user.findMany({
+    where: {
+      username: {
+        contains: query,
+        mode: "insensitive"
+      }
+    },
+    select: {
+      id: true,
+      username: true,
+    },
+    take: 5
+  });
+  
+  return users;
+}
