@@ -28,7 +28,7 @@ async function processAiMentions(content: string, postId: string) {
 
       const { text } = await generateText({
         model: google("gemini-1.5-flash"),
-        prompt: `Sen Wteam adlı finansal asistan uygulamasında "Wteam AI" isimli bir yapay zekasın. Bir kullanıcı post veya yorumunda senden ("@ai", "@bot" gibi) bahsederek yardım/görüş istiyor veya soru soruyor:\n\nKullanıcı mesajı: "${content}"\n\nLütfen buna profesyonel, samimi ve finansal tavsiye içermeyen (sadece bilgi veren, analiz yapan veya yorumlayan) bir dille, kısa ve öz bir cevap ver.`,
+        prompt: `Sen Wteam adlı finansal uygulamanın sosyal topluluğunda "Wteam AI" isimli bir yapay zekasın. Kullanıcılar sana gönderi ve yorumlarda etiketleyerek sorular soruyor. "Dış verilere veya topluluktaki gönderilere erişimim yok" GİBİ BAHANELER ÜRETMEYECEKSİN. Sen zaten şu anda o topluluğun bir parçasısın ve doğrudan sana yöneltilen mesajı yanıtlamakla görevlisin. \n\nKullanıcı mesajı: "${content}"\n\nLütfen buna profesyonel, samimi ve finansal tavsiye içermeyen bir dille, sadece sorulan soruya odaklanarak doğrudan cevap ver.`,
       });
 
       await prisma.blogComment.create({
@@ -157,10 +157,23 @@ export async function toggleLike(postId: string) {
     where: { postId_userId: { postId, userId: user.id } },
   });
 
+  const post = await prisma.blogPost.findUnique({ where: { id: postId }, select: { authorId: true } });
+
   if (existing) {
     await prisma.blogLike.delete({ where: { id: existing.id } });
   } else {
     await prisma.blogLike.create({ data: { postId, userId: user.id } });
+    if (post && post.authorId !== user.id) {
+      await prisma.notification.create({
+        data: {
+          userId: post.authorId,
+          type: "LIKE",
+          title: "Yeni Beğeni",
+          message: `${user.username || "Bir kullanıcı"} gönderini beğendi.`,
+          link: `/dashboard/blog`
+        }
+      });
+    }
   }
   revalidatePath("/dashboard/blog");
 }
@@ -174,6 +187,19 @@ export async function addComment(postId: string, content: string) {
   await prisma.blogComment.create({
     data: { postId, authorId: user.id, content },
   });
+
+  const post = await prisma.blogPost.findUnique({ where: { id: postId }, select: { authorId: true } });
+  if (post && post.authorId !== user.id) {
+    await prisma.notification.create({
+      data: {
+        userId: post.authorId,
+        type: "COMMENT",
+        title: "Yeni Yorum",
+        message: `${user.username || "Bir kullanıcı"} gönderine yorum yaptı: "${content.substring(0, 30)}..."`,
+        link: `/dashboard/blog`
+      }
+    });
+  }
 
   // AI etiketlemesi kontrolü
   await processAiMentions(content, postId);
@@ -370,6 +396,16 @@ export async function toggleFollow(targetInternalUserId: string) {
         followerId: me.id,
         followingId: targetInternalUserId,
       },
+    });
+
+    await prisma.notification.create({
+      data: {
+        userId: targetInternalUserId,
+        type: "SYSTEM",
+        title: "Yeni Takipçi",
+        message: `${me.username || "Bir kullanıcı"} seni takip etmeye başladı.`,
+        link: `/dashboard/profile/${me.username}`
+      }
     });
   }
   revalidatePath("/dashboard/blog");
