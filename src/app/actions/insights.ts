@@ -34,7 +34,7 @@ ${JSON.stringify(financialData)}
     const result = await model.generateContent(prompt);
     let responseText = result.response.text();
     responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-    
+
     try {
       const parsedData = JSON.parse(responseText);
       return { success: true, data: parsedData };
@@ -86,7 +86,7 @@ Not: Türkiye piyasası verilerini, küresel piyasaları ve enflasyonist ortamı
     const result = await model.generateContent(prompt);
     let responseText = result.response.text();
     responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-    
+
     try {
       const parsedData = JSON.parse(responseText);
       return { success: true, ...parsedData };

@@ -3,10 +3,8 @@
 import { prisma } from "@/lib/prisma";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 
 export async function completeOnboarding(formData: {
-  // Yeni profil alanları
   firstName?:    string;
   lastName?:     string;
   birthDate?:    string;
@@ -14,7 +12,6 @@ export async function completeOnboarding(formData: {
   currency?:     string;
   country?:      string;
   interests?:    string[];
-  // Legacy alanlar (geriye uyumluluk)
   familyCount:   number;
   maritalStatus?: string;
   marriageDate?:  string;
@@ -32,8 +29,17 @@ export async function completeOnboarding(formData: {
   const { userId } = await auth();
   if (!userId) throw new Error("Oturum açmanız gerekiyor.");
 
-  const userFromClerk = await currentUser();
-  const username = userFromClerk?.username || userFromClerk?.emailAddresses[0]?.emailAddress.split("@")[0];
+  let username = "user_" + Math.random().toString(36).substring(2, 8);
+  try {
+    const userFromClerk = await currentUser();
+    if (userFromClerk?.username) {
+      username = userFromClerk.username;
+    } else if (userFromClerk?.emailAddresses?.[0]?.emailAddress) {
+      username = userFromClerk.emailAddresses[0].emailAddress.split("@")[0];
+    }
+  } catch (err) {
+    console.error("Clerk fetch error:", err);
+  }
 
   // Kullanıcıyı oluştur veya güncelle
   const user = await prisma.user.upsert({
@@ -47,8 +53,8 @@ export async function completeOnboarding(formData: {
       currency:     formData.currency ?? "TRY",
       country:      formData.country  ?? "TR",
       interests:    formData.interests ?? [],
-      familyCount:  formData.familyCount,
-      maritalStatus: formData.maritalStatus,
+      familyCount:  formData.familyCount ?? 1,
+      maritalStatus: formData.maritalStatus ?? "Bekar",
       marriageDate:  formData.marriageDate ? new Date(formData.marriageDate) : null,
       hasChildren:   formData.hasChildren ?? false,
     },
@@ -62,75 +68,94 @@ export async function completeOnboarding(formData: {
       currency:     formData.currency ?? "TRY",
       country:      formData.country  ?? "TR",
       interests:    formData.interests ?? [],
-      familyCount:  formData.familyCount,
-      maritalStatus: formData.maritalStatus,
+      familyCount:  formData.familyCount ?? 1,
+      maritalStatus: formData.maritalStatus ?? "Bekar",
       marriageDate:  formData.marriageDate ? new Date(formData.marriageDate) : null,
       hasChildren:   formData.hasChildren ?? false,
     },
   });
 
-  // Mevcut verileri temizle ve yeniden oluştur
-  await prisma.$transaction([
-    prisma.income.deleteMany({
-      where: { userId: user.id, type: { notIn: ["Yatırım Satışı", "Yatırım Çekimi"] } },
-    }),
-    prisma.expense.deleteMany({ where: { userId: user.id, isRecurring: true } }),
-    prisma.debt.deleteMany({ where: { userId: user.id } }),
-    prisma.investment.deleteMany({ where: { userId: user.id, status: "OPEN" } }),
-    prisma.fixedAsset.deleteMany({ where: { userId: user.id } }),
-    prisma.child.deleteMany({ where: { userId: user.id } }),
+  // Mevcut ilişkili verileri temizle
+  await prisma.income.deleteMany({
+    where: { userId: user.id, type: { notIn: ["Yatırım Satışı", "Yatırım Çekimi"] } },
+  });
+  await prisma.expense.deleteMany({ where: { userId: user.id, isRecurring: true } });
+  await prisma.debt.deleteMany({ where: { userId: user.id } });
+  await prisma.investment.deleteMany({ where: { userId: user.id, status: "OPEN" } });
+  await prisma.fixedAsset.deleteMany({ where: { userId: user.id } });
+  await prisma.child.deleteMany({ where: { userId: user.id } });
 
-    prisma.income.createMany({
+  // Yeni ilişkili verileri ekle
+  if (formData.incomes?.length > 0) {
+    await prisma.income.createMany({
       data: formData.incomes.map(inc => ({
-        type: inc.type, amount: Number(inc.amount),
+        type: inc.type, amount: Number(inc.amount) || 0,
         description: inc.description, userId: user.id,
       })),
-    }),
-    prisma.expense.createMany({
+    });
+  }
+
+  if (formData.expenses?.length > 0) {
+    await prisma.expense.createMany({
       data: formData.expenses.map(exp => ({
-        type: exp.type, amount: Number(exp.amount),
+        type: exp.type, amount: Number(exp.amount) || 0,
         dueDate: exp.dueDate, isRecurring: exp.isRecurring,
         description: exp.description, userId: user.id,
       })),
-    }),
-    prisma.debt.createMany({
+    });
+  }
+
+  if (formData.debts?.length > 0) {
+    await prisma.debt.createMany({
       data: formData.debts.map(d => ({
-        type: d.type, amount: Number(d.amount),
+        type: d.type, amount: Number(d.amount) || 0,
         remainingInstallments: d.remainingInstallments,
         description: d.description, userId: user.id,
       })),
-    }),
-    prisma.child.createMany({
+    });
+  }
+
+  if ((formData.children ?? []).length > 0) {
+    await prisma.child.createMany({
       data: (formData.children ?? []).map(c => ({
         birthDate: new Date(c.birthDate), userId: user.id,
       })),
-    }),
-    prisma.investment.createMany({
+    });
+  }
+
+  if (formData.investments?.length > 0) {
+    await prisma.investment.createMany({
       data: formData.investments.map(inv => {
-        let finalPurchasePrice = Number(inv.purchasePrice);
-        let finalAmount = Number(inv.quantity) * finalPurchasePrice;
+        let finalPurchasePrice = Number(inv.purchasePrice) || 0;
+        let finalAmount = Number(inv.quantity || 0) * finalPurchasePrice;
         let finalDescription = inv.description;
         if (inv.type === "BES" || inv.type === "FAIZ") {
           const rate = Number(inv.purchasePrice) || 0;
           finalDescription = JSON.stringify({ rate, originalDescription: inv.description || "" });
           finalPurchasePrice = 1;
-          finalAmount = Number(inv.quantity);
+          finalAmount = Number(inv.quantity || 0);
         }
         return {
           type: inv.type, symbol: inv.symbol,
-          quantity: Number(inv.quantity), purchasePrice: finalPurchasePrice,
+          quantity: Number(inv.quantity || 0), purchasePrice: finalPurchasePrice,
           currentValuation: inv.currentValuation ? Number(inv.currentValuation) : null,
           description: finalDescription, amount: finalAmount, userId: user.id,
         };
       }),
-    }),
-    prisma.fixedAsset.createMany({
-      data: formData.fixedAssets.map(a => ({
-        name: a.name, type: a.type, value: Number(a.value), userId: user.id,
-      })),
-    }),
-  ]);
+    });
+  }
 
-  revalidatePath("/dashboard");
-  redirect("/dashboard");
+  if (formData.fixedAssets?.length > 0) {
+    await prisma.fixedAsset.createMany({
+      data: formData.fixedAssets.map(a => ({
+        name: a.name, type: a.type, value: Number(a.value) || 0, userId: user.id,
+      })),
+    });
+  }
+
+  // Cache'i temizle
+  revalidatePath("/dashboard", "layout");
+  revalidatePath("/", "layout");
+
+  return { success: true };
 }

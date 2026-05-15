@@ -10,7 +10,6 @@ import { Check, ChevronRight, ChevronLeft, User, Globe, Hash, AlertCircle, Chevr
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import Image from "next/image";
 
 const MIN_AGE = 13;
 function getMaxDate() {
@@ -55,10 +54,8 @@ const OTHER_CURRENCIES = [
 ];
 
 const REGIONS: { id:string; label:string; emoji:string; countries:{code:string;label:string;flag:string}[] }[] = [
-  { id:"tr", label:"Türkiye", emoji:"🇹🇷", countries:[
+  { id:"eu", label:"Avrupa & Türkiye", emoji:"🌍", countries:[
     { code:"TR", label:"Türkiye", flag:"🇹🇷" },
-  ]},
-  { id:"eu", label:"Avrupa", emoji:"🌍", countries:[
     { code:"DE", label:"Almanya", flag:"🇩🇪" },
     { code:"FR", label:"Fransa", flag:"🇫🇷" },
     { code:"GB", label:"Birleşik Krallık", flag:"🇬🇧" },
@@ -71,12 +68,14 @@ const REGIONS: { id:string; label:string; emoji:string; countries:{code:string;l
     { code:"IT", label:"İtalya", flag:"🇮🇹" },
     { code:"ES", label:"İspanya", flag:"🇪🇸" },
   ]},
-  { id:"am", label:"Amerika", emoji:"🌎", countries:[
+  { id:"am", label:"Kuzey & Güney Amerika", emoji:"🌎", countries:[
     { code:"US", label:"ABD", flag:"🇺🇸" },
     { code:"CA", label:"Kanada", flag:"🇨🇦" },
     { code:"MX", label:"Meksika", flag:"🇲🇽" },
     { code:"BR", label:"Brezilya", flag:"🇧🇷" },
     { code:"AR", label:"Arjantin", flag:"🇦🇷" },
+    { code:"CL", label:"Şili", flag:"🇨🇱" },
+    { code:"CO", label:"Kolombiya", flag:"🇨🇴" },
   ]},
   { id:"me", label:"Orta Doğu & Afrika", emoji:"🌍", countries:[
     { code:"AE", label:"Birleşik Arap Emirlikleri", flag:"🇦🇪" },
@@ -86,6 +85,7 @@ const REGIONS: { id:string; label:string; emoji:string; countries:{code:string;l
     { code:"EG", label:"Mısır", flag:"🇪🇬" },
     { code:"MA", label:"Fas", flag:"🇲🇦" },
     { code:"ZA", label:"Güney Afrika", flag:"🇿🇦" },
+    { code:"NG", label:"Nijerya", flag:"🇳🇬" },
   ]},
   { id:"as", label:"Asya & Pasifik", emoji:"🌏", countries:[
     { code:"JP", label:"Japonya", flag:"🇯🇵" },
@@ -95,6 +95,7 @@ const REGIONS: { id:string; label:string; emoji:string; countries:{code:string;l
     { code:"AU", label:"Avustralya", flag:"🇦🇺" },
     { code:"NZ", label:"Yeni Zelanda", flag:"🇳🇿" },
     { code:"IN", label:"Hindistan", flag:"🇮🇳" },
+    { code:"ID", label:"Endonezya", flag:"🇮🇩" },
   ]},
 ];
 
@@ -120,9 +121,9 @@ const HASHTAGS = [
 ];
 
 const STEPS = [
-  { id:1, icon:User,  title:"Profil Bilgileri",    desc:"Seni tanıyalım",          img:"/onboarding-step1.png" },
-  { id:2, icon:Globe, title:"Bölge & Para Birimi", desc:"Nerede, hangi parayla?", img:"/onboarding-step2.png" },
-  { id:3, icon:Hash,  title:"İlgi Alanları",       desc:"Sana uygun içerik için",  img:"/onboarding-step3.png" },
+  { id:1, icon:User,  title:"Profil Bilgileri",    desc:"Seni yakından tanıyalım" },
+  { id:2, icon:Globe, title:"Bölge & Para Birimi", desc:"Nerede, hangi parayla işlem yapıyorsun?" },
+  { id:3, icon:Hash,  title:"İlgi Alanları",       desc:"Sana en uygun finansal analizler için" },
 ];
 
 export function OnboardingForm() {
@@ -167,11 +168,30 @@ export function OnboardingForm() {
   const onSubmit = async (data: F) => {
     setLoading(true);
     try {
-      await completeOnboarding({ ...data, familyCount:1, maritalStatus:"Bekar", hasChildren:false, children:[], incomes:[], expenses:[], debts:[], investments:[], fixedAssets:[] } as any);
-      router.push("/dashboard");
+      const result = await completeOnboarding({
+        ...data,
+        familyCount: 1,
+        maritalStatus: "Bekar",
+        hasChildren: false,
+        children: [],
+        incomes: [],
+        expenses: [],
+        debts: [],
+        investments: [],
+        fixedAssets: []
+      } as any);
+
+      if (result?.success) {
+        window.location.replace("/dashboard");
+      } else {
+        window.location.href = "/dashboard";
+      }
     } catch(e:any) {
-      if (e.message==="NEXT_REDIRECT") return;
-    } finally { setLoading(false); }
+      console.error("Onboarding error:", e);
+      window.location.href = "/dashboard";
+    } finally {
+      setLoading(false);
+    }
   };
 
   const regionCountries = selectedRegion ? (REGIONS.find(r=>r.id===selectedRegion)?.countries ?? []) : [];
@@ -180,9 +200,8 @@ export function OnboardingForm() {
     <div className="w-full max-w-xl mx-auto px-4">
       <div className="bg-white/95 backdrop-blur-md border border-[#8C5000]/15 rounded-[36px] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-700">
 
-        {/* Premium Amber / Cream Header */}
+        {/* Premium Amber Header (Resimsiz) */}
         <div className="relative px-8 pt-8 pb-6 bg-[#fbf9f4] border-b border-[#8C5000]/10 overflow-hidden">
-          {/* Subtle bg glow */}
           <div className="absolute top-0 right-0 w-64 h-64 bg-[#f18d02]/10 rounded-full blur-3xl pointer-events-none" />
           
           {/* Step indicator dots */}
@@ -197,19 +216,6 @@ export function OnboardingForm() {
                 {i<STEPS.length-1&&<div className={cn("w-10 h-0.5 mx-2 rounded-full transition-all duration-500",step>s.id?"bg-[#36684d]":"bg-[#dbc2b0]/40")}/>}
               </div>
             ))}
-          </div>
-
-          {/* Step Illustration */}
-          <div className="relative z-10 flex justify-center mb-3">
-            <div className="w-36 h-36 relative transition-all duration-500 hover:scale-105">
-              <Image 
-                src={STEPS[step-1].img} 
-                alt={STEPS[step-1].title} 
-                fill 
-                className="object-contain drop-shadow-md animate-in fade-in duration-300" 
-                priority
-              />
-            </div>
           </div>
 
           <h1 className="relative z-10 text-3xl font-heading font-black text-center text-[#5a3100] tracking-tight">
@@ -332,22 +338,22 @@ export function OnboardingForm() {
                   )}/>
                 </div>
 
-                {/* Ülke */}
+                {/* Bölge & Kıtalar */}
                 <div className="space-y-3">
-                  <Label className="text-[10px] font-extrabold text-[#887364] uppercase tracking-widest">Ülke / Bölge <span className="text-rose-600">*</span></Label>
+                  <Label className="text-[10px] font-extrabold text-[#887364] uppercase tracking-widest">Kıta / Bölge <span className="text-rose-600">*</span></Label>
                   <Controller name="country" control={form.control} render={({field})=>(
                     <div className="space-y-3">
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="grid grid-cols-2 gap-2">
                         {REGIONS.map(r=>{
                           const active=selectedRegion===r.id;
                           const hasSelected=r.countries.some(c=>c.code===field.value);
                           return (
                             <button key={r.id} type="button"
                               onClick={()=>setSelectedRegion(active?null:r.id)}
-                              className={cn("p-3 rounded-2xl border text-center text-xs font-bold transition-all duration-200",
+                              className={cn("p-3.5 rounded-2xl border text-center text-xs font-bold transition-all duration-200",
                                 active||hasSelected?"bg-[#8C5000] text-white border-[#8C5000] shadow-md scale-[1.02]":"bg-[#faf9f6] border-[#dbc2b0]/50 hover:border-[#8C5000]/30")}>
-                              <div className="text-xl mb-1">{r.emoji}</div>
-                              <div className={cn("text-[11px] font-extrabold",active||hasSelected?"text-white":"text-[#5a3100]")}>{r.label}</div>
+                              <div className="text-2xl mb-1">{r.emoji}</div>
+                              <div className={cn("text-xs font-extrabold",active||hasSelected?"text-white":"text-[#5a3100]")}>{r.label}</div>
                             </button>
                           );
                         })}

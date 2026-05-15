@@ -8,6 +8,7 @@ import { format, addMonths } from "date-fns";
 import { tr } from "date-fns/locale";
 import { predictGrowthRate } from "@/app/actions/insights";
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 
 interface InvestmentProjectionProps {
   currentValue: number;
@@ -21,6 +22,7 @@ export function InvestmentProjection({ currentValue, investments = [], fixedAsse
   const [rationale, setRationale] = useState<string | null>(null);
   const [assetProjections, setAssetProjections] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [apiError, setApiError] = useState(false);
 
   useEffect(() => {
     async function fetchAIProjection() {
@@ -33,6 +35,9 @@ export function InvestmentProjection({ currentValue, investments = [], fixedAsse
           if (result.assetProjections) {
             setAssetProjections(result.assetProjections);
           }
+        } else {
+          setApiError(true);
+          setRationale("Yapay zeka analiz servisine bağlanılamadı. Lütfen API anahtarınızı kontrol edin. Şimdilik varsayılan büyüme hızı gösteriliyor.");
         }
       } catch (error) {
         console.error("AI Projection Error:", error);
@@ -68,7 +73,8 @@ export function InvestmentProjection({ currentValue, investments = [], fixedAsse
       <CardHeader className="bg-muted/30 border-b border-border/10 py-6">
         <CardTitle className="text-xl font-heading font-bold text-primary flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-accent animate-pulse" /> AI Tahmini Büyüme
+            <Sparkles className={cn("h-5 w-5", apiError ? "text-rose-500" : "text-accent animate-pulse")} /> 
+            {apiError ? "Varsayılan Büyüme" : "AI Tahmini Büyüme"}
           </div>
           <span className="text-[10px] font-bold text-muted-foreground bg-muted px-2 py-1 rounded-full uppercase tracking-wider">
             6 Aylık Projeksiyon
@@ -175,7 +181,11 @@ export function InvestmentProjection({ currentValue, investments = [], fixedAsse
         )}
         
         <p className="text-xs text-muted-foreground opacity-60 text-center mt-4 italic">
-           {loading ? "Yapay zeka portföyünüzü analiz ediyor..." : `* Mevcut varlık dağılımınız${monthlySavings > 0 ? ' ve aylık ' + monthlySavings.toLocaleString("tr-TR") + ' ₺ düzenli tasarrufunuz ' : ' '}üzerinden AI tarafından tahmin edilmiştir.`}
+           {loading 
+             ? "Yapay zeka portföyünüzü analiz ediyor..." 
+             : apiError 
+               ? "⚠️ Yapay zeka yapılandırması eksik olduğu için sabit %4 büyüme baz alınmıştır."
+               : `* Mevcut varlık dağılımınız${monthlySavings > 0 ? ' ve aylık ' + monthlySavings.toLocaleString("tr-TR") + ' ₺ düzenli tasarrufunuz ' : ' '}üzerinden AI tarafından tahmin edilmiştir.`}
         </p>
       </CardContent>
     </Card>

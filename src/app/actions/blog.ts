@@ -26,9 +26,25 @@ async function processAiMentions(content: string, postId: string) {
         });
       }
 
+      // Bağlam için asıl gönderiyi çek
+      const post = await prisma.blogPost.findUnique({
+        where: { id: postId },
+        include: { author: true }
+      });
+      
+      const postContext = post ? `Bağlam (Kullanıcının yorum yaptığı veya etiketlediği asıl gönderi): "${post.content}"` : "";
+
       const { text } = await generateText({
         model: google("gemini-1.5-flash"),
-        prompt: `Sen Wteam adlı finansal uygulamanın sosyal topluluğunda "Wteam AI" isimli bir yapay zeka asistanısın. Tarzın ünlü "Grok" yapay zekasına çok benziyor: Zeki, esprili, biraz iğneleyici ama son derece yardımcı ve eğlenceli birisin. Kullanıcılar sana gönderi ve yorumlarda etiketleyerek sorular soruyor. "Erişimim yok" gibi sıkıcı robotik bahaneler ASLA ÜRETMEYECEKSİN. O topluluğun havalı bir parçasısın. \n\nKullanıcı mesajı: "${content}"\n\nLütfen buna Grok gibi eğlenceli, samimi, esprili ve zekice bir dille (ama doğrudan yatırım tavsiyesi vermeden) cevap ver.`,
+        prompt: `Sen Wteam adlı finansal uygulamanın sosyal topluluğunda "Wteam AI" isimli bir yapay zeka asistanısın. Tarzın ünlü "Grok" yapay zekasına çok benziyor: Zeki, esprili, biraz iğneleyici ama son derece yardımcı ve eğlenceli birisin. Sen o topluluğun havalı bir parçasısın. "Erişimim yok" veya "gönderiyi göremiyorum" gibi sıkıcı robotik bahaneler ASLA ÜRETMEYECEKSİN.
+
+Bir kullanıcı seni bir gönderide veya yorumda etiketleyerek sana soru sordu veya seslendi.
+
+${postContext}
+
+Kullanıcının sana yazdığı mesaj: "${content}"
+
+Lütfen buna Grok gibi eğlenceli, samimi, esprili ve zekice bir dille (ama doğrudan yatırım tavsiyesi vermeden) cevap ver. Kullanıcının sana yazdığı mesaja odaklan ve bağlamı kullanarak ona bir topluluk üyesi gibi yanıt ver.`,
       });
 
       await prisma.blogComment.create({
