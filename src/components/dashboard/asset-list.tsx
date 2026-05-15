@@ -1,19 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { createPortal } from "react-dom";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Plus,
   Search,
@@ -28,15 +19,14 @@ import {
   Wallet,
   Download,
   RefreshCw,
-  Moon,
-  Sun,
   LayoutGrid,
-  Coins
+  Coins,
+  Globe
 } from "lucide-react";
 import { addAsset, deleteAsset, sellAsset, addFixedAsset, deleteFixedAsset } from "@/app/actions/assets";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { searchSymbolsAction } from "@/app/actions/market";
+import { getExchangeRatesAction } from "@/app/actions/market";
 import { PortfolioChart } from "./portfolio-chart";
 import { CompactCurrencyCalculator } from "./compact-currency-calculator";
 import { AssetForm } from "./asset-form";
@@ -79,9 +69,25 @@ interface AssetListProps {
   metrics?: any;
   defaultTab?: "financial" | "fixed";
   hideTabs?: boolean;
+  userCurrency?: string;
 }
 
-export function AssetList({ assets, allInvestments, fixedAssets, defaultTab = "financial", hideTabs = false }: AssetListProps) {
+const DISPLAY_CURRENCIES = [
+  { code: "TRY", label: "₺ TL", flag: "🇹🇷" },
+  { code: "USD", label: "$ USD", flag: "🇺🇸" },
+  { code: "EUR", label: "€ EUR", flag: "🇪🇺" },
+  { code: "GBP", label: "£ GBP", flag: "🇬🇧" },
+  { code: "XAU", label: "🪙 ALT", flag: "🟡" },
+];
+
+export function AssetList({
+  assets,
+  allInvestments,
+  fixedAssets,
+  defaultTab = "financial",
+  hideTabs = false,
+  userCurrency = "TRY"
+}: AssetListProps) {
   const router = useRouter();
   const [isAdding, setIsAdding] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -91,18 +97,41 @@ export function AssetList({ assets, allInvestments, fixedAssets, defaultTab = "f
   const [filterQuery, setFilterQuery] = useState("");
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
-  const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState<"financial" | "fixed">(defaultTab);
   const [sellModalState, setSellModalState] = useState<{ assetId: string | null }>({ assetId: null });
 
-  // No internal form state needed here as it's managed by AssetForm component
-
-
-
+  // Dinamik Para Birimi Çevirme State'i
+  const [displayCurrency, setDisplayCurrency] = useState(userCurrency || "TRY");
+  const [rates, setRates] = useState<Record<string, number>>({
+    TRY: 1, USD: 34.20, EUR: 37.10, GBP: 43.50, XAU: 2850
+  });
 
   useEffect(() => {
-    setMounted(true);
+    async function fetchRates() {
+      try {
+        const data = await getExchangeRatesAction();
+        if (data && Object.keys(data).length > 0) {
+          setRates({ TRY: 1, ...data });
+        }
+      } catch (err) {
+        console.error("Rates fetch error:", err);
+      }
+    }
+    fetchRates();
+    const interval = setInterval(fetchRates, 60000 * 5);
+    return () => clearInterval(interval);
   }, []);
+
+  const formatCur = (valInTry: number) => {
+    if (isNaN(valInTry)) return "0.00 ₺";
+    if (displayCurrency === "TRY") {
+      return `${valInTry.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺`;
+    }
+    const rate = rates[displayCurrency] || 1;
+    const converted = valInTry / rate;
+    const sym = displayCurrency === "USD" ? "$" : displayCurrency === "EUR" ? "€" : displayCurrency === "GBP" ? "£" : "ALT";
+    return `${converted.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: converted < 1 ? 4 : 2 })} ${sym}`;
+  };
 
   const groupedAssets = assets.reduce((acc: Record<string, {
     symbol: string;
@@ -156,28 +185,47 @@ export function AssetList({ assets, allInvestments, fixedAssets, defaultTab = "f
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 
-
-
   const handleExportCSV = () => {
-    const headers = ["Sembol", "Tur", "Miktar", "Maliyet", "Anlik Fiyat", "Toplam Deger", "Kar/Zarar"];
+    const headers = ["Sembol", "Tur", "Miktar", `Maliyet (${displayCurrency})`, `Anlik Fiyat (${displayCurrency})`, `Toplam Deger (${displayCurrency})`, `Kar/Zarar (${displayCurrency})`];
     const rows = Object.values(groupedAssets).map((g) => {
       const totalValue = g.totalQuantity * (g.currentPrice || 0);
       const profit = totalValue - g.totalCost;
+      const rate = rates[displayCurrency] || 1;
       return [
         g.symbol,
         g.type,
         g.totalQuantity,
-        g.totalCost.toFixed(2),
-        (g.currentPrice || 0).toFixed(2),
-        totalValue.toFixed(2),
-        profit.toFixed(2)
+        (g.totalCost / rate).toFixed(2),
+        ((g.currentPrice || 0) / rate).toFixed(2),
+        (totalValue / rate).toFixed(2),
+        (profit / rate).toFixed(2)
       ].join(",");
     });
     const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + [headers.join(","), ...rows].join("\n");
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "portfoy_ozeti.csv");
+    link.setAttribute("download", `portfoy_ozeti_${displayCurrency}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleExportFixedCSV = () => {
+    const headers = ["Varlik Adi", "Tur", `Deger (${displayCurrency})`];
+    const rows = (fixedAssets || []).map((a) => {
+      const rate = rates[displayCurrency] || 1;
+      return [
+        a.name,
+        a.type,
+        (a.value / rate).toFixed(2)
+      ].join(",");
+    });
+    const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + [headers.join(","), ...rows].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `sabit_varliklar_${displayCurrency}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -188,8 +236,6 @@ export function AssetList({ assets, allInvestments, fixedAssets, defaultTab = "f
     router.refresh();
     setTimeout(() => setIsRefreshing(false), 1000);
   };
-
-
 
   async function handleAdd(data: any) {
     if (!data.symbol || !data.quantity || isNaN(data.quantity) || data.quantity <= 0) {
@@ -209,7 +255,6 @@ export function AssetList({ assets, allInvestments, fixedAssets, defaultTab = "f
 
       await addAsset({ ...data, symbol: finalSymbol.toUpperCase() });
       setIsAdding(false);
-
 
       await new Promise(r => setTimeout(r, 500));
       router.refresh();
@@ -252,25 +297,6 @@ export function AssetList({ assets, allInvestments, fixedAssets, defaultTab = "f
     }
   }
 
-  const handleExportFixedCSV = () => {
-    const headers = ["Varlik Adi", "Tur", "Deger"];
-    const rows = (fixedAssets || []).map((a) => {
-      return [
-        a.name,
-        a.type,
-        a.value.toFixed(2)
-      ].join(",");
-    });
-    const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + [headers.join(","), ...rows].join("\n");
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "sabit_varliklar.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
   async function handleAddFixed(data: any) {
     if (!data.name || !data.value || data.value <= 0) {
       setError("Lütfen isim girin ve geçerli bir değer belirtin.");
@@ -307,33 +333,60 @@ export function AssetList({ assets, allInvestments, fixedAssets, defaultTab = "f
 
   return (
     <div className="space-y-8 pb-20">
-      {/* View Tabs */}
-      {!hideTabs && (
-        <div className="flex p-1 bg-muted rounded-2xl border border-border/20 w-fit">
-          <button
-            onClick={() => setActiveTab("financial")}
-            className={cn(
-              "flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all",
-              activeTab === "financial"
-                ? "bg-primary text-primary-foreground shadow-ambient-medium"
-                : "text-muted-foreground hover:bg-muted"
-            )}
-          >
-            <Coins className="h-4 w-4" /> Finansal Yatırımlar
-          </button>
-          <button
-            onClick={() => setActiveTab("fixed")}
-            className={cn(
-              "flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all",
-              activeTab === "fixed"
-                ? "bg-primary text-primary-foreground shadow-ambient-medium"
-                : "text-muted-foreground hover:bg-muted"
-            )}
-          >
-            <LayoutGrid className="h-4 w-4" /> Sabit Varlıklar
-          </button>
+      {/* Top Bar: View Tabs & Display Currency Switcher */}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        {!hideTabs && (
+          <div className="flex p-1 bg-muted rounded-2xl border border-border/20 w-fit">
+            <button
+              onClick={() => setActiveTab("financial")}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all",
+                activeTab === "financial"
+                  ? "bg-primary text-primary-foreground shadow-ambient-medium"
+                  : "text-muted-foreground hover:bg-muted"
+              )}
+            >
+              <Coins className="h-4 w-4" /> Finansal Yatırımlar
+            </button>
+            <button
+              onClick={() => setActiveTab("fixed")}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all",
+                activeTab === "fixed"
+                  ? "bg-primary text-primary-foreground shadow-ambient-medium"
+                  : "text-muted-foreground hover:bg-muted"
+              )}
+            >
+              <LayoutGrid className="h-4 w-4" /> Sabit Varlıklar
+            </button>
+          </div>
+        )}
+
+        {/* Canlı Döviz Çevirme (Display Currency) Barı */}
+        <div className="flex items-center gap-1.5 p-1 bg-card border border-primary/20 rounded-2xl shadow-sm ml-auto">
+          <span className="text-[10px] font-black text-muted-foreground uppercase px-3 flex items-center gap-1">
+            <Globe className="w-3.5 h-3.5 text-primary" /> Birim:
+          </span>
+          {DISPLAY_CURRENCIES.map(c => {
+            const isActive = displayCurrency === c.code;
+            return (
+              <button
+                key={c.code}
+                onClick={() => setDisplayCurrency(c.code)}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black transition-all",
+                  isActive
+                    ? "bg-primary text-primary-foreground shadow-md scale-105"
+                    : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                )}
+              >
+                <span>{c.flag}</span>
+                <span>{c.label}</span>
+              </button>
+            );
+          })}
         </div>
-      )}
+      </div>
 
       {/* Header & Stats Summary */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -398,26 +451,24 @@ export function AssetList({ assets, allInvestments, fixedAssets, defaultTab = "f
           <Card className="lg:col-span-1 p-6 bg-card border-border/30 shadow-ambient-medium rounded-[32px] flex flex-col justify-center relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-primary/20 to-transparent rounded-full -mr-10 -mt-10 pointer-events-none" />
             <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 opacity-70 relative z-10">
-              {activeTab === "financial" ? "Toplam Portföy Değeri" : "Toplam Varlık Değeri"}
+              {activeTab === "financial" ? `Toplam Portföy Değeri (${displayCurrency})` : `Toplam Varlık Değeri (${displayCurrency})`}
             </h3>
             <div className="text-4xl font-heading font-bold text-primary mb-4 relative z-10">
               {activeTab === "financial"
-                ? Object.values(groupedAssets).reduce((sum: number, g) => sum + g.totalValue, 0).toLocaleString("tr-TR", { minimumFractionDigits: 2 })
-                : (fixedAssets || []).reduce((sum: number, a) => sum + a.value, 0).toLocaleString("tr-TR", { minimumFractionDigits: 2 })
-              } ₺
+                ? formatCur(Object.values(groupedAssets).reduce((sum: number, g) => sum + g.totalValue, 0))
+                : formatCur((fixedAssets || []).reduce((sum: number, a) => sum + a.value, 0))
+              }
             </div>
 
             {activeTab === "financial" ? (
               <>
                 <div className="text-sm font-medium text-muted-foreground relative z-10">
-                  Maliyet: {Object.values(groupedAssets).reduce((sum: number, g) => sum + g.totalCost, 0).toLocaleString("tr-TR")} ₺
+                  Maliyet: {formatCur(Object.values(groupedAssets).reduce((sum: number, g) => sum + g.totalCost, 0))}
                 </div>
                 {activeTab === "financial" && Object.values(groupedAssets).some((g: any) => g.type === "FAIZ") && (
                   <div className="text-xs font-bold text-emerald-500 mt-1 relative z-10 flex items-center gap-1 bg-emerald-500/5 w-fit px-2 py-0.5 rounded-md border border-emerald-500/10">
                     <TrendingUp className="h-3 w-3" />
-                    Günlük Faiz Getirisi: {Object.values(groupedAssets)
-                      .reduce((sum: number, g: any) => sum + (g.totalDailyReturn || 0), 0)
-                      .toLocaleString("tr-TR", { maximumFractionDigits: 2 })} ₺
+                    Günlük Faiz Getirisi: {formatCur(Object.values(groupedAssets).reduce((sum: number, g: any) => sum + (g.totalDailyReturn || 0), 0))}
                   </div>
                 )}
                 {(() => {
@@ -428,7 +479,7 @@ export function AssetList({ assets, allInvestments, fixedAssets, defaultTab = "f
                   return (
                     <div className={cn("inline-flex items-center px-3 py-1.5 rounded-xl mt-4 w-fit font-bold relative z-10 shadow-sm", profit >= 0 ? "bg-emerald-500/10 text-emerald-500" : "bg-rose-500/10 text-rose-500")}>
                       {profit >= 0 ? <TrendingUp className="h-4 w-4 mr-1" /> : <TrendingDown className="h-4 w-4 mr-1" />}
-                      {profitPct > 0 ? "+" : ""}{profitPct.toFixed(2)}% ({profit.toLocaleString("tr-TR")} ₺)
+                      {profitPct > 0 ? "+" : ""}{profitPct.toFixed(2)}% ({formatCur(profit)})
                     </div>
                   );
                 })()}
@@ -540,12 +591,12 @@ export function AssetList({ assets, allInvestments, fixedAssets, defaultTab = "f
                                 {group.type === "FAIZ" && (
                                   <div className="flex items-center gap-1.5 mt-1 bg-emerald-500/10 text-emerald-600 px-2 py-0.5 rounded-lg w-fit border border-emerald-500/10 shadow-sm border-emerald-500/20">
                                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                    <span className="text-[10px] font-black uppercase tracking-tighter">Günlük Getiri: ~{group.totalDailyReturn.toLocaleString("tr-TR", { maximumFractionDigits: 2 })} ₺</span>
+                                    <span className="text-[10px] font-black uppercase tracking-tighter">Günlük Getiri: ~{formatCur(group.totalDailyReturn)}</span>
                                   </div>
                                 )}
                                 <p className="text-muted-foreground text-sm font-medium mt-1">
                                   {group.type === "BES" || group.type === "FAIZ" 
-                                    ? `${group.totalQuantity.toLocaleString("tr-TR")} ₺` 
+                                    ? formatCur(group.totalQuantity) 
                                     : `${group.totalQuantity.toLocaleString("tr-TR")} Adet`}
                                   <span className="ml-2 text-[10px] font-bold text-muted-foreground bg-muted border border-border/10 px-2 py-0.5 rounded-md uppercase tracking-tighter">
                                     Pay: %{portfolioRatio.toFixed(1)}
@@ -554,7 +605,7 @@ export function AssetList({ assets, allInvestments, fixedAssets, defaultTab = "f
                               </div>
                             </div>
                             <div className="text-right">
-                              <div className="text-2xl font-bold text-primary">{group.totalValue.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} ₺</div>
+                              <div className="text-2xl font-bold text-primary">{formatCur(group.totalValue)}</div>
                               <div className={cn(
                                 "flex items-center justify-end text-sm font-bold mt-1",
                                 profit >= 0 ? "text-emerald-600" : "text-rose-600"
@@ -578,14 +629,14 @@ export function AssetList({ assets, allInvestments, fixedAssets, defaultTab = "f
                                     <div className="flex flex-col">
                                       {isSpecial ? (
                                         <>
-                                          <span className="text-sm font-bold text-foreground">{item.quantity.toLocaleString("tr-TR")} ₺</span>
+                                          <span className="text-sm font-bold text-foreground">{formatCur(item.quantity)}</span>
                                           <span className="text-[10px] font-bold text-emerald-500">
                                             {group.type === "BES" ? `Devlet Katkısı: %${meta.rate || 0}` : `Faiz Oranı: %${meta.rate || 0}`}
                                           </span>
                                           {meta.originalDescription && <span className="text-[10px] text-muted-foreground opacity-80">{meta.originalDescription}</span>}
                                         </>
                                       ) : (
-                                        <span className="text-sm font-bold text-foreground">{item.quantity.toLocaleString("tr-TR")} @ {item.purchasePrice?.toLocaleString("tr-TR")} ₺</span>
+                                        <span className="text-sm font-bold text-foreground">{item.quantity.toLocaleString("tr-TR")} @ {formatCur(item.purchasePrice || 0)}</span>
                                       )}
                                       <span className="text-[10px] text-muted-foreground opacity-60 mt-0.5">{new Date(item.createdAt).toLocaleDateString("tr-TR")}</span>
                                     </div>
@@ -631,7 +682,7 @@ export function AssetList({ assets, allInvestments, fixedAssets, defaultTab = "f
                         </div>
                         <div className="flex items-center gap-6">
                           <div className="text-right">
-                            <div className="text-xl font-bold text-primary">{asset.value.toLocaleString("tr-TR")} ₺</div>
+                            <div className="text-xl font-bold text-primary">{formatCur(asset.value)}</div>
                             <div className="text-[10px] font-medium text-muted-foreground opacity-40">Tahmini Değer</div>
                           </div>
                           <Button
@@ -698,7 +749,7 @@ export function AssetList({ assets, allInvestments, fixedAssets, defaultTab = "f
                     <div className="text-right">
                       <div className="font-bold text-primary">{log.quantity.toLocaleString("tr-TR")} Adet</div>
                       <div className="text-xs font-medium text-muted-foreground opacity-60 mt-1">
-                        Fiyat: {(log.transactionType === "BUY" ? (log.purchasePrice || 0) : (log.soldPrice || 0)).toLocaleString("tr-TR")} ₺
+                        Fiyat: {formatCur(log.transactionType === "BUY" ? (log.purchasePrice || 0) : (log.soldPrice || 0))}
                       </div>
                     </div>
                   </div>
@@ -753,7 +804,7 @@ export function AssetList({ assets, allInvestments, fixedAssets, defaultTab = "f
                   </div>
                   <div className="text-right">
                     <div className="font-bold text-primary">{log.quantity.toLocaleString("tr-TR")} Adet</div>
-                    <div className="text-xs font-medium text-muted-foreground opacity-60 mt-1">Fiyat: {(log.transactionType === "BUY" ? (log.purchasePrice || 0) : (log.soldPrice || 0)).toLocaleString("tr-TR")} ₺</div>
+                    <div className="text-xs font-medium text-muted-foreground opacity-60 mt-1">Fiyat: {formatCur(log.transactionType === "BUY" ? (log.purchasePrice || 0) : (log.soldPrice || 0))}</div>
                   </div>
                 </div>
               ))}
