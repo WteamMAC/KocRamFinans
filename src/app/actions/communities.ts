@@ -122,7 +122,6 @@ export async function getCommunities(params?: {
     }
   });
 
-  // Basit randomizasyon (Eğer limit varsa ve random istenmişse)
   if (params?.random && communities.length > 0) {
     communities = communities.sort(() => 0.5 - Math.random()).slice(0, params.limit || 2);
   }
@@ -131,6 +130,7 @@ export async function getCommunities(params?: {
     ...c,
     isMember: c.members && c.members.length > 0 && c.members[0].status === "ACCEPTED",
     isPending: c.members && c.members.length > 0 && c.members[0].status === "PENDING",
+    isAdmin: c.members && c.members.length > 0 && c.members[0].role === "ADMIN",
     memberCount: c._count.members,
     postCount: c._count.posts
   }));
@@ -152,9 +152,7 @@ export async function getCommunityDetails(communityId: string) {
   if (!community) return null;
   
   const isMember = community.members && community.members.length > 0 && community.members[0].status === "ACCEPTED";
-  
-  // Gizli topluluklarda üye olmayan sadece ismi görebilsin (postları göremesin)
-  // Bu kontrol frontend'de yapılacak ama veriyi burada kısıtlayabiliriz.
+  const isAdmin = community.members && community.members.length > 0 && community.members[0].role === "ADMIN";
 
   const clerk = await clerkClient();
   const creatorClerk = await clerk.users.getUser(community.creator.clerkUserId);
@@ -162,6 +160,7 @@ export async function getCommunityDetails(communityId: string) {
   return {
     ...community,
     isMember,
+    isAdmin,
     isPending: community.members && community.members.length > 0 && community.members[0].status === "PENDING",
     memberCount: community._count.members,
     postCount: community._count.posts,
@@ -176,7 +175,6 @@ export async function handleJoinRequest(communityId: string, targetUserId: strin
   const me = await getInternalUser(clerkUserId);
   if (!me) throw new Error("User not found");
 
-  // İstek atılan toplulukta admin miyiz?
   const myMemberInfo = await prisma.communityMember.findUnique({
     where: { communityId_userId: { communityId, userId: me.id } }
   });
@@ -193,6 +191,108 @@ export async function handleJoinRequest(communityId: string, targetUserId: strin
       where: { communityId_userId: { communityId, userId: targetUserId } }
     });
   }
+
+  revalidatePath("/dashboard/blog");
+}
+
+export async function getCommunityRequests(communityId: string) {
+  const { userId: clerkUserId } = await auth();
+  if (!clerkUserId) throw new Error("Unauthorized");
+  const me = await getInternalUser(clerkUserId);
+  if (!me) throw new Error("User not found");
+
+  const myMemberInfo = await prisma.communityMember.findUnique({
+    where: { communityId_userId: { communityId, userId: me.id } }
+  });
+
+  if (!myMemberInfo || myMemberInfo.role !== "ADMIN") throw new Error("Yetkiniz yok");
+
+  const requests = await prisma.communityMember.findMany({
+    where: { communityId, status: "PENDING" },
+    include: { user: { select: { id: true, clerkUserId: true } } }
+  });
+
+  const clerk = await clerkClient();
+  const userIds = requests.map(r => r.user.clerkUserId);
+  let userMap = new Map();
+  
+  if (userIds.length > 0) {
+    const userList = await clerk.users.getUserList({ userId: userIds });
+    userMap = new Map(userList.data.map(u => [u.id, u]));
+  }
+
+  return requests.map(r => {
+    const u = userMap.get(r.user.clerkUserId);
+    return {
+      id: r.id,
+      userId: r.userId,
+      name: `${u?.firstName || ""} ${u?.lastName || ""}`.trim() || "Kullanıcı",
+      image: u?.imageUrl || ""
+    };
+  });
+}
+
+export async function getCommunityMembers(communityId: string) {
+  const { userId: clerkUserId } = await auth();
+  if (!clerkUserId) throw new Error("Unauthorized");
+  const me = await getInternalUser(clerkUserId);
+  if (!me) throw new Error("User not found");
+
+  const members = await prisma.communityMember.findMany({
+    where: { communityId, status: "ACCEPTED" },
+    include: { user: { select: { id: true, clerkUserId: true } } }
+  });
+
+  const clerk = await clerkClient();
+  const userIds = members.map(m => m.user.clerkUserId);
+  let userMap = new Map();
+  
+  if (userIds.length > 0) {
+    const userList = await clerk.users.getUserList({ userId: userIds });
+    userMap = new Map(userList.data.map(u => [u.id, u]));
+  }
+
+  return members.map(m => {
+    const u = userMap.get(m.user.clerkUserId);
+    return {
+      id: m.id,
+      userId: m.userId,
+      name: `${u?.firstName || ""} ${u?.lastName || ""}`.trim() || "Kullanıcı",
+      image: u?.imageUrl || "",
+      role: m.role
+    };
+  });
+}
+
+export async function deleteCommunity(communityId: string) {
+  const { userId: clerkUserId } = await auth();
+  if (!clerkUserId) throw new Error("Unauthorized");
+  const me = await getInternalUser(clerkUserId);
+  if (!me) throw new Error("User not found");
+
+  const community = await prisma.community.findUnique({ where: { id: communityId } });
+  if (!community || community.creatorId !== me.id) throw new Error("Sadece kurucu silebilir");
+
+  await prisma.community.delete({ where: { id: communityId } });
+  revalidatePath("/dashboard/blog");
+}
+
+export async function removeMember(communityId: string, targetUserId: string) {
+  const { userId: clerkUserId } = await auth();
+  if (!clerkUserId) throw new Error("Unauthorized");
+  const me = await getInternalUser(clerkUserId);
+  if (!me) throw new Error("User not found");
+
+  const myMemberInfo = await prisma.communityMember.findUnique({
+    where: { communityId_userId: { communityId, userId: me.id } }
+  });
+
+  if (!myMemberInfo || myMemberInfo.role !== "ADMIN") throw new Error("Yetkiniz yok");
+  if (me.id === targetUserId) throw new Error("Kendinizi çıkaramazsınız");
+
+  await prisma.communityMember.delete({
+    where: { communityId_userId: { communityId, userId: targetUserId } }
+  });
 
   revalidatePath("/dashboard/blog");
 }

@@ -135,6 +135,7 @@ export async function getPosts(
       include: {
         author: { select: { id: true, clerkUserId: true } },
         likes: { select: { id: true, userId: true } },
+        community: { select: { id: true, name: true } },
         comments: {
           orderBy: { createdAt: "asc" },
           include: { author: { select: { id: true, clerkUserId: true } } },
@@ -169,6 +170,8 @@ export async function getPosts(
         imageUrl: post.imageUrl,
         createdAt: post.createdAt,
         authorId: post.author.id,
+        communityId: post.community?.id,
+        communityName: post.community?.name,
         authorName:
           clerkUser
             ? `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim() || "Kullanıcı"
@@ -295,6 +298,7 @@ export async function getProfilePosts(targetInternalUserId: string, cursor?: str
       include: {
         author: { select: { id: true, clerkUserId: true } },
         likes: { select: { id: true, userId: true } },
+        community: { select: { id: true, name: true } },
         comments: {
           orderBy: { createdAt: "asc" },
           include: { author: { select: { id: true, clerkUserId: true } } },
@@ -331,6 +335,8 @@ export async function getProfilePosts(targetInternalUserId: string, cursor?: str
         imageUrl: post.imageUrl,
         createdAt: post.createdAt,
         authorId: post.author.id,
+        communityId: post.community?.id,
+        communityName: post.community?.name,
         authorName:
           clerkUser
             ? `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim() || "Kullanıcı"
