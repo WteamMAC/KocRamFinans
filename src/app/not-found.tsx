@@ -3,145 +3,173 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
-import { Home, Sparkles } from "lucide-react";
+import { Home } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function NotFound() {
   return (
-    <div className="relative min-h-screen w-full flex flex-col items-center justify-center overflow-hidden bg-[#FEF6E4] text-[#8C5000] font-sans">
-      
-      {/* Floating Clouds Background */}
-      <div className="absolute inset-0 pointer-events-none">
-        {[...Array(6)].map((_, i) => (
-          <motion.div
-            key={i}
-            initial={{ x: -200, y: Math.random() * 400 }}
-            animate={{ 
-              x: i % 2 === 0 ? [ -200, 2000 ] : [ 2000, -200 ],
-              y: [Math.random() * 400, Math.random() * 400 + 50, Math.random() * 400]
-            }}
-            transition={{ 
-              duration: 40 + Math.random() * 20, 
-              repeat: Infinity, 
-              ease: "linear" 
-            }}
-            className="absolute opacity-40"
-            style={{ 
-              top: `${10 + i * 15}%`, 
-              left: 0,
-              filter: 'blur(2px)'
-            }}
-          >
-            <svg width="200" height="120" viewBox="0 0 200 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M160 40C160 17.9086 142.091 0 120 0C106.636 0 94.819 6.55171 87.5879 16.6343C82.1643 12.4347 75.3676 10 68 10C51.4315 10 38 23.4315 38 40C38 41.3411 38.0883 42.6617 38.2587 43.955C16.4867 47.9625 0 67.0601 0 90C0 112.091 17.9086 130 40 130H160C182.091 130 200 112.091 200 90C200 67.9086 182.091 50 160 50V40Z" fill="#F18D02" fillOpacity="0.6"/>
-            </svg>
-          </motion.div>
-        ))}
+    <div
+      className="relative min-h-screen w-full flex flex-col items-center justify-center overflow-hidden"
+      style={{ background: "linear-gradient(160deg, #F18D02 0%, #e67e00 40%, #f5a623 100%)" }}
+    >
+      {/* Sky Clouds */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <svg className="absolute top-4 left-[-60px] opacity-80" width="340" height="180" viewBox="0 0 340 180" fill="none">
+          <ellipse cx="140" cy="110" rx="140" ry="70" fill="#F9A825" fillOpacity="0.7"/>
+          <ellipse cx="230" cy="90" rx="110" ry="60" fill="#F9A825" fillOpacity="0.6"/>
+          <ellipse cx="80" cy="120" rx="80" ry="50" fill="#FFB74D" fillOpacity="0.5"/>
+          <ellipse cx="300" cy="120" rx="60" ry="40" fill="#F9A825" fillOpacity="0.5"/>
+        </svg>
+        <svg className="absolute top-2 right-[-40px] opacity-80" width="300" height="160" viewBox="0 0 300 160" fill="none">
+          <ellipse cx="160" cy="100" rx="130" ry="65" fill="#F9A825" fillOpacity="0.7"/>
+          <ellipse cx="80" cy="80" rx="90" ry="55" fill="#FFB74D" fillOpacity="0.6"/>
+          <ellipse cx="240" cy="110" rx="70" ry="45" fill="#F9A825" fillOpacity="0.5"/>
+        </svg>
+        <svg className="absolute top-16 left-[20%] opacity-60" width="180" height="100" viewBox="0 0 180 100" fill="none">
+          <ellipse cx="90" cy="60" rx="90" ry="45" fill="#FFB74D" fillOpacity="0.6"/>
+          <ellipse cx="50" cy="50" rx="60" ry="35" fill="#F9A825" fillOpacity="0.5"/>
+          <ellipse cx="140" cy="55" rx="50" ry="30" fill="#FFB74D" fillOpacity="0.4"/>
+        </svg>
+        <svg className="absolute top-8 right-[22%] opacity-60" width="160" height="90" viewBox="0 0 160 90" fill="none">
+          <ellipse cx="80" cy="55" rx="80" ry="40" fill="#FFB74D" fillOpacity="0.6"/>
+          <ellipse cx="40" cy="45" rx="50" ry="30" fill="#F9A825" fillOpacity="0.5"/>
+          <ellipse cx="130" cy="50" rx="40" ry="25" fill="#FFB74D" fillOpacity="0.4"/>
+        </svg>
       </div>
 
-      {/* Decorative Ground Dunes */}
-      <div className="absolute bottom-0 left-0 w-full h-[30vh] pointer-events-none">
-        <svg className="absolute bottom-0 left-0 w-full" viewBox="0 0 1440 320" preserveAspectRatio="none">
-          <path fill="#F9EBD2" fillOpacity="1" d="M0,224L48,213.3C96,203,192,181,288,181.3C384,181,480,203,576,213.3C672,224,768,224,864,213.3C960,203,1056,181,1152,176C1248,171,1344,181,1392,186.7L1440,192L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+      {/* Ground / Dunes */}
+      <div className="absolute bottom-0 left-0 w-full pointer-events-none">
+        <svg className="absolute bottom-0 left-0 w-full" viewBox="0 0 1440 380" preserveAspectRatio="none">
+          <path d="M0,180 C200,80 400,260 720,160 C1040,60 1280,200 1440,140 L1440,380 L0,380 Z" fill="#F5DEB3" fillOpacity="0.5"/>
         </svg>
-        <svg className="absolute bottom-[-20px] left-0 w-full" viewBox="0 0 1440 320" preserveAspectRatio="none">
-          <path fill="#F1E0C6" fillOpacity="1" d="M0,256L60,240C120,224,240,192,360,192C480,192,600,224,720,218.7C840,213,960,171,1080,165.3C1200,160,1320,192,1380,208L1440,224L1440,320L1380,320C1320,320,1200,320,1080,320C960,320,840,320,720,320C600,320,480,320,360,320C240,320,120,320,60,320L0,320Z"></path>
+        <svg className="absolute bottom-0 left-0 w-full" viewBox="0 0 1440 340" preserveAspectRatio="none">
+          <path d="M0,220 C300,120 500,280 780,180 C1060,80 1300,240 1440,170 L1440,340 L0,340 Z" fill="#FAEBD7" fillOpacity="0.8"/>
+        </svg>
+        <svg className="absolute bottom-0 left-0 w-full" viewBox="0 0 1440 300" preserveAspectRatio="none">
+          <path d="M0,260 C250,160 500,300 760,220 C1020,140 1250,280 1440,210 L1440,300 L0,300 Z" fill="#FFF8F0"/>
+        </svg>
+
+        {/* Plants Left */}
+        <svg className="absolute bottom-[110px] left-[6%]" width="60" height="80" viewBox="0 0 60 80">
+          <rect x="28" y="30" width="4" height="50" fill="#D4851A" rx="2"/>
+          <ellipse cx="30" cy="28" rx="14" ry="20" fill="#E8960F" opacity="0.85"/>
+          <ellipse cx="18" cy="38" rx="10" ry="16" fill="#D4851A" opacity="0.7"/>
+          <ellipse cx="42" cy="40" rx="9" ry="14" fill="#D4851A" opacity="0.7"/>
+        </svg>
+        <svg className="absolute bottom-[90px] left-[12%]" width="40" height="55" viewBox="0 0 40 55">
+          <rect x="18" y="20" width="3" height="35" fill="#C97A10" rx="1.5"/>
+          <ellipse cx="20" cy="18" rx="10" ry="14" fill="#D4851A" opacity="0.8"/>
+          <ellipse cx="12" cy="26" rx="7" ry="11" fill="#C97A10" opacity="0.65"/>
+        </svg>
+        <svg className="absolute bottom-[100px] left-[19%]" width="50" height="65" viewBox="0 0 50 65">
+          <rect x="23" y="25" width="4" height="40" fill="#D4851A" rx="2"/>
+          <ellipse cx="25" cy="23" rx="12" ry="17" fill="#E8960F" opacity="0.8"/>
+        </svg>
+
+        {/* Plants Right */}
+        <svg className="absolute bottom-[105px] right-[5%]" width="65" height="85" viewBox="0 0 65 85">
+          <rect x="30" y="32" width="4" height="53" fill="#D4851A" rx="2"/>
+          <ellipse cx="32" cy="30" rx="15" ry="22" fill="#E8960F" opacity="0.85"/>
+          <ellipse cx="20" cy="42" rx="11" ry="17" fill="#D4851A" opacity="0.7"/>
+          <ellipse cx="44" cy="44" rx="10" ry="15" fill="#D4851A" opacity="0.7"/>
+        </svg>
+        <svg className="absolute bottom-[85px] right-[13%]" width="45" height="60" viewBox="0 0 45 60">
+          <rect x="21" y="22" width="3" height="38" fill="#C97A10" rx="1.5"/>
+          <ellipse cx="22" cy="20" rx="11" ry="15" fill="#D4851A" opacity="0.8"/>
+        </svg>
+        <svg className="absolute bottom-[100px] right-[21%]" width="50" height="68" viewBox="0 0 50 68">
+          <rect x="23" y="26" width="4" height="42" fill="#D4851A" rx="2"/>
+          <ellipse cx="25" cy="24" rx="13" ry="18" fill="#E8960F" opacity="0.8"/>
+          <ellipse cx="15" cy="34" rx="9" ry="13" fill="#C97A10" opacity="0.65"/>
+        </svg>
+
+        {/* Coins */}
+        <svg className="absolute bottom-[160px] left-[44%]" width="100" height="32" viewBox="0 0 100 32">
+          <ellipse cx="50" cy="16" rx="50" ry="16" fill="#D4A017" opacity="0.9"/>
+          <ellipse cx="50" cy="14" rx="46" ry="13" fill="#F0C040"/>
+          <text x="50" y="19" textAnchor="middle" fontSize="12" fill="#C8940D" fontWeight="bold">$</text>
+          <line x1="35" y1="8" x2="60" y2="24" stroke="#C8940D" strokeWidth="1.5" strokeLinecap="round"/>
+          <line x1="55" y1="6" x2="45" y2="22" stroke="#C8940D" strokeWidth="1" strokeLinecap="round"/>
+        </svg>
+        <svg className="absolute bottom-[148px] left-[30%]" width="50" height="16" viewBox="0 0 50 16">
+          <ellipse cx="25" cy="8" rx="25" ry="8" fill="#D4A017" opacity="0.75"/>
+          <ellipse cx="25" cy="7" rx="22" ry="6.5" fill="#F0C040" opacity="0.85"/>
+        </svg>
+        <svg className="absolute bottom-[142px] right-[28%]" width="45" height="14" viewBox="0 0 45 14">
+          <ellipse cx="22" cy="7" rx="22" ry="7" fill="#D4A017" opacity="0.7"/>
+          <ellipse cx="22" cy="6" rx="19" ry="5.5" fill="#F0C040" opacity="0.8"/>
+        </svg>
+        <svg className="absolute bottom-[152px] left-[38%]" width="20" height="12" viewBox="0 0 20 12">
+          <ellipse cx="10" cy="6" rx="10" ry="6" fill="#E8B820" opacity="0.65"/>
+        </svg>
+        <svg className="absolute bottom-[155px] right-[35%]" width="16" height="10" viewBox="0 0 16 10">
+          <ellipse cx="8" cy="5" rx="8" ry="5" fill="#D4A017" opacity="0.6"/>
         </svg>
       </div>
 
       {/* Main Content */}
-      <div className="relative z-10 flex flex-col items-center justify-center text-center px-4">
+      <div className="relative z-10 flex flex-col items-center justify-center text-center px-4 w-full" style={{marginTop: '-60px'}}>
         <motion.div
-          initial={{ scale: 0.5, opacity: 0, rotateX: 45 }}
-          animate={{ scale: 1, opacity: 1, rotateX: 0 }}
-          transition={{ 
-            type: "spring", 
-            stiffness: 100, 
-            damping: 10,
-            delay: 0.2
-          }}
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+          className="mb-6"
+        >
+          <h2 className="text-2xl md:text-3xl font-bold text-white drop-shadow-md mb-1">
+            Oops! Bir hata oldu sanırım.
+          </h2>
+          <p className="text-white/80 text-base md:text-lg font-medium">
+            Aradığınız site finansal radarımızdan kaçmış!
+          </p>
+        </motion.div>
+
+        <motion.div
+          initial={{ scale: 0.7, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: "spring", stiffness: 120, damping: 12, delay: 0.15 }}
           className="relative"
         >
-          {/* Big 3D 404 Text */}
-          <h1 className="text-[12rem] md:text-[18rem] font-black leading-none select-none
-            text-[#F18D02] 
-            [text-shadow:0_1px_0_#8C5000,0_2px_0_#8C5000,0_3px_0_#8C5000,0_4px_0_#8C5000,0_5px_0_#8C5000,0_6px_0_#8C5000,0_7px_0_#8C5000,0_8px_0_#8C5000,0_20px_30px_rgba(140,80,0,0.4)]"
+          <h1
+            className="font-black select-none leading-none"
+            style={{
+              fontSize: "clamp(130px, 20vw, 220px)",
+              color: "#E8780A",
+              textShadow: `
+                0 2px 0 #C5620A,
+                0 4px 0 #A85208,
+                0 6px 0 #8C4207,
+                0 8px 0 #703205,
+                0 10px 0 #582804,
+                0 30px 40px rgba(100,40,0,0.35)
+              `,
+            }}
           >
             404
           </h1>
-          
-          {/* Scattered Coins (broken/decorative) */}
-          <motion.div 
-            animate={{ 
-              y: [0, -10, 0],
-              rotate: [0, 5, 0]
-            }}
-            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute -top-10 -right-10 text-[#FFD700]"
-          >
-            <Sparkles size={48} className="text-[#F18D02]" />
-          </motion.div>
         </motion.div>
 
         <motion.div
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.6 }}
-          className="max-w-md"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+          className="mt-4 mb-8"
         >
-          <h2 className="text-3xl md:text-4xl font-bold mb-4 bg-gradient-to-r from-[#8C5000] to-[#F18D02] bg-clip-text text-transparent">
-            Sayfa Bulunamadı
-          </h2>
-          <p className="text-[#8C5000]/70 text-lg mb-10 font-medium">
-            Görünüşe göre mali yolculuğunuzda yanlış bir sapağa girdiniz. 
-            Endişelenmeyin, sizi ana merkeze geri götürebiliriz.
-          </p>
-
-          <Link 
+          <Link
             href="/"
             className={cn(
               buttonVariants({ variant: "default" }),
-              "h-14 px-10 text-lg font-bold rounded-2xl shadow-[0_10px_25px_-5px_rgba(241,141,2,0.4)] hover:shadow-[0_15px_35px_-5px_rgba(241,141,2,0.6)] bg-[#F18D02] hover:bg-[#8C5000] text-white transition-all duration-300 transform hover:-translate-y-1 active:scale-95 flex items-center gap-3"
+              "h-13 px-10 py-3.5 text-base font-bold rounded-full text-white transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl active:scale-95 flex items-center gap-2.5"
             )}
+            style={{
+              background: "linear-gradient(135deg, #F18D02, #E07000)",
+              boxShadow: "0 8px 24px rgba(180,80,0,0.4), inset 0 1px 0 rgba(255,255,255,0.2)",
+              border: "none",
+            }}
           >
-            <Home className="w-6 h-6" />
+            <Home className="w-5 h-5" />
             Ana Menüye Dön
           </Link>
         </motion.div>
-      </div>
-
-      {/* Floating Broken Coin Elements */}
-      <div className="absolute inset-0 pointer-events-none">
-        {[...Array(8)].map((_, i) => (
-          <motion.div
-            key={i}
-            initial={{ 
-              x: Math.random() * 1000 - 500, 
-              y: Math.random() * 1000 - 500,
-              opacity: 0,
-              rotate: Math.random() * 360
-            }}
-            animate={{ 
-              opacity: [0, 0.6, 0],
-              y: [500, -500],
-              rotate: [0, 360]
-            }}
-            transition={{ 
-              duration: 10 + Math.random() * 20, 
-              repeat: Infinity,
-              delay: Math.random() * 10
-            }}
-            className="absolute"
-            style={{ 
-              left: `${Math.random() * 100}%`,
-              top: '100%'
-            }}
-          >
-             <div className="w-8 h-8 rounded-full border-4 border-[#F18D02] opacity-20 relative overflow-hidden">
-                <div className="absolute top-1/2 left-0 w-full h-[2px] bg-[#F18D02] rotate-45" />
-             </div>
-          </motion.div>
-        ))}
       </div>
     </div>
   );
