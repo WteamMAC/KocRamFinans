@@ -148,7 +148,12 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
                 </div>
                 <Button
                     onClick={() => setIsAdding(!isAdding)}
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl px-6 h-12 font-bold shadow-lg shadow-destructive/20 animate-in fade-in slide-in-from-right-4 duration-500"
+                    className={cn(
+                        "rounded-2xl px-8 h-12 font-black text-xs uppercase tracking-widest transition-all shadow-lg active:scale-95",
+                        isAdding 
+                            ? "bg-rose-500/10 text-rose-600 hover:bg-rose-500/20 shadow-rose-500/10" 
+                            : "bg-primary text-primary-foreground hover:brightness-110 shadow-primary/20"
+                    )}
                 >
                     {isAdding ? <X className="w-4 h-4 mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
                     {isAdding ? "Vazgeç" : "Yeni Borç Ekle"}
@@ -168,7 +173,10 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
                                     const months = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
                                     const currentMonth = new Date().getMonth();
                                     const data = [];
-                                    for (let i = 0; i < 6; i++) {
+                                    const maxRemaining = Math.max(...activeDebts.map(d => d.remainingInstallments || 0), 1);
+                                    const displayCount = Math.min(maxRemaining, 60); // Cap at 5 years
+
+                                    for (let i = 0; i < displayCount; i++) {
                                         const mIdx = (currentMonth + i) % 12;
                                         let total = 0;
                                         activeDebts.forEach(d => {
@@ -365,15 +373,21 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
                                     )}>
                                         {debt.type === "Kredi Kartı" ? <CreditCard className="w-6 h-6" /> : <Landmark className="w-6 h-6" />}
                                     </div>
-                                    <div className="flex flex-col gap-1 ml-4 mr-auto">
-                                        {(() => {
-                                            const payment = monthlyPayments?.find((p: any) => p.description?.includes(debt.description || debt.type));
-                                            if (payment) {
-                                                if (payment.amount === 0) return <span className="text-[10px] bg-amber-500/10 text-amber-600 px-2 py-0.5 rounded-full font-bold">ERTELENDİ</span>;
-                                                return <span className="text-[10px] bg-emerald-500/10 text-emerald-600 px-2 py-0.5 rounded-full font-bold">ÖDENDİ</span>;
-                                            }
-                                            return <span className="text-[10px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full font-bold">BEKLİYOR</span>;
-                                        })()}
+                                    <div className="flex flex-col gap-1.5 ml-4 mr-auto">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-[10px] font-black text-primary/60 uppercase tracking-[0.2em]">{debt.type}</span>
+                                            {(() => {
+                                                const payment = monthlyPayments?.find((p: any) => p.description?.includes(debt.description || debt.type));
+                                                if (payment) {
+                                                    if (payment.amount === 0) return <span className="text-[10px] bg-amber-500/10 text-amber-600 px-2 py-0.5 rounded-full font-bold uppercase tracking-tight">ERTELENDİ</span>;
+                                                    return <span className="text-[10px] bg-emerald-500/10 text-emerald-600 px-2 py-0.5 rounded-full font-bold uppercase tracking-tight">ÖDENDİ</span>;
+                                                }
+                                                return <span className="text-[10px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full font-bold uppercase tracking-tight">BEKLİYOR</span>;
+                                            })()}
+                                        </div>
+                                        <h4 className="text-[11px] font-bold text-foreground opacity-90 line-clamp-1">
+                                            {debt.description || `${debt.type} Borcu`}
+                                        </h4>
                                     </div>
                                     <div className="text-right flex flex-col items-end gap-1">
                                         <DropdownMenu>
@@ -567,8 +581,11 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
                             <h3 className="text-xl font-heading font-bold text-primary">
                                 {payModal.isClose ? "Borcu Kapat" : "Taksit Ödemesi"}
                             </h3>
-                            <button onClick={() => setPayModal(null)} className="text-muted-foreground hover:text-destructive">
-                                <X className="w-6 h-6" />
+                            <button 
+                                onClick={() => setPayModal(null)} 
+                                className="h-10 w-10 flex items-center justify-center rounded-full hover:bg-rose-500/10 hover:text-rose-500 text-muted-foreground transition-all"
+                            >
+                                <X className="w-5 h-5" />
                             </button>
                         </div>
                         <div className="p-8 flex flex-col gap-6">

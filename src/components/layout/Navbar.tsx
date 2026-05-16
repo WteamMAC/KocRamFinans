@@ -3,21 +3,8 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useAuth, SignInButton } from "@clerk/nextjs";
-import { useTheme } from "next-themes";
-import { Sun, Moon } from "lucide-react";
-
 export default function Navbar() {
   const { userId, isLoaded } = useAuth();
-  const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  const toggleTheme = () => {
-    setTheme(theme === "dark" ? "light" : "dark");
-  };
 
   return (
     <header className="bg-background/90 backdrop-blur-md sticky top-0 z-50 border-b border-border/30 shadow-ambient-low transition-all duration-300">
@@ -36,16 +23,6 @@ export default function Navbar() {
         </nav>
         
         <div className="flex items-center gap-4">
-          {mounted && (
-            <button
-              onClick={toggleTheme}
-              className="p-2.5 rounded-xl text-muted-foreground hover:text-primary hover:bg-muted transition-all shadow-sm"
-              aria-label="Tema Değiştir"
-            >
-              {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-            </button>
-          )}
-
           {!isLoaded ? (
             <div className="h-10 w-24 bg-muted animate-pulse rounded-xl"></div>
           ) : !userId ? (

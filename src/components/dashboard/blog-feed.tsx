@@ -257,7 +257,7 @@ function CreatePostBox({ currentUserId, communityId, communityName, userRole, on
           {imageUrl && (
             <div className="relative mt-2 rounded-2xl overflow-hidden border border-border/20 group">
               <img src={imageUrl} alt="Önizleme" className="w-full h-auto max-h-[300px] object-cover" />
-              <button onClick={() => setImageUrl(null)} className="absolute top-2 right-2 p-1.5 bg-black/50 text-white rounded-full hover:bg-black/70 transition-colors backdrop-blur-sm">
+              <button onClick={() => setImageUrl(null)} className="absolute top-2 right-2 p-1.5 bg-black/50 text-white rounded-full hover:bg-rose-500 transition-all backdrop-blur-sm">
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -424,7 +424,7 @@ function CommentSection({ post, currentUserId, onTagClick, onCommentAdded, onCom
                 <Link href={c.authorUsername ? `/dashboard/profile/${c.authorUsername}` : `/dashboard/profile/${c.authorId}`} className="text-[11px] font-bold text-primary hover:underline">{c.authorName}</Link>
                 <div className="flex items-center gap-1">
                   <span className="text-[10px] text-muted-foreground opacity-50">{formatTimeAgo(c.createdAt)}</span>
-                  {c.isMyComment && <button onClick={() => handleDelete(c.id)} className="opacity-0 group-hover:opacity-100 transition-opacity ml-1 text-rose-400 hover:text-rose-600"><X className="h-3 w-3" /></button>}
+                  {c.isMyComment && <button onClick={() => handleDelete(c.id)} className="opacity-0 group-hover:opacity-100 transition-all ml-1 p-1 rounded-full text-rose-400 hover:text-rose-600 hover:bg-rose-500/10"><X className="h-3 w-3" /></button>}
                 </div>
               </div>
               <div className="text-xs text-foreground mt-0.5 leading-relaxed">{contentWithTagsAndMentions(c.content, onTagClick)}</div>
@@ -588,7 +588,7 @@ function PostCard({ post, currentUserId, onTagClick, onCommunityClick, onComment
         <div className="flex items-center gap-2">
           {!post.isMyPost && <Link href={post.authorUsername ? `/dashboard/profile/${post.authorUsername}` : `/dashboard/profile/${post.authorId}`}><Button variant="ghost" size="sm" className="h-8 rounded-xl text-[11px] font-bold text-primary hover:bg-primary/10">Profili Gör</Button></Link>}
           {(post.isMyPost || post.isAdmin) && (
-            <button onClick={handleDelete} disabled={isPending} className="p-2 rounded-xl text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 transition-all duration-200">
+            <button onClick={handleDelete} disabled={isPending} className="p-2 rounded-full text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 transition-all duration-200">
               <Trash2 className="h-4 w-4" />
             </button>
           )}
@@ -674,7 +674,7 @@ function CommunityAdminPanel({ communityId, onClose, onDeleteSuccess }: {
         <div className="p-6 space-y-6">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-black text-foreground">Topluluk Yönetimi</h2>
-            <button onClick={onClose} className="p-2 hover:bg-muted rounded-full"><X className="h-5 w-5" /></button>
+            <button onClick={onClose} className="p-2 hover:bg-rose-500/10 hover:text-rose-500 text-muted-foreground rounded-full transition-all"><X className="h-5 w-5" /></button>
           </div>
 
           <div className="flex p-1 bg-muted/30 rounded-2xl border border-border/10">
@@ -698,7 +698,7 @@ function CommunityAdminPanel({ communityId, onClose, onDeleteSuccess }: {
                       </div>
                       <div className="flex gap-2">
                         <button onClick={() => handleAction(r.userId, 'ACCEPT')} className="p-2 bg-emerald-500/10 text-emerald-600 rounded-xl hover:bg-emerald-500/20"><Check className="h-4 w-4" /></button>
-                        <button onClick={() => handleAction(r.userId, 'REJECT')} className="p-2 bg-rose-500/10 text-rose-600 rounded-xl hover:bg-rose-500/20"><X className="h-4 w-4" /></button>
+                        <button onClick={() => handleAction(r.userId, 'REJECT')} className="p-2 bg-rose-500/10 text-rose-600 rounded-full hover:bg-rose-500/20 transition-all"><X className="h-4 w-4" /></button>
                       </div>
                     </div>
                   ))}

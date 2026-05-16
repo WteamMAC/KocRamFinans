@@ -9,8 +9,6 @@ import {
   ArrowDownRight, 
   Wallet, 
   RefreshCw, 
-  Moon,
-  Sun,
   Plus,
   ShoppingCart,
   Utensils,
@@ -25,7 +23,6 @@ import {
   Filter
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useTheme } from "next-themes";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useRouter } from "next/navigation";
 import { addIncome, addExpense } from "@/app/actions/income-expense";
@@ -104,7 +101,6 @@ export function IncomeExpenseClient({
     date: new Date().toISOString().split('T')[0],
   });
   const [filterCategory, setFilterCategory] = useState("Tümü");
-  const { theme, setTheme } = useTheme();
 
   useEffect(() => {
     setMounted(true);

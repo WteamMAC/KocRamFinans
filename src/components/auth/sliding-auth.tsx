@@ -13,18 +13,13 @@ export default function SlidingAuth() {
   const router = useRouter();
   const isLogin = pathname.includes("sign-in");
   const [isLargeScreen, setIsLargeScreen] = useState(false);
-  const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     const checkScreen = () => setIsLargeScreen(window.innerWidth >= 1024);
     checkScreen();
     window.addEventListener("resize", checkScreen);
-    setMounted(true);
     return () => window.removeEventListener("resize", checkScreen);
   }, []);
-
-  const toggleTheme = () => setTheme(theme === "dark" ? "light" : "dark");
 
   const toggleAuth = () => {
     const newPath = isLogin ? "/sign-up" : "/sign-in";
@@ -33,15 +28,6 @@ export default function SlidingAuth() {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-0 md:p-6 overflow-hidden relative">
-      {mounted && (
-        <button
-          onClick={toggleTheme}
-          className="absolute top-6 right-6 z-50 p-3 rounded-xl bg-background/80 backdrop-blur-md border border-border text-foreground hover:bg-muted transition-all shadow-sm"
-          aria-label="Tema Değiştir"
-        >
-          {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-        </button>
-      )}
       <main className="w-full h-screen md:h-[calc(100vh-48px)] max-h-[900px] flex max-w-[1200px] mx-auto bg-card md:rounded-[32px] md:shadow-ambient-high overflow-hidden relative">
         
         {/* Form Container */}
