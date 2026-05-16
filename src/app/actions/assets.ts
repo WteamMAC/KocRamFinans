@@ -56,7 +56,7 @@ export async function addAsset(data: {
       try {
         const prices = await getLivePrices([trimmedSymbol, "TRY=X"]);
         const livePrice = prices.get(trimmedSymbol);
-        const usdTry = prices.get("TRY=X")?.price || 34;
+        const usdTry = prices.get("TRY=X")?.price || 36.45;
 
         if (livePrice && livePrice.price > 0) {
           const priceAsTry = finalPrice;
@@ -66,9 +66,8 @@ export async function addAsset(data: {
           const diffIfUsd = Math.abs(priceAsUsdConvertedToTry - livePrice.price);
 
           // Eğer kullanıcının girdiği fiyat USD olarak varsayılıp TRY'ye çevrildiğinde
-          // güncel TRY piyasa fiyatına daha yakın oluyorsa, kullanıcı büyük ihtimalle USD girmiştir.
-          const isCryptoOrUs = standardizedType === "CRYPTO" || standardizedType === "NASDAQ";
-          if (isCryptoOrUs && diffIfUsd < diffIfTry) {
+          // güncel piyasa fiyatına daha yakın oluyorsa, kullanıcı kesinlikle USD girmiştir.
+          if (diffIfUsd < diffIfTry && (diffIfUsd / livePrice.price < 0.5)) {
             finalPrice = priceAsUsdConvertedToTry;
           }
         }
