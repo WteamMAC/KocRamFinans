@@ -63,10 +63,10 @@ const defaultRates: Record<string, number> = {
 
 const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined);
 
-export function CurrencyProvider({ children }: { children: React.ReactNode }) {
+export function CurrencyProvider({ children, initialRates }: { children: React.ReactNode; initialRates?: Record<string, number> }) {
   const [displayCurrency, setDisplayCurrencyState] = useState<string>("TRY");
-  const [rates, setRates] = useState<Record<string, number>>(defaultRates);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [rates, setRates] = useState<Record<string, number>>(() => initialRates ? { ...defaultRates, ...initialRates, TRY: 1 } : defaultRates);
+  const [isLoading, setIsLoading] = useState<boolean>(!initialRates);
 
   // İlk yüklemede localStorage'dan oku
   useEffect(() => {

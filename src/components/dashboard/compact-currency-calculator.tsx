@@ -14,6 +14,7 @@ import { RefreshCw, ArrowRightLeft, TrendingUp } from "lucide-react";
 import { getExchangeRatesAction } from "@/app/actions/market";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import { useCurrency } from "@/context/currency-context";
 
 const CURRENCIES = [
   { code: "TRY", name: "TL", icon: "🇹🇷", color: "text-rose-500" },
@@ -35,39 +36,24 @@ const CURRENCIES = [
 ];
 
 export function CompactCurrencyCalculator() {
+  const { rates, isLoading: currencyLoading } = useCurrency();
   const [amount, setAmount] = useState<number>(1);
   const [fromCurrency, setFromCurrency] = useState("USD");
   const [toCurrency, setToCurrency] = useState("TRY");
-  const [rates, setRates] = useState<Record<string, number>>({
-    TRY: 1, USD: 45.50, EUR: 49.36, GBP: 58.01, CHF: 51.41,
-    JPY: 0.294, AED: 12.39, SAR: 12.13, RUB: 0.457, CAD: 32.73,
-    AUD: 29.80, CNY: 6.28, SGD: 33.95, NOK: 4.10, SEK: 4.17, XAU: 4315,
-  });
   const [loading, setLoading] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
 
-  const fetchRates = async () => {
+  const handleRefresh = async () => {
     setLoading(true);
     try {
-      const data = await getExchangeRatesAction();
-      if (data) {
-        setRates({
-          TRY: 1,
-          ...data
-        });
-      }
+      await getExchangeRatesAction();
+      window.location.reload();
     } catch (error) {
-      console.error("Failed to fetch rates:", error);
+      console.error("Failed to refresh rates:", error);
     } finally {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    fetchRates();
-    const interval = setInterval(fetchRates, 60000 * 5);
-    return () => clearInterval(interval);
-  }, []);
 
   const handleSwap = () => {
     setFromCurrency(toCurrency);
@@ -186,12 +172,12 @@ export function CompactCurrencyCalculator() {
       <Button
         variant="ghost"
         size="icon"
-        onClick={fetchRates}
-        disabled={loading}
+        onClick={handleRefresh}
+        disabled={loading || currencyLoading}
         className="h-9 w-9 rounded-xl hover:bg-primary/15 text-primary/40 hover:text-primary transition-all duration-500 z-10 relative overflow-hidden group/refresh"
       >
-        <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
-        {loading && (
+        <RefreshCw className={cn("h-4 w-4", (loading || currencyLoading) && "animate-spin")} />
+        {(loading || currencyLoading) && (
           <span className="absolute inset-0 bg-primary/5 animate-pulse" />
         )}
       </Button>

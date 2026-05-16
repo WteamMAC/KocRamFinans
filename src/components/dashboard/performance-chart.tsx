@@ -83,6 +83,39 @@ export function PerformanceChart({ incomes, expenses, investments }: Performance
   }, [incomes, expenses, investments, timeRange]);
 
   if (!mounted) return <div className="h-[300px] w-full" />;
+  
+  const hasData = incomes.length > 0 || expenses.length > 0 || investments.length > 0;
+
+  if (!hasData) {
+    return (
+      <>
+        <CardHeader className="bg-muted/30 border-b border-border/10 h-20 !flex flex-row items-center justify-between px-6 py-0">
+          <CardTitle className="text-xl font-heading font-bold text-primary flex items-center gap-2">
+            <TrendingUp className="h-5 w-5 text-accent" /> Gelişim Grafiği
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-12 flex flex-col items-center justify-center text-center">
+            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-6">
+                <TrendingUp className="h-8 w-8 text-primary/40" />
+            </div>
+            <h3 className="text-lg font-heading font-bold text-primary mb-2">Finansal Gelişiminiz Burada Görünecek</h3>
+            <p className="text-sm text-muted-foreground max-w-[320px] mb-8">
+                Gelir, gider veya yatırımlarınızı takip etmeye başladığınızda bu grafik otomatik olarak oluşacaktır.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-lg">
+              <div className="p-4 bg-muted/20 border border-border/30 rounded-2xl text-left">
+                <p className="text-xs font-black text-primary uppercase tracking-widest mb-1">Gelir & Gider</p>
+                <p className="text-[10px] text-muted-foreground leading-relaxed">Nakit akışınızı yönetmek için ilk gelirinizi veya giderinizi kaydedin.</p>
+              </div>
+              <div className="p-4 bg-muted/20 border border-border/30 rounded-2xl text-left">
+                <p className="text-xs font-black text-primary uppercase tracking-widest mb-1">Yatırımlar</p>
+                <p className="text-[10px] text-muted-foreground leading-relaxed">Varlıklarınızın zaman içindeki büyümesini görmek için portföyünüzü oluşturun.</p>
+              </div>
+            </div>
+        </CardContent>
+      </>
+    );
+  }
 
   const isDark = theme === "dark";
   const primaryColor = isDark ? "#c084fc" : "#8c5000";

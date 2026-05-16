@@ -224,27 +224,30 @@ export function ChatAI() {
             exit={{ y: 20, opacity: 0, scale: 0.95 }}
             className={cn(
               "bg-card/95 backdrop-blur-2xl border border-border/40 shadow-2xl rounded-3xl overflow-hidden flex flex-col transition-[height,width] duration-300",
-              isMinimized ? "h-20 w-[calc(100vw-2rem)] sm:w-72" : "h-[600px] max-h-[80vh] w-[calc(100vw-2rem)] sm:w-[400px] md:w-[450px]"
+              isMinimized ? "h-20 w-[calc(100vw-2rem)] sm:w-80" : "h-[600px] max-h-[80vh] w-[calc(100vw-2rem)] sm:w-[400px] md:w-[450px]"
             )}
           >
-            <CardHeader className="p-6 bg-primary text-primary-foreground flex flex-row items-center justify-between space-y-0">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-primary-foreground/20 rounded-xl flex items-center justify-center">
+            <CardHeader className={cn(
+              "bg-primary text-primary-foreground flex flex-row items-center justify-between space-y-0 transition-all",
+              isMinimized ? "p-4 h-20" : "p-6"
+            )}>
+              <div className="flex items-center gap-3 overflow-hidden">
+                <div className="w-10 h-10 bg-primary-foreground/20 rounded-xl flex items-center justify-center shrink-0">
                   <Bot className="h-6 w-6" />
                 </div>
-                <div>
-                  <CardTitle className="text-lg font-heading font-bold tracking-tight">Koç Ram Finans AI</CardTitle>
+                <div className="overflow-hidden">
+                  <CardTitle className="text-base sm:text-lg font-heading font-bold tracking-tight whitespace-nowrap truncate">Koç Ram Finans AI</CardTitle>
                   <div className="flex items-center gap-1.5">
                     <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
                     <span className="text-[10px] font-bold uppercase tracking-widest opacity-70">Çevrimiçi Asistan</span>
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-white/10 text-primary-foreground" onClick={() => setIsMinimized(!isMinimized)}>
+              <div className="flex items-center gap-2 shrink-0 ml-2">
+                <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-white/10 text-primary-foreground" onClick={(e) => { e.stopPropagation(); setIsMinimized(!isMinimized); }}>
                   {isMinimized ? <Maximize2 className="h-4 w-4" /> : <Minimize2 className="h-4 w-4" />}
                 </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-white/10 text-primary-foreground" onClick={() => setIsOpen(false)}>
+                <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-white/10 text-primary-foreground" onClick={(e) => { e.stopPropagation(); setIsOpen(false); }}>
                   <X className="h-4 w-4" />
                 </Button>
               </div>

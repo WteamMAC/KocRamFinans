@@ -36,6 +36,29 @@ export function BudgetOverview({ incomes, expenses }: BudgetOverviewProps) {
     return <div className="h-[300px] md:h-[350px] w-full bg-muted animate-pulse rounded-3xl" />;
   }
 
+  if (totalIncome === 0 && totalExpense === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center p-12 text-center bg-muted/20 border border-dashed rounded-[32px] border-border/50 h-[300px] md:h-[350px]">
+        <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-6">
+          <BarChart className="h-8 w-8 text-primary/40" />
+        </div>
+        <h3 className="text-lg font-heading font-bold text-primary mb-2">Bütçe Özeti Henüz Boş</h3>
+        <p className="text-sm text-muted-foreground max-w-[320px] mb-8 leading-relaxed">
+          Gelir ve giderlerinizi eklediğinizde, bütçenizin genel durumunu bu grafik üzerinden takip edebileceksiniz.
+        </p>
+        <div className="p-4 bg-card border border-border/40 rounded-2xl flex items-center gap-4 text-left w-full max-w-sm">
+          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+            <span className="text-xs font-black">+</span>
+          </div>
+          <div>
+            <p className="text-[11px] font-black text-primary uppercase tracking-widest mb-0.5">Hızlı Başlangıç</p>
+            <p className="text-[10px] text-muted-foreground">"Gelir & Gider" sayfasına giderek ilk kaydınızı oluşturun.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="h-[300px] md:h-[350px] w-full">
       <ResponsiveContainer width="100%" height="100%">

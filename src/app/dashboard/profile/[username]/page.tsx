@@ -36,7 +36,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   else if (interactionScore > 50) investorLevel = "Deneyimli";
 
   return (
-    <div className="flex-1 p-4 md:p-8 pt-6 md:pt-10 bg-background min-h-screen relative overflow-x-hidden">
+    <div className="flex-1 p-6 md:p-12 pt-8 md:pt-14 bg-background min-h-screen relative overflow-x-hidden">
       {/* Abstract Background Elements Removed */}
 
       <div className="max-w-7xl mx-auto space-y-10 relative">

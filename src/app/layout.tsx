@@ -1,17 +1,17 @@
 import type { Metadata } from "next";
-import { Montserrat, Work_Sans } from "next/font/google";
+import { Outfit, Inter } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
 import { trTR } from "@clerk/localizations";
 
-const montserrat = Montserrat({
-  variable: "--font-montserrat",
+const outfit = Outfit({
+  variable: "--font-outfit",
   subsets: ["latin"],
-  weight: ["400", "600", "700"],
+  weight: ["400", "500", "600", "700", "800", "900"],
 });
 
-const workSans = Work_Sans({
-  variable: "--font-work-sans",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
 });
 
@@ -22,12 +22,15 @@ export const metadata: Metadata = {
 
 import { ThemeProvider } from "@/components/theme-provider";
 import { CurrencyProvider } from "@/context/currency-context";
+import { getExchangeRatesAction } from "@/app/actions/market";
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const initialRates = await getExchangeRatesAction();
+
   return (
     <ClerkProvider 
       afterSignOutUrl="/"
@@ -41,7 +44,7 @@ export default function RootLayout({
         variables: {
           colorPrimary: "#8c5000",
           borderRadius: "0.5rem",
-          fontFamily: "var(--font-work-sans), var(--font-montserrat), sans-serif",
+          fontFamily: "var(--font-inter), var(--font-outfit), sans-serif",
         },
         elements: {
           card: "shadow-ambient-high border border-border/20 rounded-2xl bg-card text-card-foreground",
@@ -62,7 +65,7 @@ export default function RootLayout({
       <html
         lang="tr"
         suppressHydrationWarning
-        className={`${montserrat.variable} ${workSans.variable} h-full antialiased`}
+        className={`${outfit.variable} ${inter.variable} h-full antialiased`}
       >
         <body className="min-h-full flex flex-col font-sans bg-background text-foreground">
           <ThemeProvider
@@ -71,7 +74,7 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
-            <CurrencyProvider>
+            <CurrencyProvider initialRates={initialRates || undefined}>
               {children}
             </CurrencyProvider>
           </ThemeProvider>

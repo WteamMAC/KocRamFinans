@@ -22,42 +22,58 @@ export interface PriceResult {
   error?: string;
 }
 
-// Bellek içi fiyat önbelleği ve yaşam süresi (2 Dakika)
-const priceCache = new Map<string, { data: PriceResult; timestamp: number }>();
-const CACHE_TTL = 2 * 60 * 1000;
+import { prisma } from "@/lib/prisma";
+
+// Önbellek yaşam süresi (1 Saat = 60 * 60 * 1000)
+const CACHE_TTL = 60 * 60 * 1000;
 
 export async function getLivePrices(symbols: string[]): Promise<Map<string, PriceResult>> {
   const results = new Map<string, PriceResult>();
-  const symbolsToFetch: string[] = [];
+  const symbolsToFetchFromApi: string[] = [];
   const now = Date.now();
 
-  // Her zaman temel döviz ve emtia paritelerini çekelim (Altın, Emtia, Döviz kurları için)
+  // Her zaman temel döviz ve emtia paritelerini işleyelim
   const coreBenchmarks = ["USDTRY=X", "EURTRY=X", "GBPTRY=X", "GC=F", "SI=F", "BZ=F"];
   const allSymbolsToProcess = Array.from(new Set([...symbols, ...coreBenchmarks]));
 
-  allSymbolsToProcess.forEach(s => {
-    const symbolUpper = s.toUpperCase();
-    if (symbolUpper === 'TRY') {
-      results.set('TRY', { symbol: 'TRY', price: 1 });
-    } else {
-      const cached = priceCache.get(symbolUpper);
-      if (cached && (now - cached.timestamp < CACHE_TTL)) {
-        results.set(symbolUpper, cached.data);
+  // 1. Veritabanından mevcut önbellekleri çekelim (1 saatten yeniyse API'ye gitme!)
+  try {
+    const dbCached = await prisma.marketPriceCache.findMany({
+      where: { symbol: { in: allSymbolsToProcess.map(s => s.toUpperCase()) } }
+    });
+
+    const dbCacheMap = new Map(dbCached.map(item => [item.symbol, item]));
+
+    allSymbolsToProcess.forEach(s => {
+      const symbolUpper = s.toUpperCase();
+      if (symbolUpper === 'TRY') {
+        results.set('TRY', { symbol: 'TRY', price: 1 });
       } else {
-        symbolsToFetch.push(s);
+        const cached = dbCacheMap.get(symbolUpper);
+        if (cached && (now - new Date(cached.updatedAt).getTime() < CACHE_TTL)) {
+          results.set(symbolUpper, {
+            symbol: s,
+            price: cached.price,
+            changePercent: cached.changePct
+          });
+        } else {
+          symbolsToFetchFromApi.push(s);
+        }
       }
-    }
-  });
+    });
+  } catch (dbErr) {
+    console.error("Database cache read error, proceeding to API:", dbErr);
+    symbolsToFetchFromApi.push(...allSymbolsToProcess.filter(s => s.toUpperCase() !== 'TRY'));
+  }
 
-  if (symbolsToFetch.length > 0) {
-    console.log("Fetching live market prices from Yahoo for:", symbolsToFetch);
+  // 2. Eğer API'den çekilmesi gereken (1 saatten eski veya yeni) semboller varsa API isteği yap
+  if (symbolsToFetchFromApi.length > 0) {
+    console.log("Fetching live market prices from Yahoo API for:", symbolsToFetchFromApi);
 
-    // Güncel kurları varsayılan (Mayıs 2026 gerçekçi kurları) olarak belirleyelim
-    let usdToTryRate = 36.45;
-    let eurToTryRate = 38.65;
-    let gbpToTryRate = 45.85;
+    let usdToTryRate = results.get("USDTRY=X")?.price || 36.45;
+    let eurToTryRate = results.get("EURTRY=X")?.price || 38.65;
+    let gbpToTryRate = results.get("GBPTRY=X")?.price || 45.85;
 
-    // 1. Canlı Döviz Kurları için ExchangeRate API (Tamamen Ücretsiz & Kesintisiz Fallback)
     try {
       const fetchRes = await fetch("https://api.exchangerate-api.com/v4/latest/USD", { next: { revalidate: 300 } });
       if (fetchRes.ok) {
@@ -69,148 +85,116 @@ export async function getLivePrices(symbols: string[]): Promise<Map<string, Pric
         }
       }
     } catch (fxErr) {
-      console.error("ExchangeRate API fetch warning, using fallback rates:", fxErr);
+      console.error("ExchangeRate API fetch warning:", fxErr);
     }
 
     try {
-      const quotes = await yahooFinance.quote(symbolsToFetch);
+      const quotes = await yahooFinance.quote(symbolsToFetchFromApi);
       const quotesArray = Array.isArray(quotes) ? quotes : [quotes];
+
+      const newMarketData: Array<{ symbol: string; price: number; changePct: number }> = [];
 
       const usdTryQuote = quotesArray.find((q: any) => q.symbol === "USDTRY=X" || q.symbol === "TRY=X");
       if (usdTryQuote && usdTryQuote.regularMarketPrice && usdTryQuote.regularMarketPrice > 20) {
         usdToTryRate = usdTryQuote.regularMarketPrice;
+        newMarketData.push({ symbol: "USDTRY=X", price: usdToTryRate, changePct: usdTryQuote.regularMarketChangePercent || 0 });
+        newMarketData.push({ symbol: "USD", price: usdToTryRate, changePct: usdTryQuote.regularMarketChangePercent || 0 });
       }
 
       const eurTryQuote = quotesArray.find((q: any) => q.symbol === "EURTRY=X");
       if (eurTryQuote && eurTryQuote.regularMarketPrice && eurTryQuote.regularMarketPrice > 20) {
         eurToTryRate = eurTryQuote.regularMarketPrice;
+        newMarketData.push({ symbol: "EURTRY=X", price: eurToTryRate, changePct: eurTryQuote.regularMarketChangePercent || 0 });
+        newMarketData.push({ symbol: "EUR", price: eurToTryRate, changePct: eurTryQuote.regularMarketChangePercent || 0 });
       }
 
       const gbpTryQuote = quotesArray.find((q: any) => q.symbol === "GBPTRY=X");
       if (gbpTryQuote && gbpTryQuote.regularMarketPrice && gbpTryQuote.regularMarketPrice > 20) {
         gbpToTryRate = gbpTryQuote.regularMarketPrice;
+        newMarketData.push({ symbol: "GBPTRY=X", price: gbpToTryRate, changePct: gbpTryQuote.regularMarketChangePercent || 0 });
+        newMarketData.push({ symbol: "GBP", price: gbpToTryRate, changePct: gbpTryQuote.regularMarketChangePercent || 0 });
       }
 
-      // Altın ve Emtia Canlı Fiyatları (Gram bazına çevirme)
-      let goldOunceUsd = 2950;
+      let goldOunceUsd = results.get("GC=F")?.price || 2950;
       const goldQuote = quotesArray.find((q: any) => q.symbol === "GC=F");
-      if (goldQuote && goldQuote.regularMarketPrice) goldOunceUsd = goldQuote.regularMarketPrice;
+      if (goldQuote && goldQuote.regularMarketPrice) {
+        goldOunceUsd = goldQuote.regularMarketPrice;
+        newMarketData.push({ symbol: "GC=F", price: goldOunceUsd, changePct: goldQuote.regularMarketChangePercent || 0 });
+      }
       const gramAltinTry = (goldOunceUsd / 31.1035) * usdToTryRate;
 
-      let silverOunceUsd = 32;
+      let silverOunceUsd = results.get("SI=F")?.price || 32;
       const silverQuote = quotesArray.find((q: any) => q.symbol === "SI=F");
-      if (silverQuote && silverQuote.regularMarketPrice) silverOunceUsd = silverQuote.regularMarketPrice;
+      if (silverQuote && silverQuote.regularMarketPrice) {
+        silverOunceUsd = silverQuote.regularMarketPrice;
+        newMarketData.push({ symbol: "SI=F", price: silverOunceUsd, changePct: silverQuote.regularMarketChangePercent || 0 });
+      }
       const gramGumusTry = (silverOunceUsd / 31.1035) * usdToTryRate;
 
-      let brentUsd = 75;
+      let brentUsd = results.get("BZ=F")?.price || 75;
       const brentQuote = quotesArray.find((q: any) => q.symbol === "BZ=F");
-      if (brentQuote && brentQuote.regularMarketPrice) brentUsd = brentQuote.regularMarketPrice;
+      if (brentQuote && brentQuote.regularMarketPrice) {
+        brentUsd = brentQuote.regularMarketPrice;
+        newMarketData.push({ symbol: "BZ=F", price: brentUsd, changePct: brentQuote.regularMarketChangePercent || 0 });
+      }
       const brentTry = brentUsd * usdToTryRate;
 
-      // Temel pariteleri ve türetilmiş emtiaları cache'e yazalım
-      const benchmarkData: Record<string, number> = {
-        "USDTRY=X": usdToTryRate,
-        "USD": usdToTryRate,
-        "EURTRY=X": eurToTryRate,
-        "EUR": eurToTryRate,
-        "GBPTRY=X": gbpToTryRate,
-        "GBP": gbpToTryRate,
-        "GC=F": goldOunceUsd,
-        "XAUTRY=X": gramAltinTry,
-        "GRAM ALTIN": gramAltinTry,
-        "GRAM ALTIN (XAUTRY=X)": gramAltinTry,
-        "ALTIN": gramAltinTry,
-        "GOLD": gramAltinTry,
-        "GRAM": gramAltinTry,
-        "ONS": goldOunceUsd * usdToTryRate,
-        "ONS ALTIN (GC=F)": goldOunceUsd,
-        "GAU/TRY": gramAltinTry,
-        "XAU/TRY": gramAltinTry,
-        "XAU/USD": goldOunceUsd,
-        "SI=F": silverOunceUsd,
-        "XAGTRY=X": gramGumusTry,
-        "GRAM GÜMÜŞ": gramGumusTry,
-        "GRAM GÜMÜŞ (XAGTRY=X)": gramGumusTry,
-        "GÜMÜŞ": gramGumusTry,
-        "SILVER": gramGumusTry,
-        "ONS GÜMÜŞ (SI=F)": silverOunceUsd,
-        "BZ=F": brentUsd,
-        "BRENT PETROL": brentTry,
-        "BRENT PETROL (BZ=F)": brentTry,
-        "BRENT": brentTry,
+      // Türetilmiş sembolleri ekleyelim
+      const benchmarkMap: Record<string, number> = {
+        "XAUTRY=X": gramAltinTry, "GRAM ALTIN": gramAltinTry, "ALTIN": gramAltinTry, "GOLD": gramAltinTry, "GRAM": gramAltinTry,
+        "ONS": goldOunceUsd * usdToTryRate, "ONS ALTIN (GC=F)": goldOunceUsd, "GAU/TRY": gramAltinTry, "XAU/TRY": gramAltinTry, "XAU/USD": goldOunceUsd,
+        "XAGTRY=X": gramGumusTry, "GRAM GÜMÜŞ": gramGumusTry, "GÜMÜŞ": gramGumusTry, "SILVER": gramGumusTry, "ONS GÜMÜŞ (SI=F)": silverOunceUsd,
+        "BRENT PETROL": brentTry, "BRENT": brentTry,
       };
 
-      Object.entries(benchmarkData).forEach(([sym, val]) => {
-        const pd = { symbol: sym, price: val, changePercent: 0.15 };
-        results.set(sym, pd);
-        priceCache.set(sym, { data: pd, timestamp: now });
+      Object.entries(benchmarkMap).forEach(([sym, val]) => {
+        newMarketData.push({ symbol: sym, price: val, changePct: 0.15 });
       });
 
-      // Diğer hisse ve sembolleri işleyelim
       quotesArray.forEach((quote: any) => {
-        if (quote && quote.symbol && !benchmarkData[quote.symbol.toUpperCase()]) {
+        if (quote && quote.symbol && !benchmarkMap[quote.symbol.toUpperCase()]) {
           let currentPrice = quote.regularMarketPrice || quote.postMarketPrice || quote.preMarketPrice || 0;
-
-          // Yabancı hisse / enstrümanları TRY'ye çevir
           if (quote.currency === "USD" && !quote.symbol.endsWith("=X") && quote.symbol !== "GC=F" && quote.symbol !== "SI=F" && quote.symbol !== "BZ=F") {
             currentPrice = currentPrice * usdToTryRate;
           }
-
-          const priceData = {
-            symbol: quote.symbol,
-            price: currentPrice,
-            changePercent: quote.regularMarketChangePercent || 0
-          };
-
-          const symUpper = quote.symbol.toUpperCase();
-          results.set(symUpper, priceData);
-          priceCache.set(symUpper, { data: priceData, timestamp: now });
+          newMarketData.push({ symbol: quote.symbol.toUpperCase(), price: currentPrice, changePct: quote.regularMarketChangePercent || 0 });
         }
       });
-    } catch (error: any) {
-      console.error("CRITICAL: Yahoo Finance Quote Error, using Exchangerate API values:", error.message);
-      
-      // Yahoo Finance hata verirse, yine de temel pariteleri Exchangerate verisiyle cache'e yazalım
-      const gramAltinTry = (2950 / 31.1035) * usdToTryRate;
-      const gramGumusTry = (32 / 31.1035) * usdToTryRate;
-      const brentTry = 75 * usdToTryRate;
 
-      const benchmarkFallback: Record<string, number> = {
-        "USDTRY=X": usdToTryRate, "USD": usdToTryRate,
-        "EURTRY=X": eurToTryRate, "EUR": eurToTryRate,
-        "GBPTRY=X": gbpToTryRate, "GBP": gbpToTryRate,
-        "GC=F": 2950, "XAUTRY=X": gramAltinTry, "GRAM ALTIN": gramAltinTry,
-        "ALTIN": gramAltinTry, "GOLD": gramAltinTry, "ONS ALTIN (GC=F)": 2950,
-        "GRAM": gramAltinTry, "ONS": 2950 * usdToTryRate, "GAU/TRY": gramAltinTry, "XAU/TRY": gramAltinTry,
-        "SI=F": 32, "XAGTRY=X": gramGumusTry, "GRAM GÜMÜŞ": gramGumusTry, "GÜMÜŞ": gramGumusTry,
-        "BZ=F": 75, "BRENT PETROL": brentTry, "BRENT": brentTry,
-      };
-
-      Object.entries(benchmarkFallback).forEach(([sym, val]) => {
-        const pd = { symbol: sym, price: val, changePercent: 0.1 };
-        results.set(sym, pd);
-        priceCache.set(sym, { data: pd, timestamp: now });
-      });
+      // Hem results haritasını güncelleyelim hem de veritabanına kaydedelim
+      for (const item of newMarketData) {
+        results.set(item.symbol, { symbol: item.symbol, price: item.price, changePercent: item.changePct });
+        try {
+          await prisma.marketPriceCache.upsert({
+            where: { symbol: item.symbol },
+            update: { price: item.price, changePct: item.changePct, updatedAt: new Date() },
+            create: { symbol: item.symbol, price: item.price, changePct: item.changePct }
+          });
+        } catch(e){}
+      }
+    } catch (apiErr: any) {
+      console.error("CRITICAL API Error, relying entirely on Database Cache:", apiErr.message);
     }
   }
 
-  // İstek yapılan ama bulunamayan semboller için varsayılan kontrol
+  // 3. Bulunamayan veya hala boş olan semboller için eğer veritabanında eski bir kayıt varsa onu kullan (Hayali sabit rakamlar tamamen kaldırıldı!)
+  try {
+    const missingSymbols = symbols.filter(s => !results.has(s.toUpperCase()));
+    if (missingSymbols.length > 0) {
+      const fallbackDbItems = await prisma.marketPriceCache.findMany({
+        where: { symbol: { in: missingSymbols.map(s => s.toUpperCase()) } }
+      });
+      for (const item of fallbackDbItems) {
+        results.set(item.symbol, { symbol: item.symbol, price: item.price, changePercent: item.changePct });
+      }
+    }
+  } catch(e){}
+
+  // Hiçbir şekilde verisi bulunamayan sembollere 0 veya hata bilgisi koy
   symbols.forEach(s => {
     const sUpper = s.toUpperCase();
     if (!results.has(sUpper)) {
-      if (sUpper.includes("ALTIN") || sUpper.includes("GOLD") || sUpper.includes("XAU") || sUpper === "GRAM" || sUpper === "ONS" || sUpper.includes("GAU")) {
-        const gaPrice = sUpper === "ONS" || sUpper.includes("XAU/USD") ? (results.get("GC=F")?.price || 2950) * (results.get("USDTRY=X")?.price || 36.45) : (results.get("XAUTRY=X")?.price || 3450);
-        results.set(sUpper, { symbol: s, price: gaPrice, changePercent: 0.2 });
-      } else if (sUpper.includes("GÜMÜŞ") || sUpper.includes("GUMUS") || sUpper.includes("SILVER") || sUpper.includes("XAG")) {
-        const ggPrice = results.get("XAGTRY=X")?.price || 38;
-        results.set(sUpper, { symbol: s, price: ggPrice, changePercent: 0.4 });
-      } else if (sUpper.includes("BRENT") || sUpper.includes("PETROL")) {
-        const bpPrice = results.get("BRENT PETROL")?.price || 2600;
-        results.set(sUpper, { symbol: s, price: bpPrice, changePercent: -0.1 });
-      } else {
-        const errData = { symbol: s, price: 0, error: "Veri bulunamadı" };
-        results.set(sUpper, errData);
-      }
+      results.set(sUpper, { symbol: s, price: 0, error: "Veri bulunamadı" });
     }
   });
 
@@ -324,6 +308,16 @@ export function calculatePortfolioMetrics(investments: any[], livePrices: Map<st
         currentPrice = (live && live.price > 0)
           ? live.price
           : (inv.purchasePrice || (inv.amount / (inv.quantity || 1)));
+
+        // --- SELF-HEALING COST SYNCHRONIZER (Akıllı Geçmiş Veri Onarımı) ---
+        const usdRate = livePrices.get("USDTRY=X")?.price || 36.45;
+        const tempCurrentVal = (inv.quantity || 1) * currentPrice;
+        if (inv.purchasePrice && inv.purchasePrice > 0 && inv.purchasePrice < (currentPrice / 5)) {
+          const estimatedCostInTry = inv.purchasePrice * usdRate * (inv.quantity || 1);
+          if (Math.abs(estimatedCostInTry - tempCurrentVal) < Math.abs(cost - tempCurrentVal)) {
+            cost = estimatedCostInTry;
+          }
+        }
       }
 
       const currentValue = (inv.quantity || 1) * currentPrice;

@@ -56,7 +56,7 @@ export async function addAsset(data: {
       try {
         const prices = await getLivePrices([trimmedSymbol, "TRY=X"]);
         const livePrice = prices.get(trimmedSymbol);
-        const usdTry = prices.get("TRY=X")?.price || 34;
+        const usdTry = prices.get("TRY=X")?.price || 36.45;
 
         if (livePrice && livePrice.price > 0) {
           const priceAsTry = finalPrice;
@@ -66,9 +66,8 @@ export async function addAsset(data: {
           const diffIfUsd = Math.abs(priceAsUsdConvertedToTry - livePrice.price);
 
           // Eğer kullanıcının girdiği fiyat USD olarak varsayılıp TRY'ye çevrildiğinde
-          // güncel TRY piyasa fiyatına daha yakın oluyorsa, kullanıcı büyük ihtimalle USD girmiştir.
-          const isCryptoOrUs = standardizedType === "CRYPTO" || standardizedType === "NASDAQ";
-          if (isCryptoOrUs && diffIfUsd < diffIfTry) {
+          // güncel piyasa fiyatına daha yakın oluyorsa, kullanıcı kesinlikle USD girmiştir.
+          if (diffIfUsd < diffIfTry && (diffIfUsd / livePrice.price < 0.5)) {
             finalPrice = priceAsUsdConvertedToTry;
           }
         }
@@ -470,5 +469,46 @@ export async function deleteFixedAsset(id: string) {
     return { success: true };
   } catch (error: any) {
     throw new Error(error.message || "Silme işlemi başarısız oldu.");
+  }
+}
+/**
+ * Mevcut bir varlığa katkı payı (ekleme) yapar.
+ * BES aylık ödemeleri veya mevduat eklemeleri için kullanılır.
+ */
+export async function addContributionToAsset(id: string, amount: number) {
+  try {
+    const { userId } = await auth();
+    if (!userId) throw new Error("Oturum açmanız gerekiyor.");
+
+    const investment = await prisma.investment.findUnique({
+      where: { id },
+      include: { user: true },
+    });
+
+    if (!investment || investment.user.clerkUserId !== userId) {
+      throw new Error("Varlık bulunamadı veya yetkiniz yok.");
+    }
+
+    const contribution = Number(amount);
+    if (isNaN(contribution) || contribution <= 0) {
+      throw new Error("Geçerli bir tutar girmelisiniz.");
+    }
+
+    const newQuantity = Number(investment.quantity) + contribution;
+
+    await prisma.investment.update({
+      where: { id },
+      data: {
+        quantity: newQuantity,
+        amount: newQuantity * (investment.purchasePrice || 1),
+      },
+    });
+
+    revalidatePath("/dashboard");
+    revalidatePath("/dashboard/assets");
+    return { success: true };
+  } catch (error: any) {
+    console.error("addContributionToAsset error:", error);
+    throw new Error(error.message || "Katkı payı eklenirken bir hata oluştu.");
   }
 }

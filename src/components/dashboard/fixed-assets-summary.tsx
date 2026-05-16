@@ -43,8 +43,23 @@ export function FixedAssetsSummary({ fixedAssets }: FixedAssetsSummaryProps) {
 
   if (!fixedAssets || fixedAssets.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-[300px] text-muted-foreground/60 italic text-sm">
-        Henüz sabit varlık eklenmemiş.
+      <div className="flex flex-col items-center justify-center p-12 text-center bg-muted/20 border border-dashed rounded-[32px] border-border/50 h-[350px]">
+        <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-6">
+          <PieChart className="h-8 w-8 text-primary/40" />
+        </div>
+        <h3 className="text-lg font-heading font-bold text-primary mb-2">Sabit Varlık Dağılımı Henüz Yok</h3>
+        <p className="text-sm text-muted-foreground max-w-[320px] mb-8 leading-relaxed">
+          Ev, araba veya diğer fiziksel varlıklarınızı ekleyerek toplam net değerinizin nasıl dağıldığını görselleştirin.
+        </p>
+        <div className="p-4 bg-card border border-border/40 rounded-2xl flex items-center gap-4 text-left w-full max-w-sm">
+          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+            <span className="text-xs font-black">?</span>
+          </div>
+          <div>
+            <p className="text-[11px] font-black text-primary uppercase tracking-widest mb-0.5">Nasıl Eklenir?</p>
+            <p className="text-[10px] text-muted-foreground">"Sabit Varlıklar" sekmesine geçip "Varlık Ekle" butonunu kullanabilirsiniz.</p>
+          </div>
+        </div>
       </div>
     );
   }

@@ -155,8 +155,15 @@ export function AssetForm({ activeTab, onAdd, onCancel, loading, error, defaultA
                 {/* Varlık Türü */}
                 <div className="space-y-2 sm:col-span-2">
                   <Label className="text-[11px] font-bold text-primary/80 uppercase tracking-wider px-1">Varlık Türü</Label>
-                  <Select value={formData.type} onValueChange={(v) => setFormData((p) => ({ ...p, type: String(v), symbol: "" }))}>
-                    <SelectTrigger className="bg-muted/50 border-primary/10 h-12 rounded-2xl focus:ring-primary text-sm font-semibold transition-all">
+                  <Select 
+                    value={formData.type} 
+                    onValueChange={(v) => setFormData((p) => ({ ...p, type: String(v), symbol: "" }))}
+                    disabled={!!defaultAssetType}
+                  >
+                    <SelectTrigger className={cn(
+                      "bg-muted/50 border-primary/10 h-12 rounded-2xl focus:ring-primary text-sm font-semibold transition-all",
+                      !!defaultAssetType && "opacity-80 cursor-not-allowed bg-muted"
+                    )}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="rounded-2xl border-primary/10 backdrop-blur-xl font-medium">
@@ -185,13 +192,14 @@ export function AssetForm({ activeTab, onAdd, onCancel, loading, error, defaultA
                     </div>
                     <div className="space-y-2">
                       <Label className="text-[11px] font-bold text-primary/80 uppercase tracking-wider px-1">
-                        {formData.type === "BES" ? "Güncel Birikim Tutarı (₺)" : "Ana Para Tutarı (₺)"}
+                        {formData.type === "BES" ? "Güncel Birikiminiz (₺)" : "Güncel Birikiminiz (₺)"}
                       </Label>
                       <Input
                         type="number"
                         value={formData.quantity === 0 ? "" : formData.quantity}
                         onChange={(e) => handleNumberChange("quantity", e.target.value)}
                         className="bg-muted/50 border-primary/10 h-12 rounded-2xl focus:ring-primary text-sm font-semibold px-4"
+                        placeholder="Örn: 50000"
                       />
                     </div>
                     <div className="space-y-2">
