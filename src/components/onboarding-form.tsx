@@ -1067,7 +1067,7 @@ export function OnboardingForm() {
                     <div className="grid grid-cols-2 gap-3 animate-in fade-in duration-300">
                       <div>
                         <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Fon Türü (Takip İçin)</Label>
-                        <Select value={modalAssetData.fundType} onValueChange={(v: string) => setModalAssetData({ ...modalAssetData, fundType: v })}>
+                        <Select value={modalAssetData.fundType} onValueChange={(v: any) => setModalAssetData({ ...modalAssetData, fundType: String(v) })}>
                           <SelectTrigger className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-bold text-xs border-[#dbc2b0]/50 dark:border-[#887364]/40">
                             <SelectValue />
                           </SelectTrigger>
