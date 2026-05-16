@@ -24,8 +24,8 @@ export interface PriceResult {
 
 import { prisma } from "@/lib/prisma";
 
-// Önbellek yaşam süresi (1 Saat = 60 * 60 * 1000)
-const CACHE_TTL = 60 * 60 * 1000;
+// Önbellek yaşam süresi (5 Dakika = 5 * 60 * 1000)
+const CACHE_TTL = 5 * 60 * 1000;
 
 export async function getLivePrices(symbols: string[]): Promise<Map<string, PriceResult>> {
   const results = new Map<string, PriceResult>();
