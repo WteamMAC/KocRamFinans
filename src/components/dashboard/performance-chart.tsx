@@ -103,7 +103,7 @@ export function PerformanceChart({ incomes, expenses, investments }: Performance
 
   return (
     <>
-      <CardHeader className="bg-muted/30 border-b border-border/10 py-6 flex flex-row items-center justify-between">
+      <CardHeader className="bg-muted/30 border-b border-border/10 min-h-[80px] px-6 py-3 flex flex-row items-center justify-between">
         <CardTitle className="text-xl font-heading font-bold text-primary flex items-center gap-2">
           <TrendingUp className="h-5 w-5 text-accent" /> Gelişim Grafiği
         </CardTitle>
@@ -113,7 +113,7 @@ export function PerformanceChart({ incomes, expenses, investments }: Performance
               key={r.value}
               onClick={() => setTimeRange(r.value as TimeRange)}
               className={cn(
-                "px-3 py-1.5 text-xs font-bold rounded-lg transition-all",
+                "px-2 md:px-3 py-1.5 text-[10px] md:text-xs font-bold rounded-lg transition-all",
                 timeRange === r.value 
                   ? "bg-background text-foreground shadow-sm" 
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/50"

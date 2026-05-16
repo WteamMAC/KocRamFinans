@@ -131,23 +131,23 @@ export function FinancialCalendar({ incomes, expenses, debts, userChildren = [],
   };
 
   return (
-    <Card className="border-border/30 shadow-ambient-medium rounded-[32px] overflow-hidden bg-card">
-      <CardHeader className="bg-primary/5 pb-4 border-b border-border/10">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <Card className="border-border/30 shadow-ambient-medium rounded-[32px] overflow-hidden bg-card h-full">
+      <CardHeader className="bg-primary/5 border-b border-border/10 min-h-[80px] flex flex-row items-center justify-between py-3 px-6">
+        <div className="flex items-center gap-4 w-full justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-xl bg-primary/10 text-primary shrink-0">
               <CalendarIcon className="h-5 w-5" />
             </div>
-            <div>
-              <CardTitle className="text-base md:text-lg">Finansal Takvim</CardTitle>
-              <p className="text-[10px] md:text-xs text-muted-foreground">Gelir, gider, özel günleriniz</p>
+            <div className="flex flex-col justify-center">
+              <CardTitle className="text-base md:text-lg leading-tight">Finansal Takvim</CardTitle>
+              <p className="text-[10px] md:text-xs text-muted-foreground mt-0.5">Gelir, gider, özel günleriniz</p>
             </div>
           </div>
-          <div className="flex items-center justify-between sm:justify-end gap-2 bg-background/50 p-1.5 rounded-full border border-border/10 sm:border-none sm:bg-transparent sm:p-0">
+          <div className="flex items-center gap-1 bg-background/50 p-1 rounded-full border border-border/10">
             <Button variant="ghost" size="icon" onClick={prevMonth} className="rounded-full h-8 w-8 hover:bg-primary/10 hover:text-primary">
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <span className="text-xs md:text-sm font-bold min-w-[100px] text-center uppercase tracking-tight">
+            <span className="text-[11px] md:text-xs font-black min-w-[90px] text-center uppercase tracking-tighter text-primary/80">
               {format(currentDate, "MMMM yyyy", { locale: tr })}
             </span>
             <Button variant="ghost" size="icon" onClick={nextMonth} className="rounded-full h-8 w-8 hover:bg-primary/10 hover:text-primary">
