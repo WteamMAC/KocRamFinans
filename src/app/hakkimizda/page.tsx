@@ -290,36 +290,7 @@ export default function AboutPage() {
           </div>
         </section>
 
-        {/* CTA Section */}
-        <section className="py-24 bg-primary dark:bg-primary-foreground overflow-hidden relative dark:border-t dark:border-primary/20">
-          <div className="absolute inset-0 opacity-10">
-            <svg className="w-full h-full" preserveAspectRatio="none" viewBox="0 0 100 100">
-              <motion.path 
-                initial={{ pathLength: 0 }}
-                whileInView={{ pathLength: 1 }}
-                transition={{ duration: 3 }}
-                d="M0 50 Q 25 25, 50 50 T 100 50" 
-                fill="none" 
-                stroke="white" 
-                strokeWidth="0.5" 
-              />
-            </svg>
-          </div>
-          <div className="max-w-[1200px] mx-auto px-4 md:px-16 text-center relative z-10">
-            <motion.div
-              initial="initial"
-              whileInView="animate"
-              viewport={{ once: true }}
-              variants={fadeInUp}
-            >
-              <h2 className="text-3xl md:text-4xl font-heading font-bold text-primary-foreground dark:text-primary mb-12">Finansal Geleceğinizi Uzmanlarla Şekillendirin</h2>
-              <div className="flex flex-col sm:flex-row justify-center gap-6">
-                <button className="bg-secondary-container text-on-secondary-container dark:bg-primary dark:text-primary-foreground px-10 py-4 rounded-xl text-sm font-bold hover:brightness-110 transition-all shadow-xl hover:scale-105">Bize Ulaşın</button>
-                <button className="border-2 border-primary-foreground text-primary-foreground dark:border-primary dark:text-primary px-10 py-4 rounded-xl text-sm font-bold hover:bg-primary-foreground hover:text-primary dark:hover:bg-primary dark:hover:text-primary-foreground transition-all hover:scale-105">Sizi Arayalım</button>
-              </div>
-            </motion.div>
-          </div>
-        </section>
+
       </main>
 
       <Footer />
