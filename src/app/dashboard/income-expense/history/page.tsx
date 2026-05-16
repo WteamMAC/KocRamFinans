@@ -8,6 +8,8 @@ import { IncomeExpenseClient } from "@/components/dashboard/income-expense-clien
 import { getUserCurrencyConfig } from "@/lib/currency-formatter";
 import { getLivePrices, normalizeFinancialItemsToTry } from "@/lib/price-service";
 
+import { getLivePrices, normalizeFinancialItemsToTry } from "@/lib/price-service";
+
 export default async function IncomeExpenseHistoryPage() {
   await cookies();
   const { userId } = await auth();

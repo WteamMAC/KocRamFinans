@@ -17,6 +17,9 @@ export async function addAsset(data: {
   purchasePrice?: number;
   useCurrentPrice?: boolean;
   description?: string;
+  monthlyContribution?: number;
+  fundType?: string;
+  maturityPeriod?: number;
 }) {
   try {
     const { userId } = await auth();
@@ -88,6 +91,9 @@ export async function addAsset(data: {
 
       const metadata = {
         rate: rate,
+        monthlyContribution: Number(data.monthlyContribution) || 0,
+        fundType: data.fundType || "STANDART",
+        maturityPeriod: data.maturityPeriod || 32,
         originalDescription: desc
       };
       desc = JSON.stringify(metadata);

@@ -15,7 +15,7 @@ import { SmartInsights } from "@/components/dashboard/smart-insights";
 import { FinancialCalendar } from "@/components/dashboard/financial-calendar";
 import { InvestmentProjection } from "@/components/dashboard/investment-projection";
 import { cn } from "@/lib/utils";
-import { getLivePrices, calculatePortfolioMetrics, calculateFixedAssetsMetrics } from "@/lib/price-service";
+import { getLivePrices, calculatePortfolioMetrics, calculateFixedAssetsMetrics, normalizeFinancialItemsToTry } from "@/lib/price-service";
 import { DashboardCards } from "@/components/dashboard/dashboard-cards";
 
 import { Suspense } from "react";
@@ -107,9 +107,13 @@ async function DashboardMetrics({ user }: { user: any }) {
     fixedMetrics = calculateFixedAssetsMetrics(fixedAssets, new Map());
   }
 
-  const totalIncome = incomes.reduce((acc: number, inc: any) => acc + (inc.amount || 0), 0);
-  const totalExpense = expenses.reduce((acc: number, exp: any) => acc + (exp.amount || 0), 0);
-  const totalDebt = debts.reduce((acc: number, debt: any) => acc + (debt.amount || 0), 0);
+  const normalizedIncomes = normalizeFinancialItemsToTry(incomes, livePrices);
+  const normalizedExpenses = normalizeFinancialItemsToTry(expenses, livePrices);
+  const normalizedDebts = normalizeFinancialItemsToTry(debts, livePrices);
+
+  const totalIncome = normalizedIncomes.reduce((acc: number, inc: any) => acc + (inc.amount || 0), 0);
+  const totalExpense = normalizedExpenses.reduce((acc: number, exp: any) => acc + (exp.amount || 0), 0);
+  const totalDebt = normalizedDebts.reduce((acc: number, debt: any) => acc + (debt.amount || 0), 0);
   const totalInvestment = portfolioMetrics.totalCurrentValue || 0;
   const totalFixedAssets = fixedMetrics.totalCurrentValue || 0;
   const totalProfit = (portfolioMetrics.totalProfit || 0) + (fixedMetrics.totalProfit || 0);
@@ -130,8 +134,8 @@ async function DashboardMetrics({ user }: { user: any }) {
     totalInvestment,
     netWorth,
     savingsRate,
-    recentExpenses: expenses.slice(0, 5).map((e: any) => ({ type: e.type, amount: e.amount })),
-    recentIncomes: incomes.slice(0, 5).map((i: any) => ({ type: i.type, amount: i.amount }))
+    recentExpenses: normalizedExpenses.slice(0, 5).map((e: any) => ({ type: e.type, amount: e.amount })),
+    recentIncomes: normalizedIncomes.slice(0, 5).map((i: any) => ({ type: i.type, amount: i.amount }))
   };
 
   return (
@@ -158,8 +162,8 @@ async function DashboardMetrics({ user }: { user: any }) {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-4 md:gap-8 w-full">
         <Card className="col-span-1 md:col-span-1 lg:col-span-4 bg-card border-border/20 shadow-ambient-medium rounded-[32px] overflow-hidden flex flex-col w-full">
           <PerformanceChart 
-            incomes={incomes} 
-            expenses={expenses} 
+            incomes={normalizedIncomes} 
+            expenses={normalizedExpenses} 
             investments={investments}
           />
         </Card>
@@ -171,7 +175,7 @@ async function DashboardMetrics({ user }: { user: any }) {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-3 md:p-8">
-            <BudgetOverview incomes={incomes} expenses={expenses} />
+            <BudgetOverview incomes={normalizedIncomes} expenses={normalizedExpenses} />
           </CardContent>
         </Card>
       </div>
@@ -185,12 +189,12 @@ async function DashboardMetrics({ user }: { user: any }) {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-3 md:p-8 flex-1">
-            <UpcomingPayments expenses={expenses} />
+            <UpcomingPayments expenses={normalizedExpenses} />
           </CardContent>
         </Card>
         
         <div className="col-span-1 md:col-span-1 lg:col-span-3 h-full w-full">
-          <FinancialCalendar incomes={incomes} expenses={expenses} debts={debts} userChildren={children} marriageDate={user.marriageDate} specialEvents={specialEvents} />
+          <FinancialCalendar incomes={normalizedIncomes} expenses={normalizedExpenses} debts={normalizedDebts} userChildren={children} marriageDate={user.marriageDate} specialEvents={specialEvents} />
         </div>
       </div>
 

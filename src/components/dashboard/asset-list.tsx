@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -412,9 +413,9 @@ export function AssetList({
       </div>
 
       {/* Add Asset Form Modal */}
-      {isAdding && (
-        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 md:p-6 bg-background/70 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="relative w-full max-w-4xl max-h-[95vh] overflow-y-auto no-scrollbar rounded-[32px] shadow-2xl border border-border/40">
+      {isAdding && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 md:p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="relative w-full max-w-2xl max-h-[95vh] overflow-y-auto no-scrollbar">
             <AssetForm 
               activeTab={activeTab} 
               loading={loading} 
@@ -424,7 +425,8 @@ export function AssetList({
               onAdd={activeTab === "financial" ? handleAdd : handleAddFixed} 
             />
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Summary Dashboard */}
@@ -771,8 +773,8 @@ export function AssetList({
       </div>
 
       {/* Modal for All History */}
-      {showHistoryModal && (
-        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-background/40 backdrop-blur-sm">
+      {showHistoryModal && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
           <div className="bg-card rounded-[32px] shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
             <div className="p-6 border-b border-border/20 flex justify-between items-center bg-muted">
               <div>
@@ -783,7 +785,7 @@ export function AssetList({
                 <X className="h-4 w-4" />
               </Button>
             </div>
-            <div className="p-6 overflow-y-auto flex-1 divide-y divide-border/10">
+            <div className="p-6 overflow-y-auto flex-1 divide-y divide-border/10 no-scrollbar">
               {history.map((log) => (
                 <div key={log.id} className="py-4 hover:bg-muted transition-colors flex justify-between items-center group first:pt-0 last:pb-0">
                   <div className="flex items-center gap-4">
@@ -815,12 +817,13 @@ export function AssetList({
               ))}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Modal for Selling Asset */}
-      {sellModalState.assetId && (
-        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-background/40 backdrop-blur-sm">
+      {sellModalState.assetId && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
           <div className="bg-card rounded-[32px] shadow-2xl w-full max-w-md flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
             <div className="p-6 border-b border-border/20 flex justify-between items-center">
               <div>
@@ -849,7 +852,8 @@ export function AssetList({
               </Button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

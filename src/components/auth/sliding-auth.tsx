@@ -60,15 +60,15 @@ export default function SlidingAuth() {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-0 md:p-6 overflow-hidden relative">
-      <main className="w-full h-screen md:h-[calc(100vh-48px)] max-h-[900px] flex max-w-[1200px] mx-auto bg-card md:rounded-[32px] md:shadow-ambient-high overflow-hidden relative">
+      <main className="w-full h-screen md:h-[calc(100vh-48px)] max-h-[900px] flex max-w-[1200px] mx-auto bg-card md:rounded-[32px] md:shadow-ambient-high overflow-y-auto md:overflow-hidden relative">
         
         {/* Form Container */}
         <motion.div 
-          className="absolute inset-y-0 left-0 w-full lg:w-1/2 bg-card z-10 overflow-y-auto"
-          animate={{ x: (isLargeScreen && isLogin) ? "100%" : "0%" }}
+          className={`w-full lg:w-1/2 bg-card z-20 ${isLargeScreen ? "absolute inset-y-0 left-0 overflow-y-auto" : "relative"}`}
+          animate={isLargeScreen ? { x: isLogin ? "100%" : "0%" } : { x: 0 }}
           transition={{ type: "spring", stiffness: 260, damping: 28 }}
         >
-          <div className="min-h-full flex flex-col items-center justify-center p-8 md:p-12">
+          <div className="min-h-full w-full flex flex-col items-center justify-start lg:justify-center p-4 sm:p-8 md:p-12">
             <div className="lg:hidden mb-8 text-center">
               <Link href="/" className="flex items-center gap-2 justify-center">
                 <img src="/mascot.png" alt="Logo" className="h-14 w-14 object-contain" />
@@ -84,7 +84,7 @@ export default function SlidingAuth() {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: isLargeScreen ? 30 : 0 }}
                   transition={{ duration: 0.4 }}
-                  className="w-full max-w-md"
+                  className="w-full max-w-md relative z-30 mx-auto"
                 >
                   <SignIn 
                     routing="path"
@@ -123,7 +123,7 @@ export default function SlidingAuth() {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: isLargeScreen ? -30 : 0 }}
                   transition={{ duration: 0.4 }}
-                  className="w-full max-w-md flex flex-col items-center"
+                  className="w-full max-w-md flex flex-col items-center mx-auto"
                 >
                   {/* Şartlar ve Onay Kutusu Kartı */}
                   <div 
@@ -188,7 +188,7 @@ export default function SlidingAuth() {
                       </div>
                     )}
                     
-                    <div className={!isTermsAccepted ? "opacity-20 pointer-events-none select-none filter blur-[2px] transition-all duration-300" : "transition-all duration-300"}>
+                    <div className={!isTermsAccepted ? "opacity-20 pointer-events-none select-none filter blur-[2px] transition-all duration-300" : "relative z-30 transition-all duration-300 w-full mx-auto"}>
                       <SignUp 
                         routing="path"
                         path="/sign-up"

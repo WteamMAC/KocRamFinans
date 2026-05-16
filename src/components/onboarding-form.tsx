@@ -14,6 +14,7 @@ import { DatePicker } from "@/components/ui/date-picker";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { parseISO } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
+import { AssetForm } from "./dashboard/asset-form";
 
 const MIN_AGE = 13;
 function getMaxDate() {
@@ -64,6 +65,9 @@ const schema = z.object({
     symbol: z.string().optional(),
     description: z.string().optional(),
     currency: z.string().optional(),
+    fundType: z.string().optional(),
+    monthlyContribution: z.coerce.number().optional(),
+    maturityPeriod: z.coerce.number().optional(),
   })).optional(),
 });
 type F = z.infer<typeof schema>;
@@ -208,6 +212,9 @@ export function OnboardingForm() {
     purchasePrice: "",
     currency: "TRY",
     description: "",
+    fundType: "STANDART",
+    monthlyContribution: "0",
+    maturityPeriod: "32",
   });
 
   const form = useForm<F>({
@@ -234,19 +241,6 @@ export function OnboardingForm() {
   const debtsField = useFieldArray({ control: form.control, name: "debts" });
   const investmentsField = useFieldArray({ control: form.control, name: "investments" });
 
-  useEffect(() => {
-    if (selectedCurrency) {
-      const curInc = form.getValues("incomes") || [];
-      form.setValue("incomes", curInc.map(i => ({ ...i, currency: selectedCurrency })));
-      const curExp = form.getValues("expenses") || [];
-      form.setValue("expenses", curExp.map(e => ({ ...e, currency: selectedCurrency })));
-      const curDebt = form.getValues("debts") || [];
-      form.setValue("debts", curDebt.map(d => ({ ...d, currency: selectedCurrency })));
-      const curInv = form.getValues("investments") || [];
-      form.setValue("investments", curInv.map(inv => ({ ...inv, currency: selectedCurrency })));
-    }
-  }, [selectedCurrency]);
-
   const handleGender = (v: F["gender"]) => {
     form.setValue("gender", v, { shouldValidate: true });
     setGenderAnim(true);
@@ -262,6 +256,9 @@ export function OnboardingForm() {
       purchasePrice: "",
       currency: selectedCurrency || "TRY",
       description: "",
+      fundType: "STANDART",
+      monthlyContribution: "0",
+      maturityPeriod: "32",
     });
   };
 
@@ -272,7 +269,6 @@ export function OnboardingForm() {
       alert("Lütfen 0'dan büyük bir toplam tutar giriniz.");
       return;
     }
-
     const typeObj = ASSET_CATEGORIES.find(c => c.id === activeAssetModal);
     const typeName = typeObj?.id || activeAssetModal || "Diğer";
 
@@ -284,6 +280,9 @@ export function OnboardingForm() {
       purchasePrice: parseFloat(modalAssetData.purchasePrice) || amountVal,
       currency: modalAssetData.currency || selectedCurrency || "TRY",
       description: modalAssetData.description || undefined,
+      fundType: modalAssetData.fundType,
+      monthlyContribution: parseFloat(modalAssetData.monthlyContribution) || 0,
+      maturityPeriod: parseInt(modalAssetData.maturityPeriod) || 32,
     });
     setActiveAssetModal(null);
   };
@@ -337,10 +336,10 @@ export function OnboardingForm() {
       const defaultCur = data.currency || "TRY";
       const cleanData = {
         ...data,
-        incomes: (data.incomes || []).map((i: any) => ({ ...i, currency: defaultCur })),
-        expenses: (data.expenses || []).map((e: any) => ({ ...e, currency: defaultCur })),
-        debts: (data.debts || []).map((d: any) => ({ ...d, currency: defaultCur })),
-        investments: (data.investments || []).map((inv: any) => ({ ...inv, currency: defaultCur })),
+        incomes: (data.incomes || []).map((i: any) => ({ ...i, currency: i.currency || defaultCur })),
+        expenses: (data.expenses || []).map((e: any) => ({ ...e, currency: e.currency || defaultCur })),
+        debts: (data.debts || []).map((d: any) => ({ ...d, currency: d.currency || defaultCur })),
+        investments: (data.investments || []).map((inv: any) => ({ ...inv, currency: inv.currency || defaultCur })),
       };
 
       const result = await completeOnboarding({
@@ -1051,7 +1050,50 @@ export function OnboardingForm() {
                     </div>
                   </div>
 
+                  {activeAssetModal === "BES" && (
+                    <div className="grid grid-cols-2 gap-3 animate-in fade-in duration-300">
+                      <div>
+                        <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Fon Türü (Takip İçin)</Label>
+                        <Select value={modalAssetData.fundType} onValueChange={(v: any) => setModalAssetData({ ...modalAssetData, fundType: String(v) })}>
+                          <SelectTrigger className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-bold text-xs border-[#dbc2b0]/50 dark:border-[#887364]/40">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="STANDART">⚖️ Standart / Karma</SelectItem>
+                            <SelectItem value="GOLD">🟡 Altın Katılım</SelectItem>
+                            <SelectItem value="STOCKS">📈 Hisse Senedi Yoğun</SelectItem>
+                            <SelectItem value="USD">💵 Döviz / Eurobond</SelectItem>
+                            <SelectItem value="CONSERVATIVE">🛡️ Para Piyasası</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Aylık Düzenli Ödeme (₺)</Label>
+                        <Input
+                          type="number"
+                          value={modalAssetData.monthlyContribution}
+                          onChange={e => setModalAssetData({ ...modalAssetData, monthlyContribution: e.target.value })}
+                          placeholder="Örn: 2500"
+                          className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] border-[#dbc2b0]/50 dark:border-[#887364]/40 font-bold"
+                        />
+                      </div>
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">
+                        {activeAssetModal === "FAIZ" ? "Faiz / Getiri Oranı %" : "Alış Fiyatı / Oran"}
+                      </Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={modalAssetData.purchasePrice}
+                        onChange={e => setModalAssetData({ ...modalAssetData, purchasePrice: e.target.value })}
+                        placeholder="0.00"
+                        className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-bold"
+                      />
+                    </div>
                     <div>
                       <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Birim Miktarı / Adet</Label>
                       <Input
@@ -1062,6 +1104,9 @@ export function OnboardingForm() {
                         className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-bold"
                       />
                     </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
                     <div>
                       <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Toplam Tutar / Değer</Label>
                       <Input

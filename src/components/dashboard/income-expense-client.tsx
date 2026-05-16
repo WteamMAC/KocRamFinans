@@ -80,6 +80,12 @@ export function IncomeExpenseClient({
     return `${(tx.amount || 0).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: tx.amount < 1 ? 4 : 2 })} ${sym}`;
   };
 
+  const formatTransactionAmount = (tx: Transaction) => {
+    const cur = (tx.currency || "TRY").toUpperCase();
+    const sym = DISPLAY_CURRENCIES_MAP[cur]?.symbol || cur;
+    return `${(tx.amount || 0).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${sym}`;
+  };
+
   useEffect(() => {
     setMounted(true);
   }, []);

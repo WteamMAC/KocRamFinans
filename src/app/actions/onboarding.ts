@@ -24,6 +24,7 @@ export async function completeOnboarding(formData: {
   investments: {
     type: string; symbol?: string; quantity?: number;
     purchasePrice?: number; amount?: number; currentValuation?: number; description?: string; currency?: string;
+    fundType?: string; monthlyContribution?: number; maturityPeriod?: number;
   }[];
   fixedAssets: { name: string; type: string; value: number; currency?: string }[];
 }) {
@@ -195,7 +196,13 @@ export async function completeOnboarding(formData: {
 
           if (inv.type === "BES" || inv.type === "FAIZ") {
             const rate = Number(inv.purchasePrice) || 0;
-            finalDescription = JSON.stringify({ rate, originalDescription: inv.description || "" });
+            finalDescription = JSON.stringify({
+              rate,
+              originalDescription: inv.description || "",
+              fundType: inv.fundType || "STANDART",
+              monthlyContribution: Number(inv.monthlyContribution) || 0,
+              maturityPeriod: Number(inv.maturityPeriod) || 32,
+            });
             finalPurchasePrice = 1;
             finalAmount = Number(inv.amount) || Number(inv.quantity) || 0;
             finalQuantity = finalAmount;

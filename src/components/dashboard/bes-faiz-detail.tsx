@@ -6,8 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { 
-  Trash2, Plus, Shield, Landmark, 
+import {
+  Trash2, Plus, Shield, Landmark,
   ChevronDown, RefreshCw, Sparkles
 } from "lucide-react";
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from "recharts";
@@ -31,14 +31,36 @@ interface BesFaizDetailProps {
   investments: InvestmentItem[];
 }
 
-function parseMeta(inv: InvestmentItem): { rate: number; originalDescription: string } {
+interface ParsedMeta {
+  rate: number;
+  monthlyContribution: number;
+  fundType?: string;
+  originalDescription: string;
+  maturityPeriod?: number;
+}
+
+function parseMeta(inv: InvestmentItem): ParsedMeta {
   try {
     const meta = JSON.parse(inv.description || "{}");
-    return { rate: meta.rate || 0, originalDescription: meta.originalDescription || "" };
+    return {
+      rate: meta.rate || inv.purchasePrice || 0,
+      monthlyContribution: meta.monthlyContribution || 0,
+      fundType: meta.fundType || "STANDART",
+      originalDescription: meta.originalDescription || (typeof inv.description === 'string' && !inv.description.startsWith('{') ? inv.description : ""),
+      maturityPeriod: meta.maturityPeriod || 32, // Esk kayıtlar için varsayılan 32 gün
+    };
   } catch {
-    return { rate: inv.purchasePrice || 0, originalDescription: "" };
+    return { rate: inv.purchasePrice || 0, monthlyContribution: 0, originalDescription: inv.description || "", maturityPeriod: 32 };
   }
 }
+
+const BES_FUND_TYPES = [
+  { id: "STANDART", name: "Standart / Dengeli (Karma)", icon: "⚖️", ticker: "FIXED" },
+  { id: "GOLD", name: "Altın Katılım / Altın", icon: "🟡", ticker: "XAUTRY=X" },
+  { id: "STOCKS", name: "Hisse Senedi Yoğun", icon: "📈", ticker: "XU100.IS" },
+  { id: "USD", name: "Dış Borçlanma (Eurobond/Döviz)", icon: "💵", ticker: "USDTRY=X" },
+  { id: "CONSERVATIVE", name: "Muhafazakar (Para Piyasası)", icon: "🛡️", ticker: "FIXED_LOW" },
+];
 
 export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
   const router = useRouter();
@@ -55,8 +77,11 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
   const [formData, setFormData] = useState({
     symbol: "",
     quantity: 0,
-    purchasePrice: 0,
+    purchasePrice: type === "BES" ? 30 : 45,
     description: "",
+    monthlyContribution: 0,
+    fundType: "STANDART",
+    maturityPeriod: 32,
   });
 
   // Gerçek zamanlı saniyelik sayaç (Canlı Getiri hissi için)
@@ -79,7 +104,7 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
       acc[sym].totalCost += inv.amount || inv.quantity;
       acc[sym].items.push(inv);
     }
-    
+
     // Calculate final weighted average rate for each group
     Object.values(acc).forEach(g => {
       const totalWeight = g.totalQuantity;
@@ -108,7 +133,22 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
       const daysPassed = secondsPassed / (60 * 60 * 24);
 
       if (type === "BES") {
-        const annualFundGrowth = 0.45;
+        // BES: Fon Büyümesi (Seçili fona göre) + Devlet Katkısı (%30 varsayılan)
+        let fundType = "STANDART";
+        try {
+          const meta = parseMeta(g.items[0]);
+          fundType = meta.fundType || "STANDART";
+        } catch(e){}
+
+        const fundReturns: Record<string, number> = {
+          "STANDART": 0.45,
+          "GOLD": 0.65,
+          "STOCKS": 0.80,
+          "USD": 0.35,
+          "CONSERVATIVE": 0.40,
+        };
+
+        const annualFundGrowth = fundReturns[fundType] || 0.45;
         const dailyGrowth = annualFundGrowth / 365;
         const fundMultiplier = Math.pow(1 + dailyGrowth, daysPassed);
         const stateMultiplier = 1 + (g.rate > 0 && g.rate <= 100 ? g.rate / 100 : 0.30);
@@ -133,41 +173,53 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
 
       const yearlyTotals: number[] = Array(projYears + 1).fill(0);
       for (const g of grouped) {
-        const monthlyRate = g.rate / 12 / 100;
+        const meta = g.items.length > 0 ? parseMeta(g.items[0]) : { maturityPeriod: 32 };
+        const maturityDays = meta.maturityPeriod || 32;
+        const compoundsPerYear = 365 / maturityDays;
+        const annualMultiplier = Math.pow(1 + (g.rate / 100) / compoundsPerYear, compoundsPerYear);
+
         let bal = g.totalQuantity;
         for (let yr = 0; yr <= projYears; yr++) {
           yearlyTotals[yr] += bal;
-          for (let m = 0; m < 12; m++) {
-            bal = bal * (1 + monthlyRate);
-          }
+          bal *= annualMultiplier; // Yıllık bileşik faizi uygula
         }
       }
 
       return yearlyTotals.map((total, i) => ({
-        label: `${i}. Yıl`,
+        label: i === 0 ? "Başlangıç" : `${i}. Yıl`,
         toplam: Math.round(total),
         anaPara: Math.round(totalPrin),
         faizKazanci: Math.round(total - totalPrin),
       }));
     } else {
+      const totalMonthlyContribution = grouped.reduce((s, g) => {
+        const firstItemMeta = g.items.length > 0 ? parseMeta(g.items[0]) : { monthlyContribution: 0 };
+        return s + firstItemMeta.monthlyContribution;
+      }, 0);
+
       const govtRate = grouped.reduce((s, g) => s + g.rate, 0) / Math.max(grouped.length, 1);
       const monthlyRate = projReturn / 12 / 100;
       const totalMonths = projYears * 12;
       let totalPrin = grouped.reduce((s, g) => s + g.totalQuantity, 0);
       let totalWithReturn = totalPrin;
+      let totalGovtBalance = totalPrin * (govtRate / 100);
       const data = [];
       for (let i = 0; i <= totalMonths; i++) {
         if (i > 0) {
-          totalPrin += projMonthly;
-          totalWithReturn = (totalWithReturn + projMonthly) * (1 + monthlyRate);
+          const monthlyAdd = projMonthly > 0 ? projMonthly : totalMonthlyContribution;
+          totalPrin += monthlyAdd;
+          // Apply returns to BOTH balances
+          // Note: In projection we still use projReturn as a benchmark
+          totalWithReturn = (totalWithReturn + monthlyAdd) * (1 + monthlyRate);
+          totalGovtBalance = (totalGovtBalance + (monthlyAdd * govtRate / 100)) * (1 + monthlyRate);
         }
         if (i % 12 === 0) {
-          const govtContrib = totalPrin * (govtRate / 100);
+          const yr = Math.floor(i / 12);
           data.push({
-            label: `${Math.floor(i / 12)}. Yıl`,
-            toplam: Math.round(totalWithReturn + govtContrib),
+            label: yr === 0 ? "Başlangıç" : `${yr}. Yıl`,
+            toplam: Math.round(totalWithReturn + totalGovtBalance),
             anaPara: Math.round(totalPrin),
-            faizKazanci: Math.round(totalWithReturn + govtContrib - totalPrin),
+            faizKazanci: Math.round(totalWithReturn + totalGovtBalance - totalPrin),
           });
         }
       }
@@ -195,6 +247,9 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
         quantity: 0,
         purchasePrice: type === "BES" ? 30 : 45,
         description: "",
+        monthlyContribution: type === "BES" ? 2500 : 0,
+        fundType: "STANDART",
+        maturityPeriod: 32,
       });
     }
     setIsAdding(!isAdding);
@@ -211,9 +266,12 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
         purchasePrice: formData.purchasePrice,
         useCurrentPrice: false,
         description: formData.description,
+        monthlyContribution: formData.monthlyContribution,
+        fundType: formData.fundType,
+        maturityPeriod: isBES ? undefined : formData.maturityPeriod,
       });
       setIsAdding(false);
-      setFormData({ symbol: "", quantity: 0, purchasePrice: 0, description: "" });
+      setFormData({ symbol: "", quantity: 0, purchasePrice: 0, description: "", monthlyContribution: 0, fundType: "STANDART", maturityPeriod: 32 });
       router.refresh();
     } catch (err) {
       console.error(err);
@@ -367,6 +425,22 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
                 className="h-12 rounded-xl bg-muted/50 border-border/30"
               />
             </div>
+            {isBES && (
+              <div className="space-y-2">
+                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                  Fon Türü (Piyasa Takibi İçin)
+                </Label>
+                <select
+                  value={formData.fundType}
+                  onChange={e => setFormData(p => ({ ...p, fundType: e.target.value }))}
+                  className="w-full h-12 rounded-xl bg-muted/50 border border-border/30 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                >
+                  {BES_FUND_TYPES.map(ft => (
+                    <option key={ft.id} value={ft.id}>{ft.icon} {ft.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
             <div className="space-y-2">
               <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
                 {isBES ? "Güncel Birikiminiz (₺)" : "Güncel Birikiminiz (₺)"}
@@ -392,12 +466,41 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
                 className="h-12 rounded-xl bg-muted/50 border-border/30"
               />
             </div>
+            {isBES && (
+              <div className="space-y-2">
+                <Label className="text-[10px] font-bold text-primary uppercase tracking-widest">
+                  Aylık Yatırılacak Düzenli Tutar (₺)
+                </Label>
+                <Input
+                  type="number"
+                  required
+                  placeholder="Örn: 2500"
+                  value={formData.monthlyContribution || ""}
+                  onChange={e => setFormData(p => ({ ...p, monthlyContribution: Number(e.target.value) }))}
+                  className="h-12 rounded-xl bg-primary/5 border-primary/20 focus:ring-primary font-bold"
+                />
+              </div>
+            )}
+            {!isBES && (
+              <div className="space-y-2">
+                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                  Vade Süresi (Gün)
+                </Label>
+                <Input
+                  type="number"
+                  placeholder="Örn: 32"
+                  value={formData.maturityPeriod || ""}
+                  onChange={e => setFormData(p => ({ ...p, maturityPeriod: Number(e.target.value) }))}
+                  className="h-12 rounded-xl bg-muted/50 border-border/30"
+                />
+              </div>
+            )}
             <div className="space-y-2">
               <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
                 Açıklama (Opsiyonel)
               </Label>
               <Input
-                placeholder={isBES ? "Örn: Aylık 2000₺ katkı payı" : "Örn: 3 aylık vadeli"}
+                placeholder={isBES ? "Örn: Aylık katkı payı" : "Örn: 3 aylık vadeli"}
                 value={formData.description}
                 onChange={e => setFormData(p => ({ ...p, description: e.target.value }))}
                 className="h-12 rounded-xl bg-muted/50 border-border/30"
@@ -443,6 +546,11 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
                         </div>
                         <div>
                           <p className="font-bold text-foreground">{g.symbol}</p>
+                          {isBES && (
+                            <p className="text-[9px] font-bold text-muted-foreground bg-muted px-1.5 py-0.5 rounded inline-block mb-1">
+                              {BES_FUND_TYPES.find(f => f.id === parseMeta(g.items[0]).fundType)?.name || "Karma Fon"}
+                            </p>
+                          )}
                           <p className={cn("text-[11px] font-bold mt-0.5", accentColor)}>
                             {isBES ? `Devlet Katkısı: %${g.rate}` : `Faiz: %${g.rate} / Yıl`}
                           </p>
@@ -452,10 +560,17 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
                               Günlük Getiri: ~{formatAmount((g.totalQuantity * g.rate) / 365 / 100)}
                             </p>
                           ) : (
-                            <p className="text-[10px] font-black text-emerald-500 mt-1 uppercase tracking-tighter flex items-center gap-1">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                              Tahmini Günlük Fon Getirisi: ~{formatAmount((g.totalQuantity * 45) / 365 / 100)}
-                            </p>
+                            <div className="mt-1 space-y-1">
+                              <p className="text-[10px] font-black text-emerald-500 uppercase tracking-tighter flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                Tahmini Günlük Fon Getirisi: ~{formatAmount((g.totalQuantity * 45) / 365 / 100)}
+                              </p>
+                              {parseMeta(g.items[0]).monthlyContribution > 0 && (
+                                <p className="text-[10px] font-bold text-primary bg-primary/5 px-2 py-0.5 rounded-md inline-block">
+                                  Aylık Ödeme: {formatAmount(parseMeta(g.items[0]).monthlyContribution)}
+                                </p>
+                              )}
+                            </div>
                           )}
                         </div>
                       </div>
@@ -476,7 +591,21 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
                           let currentVal = g.totalQuantity;
                           let earned = 0;
                           if (isBES) {
-                            const annualFundGrowth = 0.45;
+                            let fundType = "STANDART";
+                            try {
+                              const meta = parseMeta(g.items[0]);
+                              fundType = meta.fundType || "STANDART";
+                            } catch(e){}
+
+                            const fundReturns: Record<string, number> = {
+                              "STANDART": 0.45,
+                              "GOLD": 0.65,
+                              "STOCKS": 0.80,
+                              "USD": 0.35,
+                              "CONSERVATIVE": 0.40,
+                            };
+
+                            const annualFundGrowth = fundReturns[fundType] || 0.45;
                             const dailyGrowth = annualFundGrowth / 365;
                             const fundMultiplier = Math.pow(1 + dailyGrowth, daysPassed);
                             const stateMultiplier = 1 + (g.rate > 0 && g.rate <= 100 ? g.rate / 100 : 0.30);
@@ -499,60 +628,82 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
                       <div className="col-span-2 mt-2 p-3 bg-muted/50 rounded-xl border border-border/5 flex justify-between items-center">
                         <div>
                           <p className="text-[9px] font-bold text-muted-foreground uppercase">1 Yıl Sonraki Tahmin</p>
-                          <p className={cn("font-bold text-xl", accentColor)}>
-                            {formatAmount(isBES
-                              ? (g.totalQuantity * 1.45) * (1 + (g.rate || 30) / 100)
-                              : g.totalQuantity * Math.pow(1 + g.rate / 12 / 100, 12))}
-                          </p>
+                          {(() => {
+                            const fundReturns: Record<string, number> = {
+                              "STANDART": 0.45,
+                              "GOLD": 0.65,
+                              "STOCKS": 0.80,
+                              "USD": 0.35,
+                              "CONSERVATIVE": 0.40,
+                            };
+                            const fr = fundReturns[parseMeta(g.items[0]).fundType || "STANDART"] || 0.45;
+                            return (
+                              <p className={cn("font-bold text-xl", accentColor)}>
+                                {formatAmount(isBES
+                                  ? (g.totalQuantity * (1 + fr)) * (1 + (g.rate || 30) / 100)
+                                  : g.totalQuantity * Math.pow(1 + g.rate / 12 / 100, 12))}
+                              </p>
+                            );
+                          })()}
                         </div>
                         <div className="text-right">
-                           <p className="text-[9px] font-bold text-emerald-500 uppercase">Yıllık Tahmini Kazanç</p>
-                           <p className="font-bold text-emerald-500">
-                             +{formatAmount(isBES 
-                               ? ((g.totalQuantity * 1.45 * (1 + (g.rate || 30) / 100)) - g.totalQuantity)
-                               : (g.totalQuantity * (Math.pow(1 + g.rate / 12 / 100, 12) - 1)))}
-                           </p>
+                          <p className="text-[9px] font-bold text-emerald-500 uppercase">Yıllık Tahmini Kazanç</p>
+                          {(() => {
+                            const fundReturns: Record<string, number> = {
+                              "STANDART": 0.45,
+                              "GOLD": 0.65,
+                              "STOCKS": 0.80,
+                              "USD": 0.35,
+                              "CONSERVATIVE": 0.40,
+                            };
+                            const fr = fundReturns[parseMeta(g.items[0]).fundType || "STANDART"] || 0.45;
+                            return (
+                              <p className="font-bold text-emerald-500">
+                                +{formatAmount(isBES
+                                  ? ((g.totalQuantity * (1 + fr) * (1 + (g.rate || 30) / 100)) - g.totalQuantity)
+                                  : (g.totalQuantity * (Math.pow(1 + g.rate / 12 / 100, 12) - 1)))}
+                              </p>
+                            );
+                          })()}
                         </div>
                       </div>
                     </div>
                   </div>
                   {isExp && (
                     <div className="border-t border-border/10 bg-muted/30 p-4 space-y-4 animate-in slide-in-from-top-2 duration-300">
-                      {/* Katkı Payı Ekleme Alanı (Sadece BES için daha belirgin) */}
-                      {isBES && (
-                        <div className="bg-primary/5 rounded-2xl p-4 border border-primary/10 mb-2">
-                          <p className="text-[10px] font-bold text-primary uppercase tracking-widest mb-3 flex items-center gap-2">
-                            <Plus className="h-3 w-3" /> Aylık Katkı Payı / Ödeme Ekle
-                          </p>
-                          <div className="flex gap-2">
-                            <div className="relative flex-1">
-                              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-primary/40 font-bold">₺</span>
-                              <Input
-                                type="number"
-                                placeholder="Örn: 2500"
-                                className="h-11 pl-8 rounded-xl bg-card border-primary/20 focus:ring-primary font-bold text-sm"
-                                id={`contrib-${g.symbol}`}
-                                onKeyDown={(e) => {
-                                  if (e.key === "Enter") {
-                                    const val = (document.getElementById(`contrib-${g.symbol}`) as HTMLInputElement).value;
-                                    if (val) handleAddContribution(g.items[0].id, Number(val));
-                                  }
-                                }}
-                              />
-                            </div>
-                            <Button 
-                              onClick={() => {
-                                const val = (document.getElementById(`contrib-${g.symbol}`) as HTMLInputElement).value;
-                                if (val) handleAddContribution(g.items[0].id, Number(val));
+                      {/* Katkı Payı Ekleme Alanı */}
+                      <div className={cn("rounded-2xl p-4 border mb-2", isBES ? "bg-primary/5 border-primary/10" : "bg-yellow-500/5 border-yellow-500/10")}>
+                        <p className={cn("text-[10px] font-bold uppercase tracking-widest mb-3 flex items-center gap-2", isBES ? "text-primary" : "text-yellow-600")}>
+                          <Plus className="h-3 w-3" /> {isBES ? "Aylık Katkı Payı / Ödeme Ekle" : "Vadeye Para Ekle"}
+                        </p>
+                        <div className="flex gap-2">
+                          <div className="relative flex-1">
+                            <span className={cn("absolute left-4 top-1/2 -translate-y-1/2 font-bold", isBES ? "text-primary/40" : "text-yellow-600/40")}>₺</span>
+                            <Input
+                              type="number"
+                              placeholder={isBES ? "Örn: 2500" : "Eklenecek tutar"}
+                              className={cn("h-11 pl-8 rounded-xl bg-card font-bold text-sm", isBES ? "border-primary/20 focus:ring-primary" : "border-yellow-500/20 focus:ring-yellow-500")}
+                              id={`contrib-${g.symbol}`}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  const val = (document.getElementById(`contrib-${g.symbol}`) as HTMLInputElement).value;
+                                  if (val) { handleAddContribution(g.items[0].id, Number(val)); (e.target as HTMLInputElement).value = ""; }
+                                }
                               }}
-                              disabled={loading}
-                              className="h-11 rounded-xl bg-primary px-6 font-bold shadow-sm hover:shadow-primary/20 transition-all"
-                            >
-                              {loading ? "..." : "Ekle"}
-                            </Button>
+                            />
                           </div>
+                          <Button
+                            onClick={() => {
+                              const val = (document.getElementById(`contrib-${g.symbol}`) as HTMLInputElement).value;
+                              if (val) { handleAddContribution(g.items[0].id, Number(val)); (document.getElementById(`contrib-${g.symbol}`) as HTMLInputElement).value = ""; }
+                            }}
+                            disabled={loading}
+                            className={cn("h-11 rounded-xl px-6 font-bold shadow-sm transition-all", isBES ? "bg-primary hover:shadow-primary/20" : "bg-yellow-500 text-yellow-950 hover:bg-yellow-600 hover:shadow-yellow-500/20")}
+                          >
+                            {loading ? "..." : "Ekle"}
+                          </Button>
                         </div>
-                      )}
+                      </div>
 
                       <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">İşlem Geçmişi / Kayıtlar</p>
                       {g.items.map(item => {
@@ -602,8 +753,13 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
                 <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest min-h-[32px] flex items-end mb-2">Süre (Yıl)</Label>
                 <Input
                   type="number"
+                  min="1"
+                  max="50"
                   value={projYears}
-                  onChange={e => setProjYears(Number(e.target.value))}
+                  onChange={e => {
+                    const val = Math.min(50, Number(e.target.value));
+                    setProjYears(val);
+                  }}
                   className="h-11 rounded-xl bg-muted/50 border-border/30 font-bold"
                 />
               </div>
@@ -682,8 +838,8 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
                         name === "toplam"
                           ? (isBES ? "Tahmini Toplam (BES)" : "Bileşik Faiz Toplamı")
                           : name === "faizKazanci"
-                          ? "Kazanılan Faiz"
-                          : "Kayıtlı Birikim"
+                            ? "Kazanılan Faiz"
+                            : "Kayıtlı Birikim"
                       ]}
                     />
                     <Area type="monotone" dataKey="toplam" stroke={accentSolid} strokeWidth={3} fillOpacity={1} fill="url(#colorProj)" />
@@ -693,10 +849,10 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
                 </ResponsiveContainer>
               ) : (
                 <div className="h-full w-full flex flex-col items-center justify-center text-center p-6 border border-dashed rounded-3xl border-border/30 bg-muted/5">
-                    <Sparkles className={cn("h-10 w-10 mb-4 opacity-20", accentColor)} />
-                    <p className="text-xs font-bold text-muted-foreground max-w-[200px]">
-                      Projeksiyon oluşturmak için ilk {isBES ? "BES" : "vadeli"} hesabınızı ekleyin.
-                    </p>
+                  <Sparkles className={cn("h-10 w-10 mb-4 opacity-20", accentColor)} />
+                  <p className="text-xs font-bold text-muted-foreground max-w-[200px]">
+                    Projeksiyon oluşturmak için ilk {isBES ? "BES" : "vadeli"} hesabınızı ekleyin.
+                  </p>
                 </div>
               )}
             </div>
