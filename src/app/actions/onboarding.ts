@@ -21,8 +21,8 @@ export async function completeOnboarding(formData: {
   expenses:       { type: string; amount: number; date?: string; isRecurring: boolean; description?: string }[];
   debts:          { type: string; amount: number; remainingInstallments?: number; description?: string }[];
   investments:    {
-    type: string; symbol?: string; quantity: number;
-    purchasePrice: number; currentValuation?: number; description?: string;
+    type: string; symbol?: string; quantity?: number;
+    purchasePrice?: number; amount?: number; currentValuation?: number; description?: string;
   }[];
   fixedAssets: { name: string; type: string; value: number }[];
 }) {
@@ -36,9 +36,11 @@ export async function completeOnboarding(formData: {
     for (const inc of formData.incomes) if (inc.amount <= 0) throw new Error("Tüm gelir tutarları 0'dan büyük olmalıdır.");
     for (const exp of formData.expenses) if (exp.amount <= 0) throw new Error("Tüm gider tutarları 0'dan büyük olmalıdır.");
     for (const d of formData.debts) if (d.amount <= 0) throw new Error("Tüm borç tutarları 0'dan büyük olmalıdır.");
-    for (const inv of formData.investments) {
-      if (inv.quantity <= 0) throw new Error("Tüm yatırım miktarları 0'dan büyük olmalıdır.");
-      if (inv.purchasePrice < 0) throw new Error("Yatırım alış fiyatı negatif olamaz.");
+    for (const inv of formData.investments || []) {
+      const q = inv.quantity ?? 1;
+      const p = inv.purchasePrice ?? (inv.amount || 0);
+      if (q <= 0) throw new Error("Yatırım miktarı 0'dan büyük olmalıdır.");
+      if (p < 0) throw new Error("Yatırım fiyatı negatif olamaz.");
     }
     for (const fa of formData.fixedAssets) if (fa.value <= 0) throw new Error("Tüm sabit varlık değerleri 0'dan büyük olmalıdır.");
 
@@ -170,18 +172,21 @@ export async function completeOnboarding(formData: {
     if ((formData.investments ?? []).length > 0) {
       await prisma.investment.createMany({
         data: formData.investments.map(inv => {
-          let finalPurchasePrice = Number(inv.purchasePrice) || 0;
-          let finalAmount = Number(inv.quantity || 0) * finalPurchasePrice;
+          let finalQuantity = Number(inv.quantity) || 1;
+          let finalPurchasePrice = Number(inv.purchasePrice) || (Number(inv.amount) || 0);
+          let finalAmount = Number(inv.amount) || (finalQuantity * finalPurchasePrice);
           let finalDescription = inv.description;
+
           if (inv.type === "BES" || inv.type === "FAIZ") {
             const rate = Number(inv.purchasePrice) || 0;
             finalDescription = JSON.stringify({ rate, originalDescription: inv.description || "" });
             finalPurchasePrice = 1;
-            finalAmount = Number(inv.quantity || 0);
+            finalAmount = Number(inv.amount) || Number(inv.quantity) || 0;
+            finalQuantity = finalAmount;
           }
           return {
             type: inv.type, symbol: inv.symbol,
-            quantity: Number(inv.quantity || 0), purchasePrice: finalPurchasePrice,
+            quantity: finalQuantity, purchasePrice: finalPurchasePrice,
             currentValuation: inv.currentValuation ? Number(inv.currentValuation) : null,
             description: finalDescription, amount: finalAmount, userId: user!.id,
           };
