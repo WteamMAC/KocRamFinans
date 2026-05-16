@@ -28,11 +28,11 @@ export default async function AssetsPage() {
   let fixedMetrics = { totalOriginalCost: 0, totalCurrentValue: 0, totalProfit: 0, totalProfitPercent: 0, assets: [] as any[] };
 
   try {
-    const symbols = Array.from(new Set(
+    const symbols: string[] = Array.from(new Set(
       (user.investments as any[])
         .map(inv => inv.symbol)
         .filter((s): s is string => !!s)
-    ));
+    )) as string[];
 
     const livePrices = await getLivePrices(symbols);
     metrics = calculatePortfolioMetrics(user.investments, livePrices);
