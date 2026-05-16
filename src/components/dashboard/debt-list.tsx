@@ -237,10 +237,8 @@ export function DebtList({ debts }: DebtListProps) {
                                 </div>
                                 <div className="text-right flex flex-col items-end gap-1">
                                     <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 -mr-2 text-muted-foreground hover:text-primary">
-                                                <Settings2 className="w-4 h-4" />
-                                            </Button>
+                                        <DropdownMenuTrigger className="flex h-8 w-8 items-center justify-center -mr-2 text-muted-foreground hover:text-primary hover:bg-muted rounded-lg transition-colors cursor-pointer outline-none">
+                                            <Settings2 className="w-4 h-4" />
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end" className="rounded-xl font-bold bg-card border-border/30">
                                             <DropdownMenuItem 
