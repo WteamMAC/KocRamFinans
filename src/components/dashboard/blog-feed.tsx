@@ -421,7 +421,10 @@ function CommentSection({ post, currentUserId, onTagClick, onCommentAdded, onCom
             <Avatar src={c.authorImage} name={c.authorName} username={c.authorUsername} userId={c.authorId} size="sm" />
             <div className="flex-1 bg-muted/30 rounded-xl px-3 py-2">
               <div className="flex items-center justify-between">
-                <Link href={c.authorUsername ? `/dashboard/profile/${c.authorUsername}` : `/dashboard/profile/${c.authorId}`} className="text-[11px] font-bold text-primary hover:underline">{c.authorName}</Link>
+                <div className="flex items-center gap-1.5">
+                  <Link href={c.authorUsername ? `/dashboard/profile/${c.authorUsername}` : `/dashboard/profile/${c.authorId}`} className="text-[11px] font-bold text-primary hover:underline">{c.authorName}</Link>
+                  {c.authorUsername && <span className="text-[10px] font-bold text-muted-foreground opacity-40">@{c.authorUsername}</span>}
+                </div>
                 <div className="flex items-center gap-1">
                   <span className="text-[10px] text-muted-foreground opacity-50">{formatTimeAgo(c.createdAt)}</span>
                   {c.isMyComment && <button onClick={() => handleDelete(c.id)} className="opacity-0 group-hover:opacity-100 transition-all ml-1 p-1 rounded-full text-rose-400 hover:text-rose-600 hover:bg-rose-500/10"><X className="h-3 w-3" /></button>}
@@ -572,9 +575,9 @@ function PostCard({ post, currentUserId, onTagClick, onCommunityClick, onComment
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
           <Avatar src={post.authorImage} name={post.authorName} username={post.authorUsername} userId={post.authorId} />
-          <div className="flex flex-col">
+          <div className="flex flex-col -space-y-0.5">
             <div className="flex items-center gap-2">
-              <Link href={post.authorUsername ? `/dashboard/profile/${post.authorUsername}` : `/dashboard/profile/${post.authorId}`} className="font-bold text-sm text-foreground hover:text-primary transition-colors">{post.authorName}</Link>
+              <Link href={post.authorUsername ? `/dashboard/profile/${post.authorUsername}` : `/dashboard/profile/${post.authorId}`} className="font-bold text-sm text-foreground hover:text-primary transition-colors leading-tight">{post.authorName}</Link>
               {post.communityName && (
                 <div className="flex items-center gap-1.5">
                   <span className="text-muted-foreground/30">•</span>
@@ -582,7 +585,10 @@ function PostCard({ post, currentUserId, onTagClick, onCommunityClick, onComment
                 </div>
               )}
             </div>
-            <p className="text-[11px] text-muted-foreground opacity-60">{formatTimeAgo(post.createdAt)}</p>
+            {post.authorUsername && (
+              <p className="text-[10px] font-bold text-muted-foreground opacity-50 leading-tight">@{post.authorUsername}</p>
+            )}
+            <p className="text-[10px] text-muted-foreground opacity-40 font-medium mt-0.5">{formatTimeAgo(post.createdAt)}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">

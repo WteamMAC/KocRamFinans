@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { X, Send, ArrowLeft, Loader2, UserMinus } from "lucide-react";
+import { X, Send, ArrowLeft, Loader2, Ban } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { getInboxConversations, getConversation, sendMessage, toggleBlockUser, getBlockStatus } from "@/app/actions/messages";
@@ -28,6 +28,7 @@ export function MessageModal({ isOpen, onClose, initialTargetUsername, currentUs
   const [sending, setSending] = useState(false);
   
   const [blockStatus, setBlockStatus] = useState({ isBlocked: false, hasBlockedMe: false });
+  const [showBlockConfirm, setShowBlockConfirm] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -93,13 +94,11 @@ export function MessageModal({ isOpen, onClose, initialTargetUsername, currentUs
 
   const handleBlockToggle = async () => {
     if (!targetUser) return;
-    if (confirm(`Bu kullanıcıyı engellemek/engeli kaldırmak istediğinize emin misiniz?`)) {
-      try {
-        const res = await toggleBlockUser(targetUser.username);
-        setBlockStatus(prev => ({ ...prev, isBlocked: res.blocked }));
-      } catch (e: any) {
-        alert(e.message);
-      }
+    try {
+      const res = await toggleBlockUser(targetUser.username);
+      setBlockStatus(prev => ({ ...prev, isBlocked: res.blocked }));
+    } catch (e: any) {
+      alert(e.message);
     }
   };
 
@@ -123,8 +122,8 @@ export function MessageModal({ isOpen, onClose, initialTargetUsername, currentUs
           </div>
           <div className="flex items-center gap-2">
             {view === "chat" && targetUser && (
-              <Button variant="ghost" size="icon" onClick={handleBlockToggle} className={cn("h-8 w-8 rounded-full", blockStatus.isBlocked ? "text-rose-500 bg-rose-500/10" : "text-muted-foreground")}>
-                <UserMinus className="h-4 w-4" />
+              <Button variant="ghost" size="icon" onClick={() => setShowBlockConfirm(true)} className={cn("h-8 w-8 rounded-full", blockStatus.isBlocked ? "text-rose-500 bg-rose-500/10 shadow-inner" : "text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10")}>
+                <Ban className="h-4 w-4" />
               </Button>
             )}
             <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8 rounded-full">
@@ -176,12 +175,12 @@ export function MessageModal({ isOpen, onClose, initialTargetUsername, currentUs
             <div className="flex-1 flex flex-col overflow-hidden">
               <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 {blockStatus.isBlocked && (
-                  <div className="bg-rose-500/10 text-rose-500 p-3 rounded-xl text-xs font-bold text-center">
+                  <div className="bg-rose-500/10 text-rose-500 p-3 rounded-xl text-xs font-bold text-center border border-rose-500/20">
                     Bu kullanıcıyı engellediniz.
                   </div>
                 )}
                 {blockStatus.hasBlockedMe && (
-                  <div className="bg-amber-500/10 text-amber-500 p-3 rounded-xl text-xs font-bold text-center">
+                  <div className="bg-amber-500/10 text-amber-500 p-3 rounded-xl text-xs font-bold text-center border border-amber-500/20">
                     Bu kullanıcıya mesaj gönderemezsiniz.
                   </div>
                 )}
@@ -194,7 +193,7 @@ export function MessageModal({ isOpen, onClose, initialTargetUsername, currentUs
                     <div key={idx} className={cn("flex w-full", isMe ? "justify-end" : "justify-start")}>
                       <div className={cn(
                         "max-w-[80%] rounded-2xl px-4 py-2.5 text-sm",
-                        isMe ? "bg-primary text-primary-foreground rounded-br-sm" : "bg-muted rounded-bl-sm"
+                        isMe ? "bg-primary text-primary-foreground rounded-br-sm shadow-sm" : "bg-muted rounded-bl-sm border border-border/10"
                       )}>
                         {msg.content}
                         <div className={cn("text-[9px] mt-1 opacity-70 text-right", isMe ? "text-primary-foreground/80" : "text-muted-foreground")}>
@@ -235,6 +234,46 @@ export function MessageModal({ isOpen, onClose, initialTargetUsername, currentUs
           )}
         </div>
       </div>
+
+      {/* Custom Confirmation Dialog */}
+      {showBlockConfirm && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-card w-full max-w-sm rounded-[32px] p-6 shadow-2xl border border-border/20 animate-in zoom-in-95 duration-200 space-y-6">
+            <div className="flex flex-col items-center text-center space-y-3">
+              <div className="w-16 h-16 bg-rose-500/10 rounded-full flex items-center justify-center">
+                <Ban className="h-8 w-8 text-rose-500" />
+              </div>
+              <h3 className="text-xl font-black text-foreground">
+                {blockStatus.isBlocked ? "Engeli Kaldır" : "Kullanıcıyı Engelle"}
+              </h3>
+              <p className="text-sm text-muted-foreground font-medium px-2">
+                {blockStatus.isBlocked 
+                  ? `@${targetUser?.username} kullanıcısının engelini kaldırmak istiyor musunuz?` 
+                  : `@${targetUser?.username} kullanıcısını engellemek istediğinize emin misiniz? Bu işlemden sonra birbirinize mesaj gönderemezsiniz.`}
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowBlockConfirm(false)} 
+                className="flex-1 h-12 rounded-2xl font-bold border-border/20"
+              >
+                Vazgeç
+              </Button>
+              <Button 
+                variant="destructive" 
+                onClick={() => {
+                  setShowBlockConfirm(false);
+                  handleBlockToggle();
+                }} 
+                className="flex-1 h-12 rounded-[18px] font-black text-[10px] uppercase tracking-widest shadow-lg shadow-rose-500/20"
+              >
+                {blockStatus.isBlocked ? "ENGELİ KALDIR" : "ENGELLE"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
