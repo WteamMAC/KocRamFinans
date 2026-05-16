@@ -36,6 +36,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCurrency, DISPLAY_CURRENCIES_LIST } from "@/context/currency-context";
+import { DatePicker } from "@/components/ui/date-picker";
+import { parseISO } from "date-fns";
 
 interface Transaction {
   id: string;
@@ -213,7 +215,7 @@ export function IncomeExpenseClient({
                 <div className="flex p-1 bg-muted rounded-2xl border border-border/20">
                     <button 
                         onClick={() => setTransactionType("income")}
-                        className={cn("flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all", transactionType === "income" ? "bg-card text-emerald-600 shadow-sm" : "text-muted-foreground opacity-60")}
+                        className={cn("flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all", transactionType === "income" ? "bg-card text-primary shadow-sm" : "text-muted-foreground opacity-60")}
                     >
                         Gelir
                     </button>
@@ -240,7 +242,7 @@ export function IncomeExpenseClient({
                 <div className="grid gap-4">
                     {transactionType === "debt_payment" ? (
                         <div className="space-y-3">
-                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Ödenecek Borç</Label>
+                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1 mb-1.5 block">Ödenecek Borç</Label>
                             <Select onValueChange={(v) => setFormData(p => ({ ...p, debtId: String(v ?? "") }))}>
                                 <SelectTrigger className="bg-muted border-border/30 h-12 rounded-xl">
                                     <SelectValue placeholder="Borç Seçin" />
@@ -257,7 +259,7 @@ export function IncomeExpenseClient({
                         </div>
                     ) : (
                         <div className="space-y-3">
-                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Kategori</Label>
+                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1 mb-1.5 block">Kategori</Label>
                             <Select onValueChange={(v) => setFormData(p => ({ ...p, type: String(v ?? "") }))}>
                                 <SelectTrigger className="bg-muted border-border/30 h-12 rounded-xl">
                                     <SelectValue placeholder="Kategori Seçin" />
@@ -297,7 +299,7 @@ export function IncomeExpenseClient({
                         <>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-3">
-                                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Taksit Sayısı</Label>
+                                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1 mb-1.5 block">Taksit Sayısı</Label>
                                     <Input 
                                         type="number" 
                                         placeholder="Örn: 12" 
@@ -307,7 +309,7 @@ export function IncomeExpenseClient({
                                     />
                                 </div>
                                 <div className="space-y-3">
-                                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Aylık Faiz (%)</Label>
+                                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1 mb-1.5 block">Aylık Faiz (%)</Label>
                                     <Input 
                                         type="number" 
                                         step="0.01"
@@ -319,7 +321,7 @@ export function IncomeExpenseClient({
                                 </div>
                             </div>
                             <div className="space-y-3">
-                                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Ödeme Günü (1-31)</Label>
+                                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1 mb-1.5 block">Ödeme Günü (1-31)</Label>
                                 <Input 
                                     type="number" 
                                     min="1"
@@ -335,7 +337,7 @@ export function IncomeExpenseClient({
 
                     <div className="grid grid-cols-3 gap-4">
                       <div className="col-span-2 space-y-3">
-                          <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Tutar</Label>
+                          <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1 mb-1.5 block">Tutar</Label>
                           <Input 
                               type="number" 
                               placeholder="0.00" 
@@ -345,7 +347,7 @@ export function IncomeExpenseClient({
                           />
                       </div>
                       <div className="space-y-3">
-                          <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Para Birimi</Label>
+                          <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1 mb-1.5 block">Para Birimi</Label>
                           <Select value={formData.currency} onValueChange={(v) => setFormData(p => ({ ...p, currency: String(v) }))}>
                               <SelectTrigger className="bg-muted border-border/30 h-12 rounded-xl font-bold">
                                   <SelectValue />
@@ -362,17 +364,17 @@ export function IncomeExpenseClient({
                     </div>
 
                     <div className="space-y-3">
-                        <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">İşlem Tarihi</Label>
-                        <Input 
-                            type="date" 
-                            value={formData.date}
-                            onChange={(e) => setFormData(p => ({ ...p, date: e.target.value }))}
-                            className="bg-muted border-border/30 h-12 rounded-xl"
+                        <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1 mb-1.5 block">İşlem Tarihi</Label>
+                        <DatePicker
+                            date={formData.date ? parseISO(formData.date) : undefined}
+                            setDate={(d) => setFormData(p => ({ ...p, date: d ? d.toISOString().split('T')[0] : "" }))}
+                            placeholder="GG.AA.YYYY"
+                            className="h-12"
                         />
                     </div>
 
                     <div className="space-y-3">
-                        <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Açıklama</Label>
+                        <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1 mb-1.5 block">Açıklama</Label>
                         <Input 
                             placeholder="İşlem detayları..." 
                             value={formData.description}
@@ -397,7 +399,7 @@ export function IncomeExpenseClient({
 
                             {formData.isRecurring && (
                                 <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
-                                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Ayın Kaçıncı Günü? (1-31)</Label>
+                                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1 mb-1.5 block">Ayın Kaçıncı Günü? (1-31)</Label>
                                     <Input 
                                         type="number" 
                                         min="1"
@@ -430,17 +432,17 @@ export function IncomeExpenseClient({
       {/* Summary Cards */}
       <section className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">
         <div className="bg-card p-8 rounded-2xl shadow-ambient-low border border-border/20 relative overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full -mr-8 -mt-8"></div>
+          <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full -mr-8 -mt-8"></div>
           <div className="flex items-center gap-3 mb-4 relative z-10">
             <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest opacity-70">Toplam Gelir</span>
-            <div className="bg-emerald-500/10 p-2 rounded-xl">
-              <TrendingUp className="w-5 h-5 text-emerald-600" />
+            <div className="bg-primary/10 p-2 rounded-xl">
+              <TrendingUp className="w-5 h-5 text-primary" />
             </div>
           </div>
           <div className="flex items-baseline gap-2">
             <span className="text-3xl font-heading font-bold text-foreground">{formatAmount(totalIncome)}</span>
           </div>
-          <p className="text-emerald-600 text-[13px] font-semibold mt-4 flex items-center gap-1">
+          <p className="text-primary text-[13px] font-semibold mt-4 flex items-center gap-1">
             <ArrowUpRight className="w-4 h-4" /> Pozitif nakit akışı
           </p>
         </div>
@@ -490,7 +492,7 @@ export function IncomeExpenseClient({
               <h3 className="text-xl font-heading font-bold text-foreground">Gelir & Gider Karşılaştırması</h3>
               <div className="flex gap-4">
                 <span className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-                  <span className="w-3 h-3 rounded-full bg-emerald-500"></span> Gelir
+                  <span className="w-3 h-3 rounded-full bg-primary/60"></span> Gelir
                 </span>
                 <span className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
                   <span className="w-3 h-3 rounded-full bg-primary"></span> Gider
@@ -506,11 +508,11 @@ export function IncomeExpenseClient({
                 return (
                   <div key={i} className="flex-1 flex flex-col items-center gap-4 group">
                     <div className="w-full flex gap-1 sm:gap-1.5 items-end h-48 relative">
-                      <div className={cn("flex-1 rounded-t-md transition-all duration-500", isCurrentMonth ? "bg-emerald-500 shadow-lg shadow-emerald-500/20" : "bg-emerald-500/40 group-hover:bg-emerald-500/60")} style={{ height: `${incHeight}%` }}></div>
+                      <div className={cn("flex-1 rounded-t-md transition-all duration-500", isCurrentMonth ? "bg-primary/80 shadow-lg shadow-primary/20" : "bg-primary/30 group-hover:bg-primary/50")} style={{ height: `${incHeight}%` }}></div>
                       <div className={cn("flex-1 rounded-t-md transition-all duration-500", isCurrentMonth ? "bg-primary shadow-lg shadow-primary/20" : "bg-primary/40 group-hover:bg-primary/60")} style={{ height: `${expHeight}%` }}></div>
                       
                       <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-card px-3 py-2 rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 whitespace-nowrap text-xs font-bold flex flex-col gap-1 border border-border/30">
-                        <span className="text-emerald-500">Gelir: {formatAmount(d.income)}</span>
+                        <span className="text-primary/80">Gelir: {formatAmount(d.income)}</span>
                         <span className="text-primary">Gider: {formatAmount(d.expense)}</span>
                       </div>
                     </div>
@@ -528,19 +530,19 @@ export function IncomeExpenseClient({
               {recentTransactions.slice(0, 3).map((tx, idx) => (
                 <div key={tx.id} className="flex gap-6 items-start group">
                   <div className="flex flex-col items-center">
-                    <div className={cn("w-4 h-4 rounded-full border-4 border-card ring-1 transition-transform group-hover:scale-125", tx.type === 'income' ? "bg-emerald-500 ring-emerald-500/20" : "bg-primary ring-primary/20")}></div>
+                    <div className={cn("w-4 h-4 rounded-full border-4 border-card ring-1 transition-transform group-hover:scale-125", tx.type === 'income' ? "bg-primary/80 ring-primary/20" : "bg-primary ring-primary/20")}></div>
                     {idx !== Math.min(recentTransactions.length, 3) - 1 && (
                       <div className="w-0.5 h-16 bg-border/30 mt-1"></div>
                     )}
                   </div>
-                  <div className={cn("flex-1 bg-muted p-5 rounded-2xl border border-border/20 transition-colors cursor-default", tx.type === 'income' ? "hover:border-emerald-500/30" : "hover:border-primary/30")}>
+                  <div className={cn("flex-1 bg-muted p-5 rounded-2xl border border-border/20 transition-colors cursor-default", tx.type === 'income' ? "hover:border-primary/40" : "hover:border-primary/30")}>
                     <div className="flex justify-between items-center">
                       <div>
                         <p className="font-semibold text-foreground">{tx.description || tx.category}</p>
                         <p className="text-[13px] text-muted-foreground mt-1">{tx.category}</p>
                       </div>
                       <div className="text-right">
-                        <p className={cn("font-bold text-lg", tx.type === 'income' ? "text-emerald-500" : "text-primary")}>
+                        <p className={cn("font-bold text-lg", tx.type === 'income' ? "text-primary/80" : "text-primary")}>
                           {tx.type === 'income' ? '+' : '-'}{formatAmount(tx.amount)}
                         </p>
                         {tx.currency && tx.currency !== "TRY" && (
@@ -599,7 +601,7 @@ export function IncomeExpenseClient({
 
             <ul className="space-y-6">
               {Object.entries(expenseCategoryMap).sort(([,a], [,b]) => (b as number) - (a as number)).slice(0, 4).map(([cat, amt], idx) => {
-                const colors = ["bg-primary", "bg-emerald-500", "bg-accent", "bg-border"];
+                const colors = ["bg-primary", "bg-primary/60", "bg-accent", "bg-border"];
                 const pct = totalExpense > 0 ? Math.round((amt / totalExpense) * 100) : 0;
                 return (
                   <li key={cat} className="flex justify-between items-center group cursor-default">
@@ -661,14 +663,14 @@ export function IncomeExpenseClient({
                   <tr key={tx.id} className="hover:bg-muted/80 transition-colors group">
                     <td className="px-8 py-6">
                       <div className="flex items-center gap-4">
-                        <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm", isIncome ? "bg-emerald-500/10 text-emerald-500" : "bg-primary/10 text-primary")}>
+                        <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm", isIncome ? "bg-primary/10 text-primary/80" : "bg-primary/10 text-primary")}>
                           <Icon className="w-5 h-5" />
                         </div>
                         <span className="font-bold text-foreground">{tx.description || tx.category}</span>
                       </div>
                     </td>
                     <td className="px-8 py-6">
-                      <span className={cn("px-3 py-1.5 rounded-full text-[12px] font-bold shadow-sm", isIncome ? "bg-emerald-500/10 text-emerald-500" : "bg-border/30 text-muted-foreground")}>
+                      <span className={cn("px-3 py-1.5 rounded-full text-[12px] font-bold shadow-sm", isIncome ? "bg-primary/10 text-primary/80" : "bg-border/30 text-muted-foreground")}>
                         {tx.category}
                       </span>
                     </td>
@@ -676,7 +678,7 @@ export function IncomeExpenseClient({
                       {new Date(tx.createdAt).toLocaleDateString('tr-TR', { day: '2-digit', month: 'short', year: 'numeric' })}
                     </td>
                     <td className="px-8 py-6 text-right">
-                      <p className={cn("font-bold text-lg", isIncome ? "text-emerald-500" : "text-primary")}>
+                      <p className={cn("font-bold text-lg", isIncome ? "text-primary/80" : "text-primary")}>
                         {isIncome ? '+' : '-'} {formatAmount(tx.amount)}
                       </p>
                       {tx.currency && tx.currency !== "TRY" && (

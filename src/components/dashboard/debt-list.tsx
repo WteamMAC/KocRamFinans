@@ -13,10 +13,12 @@ import { cn } from "@/lib/utils";
 import { useCurrency, DISPLAY_CURRENCIES_LIST } from "@/context/currency-context";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Cell, PieChart, Pie } from "recharts";
+import { DatePicker } from "@/components/ui/date-picker";
+import { parseISO } from "date-fns";
 
 interface DebtListProps {
-  debts: any[];
-  monthlyPayments?: any[];
+    debts: any[];
+    monthlyPayments?: any[];
 }
 
 export function DebtList({ debts, monthlyPayments }: DebtListProps) {
@@ -103,12 +105,12 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
             } else {
                 // Taksit ödemesini borcun kendi para birimi ve kuru ile kaydedelim
                 await payDebtInstallment(
-                  payModal.id, 
-                  payModal.rawAmount, 
-                  false, 
-                  payModal.currency, 
-                  payModal.originalAmount ? payModal.originalAmount / (payModal.fxRate || 1) : undefined, 
-                  payModal.fxRate
+                    payModal.id,
+                    payModal.rawAmount,
+                    false,
+                    payModal.currency,
+                    payModal.originalAmount ? payModal.originalAmount / (payModal.fxRate || 1) : undefined,
+                    payModal.fxRate
                 );
             }
             setPayModal(null);
@@ -125,7 +127,7 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
             <div className="flex justify-between items-center">
                 <div className="bg-card px-6 py-3 rounded-2xl border border-border/30 shadow-sm flex items-center gap-4 animate-in fade-in slide-in-from-left-4 duration-500">
                     <div className="p-3 bg-rose-500/10 rounded-xl">
-                      <TrendingDown className="w-6 h-6 text-rose-600" />
+                        <TrendingDown className="w-6 h-6 text-rose-600" />
                     </div>
                     <div>
                         <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">Toplam Yükümlülük</p>
@@ -134,17 +136,17 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
                 </div>
 
                 <div className="bg-card px-6 py-3 rounded-2xl border border-border/30 shadow-sm flex items-center gap-4 animate-in fade-in slide-in-from-left-4 duration-500 delay-100">
-                    <div className="p-3 bg-emerald-500/10 rounded-xl">
-                      <Clock className="w-6 h-6 text-emerald-600" />
+                    <div className="p-3 bg-primary/10 rounded-xl">
+                        <Clock className="w-6 h-6 text-primary" />
                     </div>
                     <div>
                         <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">Bu Ay Beklenen / Kalan</p>
-                        <p className="text-2xl font-heading font-bold text-emerald-600">
+                        <p className="text-2xl font-heading font-bold text-primary">
                             {formatAmount(currentMonthPaid)} / <span className="text-rose-500">{formatAmount(remainingExpected)}</span>
                         </p>
                     </div>
                 </div>
-                <Button 
+                <Button
                     onClick={() => setIsAdding(!isAdding)}
                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl px-6 h-12 font-bold shadow-lg shadow-destructive/20 animate-in fade-in slide-in-from-right-4 duration-500"
                 >
@@ -181,9 +183,9 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
                                     return data;
                                 })()}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" opacity={0.1} />
-                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: 'hsl(var(--muted-foreground))', fontSize: 12}} />
-                                    <YAxis axisLine={false} tickLine={false} tick={{fill: 'hsl(var(--muted-foreground))', fontSize: 12}} />
-                                    <Tooltip 
+                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
+                                    <YAxis axisLine={false} tickLine={false} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
+                                    <Tooltip
                                         contentStyle={{ backgroundColor: 'hsl(var(--card))', borderRadius: '16px', border: '1px solid hsl(var(--border)/0.3)', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
                                         formatter={(value: any) => [formatAmount(value), "Toplam Taksit"]}
                                     />
@@ -209,9 +211,9 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
                                                 <span>{formatAmount(amount)}</span>
                                             </div>
                                             <div className="h-2 bg-muted rounded-full overflow-hidden">
-                                                <div 
-                                                    className={cn("h-full rounded-full", type === "Kredi Kartı" ? "bg-rose-500" : "bg-primary")} 
-                                                    style={{ width: `${percentage}%` }} 
+                                                <div
+                                                    className={cn("h-full rounded-full", type === "Kredi Kartı" ? "bg-rose-500" : "bg-primary")}
+                                                    style={{ width: `${percentage}%` }}
                                                 />
                                             </div>
                                         </div>
@@ -239,7 +241,7 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                         <div className="space-y-3">
-                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Borç Türü</Label>
+                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1 mb-1.5 block">Borç Türü</Label>
                             <Select value={formData.type} onValueChange={(v) => setFormData((p) => ({ ...p, type: String(v ?? "") }))}>
                                 <SelectTrigger className="bg-muted border-border/30 h-12 rounded-xl focus:ring-destructive font-bold">
                                     <SelectValue />
@@ -254,83 +256,83 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
                             </Select>
                         </div>
                         <div className="space-y-3">
-                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Toplam Tutar</Label>
+                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1 mb-1.5 block">Toplam Tutar</Label>
                             <div className="flex gap-2">
-                              <Input
-                                  type="number"
-                                  value={formData.amount}
-                                  onChange={(e) => setFormData(p => ({ ...p, amount: e.target.value }))}
-                                  className="bg-muted border-border/30 h-12 rounded-xl focus:ring-destructive text-lg font-bold flex-1"
-                                  placeholder="0.00"
-                              />
-                              <Select value={formData.currency} onValueChange={(v) => setFormData(p => ({ ...p, currency: String(v) }))}>
-                                  <SelectTrigger className="bg-muted border-border/30 h-12 rounded-xl w-[110px] font-bold">
-                                      <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent className="rounded-xl bg-card font-bold">
-                                      {DISPLAY_CURRENCIES_LIST.map(c => (
-                                          <SelectItem key={c.code} value={c.code}>
-                                              {c.flag} {c.code}
-                                          </SelectItem>
-                                      ))}
-                                  </SelectContent>
-                              </Select>
+                                <Input
+                                    type="number"
+                                    value={formData.amount}
+                                    onChange={(e) => setFormData(p => ({ ...p, amount: e.target.value }))}
+                                    className="bg-muted border-border/30 h-12 rounded-xl focus:ring-destructive text-lg font-bold flex-1"
+                                    placeholder="0.00"
+                                />
+                                <Select value={formData.currency} onValueChange={(v) => setFormData(p => ({ ...p, currency: String(v) }))}>
+                                    <SelectTrigger className="bg-muted border-border/30 h-12 rounded-xl w-[110px] font-bold">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent className="rounded-xl bg-card font-bold">
+                                        {DISPLAY_CURRENCIES_LIST.map(c => (
+                                            <SelectItem key={c.code} value={c.code}>
+                                                {c.flag} {c.code}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                             </div>
                         </div>
                         <div className="space-y-3">
-                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Taksit Sayısı (Opsiyonel)</Label>
-                                <Input
-                                    type="number"
-                                    min="1"
-                                    value={formData.remainingInstallments}
-                                    onChange={(e) => setFormData(p => ({ ...p, remainingInstallments: e.target.value }))}
-                                    className="bg-muted border-border/30 h-12 rounded-xl focus:ring-destructive font-bold"
-                                    placeholder="Örn: 12"
-                                />
+                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1 mb-1.5 block">Taksit Sayısı (Opsiyonel)</Label>
+                            <Input
+                                type="number"
+                                min="1"
+                                value={formData.remainingInstallments}
+                                onChange={(e) => setFormData(p => ({ ...p, remainingInstallments: e.target.value }))}
+                                className="bg-muted border-border/30 h-12 rounded-xl focus:ring-destructive font-bold"
+                                placeholder="Örn: 12"
+                            />
                         </div>
                         <div className="space-y-3">
-                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Aylık Faiz Oranı % (Opsiyonel)</Label>
-                                <Input
-                                    type="number"
-                                    step="0.01"
-                                    value={formData.interestRate}
-                                    onChange={(e) => setFormData(p => ({ ...p, interestRate: e.target.value }))}
-                                    className="bg-muted border-border/30 h-12 rounded-xl focus:ring-destructive font-bold"
-                                    placeholder="Örn: 3.50"
-                                />
+                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1 mb-1.5 block">Aylık Faiz Oranı % (Opsiyonel)</Label>
+                            <Input
+                                type="number"
+                                step="0.01"
+                                value={formData.interestRate}
+                                onChange={(e) => setFormData(p => ({ ...p, interestRate: e.target.value }))}
+                                className="bg-muted border-border/30 h-12 rounded-xl focus:ring-destructive font-bold"
+                                placeholder="Örn: 3.50"
+                            />
                         </div>
                         {formData.remainingInstallments && Number(formData.remainingInstallments) > 0 ? (
                             <div className="space-y-3">
-                                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Taksit Ödeme Günü (1-31)</Label>
-                                    <Input
-                                        type="number"
-                                        min="1"
-                                        max="31"
-                                        value={formData.paymentDay}
-                                        onChange={(e) => setFormData(p => ({ ...p, paymentDay: e.target.value }))}
-                                        className="bg-muted border-border/30 h-12 rounded-xl focus:ring-destructive font-bold"
-                                        placeholder="Ayın kaçıncı günü?"
-                                    />
+                                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1 mb-1.5 block">Taksit Ödeme Günü (1-31)</Label>
+                                <Input
+                                    type="number"
+                                    min="1"
+                                    max="31"
+                                    value={formData.paymentDay}
+                                    onChange={(e) => setFormData(p => ({ ...p, paymentDay: e.target.value }))}
+                                    className="bg-muted border-border/30 h-12 rounded-xl focus:ring-destructive font-bold"
+                                    placeholder="Ayın kaçıncı günü?"
+                                />
                             </div>
                         ) : (
                             <div className="space-y-3">
-                                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Son Ödeme Tarihi</Label>
-                                    <Input
-                                        type="date"
-                                        value={formData.dueDate}
-                                        onChange={(e) => setFormData(p => ({ ...p, dueDate: e.target.value }))}
-                                        className="bg-muted border-border/30 h-12 rounded-xl focus:ring-destructive font-bold"
-                                    />
+                                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1 mb-1.5 block">Son Ödeme Tarihi</Label>
+                                <DatePicker
+                                    date={formData.dueDate ? parseISO(formData.dueDate) : undefined}
+                                    setDate={(d) => setFormData(p => ({ ...p, dueDate: d ? d.toISOString().split('T')[0] : "" }))}
+                                    placeholder="GG.AA.YYYY"
+                                    className="h-12"
+                                />
                             </div>
                         )}
                         <div className="space-y-3">
-                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Açıklama</Label>
-                                <Input
-                                    value={formData.description}
-                                    onChange={(e) => setFormData(p => ({ ...p, description: e.target.value }))}
-                                    className="bg-muted border-border/30 h-12 rounded-xl focus:ring-destructive font-bold"
-                                    placeholder="Örn: Ev Kredisi"
-                                />
+                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1 mb-1.5 block">Açıklama</Label>
+                            <Input
+                                value={formData.description}
+                                onChange={(e) => setFormData(p => ({ ...p, description: e.target.value }))}
+                                className="bg-muted border-border/30 h-12 rounded-xl focus:ring-destructive font-bold"
+                                placeholder="Örn: Ev Kredisi"
+                            />
                             <p className="text-[10px] text-muted-foreground/60 italic mt-1 px-1">
                                 * Borçlar toplam yükümlülük olarak takip edilir, gelirinize dahil edilmez.
                             </p>
@@ -354,178 +356,178 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
                 {activeDebts.map((debt) => {
                     const monthlyTry = debt.remainingInstallments ? debt.amount / debt.remainingInstallments : debt.amount;
                     return (
-                    <Card key={debt.id} className="bg-card border-border/30 shadow-ambient-low hover:shadow-ambient-medium transition-all rounded-[32px] overflow-hidden group">
-                        <div className="p-8">
-                            <div className="flex justify-between items-start mb-6">
-                                <div className={cn(
-                                    "w-12 h-12 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 shadow-sm",
-                                    debt.type === "Kredi Kartı" ? "bg-rose-500/10 text-rose-600" : "bg-primary/10 text-primary"
-                                )}>
-                                    {debt.type === "Kredi Kartı" ? <CreditCard className="w-6 h-6" /> : <Landmark className="w-6 h-6" />}
+                        <Card key={debt.id} className="bg-card border-border/30 shadow-ambient-low hover:shadow-ambient-medium transition-all rounded-[32px] overflow-hidden group">
+                            <div className="p-8">
+                                <div className="flex justify-between items-start mb-6">
+                                    <div className={cn(
+                                        "w-12 h-12 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 shadow-sm",
+                                        debt.type === "Kredi Kartı" ? "bg-rose-500/10 text-rose-600" : "bg-primary/10 text-primary"
+                                    )}>
+                                        {debt.type === "Kredi Kartı" ? <CreditCard className="w-6 h-6" /> : <Landmark className="w-6 h-6" />}
+                                    </div>
+                                    <div className="flex flex-col gap-1 ml-4 mr-auto">
+                                        {(() => {
+                                            const payment = monthlyPayments?.find((p: any) => p.description?.includes(debt.description || debt.type));
+                                            if (payment) {
+                                                if (payment.amount === 0) return <span className="text-[10px] bg-amber-500/10 text-amber-600 px-2 py-0.5 rounded-full font-bold">ERTELENDİ</span>;
+                                                return <span className="text-[10px] bg-emerald-500/10 text-emerald-600 px-2 py-0.5 rounded-full font-bold">ÖDENDİ</span>;
+                                            }
+                                            return <span className="text-[10px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full font-bold">BEKLİYOR</span>;
+                                        })()}
+                                    </div>
+                                    <div className="text-right flex flex-col items-end gap-1">
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger className="flex h-8 w-8 items-center justify-center -mr-2 text-muted-foreground hover:text-primary hover:bg-muted rounded-lg transition-colors cursor-pointer outline-none">
+                                                <Settings2 className="w-4 h-4" />
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end" className="rounded-xl font-bold bg-card border-border/30">
+                                                <DropdownMenuItem
+                                                    className="text-rose-600 focus:text-rose-600 cursor-pointer"
+                                                    onClick={async () => {
+                                                        if (confirm("Bu ayki taksit ödemesini atlamak/ertelemek istediğinize emin misiniz?")) {
+                                                            await postponeDebtInstallment(debt.id);
+                                                            router.refresh();
+                                                        }
+                                                    }}
+                                                >
+                                                    <FastForward className="w-4 h-4 mr-2" /> Bu Ayı Atla/Ertele
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem
+                                                    className="cursor-pointer"
+                                                    onClick={() => {
+                                                        const day = prompt("Yeni ödeme gününü girin (1-31):", debt.paymentDay || "1");
+                                                        if (day) {
+                                                            updateDebtPaymentDay(debt.id, Number(day));
+                                                            router.refresh();
+                                                        }
+                                                    }}
+                                                >
+                                                    <Calendar className="w-4 h-4 mr-2" /> Ödeme Gününü Değiştir
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem
+                                                    className="cursor-pointer"
+                                                    onSelect={(e) => {
+                                                        e.preventDefault(); // Menü kapanırken state kaybını önlemek için
+                                                        setRefinanceId(debt.id);
+                                                        setFormData({
+                                                            type: debt.type,
+                                                            amount: String(debt.amount / (debt.fxRate || 1)),
+                                                            currency: debt.currency,
+                                                            remainingInstallments: debt.remainingInstallments ? String(debt.remainingInstallments) : "",
+                                                            interestRate: debt.interestRate ? String(debt.interestRate) : "",
+                                                            paymentDay: debt.paymentDay ? String(debt.paymentDay) : "",
+                                                            dueDate: debt.dueDate ? new Date(debt.dueDate).toISOString().split('T')[0] : "",
+                                                            description: debt.description || debt.type,
+                                                        });
+                                                        setIsAdding(false); // Önce kapatıp
+                                                        setTimeout(() => {
+                                                            setIsAdding(true); // Hemen geri açıyoruz (Fresh state)
+                                                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                                                        }, 50);
+                                                    }}
+                                                >
+                                                    <Landmark className="w-4 h-4 mr-2" /> Borcu Yapılandır
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">Kalan Borç</span>
+                                        <p className="text-2xl font-heading font-bold text-primary">{formatAmount(debt.amount)}</p>
+                                        {debt.currency && debt.currency !== "TRY" && (
+                                            <p className="text-[11px] text-muted-foreground font-semibold">
+                                                (Orijinal: {debt.originalAmount?.toLocaleString()} {debt.currency})
+                                            </p>
+                                        )}
+                                    </div>
                                 </div>
-                                <div className="flex flex-col gap-1 ml-4 mr-auto">
-                                    {(() => {
-                                        const payment = monthlyPayments?.find((p: any) => p.description?.includes(debt.description || debt.type));
-                                        if (payment) {
-                                            if (payment.amount === 0) return <span className="text-[10px] bg-amber-500/10 text-amber-600 px-2 py-0.5 rounded-full font-bold">ERTELENDİ</span>;
-                                            return <span className="text-[10px] bg-emerald-500/10 text-emerald-600 px-2 py-0.5 rounded-full font-bold">ÖDENDİ</span>;
-                                        }
-                                        return <span className="text-[10px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full font-bold">BEKLİYOR</span>;
-                                    })()}
-                                </div>
-                                <div className="text-right flex flex-col items-end gap-1">
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger className="flex h-8 w-8 items-center justify-center -mr-2 text-muted-foreground hover:text-primary hover:bg-muted rounded-lg transition-colors cursor-pointer outline-none">
-                                            <Settings2 className="w-4 h-4" />
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end" className="rounded-xl font-bold bg-card border-border/30">
-                                            <DropdownMenuItem 
-                                                className="text-rose-600 focus:text-rose-600 cursor-pointer"
-                                                onClick={async () => {
-                                                    if(confirm("Bu ayki taksit ödemesini atlamak/ertelemek istediğinize emin misiniz?")) {
-                                                        await postponeDebtInstallment(debt.id);
-                                                        router.refresh();
-                                                    }
-                                                }}
-                                            >
-                                                <FastForward className="w-4 h-4 mr-2" /> Bu Ayı Atla/Ertele
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem 
-                                                className="cursor-pointer"
-                                                onClick={() => {
-                                                    const day = prompt("Yeni ödeme gününü girin (1-31):", debt.paymentDay || "1");
-                                                    if(day) {
-                                                        updateDebtPaymentDay(debt.id, Number(day));
-                                                        router.refresh();
-                                                    }
-                                                }}
-                                            >
-                                                <Calendar className="w-4 h-4 mr-2" /> Ödeme Gününü Değiştir
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem 
-                                                className="cursor-pointer"
-                                                onSelect={(e) => {
-                                                    e.preventDefault(); // Menü kapanırken state kaybını önlemek için
-                                                    setRefinanceId(debt.id);
-                                                    setFormData({
-                                                        type: debt.type,
-                                                        amount: String(debt.amount / (debt.fxRate || 1)),
-                                                        currency: debt.currency,
-                                                        remainingInstallments: debt.remainingInstallments ? String(debt.remainingInstallments) : "",
-                                                        interestRate: debt.interestRate ? String(debt.interestRate) : "",
-                                                        paymentDay: debt.paymentDay ? String(debt.paymentDay) : "",
-                                                        dueDate: debt.dueDate ? new Date(debt.dueDate).toISOString().split('T')[0] : "",
-                                                        description: debt.description || debt.type,
-                                                    });
-                                                    setIsAdding(false); // Önce kapatıp
-                                                    setTimeout(() => {
-                                                        setIsAdding(true); // Hemen geri açıyoruz (Fresh state)
-                                                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                                                    }, 50);
-                                                }}
-                                            >
-                                                <Landmark className="w-4 h-4 mr-2" /> Borcu Yapılandır
-                                            </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">Kalan Borç</span>
-                                    <p className="text-2xl font-heading font-bold text-primary">{formatAmount(debt.amount)}</p>
-                                    {debt.currency && debt.currency !== "TRY" && (
-                                        <p className="text-[11px] text-muted-foreground font-semibold">
-                                            (Orijinal: {debt.originalAmount?.toLocaleString()} {debt.currency})
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-                            
-                            <h3 className="text-lg font-bold text-foreground mb-1">{debt.description || debt.type}</h3>
-                            <p className="text-sm text-muted-foreground opacity-70 mb-6">{debt.type}</p>
 
-                            <div className="space-y-4 pt-4 border-t border-border/20">
-                                {debt.remainingInstallments !== null && (
-                                    <div className="flex items-center justify-between text-sm">
-                                        <div className="flex items-center gap-2 text-muted-foreground font-medium">
-                                            <Clock className="w-4 h-4 opacity-40" /> Kalan Taksit
+                                <h3 className="text-lg font-bold text-foreground mb-1">{debt.description || debt.type}</h3>
+                                <p className="text-sm text-muted-foreground opacity-70 mb-6">{debt.type}</p>
+
+                                <div className="space-y-4 pt-4 border-t border-border/20">
+                                    {debt.remainingInstallments !== null && (
+                                        <div className="flex items-center justify-between text-sm">
+                                            <div className="flex items-center gap-2 text-muted-foreground font-medium">
+                                                <Clock className="w-4 h-4 opacity-40" /> Kalan Taksit
+                                            </div>
+                                            <span className="font-bold text-foreground">{debt.remainingInstallments} Ay</span>
                                         </div>
-                                        <span className="font-bold text-foreground">{debt.remainingInstallments} Ay</span>
-                                    </div>
-                                )}
-                                <div className="flex items-center justify-between text-sm">
-                                    <div className="flex items-center gap-2 text-muted-foreground font-medium">
-                                        <TrendingDown className="w-4 h-4 opacity-40" /> Aylık Ödeme (Tahmini)
-                                    </div>
-                                    <span className="font-bold text-rose-600">
-                                        {formatAmount(debt.installmentAmount || monthlyTry)}
-                                    </span>
-                                </div>
-                                {debt.paymentDay && (
+                                    )}
                                     <div className="flex items-center justify-between text-sm">
                                         <div className="flex items-center gap-2 text-muted-foreground font-medium">
-                                            <Calendar className="w-4 h-4 opacity-40" /> Ödeme Günü
-                                        </div>
-                                        <span className="font-bold text-foreground">
-                                            Her ayın {debt.paymentDay}. günü
-                                        </span>
-                                    </div>
-                                )}
-                                {debt.interestRate && (
-                                    <div className="flex items-center justify-between text-sm">
-                                        <div className="flex items-center gap-2 text-muted-foreground font-medium">
-                                            <Landmark className="w-4 h-4 opacity-40" /> Faiz Oranı
-                                        </div>
-                                        <span className="font-bold text-foreground">
-                                            %{debt.interestRate} /ay
-                                        </span>
-                                    </div>
-                                )}
-                                {debt.dueDate && (!debt.remainingInstallments || debt.remainingInstallments === 0) && (
-                                    <div className="flex items-center justify-between text-sm">
-                                        <div className="flex items-center gap-2 text-muted-foreground font-medium">
-                                            <Calendar className="w-4 h-4 opacity-40" /> Son Ödeme Tarihi
+                                            <TrendingDown className="w-4 h-4 opacity-40" /> Aylık Ödeme (Tahmini)
                                         </div>
                                         <span className="font-bold text-rose-600">
-                                            {new Date(debt.dueDate).toLocaleDateString("tr-TR")}
+                                            {formatAmount(debt.installmentAmount || monthlyTry)}
                                         </span>
                                     </div>
-                                )}
-                            </div>
+                                    {debt.paymentDay && (
+                                        <div className="flex items-center justify-between text-sm">
+                                            <div className="flex items-center gap-2 text-muted-foreground font-medium">
+                                                <Calendar className="w-4 h-4 opacity-40" /> Ödeme Günü
+                                            </div>
+                                            <span className="font-bold text-foreground">
+                                                Her ayın {debt.paymentDay}. günü
+                                            </span>
+                                        </div>
+                                    )}
+                                    {debt.interestRate && (
+                                        <div className="flex items-center justify-between text-sm">
+                                            <div className="flex items-center gap-2 text-muted-foreground font-medium">
+                                                <Landmark className="w-4 h-4 opacity-40" /> Faiz Oranı
+                                            </div>
+                                            <span className="font-bold text-foreground">
+                                                %{debt.interestRate} /ay
+                                            </span>
+                                        </div>
+                                    )}
+                                    {debt.dueDate && (!debt.remainingInstallments || debt.remainingInstallments === 0) && (
+                                        <div className="flex items-center justify-between text-sm">
+                                            <div className="flex items-center gap-2 text-muted-foreground font-medium">
+                                                <Calendar className="w-4 h-4 opacity-40" /> Son Ödeme Tarihi
+                                            </div>
+                                            <span className="font-bold text-rose-600">
+                                                {new Date(debt.dueDate).toLocaleDateString("tr-TR")}
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
 
-                            <div className="grid grid-cols-2 gap-3 mt-8">
-                                <Button 
-                                    variant="outline" 
-                                    className="rounded-xl border-destructive/20 text-destructive hover:bg-destructive/5 font-bold h-11"
-                                    onClick={() => setPayModal({ 
-                                      id: debt.id, 
-                                      amount: monthlyTry, 
-                                      rawAmount: monthlyTry, 
-                                      isClose: false, 
-                                      description: debt.description || debt.type,
-                                      currency: debt.currency,
-                                      originalAmount: debt.remainingInstallments ? debt.originalAmount / debt.remainingInstallments : debt.originalAmount,
-                                      fxRate: debt.fxRate
-                                    })}
-                                >
-                                    Taksit Öde
-                                </Button>
-                                <Button 
-                                    className="rounded-xl bg-destructive hover:bg-destructive/90 text-destructive-foreground font-bold h-11"
-                                    onClick={() => setPayModal({ 
-                                      id: debt.id, 
-                                      amount: debt.amount, 
-                                      rawAmount: debt.amount, 
-                                      isClose: true, 
-                                      description: debt.description || debt.type,
-                                      currency: debt.currency,
-                                      originalAmount: debt.originalAmount,
-                                      fxRate: debt.fxRate
-                                    })}
-                                >
-                                    Borcu Kapat
-                                </Button>
+                                <div className="grid grid-cols-2 gap-3 mt-8">
+                                    <Button
+                                        variant="outline"
+                                        className="rounded-xl border-destructive/20 text-destructive hover:bg-destructive/5 font-bold h-11"
+                                        onClick={() => setPayModal({
+                                            id: debt.id,
+                                            amount: monthlyTry,
+                                            rawAmount: monthlyTry,
+                                            isClose: false,
+                                            description: debt.description || debt.type,
+                                            currency: debt.currency,
+                                            originalAmount: debt.remainingInstallments ? debt.originalAmount / debt.remainingInstallments : debt.originalAmount,
+                                            fxRate: debt.fxRate
+                                        })}
+                                    >
+                                        Taksit Öde
+                                    </Button>
+                                    <Button
+                                        className="rounded-xl bg-destructive hover:bg-destructive/90 text-destructive-foreground font-bold h-11"
+                                        onClick={() => setPayModal({
+                                            id: debt.id,
+                                            amount: debt.amount,
+                                            rawAmount: debt.amount,
+                                            isClose: true,
+                                            description: debt.description || debt.type,
+                                            currency: debt.currency,
+                                            originalAmount: debt.originalAmount,
+                                            fxRate: debt.fxRate
+                                        })}
+                                    >
+                                        Borcu Kapat
+                                    </Button>
+                                </div>
                             </div>
-                        </div>
-                    </Card>
-                );
+                        </Card>
+                    );
                 })}
 
                 {activeDebts.length === 0 && !isAdding && (
@@ -555,7 +557,7 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
                             </div>
 
                             <div className="space-y-3">
-                                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Ödenecek Tutar</Label>
+                                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1 mb-1.5 block">Ödenecek Tutar</Label>
                                 <Input
                                     type="number"
                                     value={payModal.amount}
@@ -570,10 +572,10 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
 
                             {payModal.isClose && (
                                 <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-2xl border border-border/20 cursor-pointer hover:bg-muted transition-colors" onClick={() => setPayModal({ ...payModal, isTransfer: !(payModal as any).isTransfer } as any)}>
-                                    <input 
-                                        type="checkbox" 
-                                        checked={(payModal as any).isTransfer || false} 
-                                        onChange={() => {}} 
+                                    <input
+                                        type="checkbox"
+                                        checked={(payModal as any).isTransfer || false}
+                                        onChange={() => { }}
                                         className="w-5 h-5 rounded border-border/40 accent-destructive"
                                     />
                                     <div>

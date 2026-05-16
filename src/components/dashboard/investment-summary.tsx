@@ -11,8 +11,8 @@ interface InvestmentSummaryProps {
   fixedAssets?: any[];
 }
 
-const COLORS = ["var(--primary)", "#10b981", "#3b82f6", "#f59e0b", "#6366f1", "#f43f5e"];
-const FIXED_COLORS = ["#8b5cf6", "#ec4899", "#f97316", "#06b6d4", "#84cc16", "#f2e743"];
+const COLORS = ["var(--primary)", "var(--tertiary)", "#64748b", "#d97706", "#0ea5e9", "#14b8a6"];
+const FIXED_COLORS = ["var(--primary)", "var(--tertiary)", "#64748b", "#d97706", "#0ea5e9", "#14b8a6"];
 
 export function InvestmentSummary({ investments, fixedAssets }: InvestmentSummaryProps) {
   const [isMounted, setIsMounted] = useState(false);

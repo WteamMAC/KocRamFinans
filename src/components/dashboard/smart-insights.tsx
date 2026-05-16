@@ -40,8 +40,8 @@ export function SmartInsights({ financialData }: SmartInsightsProps) {
   if (error) {
     return (
       <div className="flex items-center gap-3 p-4 bg-destructive/10 border border-destructive/20 rounded-2xl">
-        <AlertTriangle className="h-5 w-5 text-destructive" />
-        <span className="text-sm font-medium text-destructive">{error}</span>
+        <AlertTriangle className="h-5 w-5 text-rose-500/80" />
+        <span className="text-sm font-medium text-rose-500/80">{error}</span>
       </div>
     );
   }
@@ -65,12 +65,12 @@ export function SmartInsights({ financialData }: SmartInsightsProps) {
               insight.type === "info" && "bg-blue-500/10 border-blue-500/20"
             )}
           >
-            {insight.type === "warning" && <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />}
+            {insight.type === "warning" && <AlertTriangle className="h-5 w-5 text-rose-500/80 shrink-0 mt-0.5" />}
             {insight.type === "success" && <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0 mt-0.5" />}
             {insight.type === "info" && <Info className="h-5 w-5 text-blue-500 shrink-0 mt-0.5" />}
             <p className={cn(
               "text-sm font-medium leading-relaxed",
-              insight.type === "warning" && "text-destructive-foreground",
+              insight.type === "warning" && "text-rose-500/80",
               insight.type === "success" && "text-emerald-700 dark:text-emerald-400",
               insight.type === "info" && "text-blue-700 dark:text-blue-400"
             )}>

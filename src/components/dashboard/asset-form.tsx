@@ -29,7 +29,7 @@ export function AssetForm({ activeTab, onAdd, onCancel, loading, error, defaultA
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [showSearch, setShowSearch] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     type: defaultAssetType || "BIST",
     symbol: "",
@@ -111,7 +111,7 @@ export function AssetForm({ activeTab, onAdd, onCancel, loading, error, defaultA
           <h3 className="text-xl font-heading font-bold text-center tracking-tight text-primary mb-2">
             {activeTab === "financial" ? "Finansal Yatırım" : "Sabit Varlık"}
           </h3>
-          
+
           <p className="text-xs text-muted-foreground text-center font-medium leading-relaxed max-w-[220px]">
             {activeTab === "financial"
               ? "Hisse, fon, kripto veya döviz yatırımlarınızı kolayca takip edin ve canlı piyasa verileriyle güncel kalın."
@@ -171,41 +171,41 @@ export function AssetForm({ activeTab, onAdd, onCancel, loading, error, defaultA
                 </div>
 
                 {formData.type === "BES" || formData.type === "FAIZ" ? (
-                   <>
-                     <div className="space-y-2 sm:col-span-2 relative" ref={inputRef}>
-                       <Label className="text-[11px] font-bold text-primary/80 uppercase tracking-wider px-1">
-                         {formData.type === "BES" ? "Firma / Plan Adı" : "Banka / Hesap Adı"}
-                       </Label>
-                       <Input
-                         placeholder={formData.type === "BES" ? "Örn: Agesa Bireysel Emeklilik..." : "Örn: Garanti Vadeli Hesap..."}
-                         value={formData.symbol}
-                         onChange={(e) => setFormData(p => ({ ...p, symbol: e.target.value }))}
-                         className="bg-muted/50 border-primary/10 h-12 rounded-2xl focus:ring-primary text-sm font-semibold px-4"
-                       />
-                     </div>
-                     <div className="space-y-2">
-                       <Label className="text-[11px] font-bold text-primary/80 uppercase tracking-wider px-1">
-                         {formData.type === "BES" ? "Güncel Birikim Tutarı (₺)" : "Ana Para Tutarı (₺)"}
-                       </Label>
-                       <Input
-                         type="number"
-                         value={formData.quantity === 0 ? "" : formData.quantity}
-                         onChange={(e) => handleNumberChange("quantity", e.target.value)}
-                         className="bg-muted/50 border-primary/10 h-12 rounded-2xl focus:ring-primary text-sm font-semibold px-4"
-                       />
-                     </div>
-                     <div className="space-y-2">
-                       <Label className="text-[11px] font-bold text-primary/80 uppercase tracking-wider px-1">
-                         {formData.type === "BES" ? "Devlet Katkı Payı Oranı (%)" : "Yıllık Faiz Oranı (%)"}
-                       </Label>
-                       <Input
-                         type="number"
-                         value={formData.purchasePrice === 0 ? "" : formData.purchasePrice}
-                         onChange={(e) => handleNumberChange("purchasePrice", e.target.value)}
-                         className="bg-muted/50 border-primary/10 h-12 rounded-2xl focus:ring-primary text-sm font-semibold px-4"
-                       />
-                     </div>
-                   </>
+                  <>
+                    <div className="space-y-2 sm:col-span-2 relative" ref={inputRef}>
+                      <Label className="text-[11px] font-bold text-primary/80 uppercase tracking-wider px-1">
+                        {formData.type === "BES" ? "Firma / Plan Adı" : "Banka / Hesap Adı"}
+                      </Label>
+                      <Input
+                        placeholder={formData.type === "BES" ? "Örn: Agesa Bireysel Emeklilik..." : "Örn: Garanti Vadeli Hesap..."}
+                        value={formData.symbol}
+                        onChange={(e) => setFormData(p => ({ ...p, symbol: e.target.value }))}
+                        className="bg-muted/50 border-primary/10 h-12 rounded-2xl focus:ring-primary text-sm font-semibold px-4"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[11px] font-bold text-primary/80 uppercase tracking-wider px-1">
+                        {formData.type === "BES" ? "Güncel Birikim Tutarı (₺)" : "Ana Para Tutarı (₺)"}
+                      </Label>
+                      <Input
+                        type="number"
+                        value={formData.quantity === 0 ? "" : formData.quantity}
+                        onChange={(e) => handleNumberChange("quantity", e.target.value)}
+                        className="bg-muted/50 border-primary/10 h-12 rounded-2xl focus:ring-primary text-sm font-semibold px-4"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[11px] font-bold text-primary/80 uppercase tracking-wider px-1">
+                        {formData.type === "BES" ? "Devlet Katkı Payı Oranı (%)" : "Yıllık Faiz Oranı (%)"}
+                      </Label>
+                      <Input
+                        type="number"
+                        value={formData.purchasePrice === 0 ? "" : formData.purchasePrice}
+                        onChange={(e) => handleNumberChange("purchasePrice", e.target.value)}
+                        className="bg-muted/50 border-primary/10 h-12 rounded-2xl focus:ring-primary text-sm font-semibold px-4"
+                      />
+                    </div>
+                  </>
                 ) : (
                   <>
                     <div className="space-y-2 sm:col-span-2 relative" ref={inputRef}>
@@ -318,7 +318,7 @@ export function AssetForm({ activeTab, onAdd, onCancel, loading, error, defaultA
                     </div>
                   </>
                 )}
-                
+
                 <div className="space-y-2 sm:col-span-2">
                   <Label className="text-[11px] font-bold text-primary/80 uppercase tracking-wider px-1">Açıklama / Notlar (Opsiyonel)</Label>
                   <Input
@@ -387,28 +387,17 @@ export function AssetForm({ activeTab, onAdd, onCancel, loading, error, defaultA
               </div>
             )}
 
-            {error && (
-              <div className="mt-6 p-4 bg-destructive/10 text-destructive rounded-2xl text-xs font-bold border border-destructive/20 flex items-center gap-2">
-                <Info className="h-4 w-4 shrink-0" />
-                <span>{error}</span>
-              </div>
-            )}
-          </div>
+            {error && <div className="mt-6 p-4 bg-destructive/10 text-rose-500/80 rounded-2xl text-sm font-bold border border-destructive/20">{error}</div>}
 
-          {/* Footer / Kaydet Alanı */}
-          <div className="mt-12 pt-6 border-t border-border/10 flex flex-col sm:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-2.5 text-xs font-medium text-muted-foreground">
-              <div className="w-2.5 h-2.5 rounded-full bg-primary/60 animate-pulse shrink-0" />
-              <span>Varlık portföyünüze anında eklenir ve net değerinize yansır.</span>
+            <div className="mt-10 flex justify-end">
+              <Button
+                onClick={handleSubmit}
+                disabled={loading}
+                className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full px-12 py-6 h-auto text-lg font-black shadow-xl hover:shadow-primary/20 transition-all w-full md:w-auto"
+              >
+                {loading ? "Kaydediliyor..." : (activeTab === "financial" ? "Yatırımı Kaydet" : "Varlığı Kaydet")}
+              </Button>
             </div>
-
-            <Button
-              onClick={handleSubmit}
-              disabled={loading}
-              className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-2xl px-10 py-6 h-auto text-base font-bold shadow-sm transition-all w-full sm:w-auto"
-            >
-              {loading ? "Kaydediliyor..." : (activeTab === "financial" ? "Yatırımı Kaydet" : "Varlığı Kaydet")}
-            </Button>
           </div>
         </div>
       </div>
