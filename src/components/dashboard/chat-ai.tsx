@@ -247,7 +247,7 @@ export function ChatAI() {
                 <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-white/10 text-primary-foreground" onClick={(e) => { e.stopPropagation(); setIsMinimized(!isMinimized); }}>
                   {isMinimized ? <Maximize2 className="h-4 w-4" /> : <Minimize2 className="h-4 w-4" />}
                 </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-white/10 text-primary-foreground" onClick={(e) => { e.stopPropagation(); setIsOpen(false); }}>
+                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-rose-500 hover:text-white transition-all" onClick={(e) => { e.stopPropagation(); setIsOpen(false); }}>
                   <X className="h-4 w-4" />
                 </Button>
               </div>

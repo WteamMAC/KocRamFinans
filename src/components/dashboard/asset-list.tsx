@@ -629,7 +629,7 @@ export function AssetList({
                                       {!isSpecial && (
                                         <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); setSellModalState({ assetId: item.id }); setError(null); }} className="h-8 text-xs font-bold border-border/30">Sat</Button>
                                       )}
-                                      <Button size="icon" variant="ghost" onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }} className="h-8 w-8 text-rose-500 hover:bg-rose-50"><Trash2 className="h-4 w-4" /></Button>
+                                      <Button size="icon" variant="ghost" onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }} className="h-8 w-8 rounded-full text-rose-500 hover:bg-rose-500/10 hover:text-rose-500 transition-all"><Trash2 className="h-4 w-4" /></Button>
                                     </div>
                                   </div>
                                 );

@@ -30,7 +30,7 @@ function CustomTooltip({
         <div className="font-heading font-bold text-xl text-primary flex items-center gap-2">
           {step.title}
         </div>
-        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-muted-foreground hover:bg-muted" {...closeProps}>
+        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-muted-foreground hover:bg-rose-500/10 hover:text-rose-500 transition-all" {...closeProps}>
           <X className="h-4 w-4" />
         </Button>
       </div>
@@ -45,8 +45,8 @@ function CustomTooltip({
         </div>
         <div className="flex items-center gap-2">
           {index > 0 ? (
-            <Button variant="outline" size="sm" className="rounded-xl h-9" {...backProps}>
-              <ChevronLeft className="h-4 w-4 mr-1" /> Geri
+            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-rose-500/10 hover:text-rose-500 text-muted-foreground transition-all" {...backProps}>
+              <ChevronLeft className="h-4 w-4" />
             </Button>
           ) : (
             <Button variant="ghost" size="sm" className="rounded-xl h-9 text-muted-foreground hover:text-foreground" {...skipProps}>

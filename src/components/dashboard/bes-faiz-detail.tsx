@@ -550,7 +550,7 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
                               size="icon"
                               variant="ghost"
                               onClick={e => { e.stopPropagation(); handleDelete(item.id); }}
-                              className="h-8 w-8 text-rose-500 hover:bg-rose-50 opacity-0 group-hover/item:opacity-100 transition-opacity"
+                              className="h-8 w-8 rounded-full text-rose-500 hover:bg-rose-500/10 hover:text-rose-500 opacity-0 group-hover/item:opacity-100 transition-all"
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
