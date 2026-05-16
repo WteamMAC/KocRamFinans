@@ -324,6 +324,16 @@ export function calculatePortfolioMetrics(investments: any[], livePrices: Map<st
         currentPrice = (live && live.price > 0)
           ? live.price
           : (inv.purchasePrice || (inv.amount / (inv.quantity || 1)));
+
+        // --- SELF-HEALING COST SYNCHRONIZER (Akıllı Geçmiş Veri Onarımı) ---
+        const usdRate = livePrices.get("USDTRY=X")?.price || 36.45;
+        const tempCurrentVal = (inv.quantity || 1) * currentPrice;
+        if (inv.purchasePrice && inv.purchasePrice > 0 && inv.purchasePrice < (currentPrice / 5)) {
+          const estimatedCostInTry = inv.purchasePrice * usdRate * (inv.quantity || 1);
+          if (Math.abs(estimatedCostInTry - tempCurrentVal) < Math.abs(cost - tempCurrentVal)) {
+            cost = estimatedCostInTry;
+          }
+        }
       }
 
       const currentValue = (inv.quantity || 1) * currentPrice;
