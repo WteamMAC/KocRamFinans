@@ -380,11 +380,11 @@ export function AssetList({
 
         <CompactCurrencyCalculator />
 
-        <div className="flex items-center gap-3 mt-4 md:mt-0 shrink-0">
+        <div className="grid grid-cols-2 md:flex md:items-center gap-3 mt-4 md:mt-0 w-full md:w-auto">
           <Button
             variant="outline"
             onClick={activeTab === "financial" ? handleExportCSV : handleExportFixedCSV}
-            className="rounded-full px-5 h-[52px] text-sm font-semibold text-primary border-border/30 hover:bg-primary/5 bg-card shadow-ambient-low transition-all duration-300"
+            className="rounded-2xl px-4 md:px-5 h-[48px] md:h-[52px] text-xs md:text-sm font-semibold text-primary border-border/30 hover:bg-primary/5 bg-card shadow-ambient-low transition-all duration-300"
           >
             <Download className="mr-2 h-4 w-4" />
             Dışa Aktar
@@ -393,7 +393,7 @@ export function AssetList({
             variant="outline"
             onClick={handleRefresh}
             disabled={isRefreshing}
-            className="rounded-full px-5 h-[52px] text-sm font-semibold text-primary border-border/30 hover:bg-primary/5 bg-card shadow-ambient-low transition-all duration-300"
+            className="rounded-2xl px-4 md:px-5 h-[48px] md:h-[52px] text-xs md:text-sm font-semibold text-primary border-border/30 hover:bg-primary/5 bg-card shadow-ambient-low transition-all duration-300"
           >
             <RefreshCw className={cn("mr-2 h-4 w-4", isRefreshing && "animate-spin")} />
             Yenile
@@ -401,7 +401,7 @@ export function AssetList({
           <Button
             onClick={() => { setIsAdding(!isAdding); setError(null); }}
             className={cn(
-              "rounded-full px-6 h-[52px] text-sm font-semibold shadow-ambient-medium transition-all duration-300",
+              "col-span-2 md:col-span-1 rounded-2xl px-6 h-[48px] md:h-[52px] text-xs md:text-sm font-semibold shadow-ambient-medium transition-all duration-300",
               isAdding ? "bg-muted text-foreground hover:bg-muted/80" : "bg-primary text-primary-foreground hover:bg-primary/90"
             )}
           >
