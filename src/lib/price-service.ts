@@ -428,3 +428,32 @@ export function calculateFixedAssetsMetrics(fixedAssets: any[], livePrices: Map<
     assets: detailedFixedAssets,
   };
 }
+
+/**
+ * Gelir, Gider ve Borç kalemlerinin döviz kurlarına göre TL eşdeğerine dönüştürülmesi
+ */
+export function normalizeFinancialItemsToTry(items: any[], livePrices: Map<string, PriceResult>) {
+  if (!items || !Array.isArray(items)) return [];
+  const usdRate = livePrices.get("USDTRY=X")?.price || livePrices.get("USD")?.price || 36.45;
+  const eurRate = livePrices.get("EURTRY=X")?.price || livePrices.get("EUR")?.price || 38.65;
+  const gbpRate = livePrices.get("GBPTRY=X")?.price || livePrices.get("GBP")?.price || 45.85;
+  const xauRate = livePrices.get("XAUTRY=X")?.price || livePrices.get("GRAM ALTIN")?.price || 3450;
+
+  return items.map(item => {
+    const amt = Number(item.amount) || 0;
+    const cur = (item.currency || "TRY").toUpperCase();
+    let norm = amt;
+    if (cur === "USD") norm = amt * usdRate;
+    else if (cur === "EUR") norm = amt * eurRate;
+    else if (cur === "GBP") norm = amt * gbpRate;
+    else if (cur === "XAU" || cur === "GOLD") norm = amt * xauRate;
+
+    return {
+      ...item,
+      originalAmount: item.originalAmount ?? amt,
+      rawAmount: amt,
+      amount: norm, // TL Karşılığı (Bütün toplama ve grafik işlemleri için)
+      currencyRate: norm / (amt || 1)
+    };
+  });
+}
