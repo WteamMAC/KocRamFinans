@@ -483,7 +483,7 @@ export function AssetList({
                   : "Portföy Dağılımı (Kategori Bazlı)"
               ) : "Sabit Varlık Dağılımı"}
             </h3>
-            <div className="flex-1 min-h-[250px] -ml-4">
+            <div className="flex-1 min-h-[250px]">
               <PortfolioChart assets={activeTab === "financial"
                 ? Object.values(groupedAssets).map((g) => ({
                   id: g.symbol,
