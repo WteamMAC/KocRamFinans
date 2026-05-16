@@ -61,7 +61,7 @@ export function Calendar({ selected, onSelect, className }: CalendarProps) {
         <div className="flex gap-2">
           <Select 
             value={getMonth(currentMonth).toString()}
-            onValueChange={(v) => setCurrentMonth(setMonth(currentMonth, parseInt(v)))}
+            onValueChange={(v) => setCurrentMonth(setMonth(currentMonth, parseInt(v as string)))}
           >
             <SelectTrigger className="h-8 w-[100px] bg-transparent border-none p-0 hover:text-primary transition-colors font-bold text-sm">
               <SelectValue />
@@ -75,7 +75,7 @@ export function Calendar({ selected, onSelect, className }: CalendarProps) {
 
           <Select 
             value={getYear(currentMonth).toString()}
-            onValueChange={(v) => setCurrentMonth(setYear(currentMonth, parseInt(v)))}
+            onValueChange={(v) => setCurrentMonth(setYear(currentMonth, parseInt(v as string)))}
           >
             <SelectTrigger className="h-8 w-[80px] bg-transparent border-none p-0 hover:text-primary transition-colors font-bold text-sm">
               <SelectValue />
