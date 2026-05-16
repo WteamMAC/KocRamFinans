@@ -156,7 +156,7 @@ export default async function DashboardPage() {
         </Card>
 
         <Card className="tour-step-6 col-span-1 md:col-span-1 lg:col-span-3 bg-card border-border/20 shadow-ambient-medium rounded-[32px] overflow-hidden w-full flex flex-col">
-          <CardHeader className="bg-muted/30 border-b border-border/10 min-h-[80px] flex flex-row items-center px-6 py-3">
+          <CardHeader className="bg-muted/30 border-b border-border/10 h-20 !flex flex-row items-center px-6 py-0">
             <CardTitle className="text-lg md:text-xl font-heading font-bold text-primary flex items-center gap-2">
               <PieChart className="h-5 w-5 text-accent fill-accent" /> Bütçe Dengesi
             </CardTitle>
@@ -170,7 +170,7 @@ export default async function DashboardPage() {
       {/* Upcoming Payments & Calendar */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-4 md:gap-8 w-full">
         <Card className="tour-step-7 col-span-1 md:col-span-1 lg:col-span-4 bg-card border-border/20 shadow-ambient-medium rounded-[32px] overflow-hidden flex flex-col h-full w-full">
-          <CardHeader className="bg-muted/30 border-b border-border/10 min-h-[80px] flex flex-row items-center px-6 py-3">
+          <CardHeader className="bg-muted/30 border-b border-border/10 h-20 !flex flex-row items-center px-6 py-0">
             <CardTitle className="text-lg md:text-xl font-heading font-bold text-primary flex items-center gap-2">
               <Calendar className="h-5 w-5 text-primary" /> Ödeme Takvimi
             </CardTitle>
@@ -188,7 +188,7 @@ export default async function DashboardPage() {
       {/* Assets & Projection Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-4 md:gap-8 w-full">
         <Card className="col-span-1 md:col-span-1 lg:col-span-4 bg-card border-border/20 shadow-ambient-medium rounded-[32px] overflow-hidden flex flex-col h-full w-full">
-          <CardHeader className="bg-primary min-h-[80px] px-6 py-3 flex flex-row items-center justify-between">
+          <CardHeader className="bg-primary h-20 !flex flex-row items-center justify-between px-6 py-0">
             <CardTitle className="text-lg md:text-xl font-heading font-bold text-primary-foreground">Varlık Dağılımı</CardTitle>
             <div className="flex items-center gap-2 bg-primary-foreground/10 px-3 py-1 rounded-full">
                <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></div>
@@ -215,7 +215,7 @@ export default async function DashboardPage() {
 
       {/* Fixed Assets Section */}
       <Card className="bg-card border-border/20 shadow-ambient-medium rounded-[32px] overflow-hidden">
-        <CardHeader className="bg-muted min-h-[80px] px-6 py-3 flex flex-row items-center justify-between">
+        <CardHeader className="bg-muted h-20 !flex flex-row items-center justify-between px-6 py-0">
           <CardTitle className="text-xl font-heading font-bold text-foreground flex items-center gap-2">
             <LayoutDashboard className="h-5 w-5 text-accent" /> Sabit Varlık Analizi
           </CardTitle>

@@ -207,8 +207,10 @@ export function ChatAI() {
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0, opacity: 0 }}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
             onClick={() => setIsOpen(true)}
-            className="tour-step-2 w-14 h-14 sm:w-16 sm:h-16 bg-primary text-primary-foreground rounded-full shadow-ambient-high flex items-center justify-center hover:scale-110 transition-transform group relative overflow-hidden"
+            className="tour-step-2 w-14 h-14 sm:w-16 sm:h-16 bg-primary text-primary-foreground rounded-full shadow-ambient-high flex items-center justify-center group relative overflow-hidden"
           >
             <div className="absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
             <Sparkles className="h-7 w-7 animate-pulse" />
@@ -216,14 +218,14 @@ export function ChatAI() {
         )}
       </AnimatePresence>
 
-      <AnimatePresence>
+      <AnimatePresence mode="wait">
         {isOpen && (
           <motion.div
             initial={{ y: 20, opacity: 0, scale: 0.95, transformOrigin: "bottom right" }}
             animate={{ y: 0, opacity: 1, scale: 1 }}
             exit={{ y: 20, opacity: 0, scale: 0.95 }}
             className={cn(
-              "bg-card/95 backdrop-blur-2xl border border-border/40 shadow-2xl rounded-3xl overflow-hidden flex flex-col transition-all duration-300",
+              "bg-card/95 backdrop-blur-2xl border border-border/40 shadow-2xl rounded-3xl overflow-hidden flex flex-col transition-[height,width] duration-300",
               isMinimized ? "h-20 w-[calc(100vw-2rem)] sm:w-72" : "h-[600px] max-h-[80vh] w-[calc(100vw-2rem)] sm:w-[400px] md:w-[450px]"
             )}
           >

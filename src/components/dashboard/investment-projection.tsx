@@ -80,7 +80,7 @@ export function InvestmentProjection({ currentValue, investments = [], fixedAsse
 
   return (
     <Card className="bg-card border-border/20 shadow-ambient-medium rounded-[32px] overflow-hidden flex flex-col h-full">
-      <CardHeader className="bg-muted/30 border-b border-border/10 min-h-[80px] px-6 py-3 flex flex-row items-center">
+      <CardHeader className="bg-muted/30 border-b border-border/10 h-20 !flex flex-row items-center px-6 py-0">
         <CardTitle className="text-xl font-heading font-bold text-primary flex items-center justify-between w-full">
           <div className="flex items-center gap-2">
             <Sparkles className={cn("h-5 w-5", apiError ? "text-rose-500" : "text-accent animate-pulse")} />
@@ -153,8 +153,21 @@ export function InvestmentProjection({ currentValue, investments = [], fixedAsse
                 }}
               />
               <Tooltip
-                formatter={(value: any, name: any, props: any) => [formatAmount(props.payload.rawVal), "Tahmini Değer"]}
-                contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 40px -10px rgba(0,0,0,0.1)', fontSize: '12px' }}
+                content={({ active, payload }) => {
+                  if (active && payload && payload.length) {
+                    const item = payload[0].payload as any;
+                    return (
+                      <div className="bg-card/95 backdrop-blur-md p-4 border border-border/30 rounded-2xl shadow-ambient-high">
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">{payload[0].name || "Tahmini Değer"}</p>
+                        <p className="text-lg font-heading font-bold text-primary">
+                          {formatAmount(item.rawVal)}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground mt-1 font-medium">{item.month}</p>
+                      </div>
+                    );
+                  }
+                  return null;
+                }}
               />
               <Area
                 type="monotone"

@@ -132,7 +132,7 @@ export function FinancialCalendar({ incomes, expenses, debts, userChildren = [],
 
   return (
     <Card className="border-border/30 shadow-ambient-medium rounded-[32px] overflow-hidden bg-card h-full">
-      <CardHeader className="bg-primary/5 border-b border-border/10 min-h-[80px] flex flex-row items-center justify-between py-3 px-6">
+      <CardHeader className="bg-primary/5 border-b border-border/10 h-20 !flex flex-row items-center justify-between px-6 py-0">
         <div className="flex items-center gap-4 w-full justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-xl bg-primary/10 text-primary shrink-0">
