@@ -236,3 +236,23 @@ input[type='number'] {
   -moz-appearance: textfield;
   appearance: textfield;
 }
+
+/* Clerk Captcha / Turnstile Fixes */
+.cl-captcha {
+  display: flex !important;
+  justify-content: center !important;
+  margin-top: 1rem !important;
+  margin-bottom: 1rem !important;
+  z-index: 9999 !important;
+  position: relative !important;
+}
+
+/* Ensure Clerk's internal modal/overlays are above our custom UI */
+.cl-modalBackdrop, .cl-modalContent {
+  z-index: 10000 !important;
+}
+
+/* Fix for mobile touch interaction on captcha */
+iframe[src*="challenges.cloudflare.com"] {
+  pointer-events: auto !important;
+}
