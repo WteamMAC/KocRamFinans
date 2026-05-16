@@ -140,9 +140,9 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
                         <Clock className="w-6 h-6 text-primary" />
                     </div>
                     <div>
-                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">Bu Ay Beklenen / Kalan</p>
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">Ay Sonu Tahmini Kalan Para</p>
                         <p className="text-2xl font-heading font-bold text-primary">
-                            {formatAmount(currentMonthPaid)} / <span className="text-rose-500">{formatAmount(remainingExpected)}</span>
+                            {formatAmount(remainingExpected)}
                         </p>
                     </div>
                 </div>
@@ -190,14 +190,21 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
                                     }
                                     return data;
                                 })()}>
+                                    <defs>
+                                        <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.8} />
+                                            <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.1} />
+                                        </linearGradient>
+                                    </defs>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" opacity={0.1} />
-                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
-                                    <YAxis axisLine={false} tickLine={false} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
+                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10, fontWeight: 'bold' }} />
+                                    <YAxis axisLine={false} tickLine={false} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10, fontWeight: 'bold' }} />
                                     <Tooltip
+                                        cursor={{ fill: 'hsl(var(--primary)/0.05)', radius: 8 }}
                                         contentStyle={{ backgroundColor: 'hsl(var(--card))', borderRadius: '16px', border: '1px solid hsl(var(--border)/0.3)', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                                        formatter={(value: any) => [formatAmount(value), "Toplam Taksit"]}
+                                        formatter={(value: any) => [formatAmount(value), "Ödeme"]}
                                     />
-                                    <Bar dataKey="tutar" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} barSize={40} />
+                                    <Bar dataKey="tutar" fill="url(#barGradient)" radius={[8, 8, 4, 4]} barSize={displayCount > 12 ? 15 : 30} />
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
