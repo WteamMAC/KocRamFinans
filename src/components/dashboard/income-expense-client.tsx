@@ -210,11 +210,11 @@ export function IncomeExpenseClient({
           </Button>
           
           <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-            <DialogTrigger asChild>
+            <DialogTrigger render={
               <Button className="h-12 px-8 rounded-2xl bg-primary text-white shadow-xl shadow-primary/20 hover:scale-[1.02] transition-all font-black text-xs uppercase tracking-widest active:scale-95">
                 <Plus className="w-5 h-5 mr-2" /> İşlem Ekle
               </Button>
-            </DialogTrigger>
+            } />
             <DialogContent className="sm:max-w-[500px] rounded-[40px] border-border/20 shadow-ambient-high bg-card/90 backdrop-blur-2xl">
               <DialogHeader>
                 <DialogTitle className="text-2xl font-heading font-black text-primary tracking-tight">Yeni Finansal Kayıt</DialogTitle>
