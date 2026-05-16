@@ -75,12 +75,13 @@ function Avatar({ src, name, username, userId, size = "md" }: { src: string; nam
 }
 
 // ─── Create Post Box ──────────────────────────────────────────────────
-function CreatePostBox({ currentUserId, communityId, communityName, userRole, onPostAdded }: { 
+function CreatePostBox({ currentUserId, communityId, communityName, userRole, onPostAdded, onPostIdUpdate }: { 
   currentUserId: string; 
   communityId?: string;
   communityName?: string;
   userRole?: string;
   onPostAdded?: (post: Post) => void;
+  onPostIdUpdate?: (tempId: string, realId: string) => void;
 }) {
   const { user } = useUser();
   const router = useRouter();
@@ -149,8 +150,9 @@ function CreatePostBox({ currentUserId, communityId, communityName, userRole, on
     const allTags = Array.from(new Set([...selectedTags, ...extractedTags]));
     const postContent = content.trim();
 
+    const tempId = "temp-post-" + Date.now();
     const optimisticPost: Post = {
-      id: "temp-post-" + Date.now(),
+      id: tempId,
       content: postContent,
       tags: allTags,
       createdAt: new Date(),
@@ -173,8 +175,13 @@ function CreatePostBox({ currentUserId, communityId, communityName, userRole, on
     setContent(""); setSelectedTags([]); setFocused(false); setImageUrl(null); setIsAnnouncement(false);
 
     startTransition(async () => {
-      await createPost(postContent, allTags, imageUrl || undefined, communityId, isAnnouncement);
-      router.refresh();
+      try {
+        const res = await createPost(postContent, allTags, imageUrl || undefined, communityId, isAnnouncement);
+        if (res?.id) onPostIdUpdate?.(tempId, res.id);
+        router.refresh();
+      } catch (err) {
+        console.error("Gönderi hatası:", err);
+      }
     });
   };
 
@@ -319,12 +326,13 @@ function TagFilterBar({ availableTags, activeTag, onSelect }: {
 }
 
 // ─── Comment Section ──────────────────────────────────────────────────
-function CommentSection({ post, currentUserId, onTagClick, onCommentAdded, onCommentDeleted }: { 
+function CommentSection({ post, currentUserId, onTagClick, onCommentAdded, onCommentDeleted, onCommentIdUpdate }: { 
   post: Post; 
   currentUserId: string;
   onTagClick?: (tag: string) => void;
   onCommentAdded?: (postId: string, comment: Comment) => void;
   onCommentDeleted?: (postId: string, commentId: string) => void;
+  onCommentIdUpdate?: (postId: string, tempId: string, realId: string) => void;
 }) {
   const router = useRouter();
   const { user } = useUser();
@@ -365,8 +373,9 @@ function CommentSection({ post, currentUserId, onTagClick, onCommentAdded, onCom
     if (!newComment.trim()) return;
     const commentText = newComment.trim();
     
+    const tempId = "temp-" + Date.now();
     const optimisticComment: Comment = {
-      id: "temp-" + Date.now(),
+      id: tempId,
       content: commentText,
       createdAt: new Date(),
       authorId: currentUserId,
@@ -380,16 +389,26 @@ function CommentSection({ post, currentUserId, onTagClick, onCommentAdded, onCom
     onCommentAdded?.(post.id, optimisticComment);
 
     startTransition(async () => {
-      await addComment(post.id, commentText);
-      router.refresh();
+      try {
+        const res = await addComment(post.id, commentText);
+        if (res?.id) onCommentIdUpdate?.(post.id, tempId, res.id);
+        router.refresh();
+      } catch (err) {
+        console.error("Yorum hatası:", err);
+      }
     });
   };
 
   const handleDelete = (commentId: string) => {
+    if (commentId.startsWith("temp-")) return;
     onCommentDeleted?.(post.id, commentId);
     startTransition(async () => { 
-      await deleteComment(commentId); 
-      router.refresh(); 
+      try {
+        await deleteComment(commentId); 
+        router.refresh(); 
+      } catch (err) {
+        console.error("Silme hatası:", err);
+      }
     });
   };
 
@@ -493,7 +512,7 @@ function contentWithTagsAndMentions(text: string, onTagClick?: (tag: string) => 
 }
 
 // ─── Post Card ────────────────────────────────────────────────────────
-function PostCard({ post, currentUserId, onTagClick, onCommunityClick, onCommentAdded, onCommentDeleted, onPostDeleted }: { 
+function PostCard({ post, currentUserId, onTagClick, onCommunityClick, onCommentAdded, onCommentDeleted, onPostDeleted, onCommentIdUpdate }: { 
   post: Post; 
   currentUserId: string; 
   onTagClick?: (tag: string) => void;
@@ -501,6 +520,7 @@ function PostCard({ post, currentUserId, onTagClick, onCommunityClick, onComment
   onCommentAdded?: (postId: string, comment: Comment) => void;
   onCommentDeleted?: (postId: string, commentId: string) => void;
   onPostDeleted?: (postId: string) => void;
+  onCommentIdUpdate?: (postId: string, tempId: string, realId: string) => void;
 }) {
   const router = useRouter();
   const [liked, setLiked] = useState(post.isLikedByMe);
@@ -518,9 +538,17 @@ function PostCard({ post, currentUserId, onTagClick, onCommunityClick, onComment
   };
 
   const handleDelete = () => {
+    if (post.id.startsWith("temp-")) return;
     if (!confirm("Bu paylaşımı silmek istediğinize emin misiniz?")) return;
     onPostDeleted?.(post.id);
-    startTransition(async () => { await deletePost(post.id); router.refresh(); });
+    startTransition(async () => { 
+      try {
+        await deletePost(post.id); 
+        router.refresh(); 
+      } catch (err) {
+        console.error("Silme hatası:", err);
+      }
+    });
   };
 
   const accentMap: Record<string, string> = {
@@ -580,7 +608,7 @@ function PostCard({ post, currentUserId, onTagClick, onCommunityClick, onComment
           <MessageCircle className="h-4 w-4" /> {post.comments.length}
         </button>
       </div>
-      {showComments && <CommentSection post={post} currentUserId={currentUserId} onTagClick={onTagClick} onCommentAdded={onCommentAdded} onCommentDeleted={onCommentDeleted} />}
+      {showComments && <CommentSection post={post} currentUserId={currentUserId} onTagClick={onTagClick} onCommentAdded={onCommentAdded} onCommentDeleted={onCommentDeleted} onCommentIdUpdate={onCommentIdUpdate} />}
     </div>
   );
 }
@@ -767,6 +795,22 @@ export function BlogFeed({
     setPosts(prev => prev.filter(p => p.id !== postId));
   };
 
+  const handleCommentIdUpdate = (postId: string, tempId: string, realId: string) => {
+    setPosts(prev => prev.map(p => {
+      if (p.id === postId) {
+        return { 
+          ...p, 
+          comments: p.comments.map(c => c.id === tempId ? { ...c, id: realId } : c) 
+        };
+      }
+      return p;
+    }));
+  };
+
+  const handlePostIdUpdate = (tempId: string, realId: string) => {
+    setPosts(prev => prev.map(p => p.id === tempId ? { ...p, id: realId } : p));
+  };
+
   useEffect(() => {
     const pollInterval = setInterval(async () => {
       try {
@@ -909,6 +953,7 @@ export function BlogFeed({
               communityName={selectedCommunity?.name} 
               userRole={userRole}
               onPostAdded={handlePostAdded}
+              onPostIdUpdate={handlePostIdUpdate}
             />
           )}
           
@@ -931,6 +976,7 @@ export function BlogFeed({
                   onCommentAdded={handleCommentAdded}
                   onCommentDeleted={handleCommentDeleted}
                   onPostDeleted={handlePostDeleted}
+                  onCommentIdUpdate={handleCommentIdUpdate}
                 />
               ))}
             </div>
