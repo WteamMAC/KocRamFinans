@@ -49,70 +49,70 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
           currentUserRole={me?.role}
         />
 
-        {/* Dashboard Style Stats Grid */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        {/* Dashboard Style Stats Grid - 2x2 on Mobile */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
           <Card className="relative overflow-hidden bg-card border-border/20 shadow-ambient-medium hover:shadow-ambient-high transition-all duration-300 group rounded-[24px]">
             <div className="absolute -right-4 -top-4 p-8 bg-primary/5 rounded-full group-hover:scale-110 transition-transform"></div>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
-                <Award className="h-4 w-4 text-primary" /> Topluluk Seviyesi
+            <CardHeader className="pb-1 md:pb-2 p-4 md:p-6">
+              <CardTitle className="text-[9px] md:text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                <Award className="h-3 w-3 md:h-4 md:w-4 text-primary" /> Seviye
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-heading font-bold text-primary">{investorLevel}</div>
-              <div className="mt-3 flex items-center gap-2">
+            <CardContent className="px-4 md:px-6 pb-4 md:pb-6">
+              <div className="text-lg md:text-2xl font-heading font-bold text-primary truncate">{investorLevel}</div>
+              <div className="mt-2 md:mt-3 flex items-center gap-1.5">
                 <div className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse"></div>
-                <span className="text-[10px] font-bold text-muted-foreground opacity-60">Etkileşim Puanı: {interactionScore}</span>
+                <span className="text-sm font-bold text-muted-foreground opacity-70">Puan: {interactionScore}</span>
               </div>
             </CardContent>
           </Card>
 
           <Card className="relative overflow-hidden bg-card border-border/20 shadow-ambient-medium hover:shadow-ambient-high transition-all duration-300 group rounded-[24px]">
             <div className="absolute -right-4 -top-4 p-8 bg-emerald-500/5 rounded-full group-hover:scale-110 transition-transform"></div>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
-                <Users className="h-4 w-4 text-emerald-500" /> Ağ Büyüklüğü
+            <CardHeader className="pb-1 md:pb-2 p-4 md:p-6">
+              <CardTitle className="text-[9px] md:text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                <Users className="h-3 w-3 md:h-4 md:w-4 text-emerald-500" /> Ağ
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-heading font-bold text-foreground">{profile.followerCount + profile.followingCount}</div>
-              <div className="mt-3 text-[10px] font-bold text-emerald-500 flex items-center gap-1">
-                <TrendingUp className="h-3 w-3" />
-                Toplam Bağlantı
+            <CardContent className="px-4 md:px-6 pb-4 md:pb-6">
+              <div className="text-xl md:text-2xl font-heading font-bold text-foreground">{profile.followerCount + profile.followingCount}</div>
+              <div className="mt-2 md:mt-3 text-sm font-bold text-emerald-500 flex items-center gap-1.5">
+                <TrendingUp className="h-4 w-4" />
+                Bağlantı
               </div>
             </CardContent>
           </Card>
 
           <Card className="relative overflow-hidden bg-card border-border/20 shadow-ambient-medium hover:shadow-ambient-high transition-all duration-300 group rounded-[24px]">
             <div className="absolute -right-4 -top-4 p-8 bg-indigo-500/5 rounded-full group-hover:scale-110 transition-transform"></div>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
-                <Pen className="h-4 w-4 text-indigo-500" /> İçerik Üretimi
+            <CardHeader className="pb-1 md:pb-2 p-4 md:p-6">
+              <CardTitle className="text-[9px] md:text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                <Pen className="h-3 w-3 md:h-4 md:w-4 text-indigo-500" /> Paylaşım
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-heading font-bold text-foreground">{profile.postCount}</div>
-              <div className="mt-3 text-[10px] font-bold text-indigo-500 flex items-center gap-1">
-                <Activity className="h-3 w-3" />
-                Aktif Paylaşım
+            <CardContent className="px-4 md:px-6 pb-4 md:pb-6">
+              <div className="text-xl md:text-2xl font-heading font-bold text-foreground">{profile.postCount}</div>
+              <div className="mt-2 md:mt-3 text-sm font-bold text-indigo-500 flex items-center gap-1.5">
+                <Activity className="h-4 w-4" />
+                İçerik
               </div>
             </CardContent>
           </Card>
 
           <Card className="relative overflow-hidden bg-primary border-none shadow-ambient-high hover:shadow-ambient-high transition-all duration-300 group rounded-[24px]">
             <div className="absolute -right-4 -top-4 p-8 bg-primary-foreground/10 rounded-full group-hover:scale-110 transition-transform"></div>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-[10px] font-bold text-primary-foreground/60 uppercase tracking-widest flex items-center gap-2">
-                <Activity className="h-4 w-4" /> Hesap Durumu
+            <CardHeader className="pb-1 md:pb-2 p-4 md:p-6">
+              <CardTitle className="text-[9px] md:text-[10px] font-bold text-primary-foreground/60 uppercase tracking-widest flex items-center gap-2">
+                <Activity className="h-3 w-3 md:h-4 md:w-4" /> Durum
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-heading font-bold text-primary-foreground">
-                {profile.isBanned ? "Askıya Alındı" : "Aktif"}
+            <CardContent className="px-4 md:px-6 pb-4 md:pb-6">
+              <div className="text-xl md:text-2xl font-heading font-bold text-primary-foreground">
+                {profile.isBanned ? "Ban" : "Aktif"}
               </div>
-              <div className="mt-3 text-[10px] font-bold text-emerald-400 flex items-center gap-1">
-                {!profile.isBanned && <TrendingUp className="h-3 w-3" />}
-                {!profile.isBanned ? "Sistemde Onaylı" : "Kısıtlanmış Hesap"}
+              <div className="mt-2 md:mt-3 text-sm font-bold text-emerald-400 flex items-center gap-1.5">
+                {!profile.isBanned && <TrendingUp className="h-4 w-4" />}
+                Onaylı
               </div>
             </CardContent>
           </Card>
