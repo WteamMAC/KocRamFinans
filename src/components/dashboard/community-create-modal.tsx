@@ -15,6 +15,7 @@ export function CommunityCreateModal({ isOpen, onClose }: { isOpen: boolean; onC
   const [description, setDescription] = useState("");
   const [isPrivate, setIsPrivate] = useState(false);
   const [selectedTags, setSelectedTags] = useState<string[]>(["genel"]);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   if (!isOpen) return null;
@@ -25,13 +26,25 @@ export function CommunityCreateModal({ isOpen, onClose }: { isOpen: boolean; onC
     );
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      alert("Resim boyutu 2MB'dan küçük olmalıdır.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onloadend = () => setImageUrl(reader.result as string);
+    reader.readAsDataURL(file);
+  };
+ 
+   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
 
     startTransition(async () => {
       try {
-        await createCommunity(name, description, selectedTags, undefined, isPrivate);
+        await createCommunity(name, description, selectedTags, imageUrl || undefined, isPrivate);
         onClose();
         router.refresh();
       } catch (error) {
@@ -77,6 +90,33 @@ export function CommunityCreateModal({ isOpen, onClose }: { isOpen: boolean; onC
                 rows={2}
                 className="w-full bg-muted/30 border border-border/20 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all resize-none"
               />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-muted-foreground ml-1">Topluluk Görseli</label>
+              <div className="flex items-center gap-4">
+                {imageUrl ? (
+                  <div className="relative w-20 h-20 rounded-2xl overflow-hidden border border-border/20 group">
+                    <img src={imageUrl} alt="Önizleme" className="w-full h-full object-cover" />
+                    <button 
+                      type="button"
+                      onClick={() => setImageUrl(null)}
+                      className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="h-5 w-5 text-white" />
+                    </button>
+                  </div>
+                ) : (
+                  <label className="w-20 h-20 rounded-2xl border-2 border-dashed border-border/20 flex flex-col items-center justify-center gap-1 cursor-pointer hover:bg-muted/50 transition-colors">
+                    <Plus className="h-5 w-5 text-muted-foreground" />
+                    <span className="text-[10px] font-bold text-muted-foreground">Ekle</span>
+                    <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} />
+                  </label>
+                )}
+                <div className="flex-1">
+                  <p className="text-[10px] text-muted-foreground leading-tight">Topluluğunuzu temsil eden bir görsel yükleyin. Max 2MB.</p>
+                </div>
+              </div>
             </div>
 
             {/* Etiketler */}

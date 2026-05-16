@@ -37,6 +37,8 @@ export function AssetForm({ activeTab, onAdd, onCancel, loading, error, defaultA
     purchasePrice: 0,
     useCurrentPrice: false,
     description: "",
+    monthlyContribution: 0,
+    fundType: "STANDART",
   });
 
   const [fixedAssetFormData, setFixedAssetFormData] = useState({
@@ -125,13 +127,13 @@ export function AssetForm({ activeTab, onAdd, onCancel, loading, error, defaultA
               {/* Varlık Türü */}
               <div className="space-y-2 sm:col-span-2">
                 <Label className="text-[11px] font-bold text-primary/80 uppercase tracking-wider px-1">Varlık Türü</Label>
-                <Select 
-                  value={formData.type} 
+                <Select
+                  value={formData.type}
                   onValueChange={(v) => setFormData((p) => ({ ...p, type: String(v), symbol: "" }))}
                   disabled={!!defaultAssetType}
                 >
                   <SelectTrigger className={cn(
-                    "bg-muted/50 border-primary/10 h-12 rounded-2xl focus:ring-primary text-sm font-semibold transition-all px-4",
+                    "bg-muted/50 border-primary/10 h-12 rounded-2xl focus:ring-primary text-sm font-semibold transition-all",
                     !!defaultAssetType && "opacity-80 cursor-not-allowed bg-muted"
                   )}>
                     <SelectValue />
@@ -194,7 +196,7 @@ export function AssetForm({ activeTab, onAdd, onCancel, loading, error, defaultA
                         placeholder="Örn: THYAO, BTC, AAPL..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-12 bg-muted/50 border-primary/10 h-12 rounded-2xl focus:ring-primary text-sm font-semibold px-4"
+                        className="pl-12 bg-muted/50 border-primary/10 h-12 rounded-2xl focus:ring-primary text-sm font-semibold"
                       />
                     </div>
 
