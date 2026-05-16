@@ -641,7 +641,13 @@ export function AssetList({
                     const origAmount = asset.originalAmount || (asset.fxRate ? asset.value / asset.fxRate : asset.value);
                     const fxSymbol = asset.currency || "TRY";
                     const currKey = fxSymbol.toUpperCase();
-                    const liveRate = rates[currKey] || asset.fxRate || 1;
+                    const targetCurrKey = (displayCurrency || "TRY").toUpperCase();
+                    
+                    const assetRateInTry = rates[currKey] || asset.fxRate || 1;
+                    const targetRateInTry = rates[targetCurrKey] || 1;
+                    const crossParity = assetRateInTry / targetRateInTry;
+                    
+                    const targetSym = targetCurrKey === "USD" ? "$" : targetCurrKey === "EUR" ? "€" : targetCurrKey === "GBP" ? "£" : targetCurrKey === "JPY" ? "¥" : targetCurrKey === "TRY" ? "₺" : targetCurrKey;
                     const hasProfit = asset.liveProfit && Math.abs(asset.liveProfit) > 0.01;
 
                     return (
@@ -662,9 +668,11 @@ export function AssetList({
                                     <span className="text-[10px] font-bold text-amber-700 bg-amber-500/15 px-2 py-0.5 rounded-md uppercase tracking-tight">
                                       {origAmount.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {fxSymbol === "USD" ? "$" : fxSymbol === "EUR" ? "€" : fxSymbol === "GBP" ? "£" : fxSymbol === "XAU" ? "ALT" : fxSymbol}
                                     </span>
-                                    <span className="text-[10px] font-bold text-blue-600 bg-blue-500/10 px-2 py-0.5 rounded-md uppercase tracking-tight">
-                                      Kur: {liveRate.toFixed(2)} ₺
-                                    </span>
+                                    {currKey !== targetCurrKey && (
+                                      <span className="text-[10px] font-bold text-blue-600 bg-blue-500/10 px-2 py-0.5 rounded-md uppercase tracking-tight">
+                                        Kur: {crossParity.toFixed(2)} {targetSym}
+                                      </span>
+                                    )}
                                   </>
                                 )}
                                 {hasProfit && (
