@@ -269,6 +269,9 @@ export function OnboardingForm() {
       purchasePrice: "",
       currency: selectedCurrency || "TRY",
       description: "",
+      fundType: "STANDART",
+      monthlyContribution: "0",
+      maturityPeriod: "32",
     });
   };
 
@@ -279,6 +282,9 @@ export function OnboardingForm() {
       alert("Lütfen 0'dan büyük bir toplam tutar giriniz.");
       return;
     }
+    const typeObj = ASSET_CATEGORIES.find(c => c.id === activeAssetModal);
+    const typeName = typeObj?.id || activeAssetModal || "Diğer";
+
     investmentsField.append({
       type: typeName,
       symbol: modalAssetData.symbol ? modalAssetData.symbol.toUpperCase().trim() : undefined,
@@ -287,6 +293,9 @@ export function OnboardingForm() {
       purchasePrice: parseFloat(modalAssetData.purchasePrice) || amountVal,
       currency: modalAssetData.currency || selectedCurrency || "TRY",
       description: modalAssetData.description || undefined,
+      fundType: modalAssetData.fundType,
+      monthlyContribution: parseFloat(modalAssetData.monthlyContribution) || 0,
+      maturityPeriod: parseInt(modalAssetData.maturityPeriod) || 32,
     });
     setActiveAssetModal(null);
   };
@@ -1054,7 +1063,50 @@ export function OnboardingForm() {
                     </div>
                   </div>
 
+                  {activeAssetModal === "BES" && (
+                    <div className="grid grid-cols-2 gap-3 animate-in fade-in duration-300">
+                      <div>
+                        <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Fon Türü (Takip İçin)</Label>
+                        <Select value={modalAssetData.fundType} onValueChange={(v: string) => setModalAssetData({ ...modalAssetData, fundType: v })}>
+                          <SelectTrigger className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-bold text-xs border-[#dbc2b0]/50 dark:border-[#887364]/40">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="STANDART">⚖️ Standart / Karma</SelectItem>
+                            <SelectItem value="GOLD">🟡 Altın Katılım</SelectItem>
+                            <SelectItem value="STOCKS">📈 Hisse Senedi Yoğun</SelectItem>
+                            <SelectItem value="USD">💵 Döviz / Eurobond</SelectItem>
+                            <SelectItem value="CONSERVATIVE">🛡️ Para Piyasası</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Aylık Düzenli Ödeme (₺)</Label>
+                        <Input
+                          type="number"
+                          value={modalAssetData.monthlyContribution}
+                          onChange={e => setModalAssetData({ ...modalAssetData, monthlyContribution: e.target.value })}
+                          placeholder="Örn: 2500"
+                          className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] border-[#dbc2b0]/50 dark:border-[#887364]/40 font-bold"
+                        />
+                      </div>
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">
+                        {activeAssetModal === "FAIZ" ? "Faiz / Getiri Oranı %" : "Alış Fiyatı / Oran"}
+                      </Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={modalAssetData.purchasePrice}
+                        onChange={e => setModalAssetData({ ...modalAssetData, purchasePrice: e.target.value })}
+                        placeholder="0.00"
+                        className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-bold"
+                      />
+                    </div>
                     <div>
                       <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Birim Miktarı / Adet</Label>
                       <Input
@@ -1065,6 +1117,9 @@ export function OnboardingForm() {
                         className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-bold"
                       />
                     </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
                     <div>
                       <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Toplam Tutar / Değer</Label>
                       <Input
