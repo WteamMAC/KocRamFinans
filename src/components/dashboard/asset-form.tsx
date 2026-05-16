@@ -95,7 +95,16 @@ export function AssetForm({ activeTab, onAdd, onCancel, loading, error }: AssetF
   };
 
   return (
-    <Card className="p-8 bg-card/60 backdrop-blur-2xl border border-primary/20 shadow-2xl rounded-[32px] animate-in fade-in slide-in-from-top-4 duration-500">
+    <Card className="p-8 bg-card border border-border/20 shadow-2xl rounded-[32px] animate-in zoom-in-95 duration-300">
+      <div className="flex justify-between items-center mb-8 border-b border-border/10 pb-4">
+        <h2 className="text-2xl font-heading font-bold text-primary">
+          {activeTab === "financial" ? "Yeni Yatırım Ekle" : "Yeni Sabit Varlık Ekle"}
+        </h2>
+        <Button variant="ghost" size="icon" onClick={onCancel} className="h-8 w-8 rounded-full bg-card shadow-sm border border-border/30 hover:bg-rose-50 hover:text-rose-500 transition-colors">
+          <X className="h-4 w-4" />
+        </Button>
+      </div>
+
       {activeTab === "financial" ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {/* Varlık Türü */}
@@ -334,20 +343,13 @@ export function AssetForm({ activeTab, onAdd, onCancel, loading, error }: AssetF
 
       {error && <div className="mt-6 p-4 bg-destructive/10 text-destructive rounded-2xl text-sm font-bold border border-destructive/20">{error}</div>}
 
-      <div className="mt-10 flex justify-end gap-4">
-        <Button
-          variant="ghost"
-          onClick={onCancel}
-          className="rounded-full px-8 py-6 h-auto text-sm font-bold hover:bg-muted"
-        >
-          <X className="mr-2 h-4 w-4" /> Vazgeç
-        </Button>
+      <div className="mt-10 flex justify-end">
         <Button
           onClick={handleSubmit}
           disabled={loading}
-          className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full px-12 py-6 h-auto text-lg font-black shadow-xl hover:shadow-primary/20 transition-all"
+          className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full px-12 py-6 h-auto text-lg font-black shadow-xl hover:shadow-primary/20 transition-all w-full md:w-auto"
         >
-          {loading ? "Kaydediliyor..." : "Varlığı Kaydet"}
+          {loading ? "Kaydediliyor..." : (activeTab === "financial" ? "Yatırımı Kaydet" : "Varlığı Kaydet")}
         </Button>
       </div>
     </Card>
