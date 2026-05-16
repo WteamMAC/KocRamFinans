@@ -200,10 +200,11 @@ export function ChatAI() {
   }, [messages]);
 
   return (
-    <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-[999] flex flex-col items-end">
-      <AnimatePresence>
-        {!isOpen && (
+    <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-[999]">
+      <AnimatePresence mode="wait">
+        {!isOpen ? (
           <motion.button
+            key="chat-button"
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0, opacity: 0 }}
@@ -215,12 +216,9 @@ export function ChatAI() {
             <div className="absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
             <Sparkles className="h-7 w-7 animate-pulse" />
           </motion.button>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence mode="wait">
-        {isOpen && (
+        ) : (
           <motion.div
+            key="chat-window"
             initial={{ y: 20, opacity: 0, scale: 0.95, transformOrigin: "bottom right" }}
             animate={{ y: 0, opacity: 1, scale: 1 }}
             exit={{ y: 20, opacity: 0, scale: 0.95 }}
