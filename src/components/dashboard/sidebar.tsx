@@ -272,14 +272,17 @@ export function Sidebar({ isCollapsed, onToggle, hideToggle, theme, onToggleThem
       </div>
 
       <div className={cn(
-        "px-3 py-6 border-t border-border/20 flex items-center transition-all duration-300",
-        isCollapsed ? "justify-center" : "justify-between px-6 bg-muted/30"
+        "px-3 py-6 border-t border-border/20 flex transition-all duration-300",
+        isCollapsed ? "flex-col items-center gap-6" : "items-center justify-between px-6 bg-muted/30"
       )}>
-        <div className="flex items-center gap-3 overflow-hidden">
+        <div className={cn(
+          "flex items-center overflow-hidden",
+          isCollapsed ? "justify-center" : "gap-3"
+        )}>
           <UserButton
             appearance={{
               elements: {
-                userButtonAvatarBox: "h-9 w-9 ring-2 ring-primary/20"
+                userButtonAvatarBox: "h-10 w-10 ring-2 ring-primary/20"
               }
             }}
           />
@@ -291,17 +294,20 @@ export function Sidebar({ isCollapsed, onToggle, hideToggle, theme, onToggleThem
           )}
         </div>
 
-        <div className="flex items-center gap-1.5 flex-wrap justify-end">
-          <MessageBell className="h-8 w-8" />
+        <div className={cn(
+          "flex items-center gap-2",
+          isCollapsed ? "flex-col" : "flex-wrap justify-end"
+        )}>
+          <MessageBell className="h-10 w-10" />
           <NotificationBell />
           {theme && onToggleTheme && (
             <Button
               variant="ghost"
               size="icon"
               onClick={onToggleTheme}
-              className="tour-step-3 rounded-full h-8 w-8 text-primary hover:bg-primary/10 flex-shrink-0"
+              className="tour-step-3 rounded-full h-10 w-10 text-primary hover:bg-primary/10 flex-shrink-0 border border-border/10 bg-card"
             >
-              {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             </Button>
           )}
         </div>

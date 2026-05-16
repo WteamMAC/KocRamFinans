@@ -47,3 +47,17 @@ export async function markAllNotificationsAsRead() {
 
   revalidatePath("/dashboard");
 }
+
+export async function deleteNotification(id: string) {
+  const { userId: clerkUserId } = await auth();
+  if (!clerkUserId) return;
+
+  const user = await prisma.user.findUnique({ where: { clerkUserId } });
+  if (!user) return;
+
+  await prisma.notification.deleteMany({
+    where: { id, userId: user.id }
+  });
+
+  revalidatePath("/dashboard");
+}
