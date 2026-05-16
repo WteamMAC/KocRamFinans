@@ -640,6 +640,7 @@ export function AssetList({
                     const isTry = !asset.currency || asset.currency === "TRY";
                     const origAmount = asset.originalAmount || (asset.fxRate ? asset.value / asset.fxRate : asset.value);
                     const fxSymbol = asset.currency || "TRY";
+                    const hasProfit = asset.liveProfit && Math.abs(asset.liveProfit) > 0.01;
 
                     return (
                       <Card key={asset.id} className="p-6 bg-card hover:shadow-ambient-medium transition-all duration-300 border-border/40 shadow-sm rounded-2xl group">
@@ -650,13 +651,21 @@ export function AssetList({
                             </div>
                             <div>
                               <h4 className="font-heading font-bold text-lg text-primary">{asset.name}</h4>
-                              <div className="flex items-center gap-2 mt-0.5">
+                              <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                                 <span className="text-[10px] font-bold text-muted-foreground bg-muted px-2 py-0.5 rounded-md uppercase tracking-tight">
                                   {asset.type}
                                 </span>
                                 {!isTry && (
-                                  <span className="text-[10px] font-bold text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded-md uppercase tracking-tight">
+                                  <span className="text-[10px] font-bold text-blue-600 bg-blue-500/10 px-2 py-0.5 rounded-md uppercase tracking-tight">
                                     Kur: {asset.fxRate?.toFixed(2) || "1.00"} ₺
+                                  </span>
+                                )}
+                                {hasProfit && (
+                                  <span className={cn(
+                                    "text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-tight",
+                                    asset.liveProfit! >= 0 ? "bg-emerald-500/10 text-emerald-600" : "bg-rose-500/10 text-rose-600"
+                                  )}>
+                                    Artış: {asset.liveProfit! >= 0 ? "+" : ""}{formatCur(asset.liveProfit, "TRY")} ({asset.liveProfitPercent?.toFixed(1) || 0}%)
                                   </span>
                                 )}
                               </div>
@@ -670,8 +679,8 @@ export function AssetList({
                                     {origAmount.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {fxSymbol === "USD" ? "$" : fxSymbol === "EUR" ? "€" : fxSymbol === "GBP" ? "£" : fxSymbol === "XAU" ? "ALT" : fxSymbol}
                                   </div>
                                   <div className="text-xs font-bold text-muted-foreground mt-0.5 flex items-center justify-end gap-1">
-                                    <span>Tahmini Değer:</span>
-                                    <span className="text-foreground">{formatCur(asset.value, "TRY")}</span>
+                                    <span>Güncel Değer:</span>
+                                    <span className="text-foreground font-black">{formatCur(asset.value, "TRY")}</span>
                                   </div>
                                 </>
                               ) : (
