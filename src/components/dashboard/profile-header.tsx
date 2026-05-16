@@ -101,19 +101,12 @@ export function ProfileHeader({ profile, initialIsFollowing, currentUserRole }: 
 
   return (
     <div className="relative mb-12">
-      {/* Background Glows */}
-      <div className="absolute -top-24 -left-24 w-96 h-96 bg-primary/10 rounded-full blur-[100px] -z-10" />
-      <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-purple-500/10 rounded-full blur-[100px] -z-10" />
+      {/* Background Glows Removed */}
 
       <div className="bg-card/40 backdrop-blur-xl border border-border/20 rounded-[40px] overflow-hidden shadow-ambient-medium animate-in fade-in slide-in-from-bottom-8 duration-1000">
-        {/* Cover Section */}
-        <div className="h-48 relative overflow-hidden group">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/30 via-indigo-500/20 to-purple-600/30 animate-pulse-slow" />
-          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
-        </div>
+        {/* Cover Section Removed */}
         
-        <div className="px-4 md:px-10 pb-10 -mt-12 md:-mt-20 relative">
+        <div className="px-4 md:px-10 pb-10 pt-8 md:pt-12 relative">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 md:gap-8">
             <div className="flex flex-row items-start gap-4 md:gap-8">
               {/* Avatar Container */}

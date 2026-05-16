@@ -80,8 +80,8 @@ export function InvestmentProjection({ currentValue, investments = [], fixedAsse
 
   return (
     <Card className="bg-card border-border/20 shadow-ambient-medium rounded-[32px] overflow-hidden flex flex-col h-full">
-      <CardHeader className="bg-muted/30 border-b border-border/10 py-6">
-        <CardTitle className="text-xl font-heading font-bold text-primary flex items-center justify-between">
+      <CardHeader className="bg-muted/30 border-b border-border/10 min-h-[80px] px-6 py-3 flex flex-row items-center">
+        <CardTitle className="text-xl font-heading font-bold text-primary flex items-center justify-between w-full">
           <div className="flex items-center gap-2">
             <Sparkles className={cn("h-5 w-5", apiError ? "text-rose-500" : "text-accent animate-pulse")} />
             <span className="text-base md:text-xl">{apiError ? "Varsayılan Büyüme" : "AI Tahmini"}</span>

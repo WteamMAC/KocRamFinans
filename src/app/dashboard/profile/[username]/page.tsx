@@ -37,9 +37,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
 
   return (
     <div className="flex-1 p-4 md:p-8 pt-6 md:pt-10 bg-background min-h-screen relative overflow-x-hidden">
-      {/* Abstract Background Elements */}
-      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-primary/5 rounded-full blur-[120px] -z-10" />
-      <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-indigo-500/5 rounded-full blur-[120px] -z-10" />
+      {/* Abstract Background Elements Removed */}
 
       <div className="max-w-7xl mx-auto space-y-10 relative">
         {/* Profile Header Block */}
