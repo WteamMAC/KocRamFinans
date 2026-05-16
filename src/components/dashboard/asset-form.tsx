@@ -97,7 +97,7 @@ export function AssetForm({ activeTab, onAdd, onCancel, loading, error, defaultA
 
   return (
     <div className="w-full max-w-2xl mx-auto bg-card/95 backdrop-blur-xl border border-border/20 shadow-2xl rounded-[32px] overflow-hidden animate-in zoom-in-95 duration-300">
-      <div className="p-6 sm:p-10 flex flex-col justify-between bg-card">
+      <div className="p-6 sm:p-10 flex flex-col justify-between">
         <div>
           {/* Üst Başlık & Kapatma Butonu */}
           <div className="flex justify-between items-center pb-6 mb-8 border-b border-border/10">
