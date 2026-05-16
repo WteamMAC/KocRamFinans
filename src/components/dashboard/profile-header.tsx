@@ -283,35 +283,35 @@ export function ProfileHeader({ profile, initialIsFollowing, currentUserRole }: 
             />
           </div>
 
-          {/* Stats Bar */}
-          <div className="flex flex-wrap items-center gap-6 md:gap-12 mt-10 pt-10 border-t border-border/10">
-            <div className="flex items-center gap-4 group">
-              <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary transition-transform group-hover:scale-110">
-                <BookOpen className="w-5 h-5" />
+          {/* Stats Bar - Optimized for Mobile Grid */}
+          <div className="grid grid-cols-3 gap-2 md:flex md:flex-wrap md:items-center md:gap-12 mt-10 pt-10 border-t border-border/10">
+            <div className="flex flex-col items-center md:flex-row md:items-center gap-2 md:gap-4 group">
+              <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-primary/10 flex items-center justify-center text-primary transition-transform group-hover:scale-110">
+                <BookOpen className="w-4 h-4 md:w-5 md:h-5" />
               </div>
-              <div className="flex flex-col">
-                <span className="text-xl font-black text-foreground">{profile.postCount}</span>
-                <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest opacity-60">Gönderi</span>
+              <div className="flex flex-col items-center md:items-start">
+                <span className="text-lg md:text-xl font-black text-foreground">{profile.postCount}</span>
+                <span className="text-[8px] md:text-[10px] font-black text-muted-foreground uppercase tracking-widest opacity-60">Gönderi</span>
               </div>
             </div>
 
-            <button onClick={openFollowers} className="flex items-center gap-4 group transition-all hover:translate-y-[-2px]">
-              <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-500 transition-transform group-hover:scale-110">
-                <Users className="w-5 h-5" />
+            <button onClick={openFollowers} className="flex flex-col items-center md:flex-row md:items-center gap-2 md:gap-4 group transition-all hover:translate-y-[-2px]">
+              <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-500 transition-transform group-hover:scale-110">
+                <Users className="w-4 h-4 md:w-5 md:h-5" />
               </div>
-              <div className="flex flex-col text-left">
-                <span className="text-xl font-black text-foreground group-hover:text-primary transition-colors">{followerCount}</span>
-                <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest opacity-60">Takipçi</span>
+              <div className="flex flex-col items-center md:items-start text-center md:text-left">
+                <span className="text-lg md:text-xl font-black text-foreground group-hover:text-primary transition-colors">{followerCount}</span>
+                <span className="text-[8px] md:text-[10px] font-black text-muted-foreground uppercase tracking-widest opacity-60">Takipçi</span>
               </div>
             </button>
 
-            <button onClick={openFollowing} className="flex items-center gap-4 group transition-all hover:translate-y-[-2px]">
-              <div className="w-12 h-12 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-500 transition-transform group-hover:scale-110">
-                <Users className="w-5 h-5" />
+            <button onClick={openFollowing} className="flex flex-col items-center md:flex-row md:items-center gap-2 md:gap-4 group transition-all hover:translate-y-[-2px]">
+              <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-500 transition-transform group-hover:scale-110">
+                <Users className="w-4 h-4 md:w-5 md:h-5" />
               </div>
-              <div className="flex flex-col text-left">
-                <span className="text-xl font-black text-foreground group-hover:text-primary transition-colors">{profile.followingCount}</span>
-                <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest opacity-60">Takip</span>
+              <div className="flex flex-col items-center md:items-start text-center md:text-left">
+                <span className="text-lg md:text-xl font-black text-foreground group-hover:text-primary transition-colors">{profile.followingCount}</span>
+                <span className="text-[8px] md:text-[10px] font-black text-muted-foreground uppercase tracking-widest opacity-60">Takip</span>
               </div>
             </button>
           </div>
