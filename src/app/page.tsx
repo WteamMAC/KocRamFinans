@@ -50,15 +50,7 @@ export default async function LandingPage() {
               <p className="text-lg md:text-xl text-muted-foreground max-w-2xl leading-relaxed opacity-90 font-medium">
                 Koç Ram Finans ile karmaşık finansal kararları basitleştiriyoruz. Dostane, şeffaf ve tamamen size özel koçluk yaklaşımımızla paranızı yönetmeyi öğrenin ve büyütün.
               </p>
-              <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-                <Link href="/sign-up" className="bg-primary text-primary-foreground font-bold px-8 py-5 rounded-2xl hover:bg-primary/90 transition-all shadow-ambient-high flex items-center justify-center gap-3 text-lg group">
-                  Ücretsiz Görüşme Ayarla
-                  <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                </Link>
-                <button className="bg-card border-2 border-border/30 text-muted-foreground font-bold px-8 py-5 rounded-2xl hover:bg-muted transition-all flex items-center justify-center gap-3 shadow-ambient-low text-lg">
-                  Nasıl Çalışır?
-                </button>
-              </div>
+
             </div>
             
             <div className="md:col-span-5 relative mt-12 md:mt-0 flex justify-center animate-in fade-in zoom-in-95 duration-1000">
