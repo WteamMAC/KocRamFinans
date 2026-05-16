@@ -49,6 +49,11 @@ interface FixedAsset {
   name: string;
   type: string;
   value: number;
+  currency?: string;
+  originalAmount?: number;
+  fxRate?: number;
+  liveProfit?: number;
+  liveProfitPercent?: number;
 }
 
 interface InvestmentLog {
@@ -396,8 +401,8 @@ export function AssetList({
 
       {/* Add Asset Form Modal */}
       {isAdding && (
-        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-background/40 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto no-scrollbar rounded-[32px]">
+        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 md:p-6 bg-background/70 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="relative w-full max-w-4xl max-h-[95vh] overflow-y-auto no-scrollbar rounded-[32px] shadow-2xl border border-border/40">
             <AssetForm 
               activeTab={activeTab} 
               loading={loading} 
@@ -631,35 +636,66 @@ export function AssetList({
                     {filterQuery ? "Aramanıza uygun varlık bulunamadı." : "Henüz bir sabit varlık eklemediniz."}
                   </div>
                 ) : (
-                  filteredFixed.map((asset) => (
-                    <Card key={asset.id} className="p-6 hover:shadow-ambient-medium transition-all duration-300 border-border/20 group">
-                      <div className="flex justify-between items-center">
-                        <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 bg-primary/5 rounded-2xl flex items-center justify-center text-primary font-bold">
-                            {asset.type.substring(0, 1)}
+                  filteredFixed.map((asset) => {
+                    const isTry = !asset.currency || asset.currency === "TRY";
+                    const origAmount = asset.originalAmount || (asset.fxRate ? asset.value / asset.fxRate : asset.value);
+                    const fxSymbol = asset.currency || "TRY";
+
+                    return (
+                      <Card key={asset.id} className="p-6 bg-card hover:shadow-ambient-medium transition-all duration-300 border-border/40 shadow-sm rounded-2xl group">
+                        <div className="flex justify-between items-center gap-4">
+                          <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary font-bold text-lg border border-primary/15">
+                              {asset.type.substring(0, 1)}
+                            </div>
+                            <div>
+                              <h4 className="font-heading font-bold text-lg text-primary">{asset.name}</h4>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                <span className="text-[10px] font-bold text-muted-foreground bg-muted px-2 py-0.5 rounded-md uppercase tracking-tight">
+                                  {asset.type}
+                                </span>
+                                {!isTry && (
+                                  <span className="text-[10px] font-bold text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded-md uppercase tracking-tight">
+                                    Kur: {asset.fxRate?.toFixed(2) || "1.00"} ₺
+                                  </span>
+                                )}
+                              </div>
+                            </div>
                           </div>
-                          <div>
-                            <h4 className="font-heading font-bold text-lg text-primary">{asset.name}</h4>
-                            <span className="text-[10px] font-bold text-muted-foreground opacity-60 uppercase">{asset.type}</span>
+                          <div className="flex items-center gap-4">
+                            <div className="text-right">
+                              {!isTry ? (
+                                <>
+                                  <div className="text-xl font-heading font-black text-primary">
+                                    {origAmount.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {fxSymbol === "USD" ? "$" : fxSymbol === "EUR" ? "€" : fxSymbol === "GBP" ? "£" : fxSymbol === "XAU" ? "ALT" : fxSymbol}
+                                  </div>
+                                  <div className="text-xs font-bold text-muted-foreground mt-0.5 flex items-center justify-end gap-1">
+                                    <span>Tahmini Değer:</span>
+                                    <span className="text-foreground">{formatCur(asset.value, "TRY")}</span>
+                                  </div>
+                                </>
+                              ) : (
+                                <>
+                                  <div className="text-xl font-heading font-black text-primary">
+                                    {formatCur(asset.value, "TRY")}
+                                  </div>
+                                  <div className="text-[10px] font-medium text-muted-foreground opacity-60 mt-0.5">Tahmini Değer</div>
+                                </>
+                              )}
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDeleteFixed(asset.id)}
+                              className="text-rose-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors h-9 w-9 shrink-0"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                           </div>
                         </div>
-                        <div className="flex items-center gap-6">
-                          <div className="text-right">
-                            <div className="text-xl font-bold text-primary">{formatCur(asset.value)}</div>
-                            <div className="text-[10px] font-medium text-muted-foreground opacity-40">Tahmini Değer</div>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDeleteFixed(asset.id)}
-                            className="text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors"
-                          >
-                            <Trash2 className="h-5 w-5" />
-                          </Button>
-                        </div>
-                      </div>
-                    </Card>
-                  ))
+                      </Card>
+                    );
+                  })
                 );
               })()
             )}
