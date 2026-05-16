@@ -18,6 +18,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, TrendingUp, TrendingDown, Camera, Loader2 } from "lucide-react";
 import { processReceiptWithAI } from "@/app/actions/ocr";
 import Link from "next/link";
+import { useCurrency, DISPLAY_CURRENCIES_LIST } from "@/context/currency-context";
 
 interface AddTransactionFormProps {
   type: "income" | "expense";
@@ -25,11 +26,13 @@ interface AddTransactionFormProps {
 
 export function AddTransactionForm({ type }: AddTransactionFormProps) {
   const router = useRouter();
+  const { rates } = useCurrency();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     category: "",
     amount: "",
+    currency: "TRY",
     description: "",
     isRecurring: false,
     dueDate: "",
@@ -49,24 +52,35 @@ export function AddTransactionForm({ type }: AddTransactionFormProps) {
     
     setLoading(true);
     setError(null);
+
+    const selectedRate = rates[formData.currency] || 1;
+    const originalAmount = Number(formData.amount);
+    const amountInTry = originalAmount * selectedRate;
+
     try {
       if (type === "income") {
         await addIncome({
           type: formData.category,
-          amount: Number(formData.amount),
+          amount: amountInTry,
           isRecurring: formData.isRecurring,
           dueDate: formData.dueDate ? Number(formData.dueDate) : undefined,
           date: new Date(formData.date),
           description: formData.description,
+          currency: formData.currency,
+          originalAmount: originalAmount,
+          fxRate: selectedRate,
         });
       } else {
         await addExpense({
           type: formData.category,
-          amount: Number(formData.amount),
+          amount: amountInTry,
           isRecurring: formData.isRecurring,
           dueDate: formData.dueDate ? Number(formData.dueDate) : undefined,
           date: new Date(formData.date),
           description: formData.description,
+          currency: formData.currency,
+          originalAmount: originalAmount,
+          fxRate: selectedRate,
         });
       }
       router.push("/dashboard/income-expense/history");
@@ -153,10 +167,10 @@ export function AddTransactionForm({ type }: AddTransactionFormProps) {
           <div className="space-y-3">
             <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Kategori</Label>
             <Select onValueChange={(v: any) => setFormData(p => ({ ...p, category: v ?? "" }))}>
-              <SelectTrigger className="bg-muted border-border/30 h-14 rounded-2xl text-base">
+              <SelectTrigger className="bg-muted border-border/30 h-14 rounded-2xl text-base font-semibold">
                 <SelectValue placeholder="Kategori Seçin" />
               </SelectTrigger>
-              <SelectContent className="rounded-2xl border-border/30 bg-card">
+              <SelectContent className="rounded-2xl border-border/30 bg-card font-semibold">
                 {categories.map(cat => (
                   <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                 ))}
@@ -164,15 +178,32 @@ export function AddTransactionForm({ type }: AddTransactionFormProps) {
             </Select>
           </div>
 
-          <div className="space-y-3">
-            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Tutar (₺)</Label>
-            <Input
-              type="number"
-              placeholder="0.00"
-              value={formData.amount}
-              onChange={(e) => setFormData(p => ({ ...p, amount: e.target.value }))}
-              className="bg-muted border-border/30 h-14 rounded-2xl text-xl font-bold text-primary"
-            />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="md:col-span-2 space-y-3">
+              <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Tutar</Label>
+              <Input
+                type="number"
+                placeholder="0.00"
+                value={formData.amount}
+                onChange={(e) => setFormData(p => ({ ...p, amount: e.target.value }))}
+                className="bg-muted border-border/30 h-14 rounded-2xl text-xl font-bold text-primary"
+              />
+            </div>
+            <div className="space-y-3">
+              <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Para Birimi</Label>
+              <Select value={formData.currency} onValueChange={(v) => setFormData(p => ({ ...p, currency: String(v) }))}>
+                <SelectTrigger className="bg-muted border-border/30 h-14 rounded-2xl font-bold">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="rounded-2xl bg-card font-bold max-h-60">
+                  {DISPLAY_CURRENCIES_LIST.map(c => (
+                    <SelectItem key={c.code} value={c.code}>
+                      {c.flag} {c.code}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div className="space-y-3">
@@ -181,7 +212,7 @@ export function AddTransactionForm({ type }: AddTransactionFormProps) {
               type="date"
               value={formData.date}
               onChange={(e) => setFormData(p => ({ ...p, date: e.target.value }))}
-              className="bg-muted border-border/30 h-14 rounded-2xl"
+              className="bg-muted border-border/30 h-14 rounded-2xl font-semibold"
             />
           </div>
 
@@ -191,25 +222,25 @@ export function AddTransactionForm({ type }: AddTransactionFormProps) {
               placeholder="İşlem detayları (opsiyonel)..."
               value={formData.description}
               onChange={(e) => setFormData(p => ({ ...p, description: e.target.value }))}
-              className="bg-muted border-border/30 h-14 rounded-2xl"
+              className="bg-muted border-border/30 h-14 rounded-2xl font-semibold"
             />
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1 flex items-center space-x-3 bg-muted/50 p-4 rounded-2xl border border-border/20">
+            <div className="flex-1 flex items-center space-x-3 bg-muted/50 p-4 rounded-2xl border border-border/20 transition-all hover:bg-muted">
               <Checkbox
                 id="isRecurring"
                 checked={formData.isRecurring}
                 onCheckedChange={(checked) => setFormData(p => ({ ...p, isRecurring: !!checked }))}
                 className="border-primary data-[state=checked]:bg-primary"
               />
-              <Label htmlFor="isRecurring" className="text-sm font-semibold text-muted-foreground cursor-pointer">
+              <Label htmlFor="isRecurring" className="text-sm font-semibold text-muted-foreground cursor-pointer select-none">
                 {type === "income" ? "Düzenli (Her Ay) Gelir" : "Düzenli (Her Ay) Gider"}
               </Label>
             </div>
 
             {formData.isRecurring && (
-              <div className="flex-1 space-y-3">
+              <div className="flex-1 space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
                 <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Ödeme/Giriş Günü (1-31)</Label>
                 <Input
                   type="number"
@@ -218,7 +249,7 @@ export function AddTransactionForm({ type }: AddTransactionFormProps) {
                   placeholder="Örn: 15"
                   value={formData.dueDate}
                   onChange={(e) => setFormData(p => ({ ...p, dueDate: e.target.value }))}
-                  className="bg-muted border-border/30 h-14 rounded-2xl"
+                  className="bg-muted border-border/30 h-14 rounded-2xl font-semibold"
                 />
               </div>
             )}

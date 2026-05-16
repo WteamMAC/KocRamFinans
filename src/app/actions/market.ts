@@ -32,7 +32,7 @@ export async function getExchangeRatesAction() {
     ];
     const results = await getLivePrices(symbols);
     
-    const usdRate = results.get("USDTRY=X")?.price || results.get("TRY=X")?.price || 45.50;
+    const usdRate = results.get("USDTRY=X")?.price || results.get("TRY=X")?.price || 36.45;
     const rawGold = results.get("GC=F")?.price || 2950;
     const xauTryPerGram = (rawGold / 31.1035) * usdRate;
     
@@ -41,8 +41,8 @@ export async function getExchangeRatesAction() {
       return quote > 0 ? usdRate / quote : (usdRate / defaultRate);
     };
 
-    const eurUsd = results.get("EURUSD=X")?.price || 1.085;
-    const gbpUsd = results.get("GBPUSD=X")?.price || 1.275;
+    const eurUsd = results.get("EURUSD=X")?.price || 1.06;
+    const gbpUsd = results.get("GBPUSD=X")?.price || 1.258;
 
     return {
       USD: usdRate,
@@ -59,7 +59,7 @@ export async function getExchangeRatesAction() {
       SGD: getTryFromUsd("SGD=X", 1.34),
       NOK: getTryFromUsd("NOK=X", 11.10),
       SEK: getTryFromUsd("SEK=X", 10.90),
-      XAU: xauTryPerGram || 4315,
+      XAU: xauTryPerGram || 3450,
     };
   } catch (error) {
     console.error("Exchange Rates Error:", error);

@@ -34,9 +34,9 @@ export async function getUserCurrencyConfig(userCurrency?: string | null): Promi
   }
 
   const fallbackRates: Record<string, number> = {
-    USD: 45.50, EUR: 49.36, GBP: 58.01, CHF: 51.41, JPY: 0.294,
-    AED: 12.39, SAR: 12.13, RUB: 0.457, CAD: 32.73, AUD: 29.80,
-    CNY: 6.28, SGD: 33.95, NOK: 4.10, SEK: 4.17, XAU: 4315
+    USD: 36.45, EUR: 38.65, GBP: 45.85, CHF: 41.20, JPY: 0.235,
+    AED: 9.92, SAR: 9.72, RUB: 0.365, CAD: 26.22, AUD: 23.95,
+    CNY: 5.03, SGD: 27.20, NOK: 3.28, SEK: 3.34, XAU: 3450
   };
 
   try {

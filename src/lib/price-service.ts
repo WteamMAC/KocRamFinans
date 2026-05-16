@@ -51,23 +51,45 @@ export async function getLivePrices(symbols: string[]): Promise<Map<string, Pric
 
   if (symbolsToFetch.length > 0) {
     console.log("Fetching live market prices from Yahoo for:", symbolsToFetch);
+
+    // Güncel kurları varsayılan (Mayıs 2026 gerçekçi kurları) olarak belirleyelim
+    let usdToTryRate = 36.45;
+    let eurToTryRate = 38.65;
+    let gbpToTryRate = 45.85;
+
+    // 1. Canlı Döviz Kurları için ExchangeRate API (Tamamen Ücretsiz & Kesintisiz Fallback)
+    try {
+      const fetchRes = await fetch("https://api.exchangerate-api.com/v4/latest/USD", { next: { revalidate: 300 } });
+      if (fetchRes.ok) {
+        const fxData = await fetchRes.json();
+        if (fxData && fxData.rates && fxData.rates.TRY) {
+          usdToTryRate = fxData.rates.TRY;
+          if (fxData.rates.EUR && fxData.rates.EUR > 0) eurToTryRate = fxData.rates.TRY / fxData.rates.EUR;
+          if (fxData.rates.GBP && fxData.rates.GBP > 0) gbpToTryRate = fxData.rates.TRY / fxData.rates.GBP;
+        }
+      }
+    } catch (fxErr) {
+      console.error("ExchangeRate API fetch warning, using fallback rates:", fxErr);
+    }
+
     try {
       const quotes = await yahooFinance.quote(symbolsToFetch);
       const quotesArray = Array.isArray(quotes) ? quotes : [quotes];
 
-      // Güncel kurları belirleyelim
-      let usdToTryRate = 35.50;
-      let eurToTryRate = 38.50;
-      let gbpToTryRate = 45.00;
-
       const usdTryQuote = quotesArray.find((q: any) => q.symbol === "USDTRY=X" || q.symbol === "TRY=X");
-      if (usdTryQuote && usdTryQuote.regularMarketPrice) usdToTryRate = usdTryQuote.regularMarketPrice;
+      if (usdTryQuote && usdTryQuote.regularMarketPrice && usdTryQuote.regularMarketPrice > 20) {
+        usdToTryRate = usdTryQuote.regularMarketPrice;
+      }
 
       const eurTryQuote = quotesArray.find((q: any) => q.symbol === "EURTRY=X");
-      if (eurTryQuote && eurTryQuote.regularMarketPrice) eurToTryRate = eurTryQuote.regularMarketPrice;
+      if (eurTryQuote && eurTryQuote.regularMarketPrice && eurTryQuote.regularMarketPrice > 20) {
+        eurToTryRate = eurTryQuote.regularMarketPrice;
+      }
 
       const gbpTryQuote = quotesArray.find((q: any) => q.symbol === "GBPTRY=X");
-      if (gbpTryQuote && gbpTryQuote.regularMarketPrice) gbpToTryRate = gbpTryQuote.regularMarketPrice;
+      if (gbpTryQuote && gbpTryQuote.regularMarketPrice && gbpTryQuote.regularMarketPrice > 20) {
+        gbpToTryRate = gbpTryQuote.regularMarketPrice;
+      }
 
       // Altın ve Emtia Canlı Fiyatları (Gram bazına çevirme)
       let goldOunceUsd = 2950;
@@ -141,7 +163,28 @@ export async function getLivePrices(symbols: string[]): Promise<Map<string, Pric
         }
       });
     } catch (error: any) {
-      console.error("CRITICAL: Yahoo Finance Quote Error:", error.message);
+      console.error("CRITICAL: Yahoo Finance Quote Error, using Exchangerate API values:", error.message);
+      
+      // Yahoo Finance hata verirse, yine de temel pariteleri Exchangerate verisiyle cache'e yazalım
+      const gramAltinTry = (2950 / 31.1035) * usdToTryRate;
+      const gramGumusTry = (32 / 31.1035) * usdToTryRate;
+      const brentTry = 75 * usdToTryRate;
+
+      const benchmarkFallback: Record<string, number> = {
+        "USDTRY=X": usdToTryRate, "USD": usdToTryRate,
+        "EURTRY=X": eurToTryRate, "EUR": eurToTryRate,
+        "GBPTRY=X": gbpToTryRate, "GBP": gbpToTryRate,
+        "GC=F": 2950, "XAUTRY=X": gramAltinTry, "GRAM ALTIN": gramAltinTry,
+        "ALTIN": gramAltinTry, "GOLD": gramAltinTry, "ONS ALTIN (GC=F)": 2950,
+        "SI=F": 32, "XAGTRY=X": gramGumusTry, "GRAM GÜMÜŞ": gramGumusTry, "GÜMÜŞ": gramGumusTry,
+        "BZ=F": 75, "BRENT PETROL": brentTry, "BRENT": brentTry,
+      };
+
+      Object.entries(benchmarkFallback).forEach(([sym, val]) => {
+        const pd = { symbol: sym, price: val, changePercent: 0.1 };
+        results.set(sym, pd);
+        priceCache.set(sym, { data: pd, timestamp: now });
+      });
     }
   }
 
@@ -149,9 +192,8 @@ export async function getLivePrices(symbols: string[]): Promise<Map<string, Pric
   symbols.forEach(s => {
     const sUpper = s.toUpperCase();
     if (!results.has(sUpper)) {
-      // Eğer kullanıcı Gram Altın, Gümüş vb. özel terimler aratmışsa ve yukarıdaki benchmark'ta yoksa eşleştir
       if (sUpper.includes("ALTIN") || sUpper.includes("GOLD") || sUpper.includes("XAU")) {
-        const gaPrice = results.get("XAUTRY=X")?.price || 3350;
+        const gaPrice = results.get("XAUTRY=X")?.price || 3450;
         results.set(sUpper, { symbol: s, price: gaPrice, changePercent: 0.2 });
       } else if (sUpper.includes("GÜMÜŞ") || sUpper.includes("GUMUS") || sUpper.includes("SILVER") || sUpper.includes("XAG")) {
         const ggPrice = results.get("XAGTRY=X")?.price || 38;
@@ -317,10 +359,10 @@ export function calculateFixedAssetsMetrics(fixedAssets: any[], livePrices: Map<
   let totalOriginalCost = 0;
   let totalCurrentValue = 0;
 
-  const usdRate = livePrices.get("USDTRY=X")?.price || livePrices.get("USD")?.price || 35.50;
-  const eurRate = livePrices.get("EURTRY=X")?.price || livePrices.get("EUR")?.price || 38.50;
-  const gbpRate = livePrices.get("GBPTRY=X")?.price || livePrices.get("GBP")?.price || 45.00;
-  const xauRate = livePrices.get("XAUTRY=X")?.price || livePrices.get("GRAM ALTIN")?.price || 3350;
+  const usdRate = livePrices.get("USDTRY=X")?.price || livePrices.get("USD")?.price || 36.45;
+  const eurRate = livePrices.get("EURTRY=X")?.price || livePrices.get("EUR")?.price || 38.65;
+  const gbpRate = livePrices.get("GBPTRY=X")?.price || livePrices.get("GBP")?.price || 45.85;
+  const xauRate = livePrices.get("XAUTRY=X")?.price || livePrices.get("GRAM ALTIN")?.price || 3450;
 
   const detailedFixedAssets = (fixedAssets || []).map(fa => {
     const originalAmount = fa.originalAmount || fa.value || 0;
