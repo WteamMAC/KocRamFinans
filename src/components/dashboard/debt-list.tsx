@@ -32,6 +32,7 @@ export function DebtList({ debts }: DebtListProps) {
         remainingInstallments: "",
         interestRate: "",
         paymentDay: "",
+        dueDate: "",
         description: "",
     });
 
@@ -54,13 +55,14 @@ export function DebtList({ debts }: DebtListProps) {
                 interestRate: formData.interestRate ? Number(formData.interestRate) : undefined,
                 remainingInstallments: formData.remainingInstallments ? Number(formData.remainingInstallments) : undefined,
                 paymentDay: formData.paymentDay ? Number(formData.paymentDay) : undefined,
+                dueDate: formData.dueDate || undefined,
                 description: formData.description,
                 currency: formData.currency,
                 originalAmount: originalAmount,
                 fxRate: selectedRate,
             });
             setIsAdding(false);
-            setFormData({ type: "Kredi Kartı", amount: "", currency: "TRY", remainingInstallments: "", interestRate: "", paymentDay: "", description: "" });
+            setFormData({ type: "Kredi Kartı", amount: "", currency: "TRY", remainingInstallments: "", interestRate: "", paymentDay: "", dueDate: "", description: "" });
             router.refresh();
         } catch (err: any) {
             setError(err.message);
@@ -76,7 +78,7 @@ export function DebtList({ debts }: DebtListProps) {
 
         try {
             if (payModal.isClose) {
-                await closeDebt(payModal.id);
+                await closeDebt(payModal.id, (payModal as any).isTransfer || false);
             } else {
                 // Taksit ödemesini borcun kendi para birimi ve kuru ile kaydedelim
                 await payDebtInstallment(
@@ -183,18 +185,30 @@ export function DebtList({ debts }: DebtListProps) {
                                     placeholder="Örn: 3.50"
                                 />
                         </div>
-                        <div className="space-y-3">
-                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Ödeme Günü (1-31)</Label>
-                                <Input
-                                    type="number"
-                                    min="1"
-                                    max="31"
-                                    value={formData.paymentDay}
-                                    onChange={(e) => setFormData(p => ({ ...p, paymentDay: e.target.value }))}
-                                    className="bg-muted border-border/30 h-12 rounded-xl focus:ring-destructive font-bold"
-                                    placeholder="Ayın kaçıncı günü?"
-                                />
-                        </div>
+                        {formData.remainingInstallments && Number(formData.remainingInstallments) > 0 ? (
+                            <div className="space-y-3">
+                                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Taksit Ödeme Günü (1-31)</Label>
+                                    <Input
+                                        type="number"
+                                        min="1"
+                                        max="31"
+                                        value={formData.paymentDay}
+                                        onChange={(e) => setFormData(p => ({ ...p, paymentDay: e.target.value }))}
+                                        className="bg-muted border-border/30 h-12 rounded-xl focus:ring-destructive font-bold"
+                                        placeholder="Ayın kaçıncı günü?"
+                                    />
+                            </div>
+                        ) : (
+                            <div className="space-y-3">
+                                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Son Ödeme Tarihi</Label>
+                                    <Input
+                                        type="date"
+                                        value={formData.dueDate}
+                                        onChange={(e) => setFormData(p => ({ ...p, dueDate: e.target.value }))}
+                                        className="bg-muted border-border/30 h-12 rounded-xl focus:ring-destructive font-bold"
+                                    />
+                            </div>
+                        )}
                         <div className="space-y-3">
                             <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Açıklama</Label>
                                 <Input
@@ -316,6 +330,16 @@ export function DebtList({ debts }: DebtListProps) {
                                         </span>
                                     </div>
                                 )}
+                                {debt.dueDate && (!debt.remainingInstallments || debt.remainingInstallments === 0) && (
+                                    <div className="flex items-center justify-between text-sm">
+                                        <div className="flex items-center gap-2 text-muted-foreground font-medium">
+                                            <Calendar className="w-4 h-4 opacity-40" /> Son Ödeme Tarihi
+                                        </div>
+                                        <span className="font-bold text-rose-600">
+                                            {new Date(debt.dueDate).toLocaleDateString("tr-TR")}
+                                        </span>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="grid grid-cols-2 gap-3 mt-8">
@@ -395,6 +419,22 @@ export function DebtList({ debts }: DebtListProps) {
                                     * Bu ödeme, gider listenize otomatik olarak eklenecektir.
                                 </p>
                             </div>
+
+                            {payModal.isClose && (
+                                <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-2xl border border-border/20 cursor-pointer hover:bg-muted transition-colors" onClick={() => setPayModal({ ...payModal, isTransfer: !(payModal as any).isTransfer } as any)}>
+                                    <input 
+                                        type="checkbox" 
+                                        checked={(payModal as any).isTransfer || false} 
+                                        onChange={() => {}} 
+                                        className="w-5 h-5 rounded border-border/40 accent-destructive"
+                                    />
+                                    <div>
+                                        <p className="text-xs font-bold text-foreground">Borç Transferi / Yapılandırma</p>
+                                        <p className="text-[10px] text-muted-foreground">Bu ödemeyi harcama (gider) olarak kaydetme.</p>
+                                    </div>
+                                </div>
+                            )}
+
                             {error && <div className="p-3 bg-red-50 text-red-600 rounded-xl text-sm font-medium border border-red-100">{error}</div>}
                         </div>
                         <div className="p-6 bg-muted border-t border-border/10 flex justify-end gap-3">
