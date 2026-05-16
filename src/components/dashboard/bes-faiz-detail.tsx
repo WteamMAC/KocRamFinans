@@ -278,17 +278,38 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
             </p>
           </div>
         </div>
-        <div className="flex flex-wrap gap-3">
+        <div className="grid grid-cols-2 md:flex md:items-center gap-3 w-full md:w-auto">
           {!isBES && (
-            <Button variant="outline" size="sm" onClick={handleFixOldRecords} disabled={fixLoading} className="rounded-xl border-yellow-500/40 text-yellow-600 hover:bg-yellow-50">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleFixOldRecords}
+              disabled={fixLoading}
+              className="rounded-2xl h-[48px] md:h-[52px] text-xs font-bold border-yellow-500/40 text-yellow-600 hover:bg-yellow-50 transition-all shadow-sm"
+            >
               <RefreshCw className={cn("h-4 w-4 mr-2", fixLoading && "animate-spin")} />
               {fixLoading ? "Düzeltiliyor..." : "Eski Kayıtları Düzelt"}
             </Button>
           )}
-          <Button variant="outline" size="sm" onClick={() => router.refresh()} className="rounded-xl border-border/30">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.refresh()}
+            className={cn(
+              "rounded-2xl h-[48px] md:h-[52px] text-xs font-bold border-border/30 transition-all shadow-sm",
+              isBES && "col-span-1"
+            )}
+          >
             <RefreshCw className="h-4 w-4 mr-2" /> Yenile
           </Button>
-          <Button size="sm" onClick={handleToggleAdd} className="rounded-xl bg-primary">
+          <Button
+            size="sm"
+            onClick={handleToggleAdd}
+            className={cn(
+              "rounded-2xl h-[48px] md:h-[52px] text-xs font-bold bg-primary text-primary-foreground shadow-ambient-medium transition-all",
+              !isBES ? "col-span-2 md:col-span-1" : "col-span-1"
+            )}
+          >
             <Plus className="h-4 w-4 mr-2" /> {isBES ? "BES Hesabı Ekle" : "Mevduat Ekle"}
           </Button>
         </div>
