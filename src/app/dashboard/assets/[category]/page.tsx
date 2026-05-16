@@ -107,11 +107,11 @@ async function CategoryContent({ category, user }: { category: string; user: any
   let fixedMetrics = { totalOriginalCost: 0, totalCurrentValue: 0, totalProfit: 0, totalProfitPercent: 0, assets: [] as any[] };
 
   try {
-    const symbols = Array.from(new Set(
+    const symbols: string[] = Array.from(new Set(
       filteredInvestments
         .map((inv: any) => inv.symbol)
         .filter((s: any): s is string => !!s)
-    ));
+    )) as string[];
 
     const livePrices = await getLivePrices(symbols);
     metrics = calculatePortfolioMetrics(filteredInvestments, livePrices);
