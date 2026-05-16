@@ -24,11 +24,17 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
+import { redirect } from "next/navigation";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 
 export default async function LandingPage() {
   const { userId } = await auth();
+
+  // Eğer kullanıcı giriş yapmışsa, önce kurulum kontrolüne (onboarding) gönderelim
+  if (userId) {
+    redirect("/onboarding");
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground font-sans antialiased selection:bg-accent/30">
