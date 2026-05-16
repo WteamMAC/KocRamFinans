@@ -170,11 +170,11 @@ export function IncomeExpenseClient({
               </div>
               <p className={cn("text-2xl md:text-3xl font-heading font-black tracking-tight", stat.color)}>{formatAmount(stat.val)}</p>
               <div className="mt-6 flex flex-wrap items-center justify-between gap-2">
-                <span className={cn("px-3 py-1 rounded-full text-[9px] md:text-[10px] font-black uppercase tracking-widest", stat.bg, stat.color)}>
+                <span className={cn("px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest", stat.bg, stat.color)}>
                   {stat.msg}
                 </span>
                 {stat.label === "Net Bakiye" && (
-                  <p className="text-[9px] md:text-[10px] font-bold text-muted-foreground opacity-60">
+                  <p className="text-[10px] font-bold text-muted-foreground opacity-60">
                     Beklenen: <span className={cn("font-black", projectedBalance >= 0 ? "text-emerald-500" : "text-rose-500")}>{formatAmount(projectedBalance)}</span>
                   </p>
                 )}
@@ -273,7 +273,7 @@ export function IncomeExpenseClient({
                         </div>
                       </div>
                       <span className={cn(
-                        "text-[8px] md:text-[10px] font-black uppercase tracking-widest transition-colors",
+                        "text-[10px] font-black uppercase tracking-widest transition-colors mt-2",
                         isCurrent ? "text-primary" : "text-muted-foreground/60"
                       )}>{d.month}</span>
                     </div>
@@ -331,8 +331,8 @@ export function IncomeExpenseClient({
                 })()}
               </svg>
               <div className="absolute text-center px-4">
-                <p className="text-[8px] md:text-[10px] font-black text-muted-foreground uppercase tracking-widest opacity-60 mb-1">Toplam Gider</p>
-                <p className="text-lg md:text-2xl font-heading font-black text-primary tracking-tight">{formatAmount(totalExpense)}</p>
+                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest opacity-60 mb-1">Toplam Gider</p>
+                <p className="text-xl md:text-2xl font-heading font-black text-primary tracking-tight">{formatAmount(totalExpense)}</p>
               </div>
             </div>
 
@@ -347,8 +347,8 @@ export function IncomeExpenseClient({
                       <span className="text-[10px] md:text-xs font-black text-muted-foreground group-hover:text-foreground transition-colors uppercase tracking-wider truncate max-w-[80px] md:max-w-none">{cat}</span>
                     </div>
                     <div className="flex items-center gap-2 md:gap-3">
-                      <span className="text-[8px] md:text-[10px] font-black text-primary bg-primary/10 px-1.5 md:px-2 py-0.5 rounded-full">%{pct}</span>
-                      <span className="text-[10px] md:text-xs font-black text-foreground">{formatAmount(amt)}</span>
+                      <span className="text-[10px] font-black text-primary bg-primary/10 px-2 py-0.5 rounded-full">%{pct}</span>
+                      <span className="text-[11px] md:text-xs font-black text-foreground">{formatAmount(amt)}</span>
                     </div>
                   </div>
                 );
@@ -498,22 +498,22 @@ export function IncomeExpenseClient({
                       <Icon className="w-5 h-5" />
                     </div>
                     <div className="min-w-0">
-                      <p className="font-black text-sm text-foreground truncate">{tx.description || tx.category}</p>
-                      <div className="flex items-center gap-2 mt-1">
+                      <p className="font-black text-sm md:text-base text-foreground truncate">{tx.description || tx.category}</p>
+                      <div className="flex items-center gap-2 mt-1.5">
                         <span className={cn(
-                          "px-2 py-0.5 rounded-lg text-[8px] font-black uppercase tracking-widest border",
+                          "px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border",
                           isInc ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/10" : "bg-muted/50 text-muted-foreground border-border/10"
                         )}>
                           {tx.category}
                         </span>
-                        <span className="text-[8px] font-bold text-muted-foreground opacity-60">
+                        <span className="text-[10px] font-bold text-muted-foreground opacity-70">
                           {new Date(tx.createdAt).toLocaleDateString('tr-TR', { day: '2-digit', month: 'short' })}
                         </span>
                       </div>
                     </div>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className={cn("text-base font-black tracking-tight", isInc ? "text-emerald-500" : "text-rose-500")}>
+                    <p className={cn("text-base md:text-lg font-black tracking-tight", isInc ? "text-emerald-500" : "text-rose-500")}>
                       {isInc ? '+' : '-'} {formatAmount(tx.amount)}
                     </p>
                   </div>
