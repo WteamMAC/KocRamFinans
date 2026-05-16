@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths } from "date-fns";
 import { tr } from "date-fns/locale";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -24,6 +24,15 @@ interface FinancialCalendarProps {
 export function FinancialCalendar({ incomes, expenses, debts, userChildren = [], marriageDate, specialEvents = [] }: FinancialCalendarProps) {
   const { formatAmount } = useCurrency();
   const [currentDate, setCurrentDate] = useState(new Date());
+
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
@@ -124,21 +133,21 @@ export function FinancialCalendar({ incomes, expenses, debts, userChildren = [],
   return (
     <Card className="border-border/30 shadow-ambient-medium rounded-[32px] overflow-hidden bg-card">
       <CardHeader className="bg-primary/5 pb-4 border-b border-border/10">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-primary/10 text-primary">
+            <div className="p-2 rounded-xl bg-primary/10 text-primary shrink-0">
               <CalendarIcon className="h-5 w-5" />
             </div>
             <div>
-              <CardTitle className="text-lg">Finansal Takvim</CardTitle>
-              <p className="text-xs text-muted-foreground">Gelir, gider, özel günleriniz</p>
+              <CardTitle className="text-base md:text-lg">Finansal Takvim</CardTitle>
+              <p className="text-[10px] md:text-xs text-muted-foreground">Gelir, gider, özel günleriniz</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between sm:justify-end gap-2 bg-background/50 p-1.5 rounded-full border border-border/10 sm:border-none sm:bg-transparent sm:p-0">
             <Button variant="ghost" size="icon" onClick={prevMonth} className="rounded-full h-8 w-8 hover:bg-primary/10 hover:text-primary">
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <span className="text-sm font-bold w-24 text-center">
+            <span className="text-xs md:text-sm font-bold min-w-[100px] text-center uppercase tracking-tight">
               {format(currentDate, "MMMM yyyy", { locale: tr })}
             </span>
             <Button variant="ghost" size="icon" onClick={nextMonth} className="rounded-full h-8 w-8 hover:bg-primary/10 hover:text-primary">
@@ -147,7 +156,7 @@ export function FinancialCalendar({ incomes, expenses, debts, userChildren = [],
           </div>
         </div>
       </CardHeader>
-      <CardContent className="p-6">
+      <CardContent className="p-4 md:p-6">
         <div className="grid grid-cols-7 gap-1 mb-2">
           {["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"].map(day => (
             <div key={day} className="text-center text-[10px] font-bold text-muted-foreground uppercase tracking-wider py-2">
@@ -182,12 +191,12 @@ export function FinancialCalendar({ incomes, expenses, debts, userChildren = [],
                 </span>
                 
                 {events && (
-                  <div className="absolute bottom-1.5 flex gap-0.5">
-                    {events.incomes.length > 0 && <span className={cn("w-1.5 h-1.5 rounded-full bg-emerald-500", isSelected && "bg-white")} />}
-                    {events.expenses.length > 0 && <span className={cn("w-1.5 h-1.5 rounded-full bg-rose-500", isSelected && "bg-white")} />}
-                    {events.debts.length > 0 && <span className={cn("w-1.5 h-1.5 rounded-full bg-orange-500", isSelected && "bg-white")} />}
-                    {events.specialEvents.length > 0 && <span className={cn("w-1.5 h-1.5 rounded-full bg-sky-500", isSelected && "bg-white")} />}
-                    {(events.birthdays.length > 0 || events.anniversary) && <span className={cn("w-1.5 h-1.5 rounded-full bg-pink-500", isSelected && "bg-white")} />}
+                  <div className="absolute bottom-1 md:bottom-1.5 flex gap-0.5">
+                    {events.incomes.length > 0 && <span className={cn("w-1 h-1 md:w-1.5 md:h-1.5 rounded-full bg-emerald-500", isSelected && "bg-white")} />}
+                    {events.expenses.length > 0 && <span className={cn("w-1 h-1 md:w-1.5 md:h-1.5 rounded-full bg-rose-500", isSelected && "bg-white")} />}
+                    {events.debts.length > 0 && <span className={cn("w-1 h-1 md:w-1.5 md:h-1.5 rounded-full bg-orange-500", isSelected && "bg-white")} />}
+                    {events.specialEvents.length > 0 && <span className={cn("w-1 h-1 md:w-1.5 md:h-1.5 rounded-full bg-sky-500", isSelected && "bg-white")} />}
+                    {(events.birthdays.length > 0 || events.anniversary) && <span className={cn("w-1 h-1 md:w-1.5 md:h-1.5 rounded-full bg-pink-500", isSelected && "bg-white")} />}
                   </div>
                 )}
               </button>
@@ -199,87 +208,93 @@ export function FinancialCalendar({ incomes, expenses, debts, userChildren = [],
         <div className="mt-6">
           {selectedDate ? (
             <div className="bg-muted/50 rounded-2xl p-4 border border-border/20 animate-in fade-in zoom-in-95 duration-200">
-              <div className="flex items-center justify-between mb-3 pb-2 border-b border-border/20">
-                <h4 className="text-sm font-bold text-primary">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-3 pb-2 border-b border-border/20 gap-2">
+                <h4 className="text-xs md:text-sm font-bold text-primary">
                   {format(selectedDate, "d MMMM yyyy, EEEE", { locale: tr })}
                 </h4>
-                <Button variant="outline" size="sm" className="h-7 text-xs rounded-lg" onClick={() => setIsAddModalOpen(true)}>
+                <Button variant="outline" size="sm" className="h-7 text-[10px] md:text-xs rounded-lg w-full sm:w-auto" onClick={() => setIsAddModalOpen(true)}>
                   <Plus className="h-3 w-3 mr-1" /> Özel Gün Ekle
                 </Button>
               </div>
               
               {!selectedEvents || (selectedEvents.incomes.length === 0 && selectedEvents.expenses.length === 0 && selectedEvents.debts.length === 0 && selectedEvents.birthdays.length === 0 && !selectedEvents.anniversary && selectedEvents.specialEvents.length === 0) ? (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground opacity-70">
-                  <Info className="h-4 w-4" />
-                  Bu tarihte herhangi bir işlem veya özel gün bulunmuyor.
+                <div className="flex items-center gap-2 text-[10px] md:text-sm text-muted-foreground opacity-70">
+                  <Info className="h-3 w-3 md:h-4 md:w-4" />
+                  Bu tarihte herhangi bir işlem bulunmuyor.
                 </div>
               ) : (
                 <div className="space-y-3">
                   {selectedEvents.specialEvents.map((evt) => (
-                    <div key={`spe-${evt.id}`} className="flex justify-between items-center text-sm bg-sky-500/10 p-2 rounded-lg border border-sky-500/20">
-                      <div className="flex items-center gap-2">
-                        <Star className="h-4 w-4 text-sky-500 fill-sky-500" />
-                        <span className="font-bold text-sky-600 dark:text-sky-400">{evt.title}</span>
-                        <span className="text-[10px] bg-sky-500/20 text-sky-600 px-2 py-0.5 rounded-full">Her Yıl</span>
+                    <div key={`spe-${evt.id}`} className="flex justify-between items-center text-xs md:text-sm bg-sky-500/10 p-2 rounded-lg border border-sky-500/20">
+                      <div className="flex items-center gap-2 overflow-hidden">
+                        <Star className="h-3 w-3 md:h-4 md:w-4 text-sky-500 fill-sky-500 shrink-0" />
+                        <span className="font-bold text-sky-600 dark:text-sky-400 truncate">{evt.title}</span>
+                        {!isMobile && <span className="text-[10px] bg-sky-500/20 text-sky-600 px-2 py-0.5 rounded-full">Her Yıl</span>}
                       </div>
-                      <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={() => handleDeleteEvent(evt.id)} disabled={deletingId === evt.id}>
+                      <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive shrink-0" onClick={() => handleDeleteEvent(evt.id)} disabled={deletingId === evt.id}>
                         {deletingId === evt.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
                       </Button>
                     </div>
                   ))}
                   {selectedEvents.incomes.map((inc, i) => (
-                    <div key={`inc-${i}`} className="flex justify-between items-center text-sm px-2">
-                      <div className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                        <span className="font-medium text-foreground">{inc.type} (Gelir)</span>
+                    <div key={`inc-${i}`} className="flex justify-between items-center text-xs md:text-sm px-2">
+                      <div className="flex items-center gap-2 overflow-hidden">
+                        <span className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-emerald-500 shrink-0" />
+                        <span className="font-medium text-foreground truncate">{inc.type}</span>
                       </div>
-                      <span className="font-bold text-emerald-600">+{formatAmount(inc.amount)}</span>
+                      <span className="font-bold text-emerald-600 whitespace-nowrap">
+                        {isMobile ? `+${new Intl.NumberFormat("tr-TR", { notation: "compact" }).format(inc.amount)} ₺` : `+${formatAmount(inc.amount)}`}
+                      </span>
                     </div>
                   ))}
                   {selectedEvents.expenses.map((exp, i) => (
-                    <div key={`exp-${i}`} className="flex justify-between items-center text-sm px-2">
-                      <div className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-rose-500" />
-                        <span className="font-medium text-foreground">{exp.type} (Gider)</span>
+                    <div key={`exp-${i}`} className="flex justify-between items-center text-xs md:text-sm px-2">
+                      <div className="flex items-center gap-2 overflow-hidden">
+                        <span className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-rose-500 shrink-0" />
+                        <span className="font-medium text-foreground truncate">{exp.type}</span>
                       </div>
-                      <span className="font-bold text-rose-600">-{formatAmount(exp.amount)}</span>
+                      <span className="font-bold text-rose-600 whitespace-nowrap">
+                        {isMobile ? `-${new Intl.NumberFormat("tr-TR", { notation: "compact" }).format(exp.amount)} ₺` : `-${formatAmount(exp.amount)}`}
+                      </span>
                     </div>
                   ))}
                   {selectedEvents.debts.map((debt, i) => (
-                    <div key={`debt-${i}`} className="flex justify-between items-center text-sm px-2">
-                      <div className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-orange-500" />
-                        <span className="font-medium text-foreground">{debt.type} (Borç/Ödeme)</span>
+                    <div key={`debt-${i}`} className="flex justify-between items-center text-xs md:text-sm px-2">
+                      <div className="flex items-center gap-2 overflow-hidden">
+                        <span className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-orange-500 shrink-0" />
+                        <span className="font-medium text-foreground truncate">{debt.type}</span>
                       </div>
-                      <span className="font-bold text-orange-600">-{formatAmount(debt.amount)}</span>
+                      <span className="font-bold text-orange-600 whitespace-nowrap">
+                        {isMobile ? `-${new Intl.NumberFormat("tr-TR", { notation: "compact" }).format(debt.amount)} ₺` : `-${formatAmount(debt.amount)}`}
+                      </span>
                     </div>
                   ))}
                   {selectedEvents.birthdays.map((child, i) => {
-                    const age = selectedDate.getFullYear() - new Date(child.birthDate).getFullYear();
+                    const age = selectedDate!.getFullYear() - new Date(child.birthDate).getFullYear();
                     return (
-                      <div key={`bday-${i}`} className="flex justify-between items-center text-sm px-2">
-                        <div className="flex items-center gap-2">
-                          <span className="w-2 h-2 rounded-full bg-purple-500" />
-                          <span className="font-medium text-foreground">Çocuğun Doğum Günü {age > 0 ? `(${age}. Yaş)` : ''}</span>
+                      <div key={`bday-${i}`} className="flex justify-between items-center text-xs md:text-sm px-2">
+                        <div className="flex items-center gap-2 overflow-hidden">
+                          <span className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-purple-500 shrink-0" />
+                          <span className="font-medium text-foreground truncate">Doğum Günü {age > 0 ? `(${age}. Yaş)` : ''}</span>
                         </div>
-                        <span className="font-bold text-purple-600 text-lg leading-none">🎂</span>
+                        <span className="font-bold text-purple-600 text-base leading-none">🎂</span>
                       </div>
                     );
                   })}
                   {selectedEvents.anniversary && (
-                    <div className="flex justify-between items-center text-sm px-2">
-                      <div className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-pink-500" />
-                        <span className="font-medium text-foreground">Evlilik Yıl Dönümü</span>
+                    <div className="flex justify-between items-center text-xs md:text-sm px-2">
+                      <div className="flex items-center gap-2 overflow-hidden">
+                        <span className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-pink-500 shrink-0" />
+                        <span className="font-medium text-foreground truncate">Evlilik Yıl Dönümü</span>
                       </div>
-                      <span className="font-bold text-pink-600 text-lg leading-none">💑</span>
+                      <span className="font-bold text-pink-600 text-base leading-none">💑</span>
                     </div>
                   )}
                 </div>
               )}
             </div>
           ) : (
-             <div className="text-center text-xs text-muted-foreground opacity-60 mt-4">
+             <div className="text-center text-[10px] md:text-xs text-muted-foreground opacity-60 mt-4">
                 Detayları görmek için takvimden bir güne tıklayın.
              </div>
           )}
