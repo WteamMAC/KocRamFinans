@@ -294,8 +294,24 @@ export function calculatePortfolioMetrics(investments: any[], livePrices: Map<st
           const liveVal = principal * multiplier;
           currentPrice = liveVal / principal; // Birim pay değeri
         } else if (isBes) {
-          // BES: Fon Büyümesi (%45 yıllık varsayılan) + Devlet Katkısı (%30)
-          const annualFundGrowth = 0.45;
+          // BES: Fon Büyümesi (Seçili fona göre) + Devlet Katkısı (%30 varsayılan)
+          let fundType = "STANDART";
+          try {
+            const meta = JSON.parse(inv.description || "{}");
+            fundType = meta.fundType || "STANDART";
+          } catch(e){}
+
+          // Fon bazlı yıllık getiri tahmini (Piyasa verilerine göre dinamikleşecek)
+          const fundReturns: Record<string, number> = {
+            "STANDART": 0.45,
+            "GOLD": 0.65, // Altın fonları daha yüksek getiri sağlayabilir
+            "STOCKS": 0.80, // Hisse fonları riskli ama yüksek potansiyelli
+            "USD": 0.35, // Döviz bazlı
+            "CONSERVATIVE": 0.40,
+          };
+
+          // Eğer canlı fiyatlarda bu fona ait bir ticker varsa, onun changePct'sini kullanabiliriz veya sabit tablodan çekebiliriz
+          const annualFundGrowth = fundReturns[fundType] || 0.45;
           const dailyGrowthRate = annualFundGrowth / 365;
           const fundMultiplier = Math.pow(1 + dailyGrowthRate, daysPassed);
           const stateContributionMultiplier = 1 + (rate > 0 && rate <= 100 ? rate / 100 : 0.30);

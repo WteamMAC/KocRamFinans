@@ -671,17 +671,36 @@ function CommunityAdminPanel({ communityId, communityDetails: initialDetails, on
     }));
   };
 
+  const [showSuccess, setShowSuccess] = useState(false);
+
   const handleUpdate = (e: React.FormEvent) => {
     e.preventDefault();
     startTransition(async () => {
       try {
         await updateCommunity(communityId, editData);
-        alert("Topluluk başarıyla güncellendi.");
+        setShowSuccess(true);
+        setTimeout(() => setShowSuccess(false), 3000);
         router.refresh();
       } catch (error) {
         alert("Güncelleme hatası: " + (error as Error).message);
       }
     });
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      alert("Resim boyutu 2MB'dan küçük olmalıdır.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onloadend = () => setImageUrl(reader.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const setImageUrl = (url: string | null) => {
+    setEditData(prev => ({ ...prev, imageUrl: url || "" }));
   };
 
   useEffect(() => {
@@ -774,7 +793,17 @@ function CommunityAdminPanel({ communityId, communityDetails: initialDetails, on
           </div>
         )}
 
-        <div className="p-6 space-y-6">
+        {/* Custom Success Message */}
+        {showSuccess && (
+          <div className="absolute top-6 left-1/2 -translate-x-1/2 z-[70] bg-emerald-500 text-white px-6 py-3 rounded-2xl shadow-lg flex items-center gap-3 animate-in slide-in-from-top-4 duration-500">
+            <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
+              <Check className="h-4 w-4" />
+            </div>
+            <span className="text-xs font-bold">Topluluk başarıyla güncellendi!</span>
+          </div>
+        )}
+
+        <div className="p-6 space-y-6 flex flex-col h-full max-h-[600px]">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-black text-foreground">Topluluk Yönetimi</h2>
             <button onClick={onClose} className="p-2 hover:bg-rose-500/10 hover:text-rose-500 text-muted-foreground rounded-full transition-all"><X className="h-5 w-5" /></button>
@@ -828,7 +857,7 @@ function CommunityAdminPanel({ communityId, communityDetails: initialDetails, on
                 ))}
               </div>
             ) : (
-              <form onSubmit={handleUpdate} className="space-y-4 max-h-[350px] overflow-y-auto pr-2 pb-4 scrollbar-hide">
+              <form onSubmit={handleUpdate} className="space-y-4 max-h-[350px] overflow-y-auto pr-2 pb-2 scrollbar-hide">
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold text-muted-foreground ml-1">Topluluk Adı</label>
                   <input required value={editData.name} onChange={(e) => setEditData(prev => ({...prev, name: e.target.value}))} className="w-full bg-muted/30 border border-border/20 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all" />
@@ -838,8 +867,29 @@ function CommunityAdminPanel({ communityId, communityDetails: initialDetails, on
                   <textarea value={editData.description} onChange={(e) => setEditData(prev => ({...prev, description: e.target.value}))} rows={2} className="w-full bg-muted/30 border border-border/20 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all resize-none" />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-muted-foreground ml-1">Kapak Görseli URL</label>
-                  <input value={editData.imageUrl} onChange={(e) => setEditData(prev => ({...prev, imageUrl: e.target.value}))} placeholder="https://..." className="w-full bg-muted/30 border border-border/20 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all" />
+                  <label className="text-[10px] font-bold text-muted-foreground ml-1">Topluluk Görseli</label>
+                  <div className="flex items-center gap-3 bg-muted/20 p-3 rounded-xl border border-border/10">
+                    {editData.imageUrl ? (
+                      <div className="relative w-12 h-12 rounded-lg overflow-hidden group">
+                        <img src={editData.imageUrl} alt="Önizleme" className="w-full h-full object-cover" />
+                        <button 
+                          type="button"
+                          onClick={() => setImageUrl(null)}
+                          className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="h-3 w-3 text-white" />
+                        </button>
+                      </div>
+                    ) : (
+                      <label className="w-12 h-12 rounded-lg border border-dashed border-border/30 flex items-center justify-center cursor-pointer hover:bg-muted/50 transition-colors">
+                        <Plus className="h-4 w-4 text-muted-foreground" />
+                        <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} />
+                      </label>
+                    )}
+                    <div className="flex-1">
+                      <p className="text-[9px] text-muted-foreground leading-tight">Görseli değiştirmek için tıklayın veya yeni bir tane yükleyin.</p>
+                    </div>
+                  </div>
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold text-muted-foreground ml-1">Etiketler</label>
@@ -862,17 +912,15 @@ function CommunityAdminPanel({ communityId, communityDetails: initialDetails, on
                 </Button>
               </form>
             )}
+          </div>
 
-            {(activeTab !== 'edit' || !editData.name) && (
-              <div className="pt-4 border-t border-border/10">
-                <button 
-                  onClick={() => setShowDeleteConfirm(true)}
-                  className="w-full flex items-center justify-center gap-2 p-3 bg-rose-500/10 text-rose-600 rounded-2xl hover:bg-rose-500/20 transition-all font-bold text-sm"
-                >
-                  <Trash2 className="h-4 w-4" /> Topluluğu Tamamen Sil
-                </button>
-              </div>
-            )}
+          <div className="pt-6 mt-2 border-t border-border/10">
+            <button 
+              onClick={() => setShowDeleteConfirm(true)}
+              className="w-full flex items-center justify-center gap-2 p-3.5 bg-rose-500/5 text-rose-500 rounded-2xl hover:bg-rose-500/10 transition-all font-bold text-xs border border-rose-500/10"
+            >
+              <Trash2 className="h-4 w-4" /> Topluluğu Tamamen Sil
+            </button>
           </div>
         </div>
       </div>

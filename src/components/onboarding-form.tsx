@@ -64,6 +64,9 @@ const schema = z.object({
     symbol: z.string().optional(),
     description: z.string().optional(),
     currency: z.string().optional(),
+    fundType: z.string().optional(),
+    monthlyContribution: z.coerce.number().optional(),
+    maturityPeriod: z.coerce.number().optional(),
   })).optional(),
 });
 type F = z.infer<typeof schema>;
@@ -208,6 +211,9 @@ export function OnboardingForm() {
     purchasePrice: "",
     currency: "TRY",
     description: "",
+    fundType: "STANDART",
+    monthlyContribution: "0",
+    maturityPeriod: "32",
   });
 
   const form = useForm<F>({
@@ -262,6 +268,9 @@ export function OnboardingForm() {
       purchasePrice: "",
       currency: selectedCurrency || "TRY",
       description: "",
+      fundType: "STANDART",
+      monthlyContribution: "0",
+      maturityPeriod: "32",
     });
   };
 
@@ -284,6 +293,9 @@ export function OnboardingForm() {
       purchasePrice: parseFloat(modalAssetData.purchasePrice) || amountVal,
       currency: modalAssetData.currency || selectedCurrency || "TRY",
       description: modalAssetData.description || undefined,
+      fundType: modalAssetData.fundType,
+      monthlyContribution: parseFloat(modalAssetData.monthlyContribution) || 0,
+      maturityPeriod: parseInt(modalAssetData.maturityPeriod) || 32,
     });
     setActiveAssetModal(null);
   };
@@ -1038,7 +1050,7 @@ export function OnboardingForm() {
                       <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Para Birimi</Label>
                       <Select
                         value={modalAssetData.currency}
-                        onValueChange={(v: any) => setModalAssetData({ ...modalAssetData, currency: String(v) })}
+                        onValueChange={(v) => setModalAssetData({ ...modalAssetData, currency: v })}
                       >
                         <SelectTrigger className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-extrabold text-xs">
                           <SelectValue />
@@ -1051,7 +1063,50 @@ export function OnboardingForm() {
                     </div>
                   </div>
 
+                  {activeAssetModal === "BES" && (
+                    <div className="grid grid-cols-2 gap-3 animate-in fade-in duration-300">
+                      <div>
+                        <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Fon Türü (Takip İçin)</Label>
+                        <Select value={modalAssetData.fundType} onValueChange={(v: string) => setModalAssetData({ ...modalAssetData, fundType: v })}>
+                          <SelectTrigger className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-bold text-xs border-[#dbc2b0]/50 dark:border-[#887364]/40">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="STANDART">⚖️ Standart / Karma</SelectItem>
+                            <SelectItem value="GOLD">🟡 Altın Katılım</SelectItem>
+                            <SelectItem value="STOCKS">📈 Hisse Senedi Yoğun</SelectItem>
+                            <SelectItem value="USD">💵 Döviz / Eurobond</SelectItem>
+                            <SelectItem value="CONSERVATIVE">🛡️ Para Piyasası</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Aylık Düzenli Ödeme (₺)</Label>
+                        <Input
+                          type="number"
+                          value={modalAssetData.monthlyContribution}
+                          onChange={e => setModalAssetData({ ...modalAssetData, monthlyContribution: e.target.value })}
+                          placeholder="Örn: 2500"
+                          className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] border-[#dbc2b0]/50 dark:border-[#887364]/40 font-bold"
+                        />
+                      </div>
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">
+                        {activeAssetModal === "FAIZ" ? "Faiz / Getiri Oranı %" : "Alış Fiyatı / Oran"}
+                      </Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={modalAssetData.purchasePrice}
+                        onChange={e => setModalAssetData({ ...modalAssetData, purchasePrice: e.target.value })}
+                        placeholder="0.00"
+                        className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-bold"
+                      />
+                    </div>
                     <div>
                       <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Birim Miktarı / Adet</Label>
                       <Input
@@ -1062,6 +1117,9 @@ export function OnboardingForm() {
                         className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-bold"
                       />
                     </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
                     <div>
                       <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Toplam Tutar / Değer</Label>
                       <Input
@@ -1072,6 +1130,18 @@ export function OnboardingForm() {
                         className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-black text-primary"
                       />
                     </div>
+                    {activeAssetModal === "FAIZ" && (
+                      <div>
+                        <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Vade Süresi (Gün)</Label>
+                        <Input
+                          type="number"
+                          value={modalAssetData.maturityPeriod}
+                          onChange={e => setModalAssetData({ ...modalAssetData, maturityPeriod: e.target.value })}
+                          placeholder="32"
+                          className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-bold"
+                        />
+                      </div>
+                    )}
                   </div>
 
                   <div>
@@ -1108,7 +1178,7 @@ export function OnboardingForm() {
           )}
         </AnimatePresence>
 
-        {/* Footer */}
+  {/* Footer */ }
         <div className="flex items-center justify-between px-8 py-5 bg-[#fbf9f4] dark:bg-[#120d0a]/60 border-t border-[#8C5000]/10 dark:border-[#ffb874]/15 transition-colors duration-300 rounded-b-3xl">
           <Button type="button" variant="ghost" onClick={() => setStep(s => Math.max(s - 1, 1))} disabled={step === 1 || loading} className="h-12 px-6 rounded-xl font-bold text-[#5a3100] dark:text-[#dbc2b0] hover:bg-[#dbc2b0]/30">
             <ChevronLeft className="w-4 h-4 mr-1" /> Geri

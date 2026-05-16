@@ -37,6 +37,8 @@ export function AssetForm({ activeTab, onAdd, onCancel, loading, error, defaultA
     purchasePrice: 0,
     useCurrentPrice: false,
     description: "",
+    monthlyContribution: 0,
+    fundType: "STANDART",
   });
 
   const [fixedAssetFormData, setFixedAssetFormData] = useState({
@@ -155,8 +157,8 @@ export function AssetForm({ activeTab, onAdd, onCancel, loading, error, defaultA
                 {/* Varlık Türü */}
                 <div className="space-y-2 sm:col-span-2">
                   <Label className="text-[11px] font-bold text-primary/80 uppercase tracking-wider px-1">Varlık Türü</Label>
-                  <Select 
-                    value={formData.type} 
+                  <Select
+                    value={formData.type}
                     onValueChange={(v) => setFormData((p) => ({ ...p, type: String(v), symbol: "" }))}
                     disabled={!!defaultAssetType}
                   >
@@ -190,6 +192,23 @@ export function AssetForm({ activeTab, onAdd, onCancel, loading, error, defaultA
                         className="bg-muted/50 border-primary/10 h-12 rounded-2xl focus:ring-primary text-sm font-semibold px-4"
                       />
                     </div>
+                    {formData.type === "BES" && (
+                      <div className="space-y-2 sm:col-span-2 animate-in fade-in duration-300">
+                        <Label className="text-[11px] font-bold text-primary/80 uppercase tracking-wider px-1">Fon Türü (Piyasa Takibi İçin)</Label>
+                        <Select value={formData.fundType} onValueChange={(v) => setFormData((p) => ({ ...p, fundType: String(v) }))}>
+                          <SelectTrigger className="bg-muted/50 border-primary/10 h-12 rounded-2xl focus:ring-primary text-sm font-semibold transition-all">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-2xl border-primary/10 backdrop-blur-xl font-medium">
+                            <SelectItem value="STANDART">⚖️ Standart / Dengeli (Karma)</SelectItem>
+                            <SelectItem value="GOLD">🟡 Altın Katılım / Altın</SelectItem>
+                            <SelectItem value="STOCKS">📈 Hisse Senedi Yoğun</SelectItem>
+                            <SelectItem value="USD">💵 Dış Borçlanma (Eurobond/Döviz)</SelectItem>
+                            <SelectItem value="CONSERVATIVE">🛡️ Muhafazakar (Para Piyasası)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
                     <div className="space-y-2">
                       <Label className="text-[11px] font-bold text-primary/80 uppercase tracking-wider px-1">
                         {formData.type === "BES" ? "Güncel Birikiminiz (₺)" : "Güncel Birikiminiz (₺)"}
@@ -213,6 +232,19 @@ export function AssetForm({ activeTab, onAdd, onCancel, loading, error, defaultA
                         className="bg-muted/50 border-primary/10 h-12 rounded-2xl focus:ring-primary text-sm font-semibold px-4"
                       />
                     </div>
+                    {formData.type === "BES" && (
+                      <div className="space-y-2 sm:col-span-2 animate-in fade-in duration-300">
+                        <Label className="text-[11px] font-bold text-primary/80 uppercase tracking-wider px-1">
+                          Aylık Yatırılacak Düzenli Tutar (₺)
+                        </Label>
+                        <Input
+                          type="number"
+                          value={formData.monthlyContribution === 0 ? "" : formData.monthlyContribution}
+                          onChange={(e) => handleNumberChange("monthlyContribution", e.target.value)}
+                          className="bg-muted/50 border-primary/10 h-12 rounded-2xl focus:ring-primary text-sm font-semibold px-4"
+                        />
+                      </div>
+                    )}
                   </>
                 ) : (
                   <>
