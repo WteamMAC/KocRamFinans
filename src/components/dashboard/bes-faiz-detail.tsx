@@ -13,6 +13,7 @@ import {
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from "recharts";
 import { cn } from "@/lib/utils";
 import { deleteAsset, addAsset, fixMisclassifiedBesFaiz } from "@/app/actions/assets";
+import { useCurrency } from "@/context/currency-context";
 
 interface InvestmentItem {
   id: string;
@@ -41,6 +42,7 @@ function parseMeta(inv: InvestmentItem): { rate: number; originalDescription: st
 
 export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
   const router = useRouter();
+  const { formatAmount } = useCurrency();
   const [isAdding, setIsAdding] = useState(false);
   const [loading, setLoading] = useState(false);
   const [fixLoading, setFixLoading] = useState(false);
@@ -291,7 +293,7 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
         <Card className="border-border/20 shadow-ambient-low rounded-2xl p-6 relative overflow-hidden">
           <div className={cn("absolute top-0 right-0 w-24 h-24 rounded-full -mr-8 -mt-8 opacity-30", accentBg)} />
           <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2">Toplam Ana Para</p>
-          <p className="text-3xl font-heading font-bold text-primary">{totalPrincipal.toLocaleString("tr-TR")} ₺</p>
+          <p className="text-3xl font-heading font-bold text-primary">{formatAmount(totalPrincipal)}</p>
         </Card>
         <Card className="border-border/20 shadow-ambient-low rounded-2xl p-6 relative overflow-hidden">
           <div className={cn("absolute top-0 right-0 w-24 h-24 rounded-full -mr-8 -mt-8 opacity-30", accentBg)} />
@@ -299,7 +301,7 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
             <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
             Canlı Toplam Değer
           </p>
-          <p className={cn("text-3xl font-heading font-bold", accentColor)}>{liveTotals.totalValuation.toLocaleString("tr-TR", { maximumFractionDigits: 2 })} ₺</p>
+          <p className={cn("text-3xl font-heading font-bold", accentColor)}>{formatAmount(liveTotals.totalValuation)}</p>
         </Card>
         <Card className="border-border/20 shadow-ambient-low rounded-2xl p-6 relative overflow-hidden">
           <div className={cn("absolute top-0 right-0 w-24 h-24 rounded-full -mr-8 -mt-8 opacity-30", accentBg)} />
@@ -307,7 +309,7 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
             <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
             Canlı Biriken Net Kazanç
           </p>
-          <p className="text-3xl font-heading font-bold text-emerald-500">+{liveTotals.totalProfit.toLocaleString("tr-TR", { maximumFractionDigits: 2 })} ₺</p>
+          <p className="text-3xl font-heading font-bold text-emerald-500">+{formatAmount(liveTotals.totalProfit)}</p>
         </Card>
       </div>
 
@@ -333,7 +335,7 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
             </div>
             <div className="space-y-2">
               <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                {isBES ? "İlk Giriş Tutarı (₺)" : "Ana Para Tutarı (₺)"}
+                {isBES ? "İlk Giriş Tutarı" : "Ana Para Tutarı"}
               </Label>
               <Input
                 type="number"
@@ -413,12 +415,12 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
                           {!isBES ? (
                             <p className="text-[10px] font-black text-emerald-500 mt-1 uppercase tracking-tighter flex items-center gap-1">
                               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                              Günlük Getiri: ~{((g.totalQuantity * g.rate) / 365 / 100).toLocaleString("tr-TR", { maximumFractionDigits: 2 })} ₺
+                              Günlük Getiri: ~{formatAmount((g.totalQuantity * g.rate) / 365 / 100)}
                             </p>
                           ) : (
                             <p className="text-[10px] font-black text-emerald-500 mt-1 uppercase tracking-tighter flex items-center gap-1">
                               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                              Tahmini Günlük Fon Getirisi: ~{((g.totalQuantity * 45) / 365 / 100).toLocaleString("tr-TR", { maximumFractionDigits: 2 })} ₺
+                              Tahmini Günlük Fon Getirisi: ~{formatAmount((g.totalQuantity * 45) / 365 / 100)}
                             </p>
                           )}
                         </div>
@@ -428,7 +430,7 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
                     <div className="mt-4 pt-4 border-t border-border/10 grid grid-cols-2 gap-4">
                       <div>
                         <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Ana Para</p>
-                        <p className="font-bold text-lg text-primary">{g.totalQuantity.toLocaleString("tr-TR")} ₺</p>
+                        <p className="font-bold text-lg text-primary">{formatAmount(g.totalQuantity)}</p>
                       </div>
                       <div className="text-right">
                         <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Canlı Biriken Kazanç</p>
@@ -454,7 +456,7 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
                           }
                           return (
                             <>
-                              <p className="font-bold text-lg text-emerald-500">+{earned.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</p>
+                              <p className="font-bold text-lg text-emerald-500">+{formatAmount(earned)}</p>
                               <p className="text-[9px] text-muted-foreground italic">{Math.round(daysPassed)} gün canlı birikim {isBES ? `(+%${g.rate || 30} Devlet Katkısı)` : ""}</p>
                             </>
                           );
@@ -464,17 +466,17 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
                         <div>
                           <p className="text-[9px] font-bold text-muted-foreground uppercase">1 Yıl Sonraki Tahmin</p>
                           <p className={cn("font-bold text-xl", accentColor)}>
-                            {isBES
-                              ? Math.round((g.totalQuantity * 1.45) * (1 + (g.rate || 30) / 100)).toLocaleString("tr-TR")
-                              : Math.round(g.totalQuantity * Math.pow(1 + g.rate / 12 / 100, 12)).toLocaleString("tr-TR")} ₺
+                            {formatAmount(isBES
+                              ? (g.totalQuantity * 1.45) * (1 + (g.rate || 30) / 100)
+                              : g.totalQuantity * Math.pow(1 + g.rate / 12 / 100, 12))}
                           </p>
                         </div>
                         <div className="text-right">
                            <p className="text-[9px] font-bold text-emerald-500 uppercase">Yıllık Tahmini Kazanç</p>
                            <p className="font-bold text-emerald-500">
-                             +{isBES 
-                               ? Math.round((g.totalQuantity * 1.45 * (1 + (g.rate || 30) / 100)) - g.totalQuantity).toLocaleString("tr-TR")
-                               : Math.round(g.totalQuantity * (Math.pow(1 + g.rate / 12 / 100, 12) - 1)).toLocaleString("tr-TR")} ₺
+                             +{formatAmount(isBES 
+                               ? ((g.totalQuantity * 1.45 * (1 + (g.rate || 30) / 100)) - g.totalQuantity)
+                               : (g.totalQuantity * (Math.pow(1 + g.rate / 12 / 100, 12) - 1)))}
                            </p>
                         </div>
                       </div>
@@ -487,7 +489,7 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
                         return (
                           <div key={item.id} className="flex justify-between items-center bg-card rounded-xl p-3 border border-border/10">
                             <div>
-                              <p className="text-sm font-bold">{item.quantity.toLocaleString("tr-TR")} ₺</p>
+                              <p className="text-sm font-bold">{formatAmount(item.quantity)}</p>
                               <p className={cn("text-[10px] font-bold", accentColor)}>
                                 {isBES ? `Katkı: %${meta.rate}` : `Oran: %${meta.rate}`}
                               </p>
@@ -537,7 +539,7 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
               {isBES ? (
                 <>
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Aylık Ek Ödeme (₺)</Label>
+                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Aylık Ek Ödeme</Label>
                     <Input
                       type="number"
                       value={projMonthly || ""}
@@ -576,7 +578,7 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
               <div>
                 <p className="font-bold text-foreground">{projYears} Yıllık Büyüme</p>
                 <p className="text-xs text-muted-foreground opacity-70">
-                  {totalPrincipal.toLocaleString("tr-TR")} ₺ → {finalValue.toLocaleString("tr-TR")} ₺
+                  {formatAmount(totalPrincipal)} → {formatAmount(finalValue)}
                 </p>
               </div>
               <div className={cn("px-4 py-2 rounded-full text-sm font-bold", accentBg, accentColor)}>
@@ -604,7 +606,7 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
                   <Tooltip
                     contentStyle={{ borderRadius: "16px", border: "none", boxShadow: "0 10px 40px -10px rgba(0,0,0,0.1)" }}
                     formatter={(val: any, name: any) => [
-                      `${Number(val).toLocaleString("tr-TR")} ₺`,
+                      formatAmount(Number(val)),
                       name === "toplam"
                         ? (isBES ? "Tahmini Toplam (BES)" : "Bileşik Faiz Toplamı")
                         : name === "faizKazanci"
@@ -651,17 +653,17 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
                       <th className="px-4 py-3 text-right text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
                         {isBES ? "Tahmini Toplam" : "Bileşik Toplam"}
                       </th>
-                      <th className="px-4 py-3 text-right text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Kazanılan Faiz</th>
+                      <th className="px-4 py-3 text-right text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Kazanılan Getiri</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/10">
                     {projectionData.filter((_, i) => i % 2 === 0 || i === projectionData.length - 1).map((row) => (
                       <tr key={row.label} className="hover:bg-muted/30 transition-colors">
                         <td className="px-4 py-3 font-bold text-foreground">{row.label}</td>
-                        <td className="px-4 py-3 text-right text-muted-foreground">{row.anaPara.toLocaleString("tr-TR")} ₺</td>
-                        <td className={cn("px-4 py-3 text-right font-bold", accentColor)}>{row.toplam.toLocaleString("tr-TR")} ₺</td>
+                        <td className="px-4 py-3 text-right text-muted-foreground">{formatAmount(row.anaPara)}</td>
+                        <td className={cn("px-4 py-3 text-right font-bold", accentColor)}>{formatAmount(row.toplam)}</td>
                         <td className="px-4 py-3 text-right text-emerald-500 font-bold">
-                          +{Math.max(0, row.faizKazanci ?? (row.toplam - row.anaPara)).toLocaleString("tr-TR")} ₺
+                          +{formatAmount(Math.max(0, row.faizKazanci ?? (row.toplam - row.anaPara)))}
                         </td>
                       </tr>
                     ))}
