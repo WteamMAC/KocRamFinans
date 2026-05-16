@@ -74,6 +74,23 @@ export function InvestmentSummary({ investments, fixedAssets }: InvestmentSummar
     return <div className="h-[350px] w-full bg-muted animate-pulse rounded-[24px]" />;
   }
 
+  const hasInvestments = investmentData.length > 0;
+  const hasFixedAssets = fixedAssetData.length > 0;
+
+  if (!hasInvestments && !hasFixedAssets) {
+    return (
+      <div className="w-full flex flex-col items-center justify-center p-12 text-center bg-muted/20 border border-dashed rounded-[32px] border-border/50">
+        <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-6">
+          <PieChart className="h-8 w-8 text-primary/40" />
+        </div>
+        <h3 className="text-lg font-heading font-bold text-primary mb-2">Varlık Dağılımınız Henüz Boş</h3>
+        <p className="text-sm text-muted-foreground max-w-[380px]">
+          Portföyünüzün dağılımını ve net varlık özetinizi görmek için finansal yatırımlarınızı veya sabit varlıklarınızı (ev, araba vb.) eklemeye başlayın.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className={cn(
       "w-full grid gap-8",

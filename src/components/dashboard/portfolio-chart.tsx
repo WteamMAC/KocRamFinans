@@ -121,8 +121,28 @@ export function PortfolioChart({ assets }: PortfolioChartProps) {
 
     if (!assets || assets.length === 0) {
         return (
-            <div className="h-[350px] w-full flex items-center justify-center border border-dashed rounded-xl border-border">
-                <p className="text-sm text-muted-foreground">Henüz portföyünüzde varlık bulunmuyor.</p>
+            <div className="h-[380px] w-full flex flex-col items-center justify-center p-8 text-center bg-muted/20 border border-dashed rounded-[32px] border-border/50 animate-in fade-in duration-500">
+                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+                    <PieChart className="h-8 w-8 text-primary/40" />
+                </div>
+                <h3 className="text-lg font-heading font-bold text-primary mb-2">Varlık Dağılımı Henüz Boş</h3>
+                <p className="text-sm text-muted-foreground max-w-[280px] mb-6">
+                    Portföyünüzün dağılımını görmek için ilk yatırımınızı ekleyin.
+                </p>
+                <div className="flex flex-col gap-2 w-full max-w-[200px]">
+                  <div className="p-3 bg-card border border-border/40 rounded-2xl flex items-center gap-3 text-left">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-500">
+                      <span className="text-xs font-black">1</span>
+                    </div>
+                    <span className="text-[10px] font-bold leading-tight">"Yatırım Ekle" butonuna tıklayın</span>
+                  </div>
+                  <div className="p-3 bg-card border border-border/40 rounded-2xl flex items-center gap-3 text-left">
+                    <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-500">
+                      <span className="text-xs font-black">2</span>
+                    </div>
+                    <span className="text-[10px] font-bold leading-tight">Varlık türünü ve miktarını girin</span>
+                  </div>
+                </div>
             </div>
         );
     }
