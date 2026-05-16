@@ -71,6 +71,7 @@ interface AssetListProps {
   defaultTab?: "financial" | "fixed";
   hideTabs?: boolean;
   userCurrency?: string;
+  defaultAssetType?: string;
 }
 
 
@@ -80,7 +81,8 @@ export function AssetList({
   fixedAssets,
   defaultTab = "financial",
   hideTabs = false,
-  userCurrency = "TRY"
+  userCurrency = "TRY",
+  defaultAssetType
 }: AssetListProps) {
   const router = useRouter();
   const [isAdding, setIsAdding] = useState(false);
@@ -361,11 +363,11 @@ export function AssetList({
 
         <CompactCurrencyCalculator />
 
-        <div className="flex flex-wrap items-center gap-3 mt-4 md:mt-0">
+        <div className="flex items-center gap-3 mt-4 md:mt-0 shrink-0">
           <Button
             variant="outline"
             onClick={activeTab === "financial" ? handleExportCSV : handleExportFixedCSV}
-            className="rounded-full px-4 py-2 h-12 text-sm font-semibold text-primary border-border/30 hover:bg-primary/5 bg-card shadow-ambient-low"
+            className="rounded-full px-5 h-[52px] text-sm font-semibold text-primary border-border/30 hover:bg-primary/5 bg-card shadow-ambient-low transition-all duration-300"
           >
             <Download className="mr-2 h-4 w-4" />
             Dışa Aktar
@@ -374,7 +376,7 @@ export function AssetList({
             variant="outline"
             onClick={handleRefresh}
             disabled={isRefreshing}
-            className="rounded-full px-4 py-2 h-12 text-sm font-semibold text-primary border-border/30 hover:bg-primary/5 bg-card shadow-ambient-low"
+            className="rounded-full px-5 h-[52px] text-sm font-semibold text-primary border-border/30 hover:bg-primary/5 bg-card shadow-ambient-low transition-all duration-300"
           >
             <RefreshCw className={cn("mr-2 h-4 w-4", isRefreshing && "animate-spin")} />
             Yenile
@@ -382,30 +384,34 @@ export function AssetList({
           <Button
             onClick={() => { setIsAdding(!isAdding); setError(null); }}
             className={cn(
-              "rounded-full px-6 py-3 h-12 text-base font-semibold shadow-ambient-medium transition-all duration-300",
+              "rounded-full px-6 h-[52px] text-sm font-semibold shadow-ambient-medium transition-all duration-300",
               isAdding ? "bg-muted text-foreground hover:bg-muted/80" : "bg-primary text-primary-foreground hover:bg-primary/90"
             )}
           >
-            {isAdding ? <X className="mr-2 h-5 w-5" /> : <Plus className="mr-2 h-5 w-5" />}
+            {isAdding ? <X className="mr-2 h-4 w-4" /> : <Plus className="mr-2 h-4 w-4" />}
             {isAdding ? "Vazgeç" : (activeTab === "financial" ? "Yatırım Ekle" : "Varlık Ekle")}
           </Button>
         </div>
       </div>
 
-      {/* Add Asset Form */}
+      {/* Add Asset Form Modal */}
       {isAdding && (
-        <AssetForm 
-          activeTab={activeTab} 
-          loading={loading} 
-          error={error} 
-          onCancel={() => setIsAdding(false)} 
-          onAdd={activeTab === "financial" ? handleAdd : handleAddFixed} 
-        />
+        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-background/40 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto no-scrollbar rounded-[32px]">
+            <AssetForm 
+              activeTab={activeTab} 
+              loading={loading} 
+              error={error} 
+              defaultAssetType={defaultAssetType}
+              onCancel={() => setIsAdding(false)} 
+              onAdd={activeTab === "financial" ? handleAdd : handleAddFixed} 
+            />
+          </div>
+        </div>
       )}
 
       {/* Summary Dashboard */}
-      {!isAdding && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
           <Card className="lg:col-span-1 p-6 bg-card border-border/30 shadow-ambient-medium rounded-[32px] flex flex-col justify-center relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-primary/20 to-transparent rounded-full -mr-10 -mt-10 pointer-events-none" />
             <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 opacity-70 relative z-10">
@@ -475,7 +481,6 @@ export function AssetList({
             </div>
           </Card>
         </div>
-      )}
 
       {/* Asset Grid */}
       <div className="grid grid-cols-1 gap-8">

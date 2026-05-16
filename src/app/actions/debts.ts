@@ -44,6 +44,11 @@ export async function addDebt(data: {
     }
   }
 
+  let finalDescription = data.description || data.type;
+  if (data.dueDate) {
+    finalDescription += ` (Son Ödeme: ${new Date(data.dueDate).toLocaleDateString("tr-TR")})`;
+  }
+
   // Create the debt
   await prisma.debt.create({
     data: {
@@ -55,8 +60,7 @@ export async function addDebt(data: {
       installmentAmount: monthlyInstallment,
       remainingInstallments: data.remainingInstallments,
       paymentDay: data.paymentDay,
-      dueDate: data.dueDate ? new Date(data.dueDate) : null,
-      description: data.description,
+      description: finalDescription,
       currency: data.currency ?? "TRY",
       originalAmount: data.originalAmount,
       fxRate: data.fxRate ?? 1,

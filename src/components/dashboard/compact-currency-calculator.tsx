@@ -88,7 +88,7 @@ export function CompactCurrencyCalculator() {
     <motion.div
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="hidden lg:flex items-center gap-3 bg-card/60 backdrop-blur-2xl border border-primary/20 rounded-2xl px-4 py-2 shadow-2xl hover:shadow-primary/20 hover:border-primary/40 transition-all duration-500 group relative overflow-hidden min-w-[500px]"
+      className="hidden lg:flex items-center gap-3 bg-card/60 backdrop-blur-2xl border border-primary/20 rounded-2xl px-4 h-[52px] shadow-2xl hover:shadow-primary/20 hover:border-primary/40 transition-all duration-500 group relative overflow-hidden min-w-[500px]"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >

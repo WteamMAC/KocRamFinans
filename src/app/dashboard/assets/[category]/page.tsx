@@ -131,6 +131,12 @@ export default async function AssetCategoryPage({ params }: CategoryPageProps) {
         metrics={{ ...metrics, fixedMetrics }}
         defaultTab={category === "fixed" ? "fixed" : "financial"}
         hideTabs={true}
+        defaultAssetType={
+          category === "crypto" ? "CRYPTO" :
+          category === "bist" ? "BIST" :
+          category === "nasdaq" ? "NASDAQ" :
+          category === "gold" ? "GOLD" : undefined
+        }
       />
     </div>
   );
