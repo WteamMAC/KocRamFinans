@@ -19,6 +19,8 @@ import { ArrowLeft, TrendingUp, TrendingDown, Camera, Loader2 } from "lucide-rea
 import { processReceiptWithAI } from "@/app/actions/ocr";
 import Link from "next/link";
 import { useCurrency, DISPLAY_CURRENCIES_LIST } from "@/context/currency-context";
+import { DatePicker } from "@/components/ui/date-picker";
+import { parseISO } from "date-fns";
 
 interface AddTransactionFormProps {
   type: "income" | "expense";
@@ -138,10 +140,10 @@ export function AddTransactionForm({ type }: AddTransactionFormProps) {
       </div>
 
       <Card className="border-border/30 shadow-ambient-medium rounded-[32px] overflow-hidden bg-card">
-        <CardHeader className={type === "income" ? "bg-emerald-500/10" : "bg-rose-500/10"}>
+        <CardHeader className={type === "income" ? "bg-primary/10" : "bg-rose-500/10"}>
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-xl ${type === "income" ? "bg-emerald-500/20 text-emerald-600" : "bg-rose-500/20 text-rose-600"}`}>
+                    <div className={`p-2 rounded-xl ${type === "income" ? "bg-primary/20 text-primary" : "bg-rose-500/20 text-rose-600"}`}>
                         {type === "income" ? <TrendingUp className="h-6 w-6" /> : <TrendingDown className="h-6 w-6" />}
                     </div>
                     <div>
@@ -165,7 +167,7 @@ export function AddTransactionForm({ type }: AddTransactionFormProps) {
         <CardContent className="p-8 space-y-6">
           {error && <div className="p-4 bg-red-500/10 text-red-600 rounded-xl text-sm font-medium border border-red-500/20">{error}</div>}
           <div className="space-y-3">
-            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Kategori</Label>
+            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1 mb-1.5 block">Kategori</Label>
             <Select onValueChange={(v: any) => setFormData(p => ({ ...p, category: v ?? "" }))}>
               <SelectTrigger className="bg-muted border-border/30 h-14 rounded-2xl text-base font-semibold">
                 <SelectValue placeholder="Kategori Seçin" />
@@ -180,7 +182,7 @@ export function AddTransactionForm({ type }: AddTransactionFormProps) {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="md:col-span-2 space-y-3">
-              <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Tutar</Label>
+              <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1 mb-1.5 block">Tutar</Label>
               <Input
                 type="number"
                 placeholder="0.00"
@@ -190,7 +192,7 @@ export function AddTransactionForm({ type }: AddTransactionFormProps) {
               />
             </div>
             <div className="space-y-3">
-              <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Para Birimi</Label>
+              <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1 mb-1.5 block">Para Birimi</Label>
               <Select value={formData.currency} onValueChange={(v) => setFormData(p => ({ ...p, currency: String(v) }))}>
                 <SelectTrigger className="bg-muted border-border/30 h-14 rounded-2xl font-bold">
                   <SelectValue />
@@ -207,17 +209,17 @@ export function AddTransactionForm({ type }: AddTransactionFormProps) {
           </div>
 
           <div className="space-y-3">
-            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">İşlem Tarihi</Label>
-            <Input
-              type="date"
-              value={formData.date}
-              onChange={(e) => setFormData(p => ({ ...p, date: e.target.value }))}
-              className="bg-muted border-border/30 h-14 rounded-2xl font-semibold"
+            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1 mb-1.5 block">İşlem Tarihi</Label>
+            <DatePicker
+              date={formData.date ? parseISO(formData.date) : undefined}
+              setDate={(d) => setFormData(p => ({ ...p, date: d ? d.toISOString().split('T')[0] : "" }))}
+              placeholder="GG.AA.YYYY"
+              className="h-14"
             />
           </div>
 
           <div className="space-y-3">
-            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Açıklama</Label>
+            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1 mb-1.5 block">Açıklama</Label>
             <Input
               placeholder="İşlem detayları (opsiyonel)..."
               value={formData.description}
@@ -241,7 +243,7 @@ export function AddTransactionForm({ type }: AddTransactionFormProps) {
 
             {formData.isRecurring && (
               <div className="flex-1 space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
-                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Ödeme/Giriş Günü (1-31)</Label>
+                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1 mb-1.5 block">Ödeme/Giriş Günü (1-31)</Label>
                 <Input
                   type="number"
                   min="1"
@@ -261,7 +263,7 @@ export function AddTransactionForm({ type }: AddTransactionFormProps) {
               disabled={loading}
               className={`w-full h-14 rounded-2xl text-lg font-bold shadow-lg transition-all active:scale-95 ${
                 type === "income" 
-                  ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-500/20" 
+                  ? "bg-primary hover:bg-primary/90 text-white shadow-primary/20" 
                   : "bg-rose-600 hover:bg-rose-700 text-white shadow-rose-500/20"
               }`}
             >

@@ -10,6 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { updateProfile } from "@/app/actions/profile";
 import { useCurrency } from "@/context/currency-context";
+import { DatePicker } from "@/components/ui/date-picker";
+import { parseISO } from "date-fns";
 
 const MIN_AGE = 13;
 function getMaxDate() {
@@ -172,20 +174,31 @@ export function ProfileSettingsForm({ initialData }: Props) {
         <div className="grid grid-cols-2 gap-5">
           {(["firstName","lastName"] as const).map(f=>(
             <div key={f} className="space-y-2">
-              <Label className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-widest">{f==="firstName"?"Ad":"Soyad"}</Label>
+              <Label className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-widest mb-1.5 block">{f==="firstName"?"Ad":"Soyad"}</Label>
               <Input {...form.register(f)} className={cn("h-12 rounded-2xl bg-muted/40 border-border/50 focus:border-primary font-semibold",errors[f]&&"border-destructive bg-destructive/10")}/>
-              {errors[f]&&<p className="text-[10px] font-bold text-destructive">{errors[f]?.message}</p>}
+              {errors[f]&&<p className="text-[10px] font-bold text-rose-500/80">{errors[f]?.message}</p>}
             </div>
           ))}
         </div>
         <div className="grid grid-cols-2 gap-5">
           <div className="space-y-2">
-            <Label className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-widest">Doğum Tarihi</Label>
-            <Input type="date" {...form.register("birthDate")} max={getMaxDate()} className={cn("h-12 rounded-2xl bg-muted/40 border-border/50 focus:border-primary font-semibold",errors.birthDate&&"border-destructive bg-destructive/10")}/>
-            {errors.birthDate&&<p className="text-[10px] font-bold text-destructive">{errors.birthDate.message}</p>}
+            <Label className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-widest mb-1.5 block">Doğum Tarihi</Label>
+            <Controller
+              name="birthDate"
+              control={form.control}
+              render={({ field }) => (
+                <DatePicker
+                  date={field.value ? parseISO(field.value) : undefined}
+                  setDate={(d) => field.onChange(d ? d.toISOString().split("T")[0] : "")}
+                  placeholder="GG.AA.YYYY"
+                  className={cn("h-12", errors.birthDate && "border-destructive")}
+                />
+              )}
+            />
+            {errors.birthDate&&<p className="text-[10px] font-bold text-rose-500/80">{errors.birthDate.message}</p>}
           </div>
           <div className="space-y-2">
-            <Label className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-widest">Cinsiyet</Label>
+            <Label className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-widest mb-1.5 block">Cinsiyet</Label>
             <div className="grid grid-cols-2 gap-2">
               {[{v:"male",label:"👨 Erkek"},{v:"female",label:"👩 Kadın"}].map(g=>(
                 <button key={g.v} type="button"
@@ -221,27 +234,29 @@ export function ProfileSettingsForm({ initialData }: Props) {
                 );
               })}
             </div>
-            <button type="button" onClick={()=>setShowOtherCur(v=>!v)}
-              className={cn("w-full flex items-center justify-between px-5 py-3.5 rounded-2xl border text-sm font-extrabold transition-all",
-                showOtherCur||OTHER_CURRENCIES.some(c=>c.code===field.value)?"bg-primary/10 border-primary/30 text-primary":"bg-muted/30 border-border/40 text-muted-foreground hover:border-primary/30")}>
-              <span>{OTHER_CURRENCIES.find(c=>c.code===field.value)?`${OTHER_CURRENCIES.find(c=>c.code===field.value)!.flag} ${OTHER_CURRENCIES.find(c=>c.code===field.value)!.label}`:"Diğer..."}</span>
-              <ChevronDown className={cn("w-4 h-4 transition-transform",showOtherCur&&"rotate-180")}/>
-            </button>
-            {showOtherCur&&(
-              <div className="grid grid-cols-2 gap-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                {OTHER_CURRENCIES.map(c=>{
-                  const isA=field.value===c.code;
-                  return (
-                    <button key={c.code} type="button" onClick={()=>{field.onChange(c.code);form.setValue("currency",c.code,{shouldDirty:true});}}
-                      className={cn("flex items-center gap-3 p-3.5 rounded-2xl border text-left transition-all font-bold",
-                        isA?"bg-primary text-primary-foreground border-primary shadow":"bg-muted/30 border-border/40 hover:border-primary/30")}>
-                      <span className="text-xl">{c.flag}</span>
-                      <div><div className={cn("text-xs font-black",isA?"text-primary-foreground":"text-foreground")}>{c.code}</div><div className={cn("text-[10px]",isA?"text-primary-foreground/80":"text-muted-foreground")}>{c.label}</div></div>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
+            <div className="relative">
+              <button type="button" onClick={()=>setShowOtherCur(v=>!v)}
+                className={cn("w-full flex items-center justify-between px-5 py-3.5 rounded-2xl border text-sm font-extrabold transition-all",
+                  showOtherCur||OTHER_CURRENCIES.some(c=>c.code===field.value)?"bg-primary/10 border-primary/30 text-primary":"bg-muted/30 border-border/40 text-muted-foreground hover:border-primary/30")}>
+                <span>{OTHER_CURRENCIES.find(c=>c.code===field.value)?`${OTHER_CURRENCIES.find(c=>c.code===field.value)!.flag} ${OTHER_CURRENCIES.find(c=>c.code===field.value)!.label}`:"Diğer..."}</span>
+                <ChevronDown className={cn("w-4 h-4 transition-transform",showOtherCur&&"rotate-180")}/>
+              </button>
+              {showOtherCur&&(
+                <div className="absolute top-full left-0 right-0 mt-2 z-50 p-2 bg-card border border-border/30 rounded-2xl shadow-2xl grid grid-cols-2 gap-2 max-h-60 overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
+                  {OTHER_CURRENCIES.map(c=>{
+                    const isA=field.value===c.code;
+                    return (
+                      <button key={c.code} type="button" onClick={()=>{field.onChange(c.code);form.setValue("currency",c.code,{shouldDirty:true});setShowOtherCur(false);}}
+                        className={cn("flex items-center gap-3 p-3.5 rounded-2xl border text-left transition-all font-bold",
+                          isA?"bg-primary text-primary-foreground border-primary shadow":"bg-muted/30 border-border/40 hover:border-primary/30")}>
+                        <span className="text-xl">{c.flag}</span>
+                        <div><div className={cn("text-xs font-black",isA?"text-primary-foreground":"text-foreground")}>{c.code}</div><div className={cn("text-[10px]",isA?"text-primary-foreground/80":"text-muted-foreground")}>{c.label}</div></div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
         )}/>
       </div>
@@ -253,13 +268,14 @@ export function ProfileSettingsForm({ initialData }: Props) {
         </h3>
         <Controller name="country" control={form.control} render={({field})=>(
           <div className="space-y-3">
+          <div className="relative">
             <button type="button" onClick={()=>setShowCountries(v=>!v)}
               className="w-full flex items-center justify-between px-5 py-3.5 rounded-2xl border bg-muted/30 border-border/40 hover:border-primary/40 transition-all">
               <span className="text-sm font-extrabold text-foreground">{countryLabel?`${countryLabel.flag} ${countryLabel.label}`:"Ülke seçiniz..."}</span>
               <ChevronDown className={cn("w-4 h-4 text-muted-foreground transition-transform",showCountries&&"rotate-180")}/>
             </button>
             {showCountries&&(
-              <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-300 pr-1">
+              <div className="absolute top-full left-0 right-0 mt-2 z-50 p-2 bg-card border border-border/30 rounded-2xl shadow-2xl grid grid-cols-2 gap-2 max-h-60 overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
                 {ALL_COUNTRIES.map(c=>{
                   const isA=field.value===c.code;
                   return (
@@ -275,6 +291,7 @@ export function ProfileSettingsForm({ initialData }: Props) {
               </div>
             )}
           </div>
+          </div>
         )}/>
       </div>
 
@@ -283,7 +300,7 @@ export function ProfileSettingsForm({ initialData }: Props) {
         <h3 className="text-sm font-black text-primary uppercase tracking-widest flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-accent" /> İlgi Alanları
         </h3>
-        {errors.interests&&<p className="text-[10px] font-bold text-destructive flex items-center gap-1"><AlertCircle className="h-3 w-3"/>{errors.interests.message}</p>}
+        {errors.interests&&<p className="text-[10px] font-bold text-rose-500/80 flex items-center gap-1"><AlertCircle className="h-3 w-3"/>{errors.interests.message}</p>}
         <div className="flex flex-wrap gap-2.5">
           {HASHTAGS.map(h=>{
             const isA=interests.includes(h.tag);
@@ -305,7 +322,7 @@ export function ProfileSettingsForm({ initialData }: Props) {
           {isDirty
             ? <p className="text-sm font-black text-primary flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-accent animate-ping" /> Kaydedilmemiş değişiklikler var</p>
             : saved
-              ? <p className="text-sm font-black text-emerald-600 flex items-center gap-2"><Check className="w-4 h-4"/>Değişiklikler başarıyla kaydedildi!</p>
+              ? <p className="text-sm font-black text-primary flex items-center gap-2"><Check className="w-4 h-4"/>Değişiklikler başarıyla kaydedildi!</p>
               : <p className="text-sm font-bold text-muted-foreground">Değişiklik yapılmadı</p>
           }
         </div>

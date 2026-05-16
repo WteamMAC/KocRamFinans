@@ -131,8 +131,8 @@
   --primary-foreground: #2d1600;
   --secondary: #4a4600;
   --secondary-foreground: #f8f9fa;
-  --muted: #36684d;
-  --muted-foreground: #b8efcc;
+  --muted: #2a2d2e;
+  --muted-foreground: #a1958c;
   --accent: #4a4600;
   --accent-foreground: #f2e743;
   --destructive: #ffdad6;
@@ -221,4 +221,15 @@
   html {
     @apply font-sans;
   }
+}
+/* Remove number input spinners */
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
 }

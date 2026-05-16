@@ -48,10 +48,10 @@ export default function RootLayout({
           headerTitle: "text-primary font-bold text-2xl tracking-tight font-heading",
           headerSubtitle: "text-muted-foreground font-medium",
           socialButtonsBlockButton: "border-border/30 hover:bg-muted transition-all bg-card text-foreground",
-          formButtonPrimary: "bg-primary hover:bg-primary/90 transition-all shadow-ambient-medium text-primary-foreground",
+          formButtonPrimary: "bg-gradient-to-r from-[#f18d02] to-[#8C5000] hover:brightness-110 active:scale-95 transition-all text-white shadow-lg shadow-[#8C5000]/20 disabled:opacity-70 disabled:brightness-90",
           footerActionLink: "text-primary hover:text-primary/90 font-bold",
           identityPreviewText: "text-primary font-bold",
-          formFieldInput: "border-border/30 focus:border-primary focus:ring-primary/20 transition-all rounded-lg bg-background text-foreground",
+          formFieldInput: "border-border/30 focus:border-[#f18d02] focus:ring-2 focus:ring-[#f18d02]/20 transition-all rounded-xl bg-background text-foreground",
           formFieldLabel: "text-[12px] font-bold text-muted-foreground uppercase tracking-widest mb-1",
         }
       }}
