@@ -9,7 +9,6 @@ import { searchSymbols as searchSymbolsLib, getLivePrices } from "@/lib/price-se
 export async function searchSymbolsAction(query: string, category: string) {
   try {
     const results = await searchSymbolsLib(query, category);
-    // Veriyi tarayıcıya göndermeden önce sadeleştiriyoruz (Sadece gerekli alanlar)
     return results.map((q: any) => ({
       symbol: q.symbol,
       shortname: q.shortname || q.longname || q.symbol,
@@ -20,6 +19,17 @@ export async function searchSymbolsAction(query: string, category: string) {
   } catch (error) {
     console.error("Market Action Error:", error);
     return [];
+  }
+}
+
+export async function getSymbolLivePriceAction(symbol: string) {
+  try {
+    const liveMap = await getLivePrices([symbol]);
+    const res = liveMap.get(symbol.toUpperCase());
+    return res?.price || 0;
+  } catch (error) {
+    console.error("Live Price Action Error:", error);
+    return 0;
   }
 }
 

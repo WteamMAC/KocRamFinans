@@ -5,8 +5,9 @@ import { useForm, Controller, useFieldArray } from "react-hook-form";
 import * as z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { completeOnboarding } from "@/app/actions/onboarding";
+import { searchSymbolsAction, getSymbolLivePriceAction } from "@/app/actions/market";
 import { cn } from "@/lib/utils";
-import { Check, ChevronRight, ChevronLeft, User, Globe, Hash, AlertCircle, ChevronDown, Plus, Trash2, Wallet, CreditCard, X } from "lucide-react";
+import { Check, ChevronRight, ChevronLeft, User, Globe, Hash, AlertCircle, ChevronDown, Plus, Trash2, Wallet, CreditCard, X, Search, Clock, ArrowUpRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { parseISO } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
 import { AssetForm } from "./dashboard/asset-form";
+
 
 const MIN_AGE = 13;
 function getMaxDate() {
@@ -248,8 +250,90 @@ export function OnboardingForm() {
     setTimeout(() => setGenderAnim(false), 600);
   };
 
+  // Varlık Ekleme Modalı Arama ve Fiyat Çekme State & Fonksiyonları
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [showSearch, setShowSearch] = useState(false);
+  const [useCurrentPrice, setUseCurrentPrice] = useState(false);
+  const [fetchingLive, setFetchingLive] = useState(false);
+
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(async () => {
+      if (searchQuery.length >= 2 && activeAssetModal && activeAssetModal !== "BES" && activeAssetModal !== "FAIZ") {
+        const results = await searchSymbolsAction(searchQuery, activeAssetModal);
+        setSearchResults(results);
+        setShowSearch(true);
+      } else {
+        setSearchResults([]);
+        setShowSearch(false);
+      }
+    }, 300);
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchQuery, activeAssetModal]);
+
+  const fetchCurrentPriceForSymbol = async (sym: string) => {
+    setFetchingLive(true);
+    try {
+      let querySym = sym.split(" ")[0].trim().toUpperCase();
+      if (activeAssetModal === "CRYPTO" && !querySym.includes("-USD") && !querySym.includes("USDT") && !querySym.includes("BTC")) {
+        querySym = `${querySym}-USD`;
+      }
+      if (activeAssetModal === "BIST" && !querySym.includes(".IS")) {
+        querySym = `${querySym}.IS`;
+      }
+      const price = await getSymbolLivePriceAction(querySym);
+      if (price > 0) {
+        const q = parseFloat(modalAssetData.quantity) || 1;
+        setModalAssetData(prev => ({
+          ...prev,
+          purchasePrice: price.toFixed(2),
+          amount: (q * price).toFixed(2)
+        }));
+      } else {
+        alert("Canlı fiyat bulunamadı, lütfen sembolü kontrol ediniz (Örn: THYAO.IS, BTC-USD)");
+      }
+    } catch {
+      alert("Fiyat çekilirken hata oluştu.");
+    } finally {
+      setFetchingLive(false);
+    }
+  };
+
+  const handleToggleCurrentPrice = async () => {
+    const nextState = !useCurrentPrice;
+    setUseCurrentPrice(nextState);
+    if (nextState && modalAssetData.symbol) {
+      await fetchCurrentPriceForSymbol(modalAssetData.symbol);
+    }
+  };
+
+  const handleSelectSearchResult = async (sym: string, name?: string) => {
+    setShowSearch(false);
+    const desc = name || modalAssetData.description;
+    setModalAssetData(prev => ({ ...prev, symbol: sym, description: desc }));
+    setSearchQuery(sym);
+    if (useCurrentPrice) {
+      await fetchCurrentPriceForSymbol(sym);
+    }
+  };
+
+  const handleQuantityChange = (val: string) => {
+    const q = parseFloat(val) || 0;
+    const p = parseFloat(modalAssetData.purchasePrice) || 0;
+    setModalAssetData(prev => ({ ...prev, quantity: val, amount: (q > 0 && p > 0) ? (q * p).toFixed(2) : prev.amount }));
+  };
+
+  const handlePriceChange = (val: string) => {
+    const p = parseFloat(val) || 0;
+    const q = parseFloat(modalAssetData.quantity) || 0;
+    setModalAssetData(prev => ({ ...prev, purchasePrice: val, amount: (q > 0 && p > 0) ? (q * p).toFixed(2) : prev.amount }));
+  };
+
   const handleOpenAssetModal = (type: string) => {
     setActiveAssetModal(type);
+    setSearchQuery("");
+    setShowSearch(false);
+    setUseCurrentPrice(false);
     setModalAssetData({
       symbol: "",
       amount: "",
@@ -262,6 +346,7 @@ export function OnboardingForm() {
       maturityPeriod: "32",
     });
   };
+
 
   const handleSaveAssetModal = (e: React.FormEvent) => {
     e.preventDefault();
@@ -375,19 +460,19 @@ export function OnboardingForm() {
       <div className="bg-card border border-[#8C5000]/20 dark:border-[#ffb874]/20 rounded-3xl shadow-2xl animate-in fade-in zoom-in-95 duration-700 transition-colors duration-300 relative">
 
         {/* Yumuşak Sıcak Turuncu Header */}
-        <div className="relative px-8 pt-8 pb-6 bg-[#fbf9f4] dark:bg-[#120d0a]/60 border-b border-[#8C5000]/15 dark:border-[#ffb874]/15 overflow-hidden transition-colors duration-300 rounded-t-3xl">
+        <div className="relative px-3 sm:px-8 pt-8 pb-6 bg-[#fbf9f4] dark:bg-[#120d0a]/60 border-b border-[#8C5000]/15 dark:border-[#ffb874]/15 overflow-hidden transition-colors duration-300 rounded-t-3xl">
           <div className="absolute top-0 right-0 w-64 h-64 bg-[#f18d02]/15 dark:bg-[#ffb874]/10 rounded-full blur-3xl pointer-events-none" />
 
           {/* Step indicator dots */}
-          <div className="relative flex items-center justify-center gap-1 sm:gap-2 mb-6 z-10 overflow-x-auto py-2 px-1 no-scrollbar max-w-full">
+          <div className="relative flex items-center justify-center gap-1 sm:gap-2 mb-6 z-10 py-2 px-1 w-full overflow-visible">
             {STEPS.map((s, i) => (
               <div key={s.id} className="flex items-center shrink-0">
-                <div className={cn("w-7 sm:w-8 h-7 sm:h-8 rounded-full flex items-center justify-center font-bold text-xs transition-all duration-500 shrink-0",
+                <div className={cn("w-6 sm:w-8 h-6 sm:h-8 rounded-full flex items-center justify-center font-bold text-[11px] sm:text-xs transition-all duration-500 shrink-0",
                   step === s.id ? "bg-[#8C5000] dark:bg-[#ffb874] text-white dark:text-[#120d0a] scale-110 shadow-lg shadow-[#8C5000]/30 dark:shadow-black/50" :
                     step > s.id ? "bg-[#b07d4b] dark:bg-[#ffb874]/80 text-white dark:text-[#120d0a]" : "bg-[#dbc2b0]/30 dark:bg-[#887364]/30 text-[#887364] dark:text-[#dbc2b0]")}>
-                  {step > s.id ? <Check className="w-3.5 h-3.5" /> : s.id}
+                  {step > s.id ? <Check className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> : s.id}
                 </div>
-                {i < STEPS.length - 1 && <div className={cn("w-3 sm:w-8 h-0.5 mx-1 sm:mx-1.5 rounded-full transition-all duration-500", step > s.id ? "bg-[#b07d4b] dark:bg-[#ffb874]/80" : "bg-[#dbc2b0]/40 dark:bg-[#887364]/30")} />}
+                {i < STEPS.length - 1 && <div className={cn("w-1.5 sm:w-8 h-0.5 mx-0.5 sm:mx-1.5 rounded-full transition-all duration-500 shrink-0", step > s.id ? "bg-[#b07d4b] dark:bg-[#ffb874]/80" : "bg-[#dbc2b0]/40 dark:bg-[#887364]/30")} />}
               </div>
             ))}
           </div>
@@ -949,7 +1034,7 @@ export function OnboardingForm() {
         {/* Global Country Overlay */}
         {selectedRegion && (
           <div className="absolute inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-6 animate-in fade-in duration-300">
-            <div className="absolute inset-0 bg-background/60 backdrop-blur-md" onClick={() => setSelectedRegion(null)} />
+            <div className="absolute inset-0 bg-[#5a3100]/20 dark:bg-black/70 backdrop-blur-md" onClick={() => setSelectedRegion(null)} />
             <div className="relative w-full h-[80%] sm:h-auto sm:max-h-[85%] bg-card border-t sm:border border-[#8C5000]/20 dark:border-[#ffb874]/20 rounded-t-[2.5rem] sm:rounded-3xl shadow-ambient-high overflow-hidden flex flex-col animate-in slide-in-from-bottom-10 sm:zoom-in-95 duration-500">
               <div className="px-8 py-6 border-b border-border/10 flex justify-between items-center bg-muted/30">
                 <div>
@@ -1004,14 +1089,14 @@ export function OnboardingForm() {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 onClick={() => setActiveAssetModal(null)}
-                className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                className="absolute inset-0 bg-[#5a3100]/20 dark:bg-black/70 backdrop-blur-md"
               />
               <motion.div
                 initial={{ opacity: 0, scale: 0.9, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.9, y: 20 }}
                 transition={{ type: "spring", duration: 0.5 }}
-                className="relative w-full max-w-md bg-card border border-[#8C5000]/30 dark:border-[#ffb874]/30 rounded-3xl shadow-2xl p-6 flex flex-col space-y-4 overflow-hidden z-10"
+                className="relative w-full max-w-md bg-card border border-[#8C5000]/30 dark:border-[#ffb874]/30 rounded-3xl shadow-2xl p-6 flex flex-col space-y-4 overflow-visible z-10"
               >
                 {/* Header */}
                 <div className="flex items-center justify-between border-b border-border/20 pb-4">
@@ -1035,23 +1120,52 @@ export function OnboardingForm() {
 
                 {/* Form fields */}
                 <div className="space-y-4 pt-1">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
+                  <div className="grid grid-cols-2 gap-3 relative">
+                    <div className="relative">
                       <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Sembol / Kod</Label>
-                      <Input
-                        value={modalAssetData.symbol}
-                        onChange={e => setModalAssetData({ ...modalAssetData, symbol: e.target.value })}
-                        placeholder="Örn: THYAO, BTC"
-                        className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] uppercase font-bold"
-                      />
+                      <div className="relative">
+                        <Input
+                          value={searchQuery || modalAssetData.symbol}
+                          onChange={e => {
+                            setSearchQuery(e.target.value);
+                            setModalAssetData(prev => ({ ...prev, symbol: e.target.value }));
+                          }}
+                          placeholder="Örn: THYAO, BTC"
+                          className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] uppercase font-bold pr-8 border-[#dbc2b0]/50 dark:border-[#887364]/40"
+                        />
+                        <Search className="absolute right-3 top-3.5 h-4 w-4 text-muted-foreground opacity-50" />
+                      </div>
+
+                      {/* Arama Sonuçları Dropdown */}
+                      {showSearch && searchResults.length > 0 && (
+                        <div className="absolute top-full left-0 right-0 mt-1.5 bg-card border border-[#8C5000]/20 dark:border-[#ffb874]/20 rounded-2xl shadow-xl overflow-hidden z-[120] max-h-52 overflow-y-auto">
+                          {searchResults.map((res, idx) => (
+                            <div
+                              key={idx}
+                              onClick={() => handleSelectSearchResult(res.symbol, res.shortname)}
+                              className="p-3 hover:bg-[#8C5000]/10 dark:hover:bg-[#ffb874]/10 cursor-pointer border-b border-border/10 last:border-0 flex items-center justify-between text-xs group transition-colors"
+                            >
+                              <div className="flex flex-col">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-extrabold text-[#5a3100] dark:text-[#ffb874]">{res.symbol}</span>
+                                  <span className="text-[9px] bg-muted px-1.5 py-0.5 rounded font-bold uppercase">{res.suggestedCategory}</span>
+                                </div>
+                                <span className="text-[10px] text-muted-foreground block truncate max-w-[180px]">{res.shortname}</span>
+                              </div>
+                              <ArrowUpRight className="h-4 w-4 text-[#8C5000] opacity-0 group-hover:opacity-100 transition-all" />
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
+
                     <div>
                       <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Para Birimi</Label>
                       <Select
                         value={modalAssetData.currency}
                         onValueChange={(v: any) => setModalAssetData({ ...modalAssetData, currency: String(v) })}
                       >
-                        <SelectTrigger className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-extrabold text-xs">
+                        <SelectTrigger className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-extrabold text-xs border-[#dbc2b0]/50 dark:border-[#887364]/40">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -1061,6 +1175,30 @@ export function OnboardingForm() {
                       </Select>
                     </div>
                   </div>
+
+                  {activeAssetModal === "GOLD" && (
+                    <div className="flex flex-wrap gap-1.5 pt-0.5 animate-in fade-in duration-300">
+                      {[
+                        { name: "Gram Altın", symbol: "GRAM ALTIN (XAUTRY=X)" },
+                        { name: "Ons Altın ($)", symbol: "ONS ALTIN (GC=F)" },
+                        { name: "Gram Gümüş", symbol: "GRAM GÜMÜŞ (XAGTRY=X)" },
+                        { name: "Ons Gümüş ($)", symbol: "ONS GÜMÜŞ (SI=F)" },
+                      ].map((item) => (
+                        <button
+                          key={item.symbol}
+                          type="button"
+                          onClick={() => {
+                            setModalAssetData(prev => ({ ...prev, symbol: item.symbol, description: item.name }));
+                            setSearchQuery(item.symbol);
+                            if (useCurrentPrice) fetchCurrentPriceForSymbol(item.symbol);
+                          }}
+                          className="text-[10px] font-bold px-2.5 py-1.5 rounded-lg bg-[#8C5000]/10 text-[#8C5000] dark:text-[#ffb874] border border-[#8C5000]/20 hover:bg-[#8C5000]/20 transition-all"
+                        >
+                          {item.name}
+                        </button>
+                      ))}
+                    </div>
+                  )}
 
                   {activeAssetModal === "BES" && (
                     <div className="grid grid-cols-2 gap-3 animate-in fade-in duration-300">
@@ -1097,23 +1235,38 @@ export function OnboardingForm() {
                       <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">
                         {activeAssetModal === "FAIZ" ? "Faiz / Getiri Oranı %" : "Alış Fiyatı / Oran"}
                       </Label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        value={modalAssetData.purchasePrice}
-                        onChange={e => setModalAssetData({ ...modalAssetData, purchasePrice: e.target.value })}
-                        placeholder="0.00"
-                        className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-bold"
-                      />
+                      <div className="flex gap-1.5">
+                        <Input
+                          type="number"
+                          step="0.01"
+                          disabled={useCurrentPrice}
+                          value={modalAssetData.purchasePrice}
+                          onChange={e => handlePriceChange(e.target.value)}
+                          placeholder="0.00"
+                          className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-bold border-[#dbc2b0]/50 dark:border-[#887364]/40"
+                        />
+                        {activeAssetModal !== "FAIZ" && activeAssetModal !== "BES" && (
+                          <Button
+                            type="button"
+                            variant={useCurrentPrice ? "default" : "outline"}
+                            onClick={handleToggleCurrentPrice}
+                            className={cn("h-11 px-3 rounded-xl font-bold text-[11px] transition-all shrink-0 border-[#dbc2b0]/50 dark:border-[#887364]/40",
+                              useCurrentPrice ? "bg-[#8C5000] dark:bg-[#ffb874] text-white dark:text-[#120d0a] shadow-md" : "bg-[#faf9f6] dark:bg-[#120d0a] text-muted-foreground")}
+                          >
+                            <Clock className="w-3.5 h-3.5 mr-1" />
+                            {fetchingLive ? "..." : "Güncel"}
+                          </Button>
+                        )}
+                      </div>
                     </div>
                     <div>
                       <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Birim Miktarı / Adet</Label>
                       <Input
                         type="number"
                         value={modalAssetData.quantity}
-                        onChange={e => setModalAssetData({ ...modalAssetData, quantity: e.target.value })}
+                        onChange={e => handleQuantityChange(e.target.value)}
                         placeholder="1"
-                        className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-bold"
+                        className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-bold border-[#dbc2b0]/50 dark:border-[#887364]/40"
                       />
                     </div>
                   </div>
@@ -1126,7 +1279,7 @@ export function OnboardingForm() {
                         value={modalAssetData.amount}
                         onChange={e => setModalAssetData({ ...modalAssetData, amount: e.target.value })}
                         placeholder="0.00"
-                        className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-black text-primary"
+                        className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-black text-primary border-[#dbc2b0]/50 dark:border-[#887364]/40"
                       />
                     </div>
                   </div>
@@ -1137,7 +1290,7 @@ export function OnboardingForm() {
                       value={modalAssetData.description}
                       onChange={e => setModalAssetData({ ...modalAssetData, description: e.target.value })}
                       placeholder="Örn: Akbank, Binance, Ziraat"
-                      className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-medium text-xs"
+                      className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-medium text-xs border-[#dbc2b0]/50 dark:border-[#887364]/40"
                     />
                   </div>
                 </div>
