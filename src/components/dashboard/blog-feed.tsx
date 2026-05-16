@@ -10,7 +10,8 @@ import {
   getCommunityMembers,
   handleJoinRequest, 
   deleteCommunity, 
-  removeMember 
+  removeMember,
+  updateCommunity
 } from "@/app/actions/communities";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -20,7 +21,8 @@ import { CommunityCreateModal } from "./community-create-modal";
 import { CommunityDiscovery } from "./community-discovery";
 import { 
   Heart, MessageCircle, Trash2, Send, X, ChevronDown, 
-  Filter, Image as ImageIcon, Plus, Users, LayoutGrid, ArrowLeft, Settings, Check, UserMinus, ShieldAlert, Ban
+  Filter, Image as ImageIcon, Plus, Users, LayoutGrid, ArrowLeft, Settings, Check, UserMinus, ShieldAlert, Ban,
+  Edit, Globe, Shield, Tag
 } from "lucide-react";
 
 const ALL_TAGS = ["#yatırım", "#kripto", "#hisse", "#tasarruf", "#borç", "#bes", "#faiz", "#altın", "#bütçe"];
@@ -638,8 +640,9 @@ function PostCard({ post, currentUserId, onTagClick, onCommunityClick, onComment
 }
 
 // ─── Community Admin Panel ───────────────────────────────────────────
-function CommunityAdminPanel({ communityId, onClose, onDeleteSuccess }: { 
+function CommunityAdminPanel({ communityId, communityDetails: initialDetails, onClose, onDeleteSuccess }: { 
   communityId: string, 
+  communityDetails: any,
   onClose: () => void,
   onDeleteSuccess?: () => void
 }) {
@@ -647,8 +650,39 @@ function CommunityAdminPanel({ communityId, onClose, onDeleteSuccess }: {
   const [requests, setRequests] = useState<any[]>([]);
   const [members, setMembers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'requests' | 'members'>('requests');
+  const [activeTab, setActiveTab] = useState<'requests' | 'members' | 'edit'>('requests');
   const [isPending, startTransition] = useTransition();
+
+  // Edit Form State
+  const [editData, setEditData] = useState({
+    name: initialDetails?.name || "",
+    description: initialDetails?.description || "",
+    imageUrl: initialDetails?.imageUrl || "",
+    isPrivate: initialDetails?.isPrivate || false,
+    tags: initialDetails?.tags || ["genel"]
+  });
+
+  const COMMUNITY_TAGS = ["altın", "kripto", "bes", "faiz", "ekonomi", "genel", "borsa", "tasarruf"];
+
+  const toggleTag = (tag: string) => {
+    setEditData(prev => ({
+      ...prev,
+      tags: prev.tags.includes(tag) ? prev.tags.filter(t => t !== tag) : [...prev.tags, tag]
+    }));
+  };
+
+  const handleUpdate = (e: React.FormEvent) => {
+    e.preventDefault();
+    startTransition(async () => {
+      try {
+        await updateCommunity(communityId, editData);
+        alert("Topluluk başarıyla güncellendi.");
+        router.refresh();
+      } catch (error) {
+        alert("Güncelleme hatası: " + (error as Error).message);
+      }
+    });
+  };
 
   useEffect(() => {
     Promise.all([
@@ -702,18 +736,19 @@ function CommunityAdminPanel({ communityId, onClose, onDeleteSuccess }: {
           </div>
 
           <div className="flex p-1 bg-muted/30 rounded-2xl border border-border/10">
-            <button onClick={() => setActiveTab('requests')} className={cn("flex-1 py-2 text-xs font-bold rounded-xl transition-all", activeTab === 'requests' ? "bg-card text-primary shadow-sm" : "text-muted-foreground")}>Başvurular ({requests.length})</button>
-            <button onClick={() => setActiveTab('members')} className={cn("flex-1 py-2 text-xs font-bold rounded-xl transition-all", activeTab === 'members' ? "bg-card text-primary shadow-sm" : "text-muted-foreground")}>Üyeler ({members.length})</button>
+            <button onClick={() => setActiveTab('requests')} className={cn("flex-1 py-2 text-[10px] font-bold rounded-xl transition-all", activeTab === 'requests' ? "bg-card text-primary shadow-sm" : "text-muted-foreground")}>Başvurular ({requests.length})</button>
+            <button onClick={() => setActiveTab('members')} className={cn("flex-1 py-2 text-[10px] font-bold rounded-xl transition-all", activeTab === 'members' ? "bg-card text-primary shadow-sm" : "text-muted-foreground")}>Üyeler ({members.length})</button>
+            <button onClick={() => setActiveTab('edit')} className={cn("flex-1 py-2 text-[10px] font-bold rounded-xl transition-all", activeTab === 'edit' ? "bg-card text-primary shadow-sm" : "text-muted-foreground")}>Düzenle</button>
           </div>
 
-          <div className="space-y-4 min-h-[250px]">
+          <div className="space-y-4 min-h-[300px]">
             {loading ? (
               <div className="h-40 flex items-center justify-center"><div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div></div>
             ) : activeTab === 'requests' ? (
               requests.length === 0 ? (
                 <p className="text-xs text-center py-12 text-muted-foreground bg-muted/20 rounded-2xl">Bekleyen başvuru yok.</p>
               ) : (
-                <div className="space-y-2 max-h-[250px] overflow-y-auto pr-2">
+                <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
                   {requests.map(r => (
                     <div key={r.userId} className="flex items-center justify-between p-3 bg-muted/30 rounded-2xl border border-border/10">
                       <div className="flex items-center gap-3">
@@ -728,8 +763,8 @@ function CommunityAdminPanel({ communityId, onClose, onDeleteSuccess }: {
                   ))}
                 </div>
               )
-            ) : (
-              <div className="space-y-2 max-h-[250px] overflow-y-auto pr-2">
+            ) : activeTab === 'members' ? (
+              <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
                 {members.map(m => (
                   <div key={m.userId} className="flex items-center justify-between p-3 bg-muted/30 rounded-2xl border border-border/10">
                     <div className="flex items-center gap-3">
@@ -747,16 +782,52 @@ function CommunityAdminPanel({ communityId, onClose, onDeleteSuccess }: {
                   </div>
                 ))}
               </div>
+            ) : (
+              <form onSubmit={handleUpdate} className="space-y-4 max-h-[350px] overflow-y-auto pr-2 pb-4 scrollbar-hide">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-muted-foreground ml-1">Topluluk Adı</label>
+                  <input required value={editData.name} onChange={(e) => setEditData(prev => ({...prev, name: e.target.value}))} className="w-full bg-muted/30 border border-border/20 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-muted-foreground ml-1">Açıklama</label>
+                  <textarea value={editData.description} onChange={(e) => setEditData(prev => ({...prev, description: e.target.value}))} rows={2} className="w-full bg-muted/30 border border-border/20 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all resize-none" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-muted-foreground ml-1">Kapak Görseli URL</label>
+                  <input value={editData.imageUrl} onChange={(e) => setEditData(prev => ({...prev, imageUrl: e.target.value}))} placeholder="https://..." className="w-full bg-muted/30 border border-border/20 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-muted-foreground ml-1">Etiketler</label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {COMMUNITY_TAGS.map(tag => (
+                      <button key={tag} type="button" onClick={() => toggleTag(tag)} className={cn("text-[9px] font-bold px-2.5 py-1 rounded-lg border transition-all", editData.tags.includes(tag) ? "bg-primary text-primary-foreground border-primary" : "bg-muted/30 text-muted-foreground border-border/10")}>{tag}</button>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button type="button" onClick={() => setEditData(prev => ({...prev, isPrivate: false}))} className={cn("flex-1 p-3 rounded-xl border transition-all text-left", !editData.isPrivate ? "bg-primary/5 border-primary" : "bg-muted/30 border-border/10")}>
+                    <div className="flex items-center gap-2"><Globe className={cn("h-3 w-3", !editData.isPrivate ? "text-primary" : "text-muted-foreground")} /><span className={cn("text-[10px] font-bold", !editData.isPrivate ? "text-primary" : "text-foreground")}>Açık</span></div>
+                  </button>
+                  <button type="button" onClick={() => setEditData(prev => ({...prev, isPrivate: true}))} className={cn("flex-1 p-3 rounded-xl border transition-all text-left", editData.isPrivate ? "bg-primary/5 border-primary" : "bg-muted/30 border-border/10")}>
+                    <div className="flex items-center gap-2"><Shield className={cn("h-3 w-3", editData.isPrivate ? "text-primary" : "text-muted-foreground")} /><span className={cn("text-[10px] font-bold", editData.isPrivate ? "text-primary" : "text-foreground")}>Gizli</span></div>
+                  </button>
+                </div>
+                <Button type="submit" disabled={isPending} className="w-full h-10 rounded-xl font-bold bg-primary text-primary-foreground">
+                  {isPending ? "Güncelleniyor..." : "Değişiklikleri Kaydet"}
+                </Button>
+              </form>
             )}
 
-            <div className="pt-4 border-t border-border/10">
-              <button 
-                onClick={handleDelete}
-                className="w-full flex items-center justify-center gap-2 p-3 bg-rose-500/10 text-rose-600 rounded-2xl hover:bg-rose-500/20 transition-all font-bold text-sm"
-              >
-                <Trash2 className="h-4 w-4" /> Topluluğu Tamamen Sil
-              </button>
-            </div>
+            {(activeTab !== 'edit' || !editData.name) && (
+              <div className="pt-4 border-t border-border/10">
+                <button 
+                  onClick={handleDelete}
+                  className="w-full flex items-center justify-center gap-2 p-3 bg-rose-500/10 text-rose-600 rounded-2xl hover:bg-rose-500/20 transition-all font-bold text-sm"
+                >
+                  <Trash2 className="h-4 w-4" /> Topluluğu Tamamen Sil
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -938,6 +1009,7 @@ export function BlogFeed({
       {isAdminPanelOpen && selectedCommunity && (
         <CommunityAdminPanel 
           communityId={selectedCommunity.id} 
+          communityDetails={communityDetails}
           onClose={() => setIsAdminPanelOpen(false)} 
           onDeleteSuccess={() => {
             setSelectedCommunity(null);
@@ -985,8 +1057,17 @@ export function BlogFeed({
 
           {filtered.length === 0 && !isLoadingMore ? (
             <div className="text-center py-16 bg-card border border-dashed border-border/30 rounded-[24px]">
-              <p className="text-5xl mb-4">{selectedCommunity ? "🔒" : "💬"}</p>
-              <p className="font-bold text-foreground text-lg">{selectedCommunity ? `${selectedCommunity.name} Gizli Olabilir` : "Henüz paylaşım yok"}</p>
+              <p className="text-5xl mb-4">
+                {(selectedCommunity && !communityDetails?.isMember && communityDetails?.isPrivate) ? "🔒" : "💬"}
+              </p>
+              <p className="font-bold text-foreground text-lg">
+                {(selectedCommunity && !communityDetails?.isMember && communityDetails?.isPrivate) 
+                  ? `${selectedCommunity.name} Gizli Bir Topluluktur` 
+                  : "Henüz paylaşım yok"}
+              </p>
+              {(selectedCommunity && !communityDetails?.isMember && communityDetails?.isPrivate) && (
+                <p className="text-xs text-muted-foreground mt-1">İçerikleri görmek için üye olmalısın.</p>
+              )}
             </div>
           ) : (
             <div className="space-y-4">
