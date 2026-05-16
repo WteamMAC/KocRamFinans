@@ -22,12 +22,15 @@ export const metadata: Metadata = {
 
 import { ThemeProvider } from "@/components/theme-provider";
 import { CurrencyProvider } from "@/context/currency-context";
+import { getExchangeRatesAction } from "@/app/actions/market";
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const initialRates = await getExchangeRatesAction();
+
   return (
     <ClerkProvider 
       afterSignOutUrl="/"
@@ -71,7 +74,7 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
-            <CurrencyProvider>
+            <CurrencyProvider initialRates={initialRates || undefined}>
               {children}
             </CurrencyProvider>
           </ThemeProvider>
