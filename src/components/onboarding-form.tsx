@@ -14,6 +14,7 @@ import { DatePicker } from "@/components/ui/date-picker";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { parseISO } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
+import { AssetForm } from "./dashboard/asset-form";
 
 const MIN_AGE = 13;
 function getMaxDate() {
@@ -237,13 +238,13 @@ export function OnboardingForm() {
   useEffect(() => {
     if (selectedCurrency) {
       const curInc = form.getValues("incomes") || [];
-      form.setValue("incomes", curInc.map(i => ({ ...i, currency: selectedCurrency })));
+      form.setValue("incomes", curInc.map(i => ({ ...i, currency: (!i.currency || i.currency === "TRY") ? selectedCurrency : i.currency })));
       const curExp = form.getValues("expenses") || [];
-      form.setValue("expenses", curExp.map(e => ({ ...e, currency: selectedCurrency })));
+      form.setValue("expenses", curExp.map(e => ({ ...e, currency: (!e.currency || e.currency === "TRY") ? selectedCurrency : e.currency })));
       const curDebt = form.getValues("debts") || [];
-      form.setValue("debts", curDebt.map(d => ({ ...d, currency: selectedCurrency })));
+      form.setValue("debts", curDebt.map(d => ({ ...d, currency: (!d.currency || d.currency === "TRY") ? selectedCurrency : d.currency })));
       const curInv = form.getValues("investments") || [];
-      form.setValue("investments", curInv.map(inv => ({ ...inv, currency: selectedCurrency })));
+      form.setValue("investments", curInv.map(inv => ({ ...inv, currency: (!inv.currency || inv.currency === "TRY") ? selectedCurrency : inv.currency })));
     }
   }, [selectedCurrency]);
 
@@ -255,35 +256,27 @@ export function OnboardingForm() {
 
   const handleOpenAssetModal = (type: string) => {
     setActiveAssetModal(type);
-    setModalAssetData({
-      symbol: "",
-      amount: "",
-      quantity: "1",
-      purchasePrice: "",
-      currency: selectedCurrency || "TRY",
-      description: "",
-    });
   };
 
-  const handleSaveAssetModal = (e: React.FormEvent) => {
-    e.preventDefault();
-    const amountVal = parseFloat(modalAssetData.amount) || 0;
-    if (amountVal <= 0) {
-      alert("Lütfen 0'dan büyük bir toplam tutar giriniz.");
+  const handleSaveReadyAsset = async (data: any) => {
+    const q = Number(data.quantity) || 0;
+    const p = Number(data.purchasePrice) || 0;
+    let totalAmount = q * p;
+    if (data.type === "BES" || data.type === "FAIZ" || data.type === "CASH") {
+      totalAmount = Number(data.quantity) || 0;
+    }
+    if (totalAmount <= 0 && q <= 0) {
+      alert("Lütfen geçerli bir miktar veya tutar giriniz.");
       return;
     }
-
-    const typeObj = ASSET_CATEGORIES.find(c => c.id === activeAssetModal);
-    const typeName = typeObj?.id || activeAssetModal || "Diğer";
-
     investmentsField.append({
-      type: typeName,
-      symbol: modalAssetData.symbol ? modalAssetData.symbol.toUpperCase().trim() : undefined,
-      amount: amountVal,
-      quantity: parseFloat(modalAssetData.quantity) || 1,
-      purchasePrice: parseFloat(modalAssetData.purchasePrice) || amountVal,
-      currency: modalAssetData.currency || selectedCurrency || "TRY",
-      description: modalAssetData.description || undefined,
+      type: data.type || activeAssetModal || "BIST",
+      symbol: data.symbol ? data.symbol.split(" (")[0] : undefined,
+      amount: totalAmount > 0 ? totalAmount : q,
+      quantity: q > 0 ? q : 1,
+      purchasePrice: p > 0 ? p : (totalAmount > 0 ? totalAmount : 1),
+      currency: selectedCurrency || "TRY",
+      description: data.description || undefined,
     });
     setActiveAssetModal(null);
   };
@@ -337,10 +330,10 @@ export function OnboardingForm() {
       const defaultCur = data.currency || "TRY";
       const cleanData = {
         ...data,
-        incomes: (data.incomes || []).map((i: any) => ({ ...i, currency: defaultCur })),
-        expenses: (data.expenses || []).map((e: any) => ({ ...e, currency: defaultCur })),
-        debts: (data.debts || []).map((d: any) => ({ ...d, currency: defaultCur })),
-        investments: (data.investments || []).map((inv: any) => ({ ...inv, currency: defaultCur })),
+        incomes: (data.incomes || []).map((i: any) => ({ ...i, currency: i.currency || defaultCur })),
+        expenses: (data.expenses || []).map((e: any) => ({ ...e, currency: e.currency || defaultCur })),
+        debts: (data.debts || []).map((d: any) => ({ ...d, currency: d.currency || defaultCur })),
+        investments: (data.investments || []).map((inv: any) => ({ ...inv, currency: inv.currency || defaultCur })),
       };
 
       const result = await completeOnboarding({
@@ -984,129 +977,21 @@ export function OnboardingForm() {
           </div>
         )}
 
-        {/* Premium Varlık Ekleme Popup Modalı (Framer Motion) */}
-        <AnimatePresence>
-          {activeAssetModal && (
-            <div className="absolute inset-0 z-[110] flex items-center justify-center p-4">
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={() => setActiveAssetModal(null)}
-                className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        {/* Hazır Sistem Varlık Ekleme Popup Modalı (AssetForm) */}
+        {activeAssetModal && (
+          <div className="absolute inset-0 z-[110] flex items-center justify-center p-4 md:p-6 bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
+            <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto no-scrollbar rounded-[32px] shadow-2xl border border-border/40">
+              <AssetForm
+                activeTab="financial"
+                defaultAssetType={activeAssetModal}
+                onAdd={handleSaveReadyAsset}
+                onCancel={() => setActiveAssetModal(null)}
+                loading={false}
+                error={null}
               />
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                transition={{ type: "spring", duration: 0.5 }}
-                className="relative w-full max-w-md bg-card border border-[#8C5000]/30 dark:border-[#ffb874]/30 rounded-3xl shadow-2xl p-6 flex flex-col space-y-4 overflow-hidden z-10"
-              >
-                {/* Header */}
-                <div className="flex items-center justify-between border-b border-border/20 pb-4">
-                  <div className="flex items-center gap-3">
-                    <span className="text-3xl">{ASSET_CATEGORIES.find(c => c.id === activeAssetModal)?.emoji}</span>
-                    <div>
-                      <h3 className="text-sm font-black text-[#5a3100] dark:text-[#ffb874]">
-                        {ASSET_CATEGORIES.find(c => c.id === activeAssetModal)?.title}
-                      </h3>
-                      <p className="text-[10px] text-muted-foreground">Varlık detaylarını doldurun</p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setActiveAssetModal(null)}
-                    className="h-8 w-8 rounded-full bg-muted/30 flex items-center justify-center hover:bg-rose-500 hover:text-white transition-colors"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-
-                {/* Form fields */}
-                <div className="space-y-4 pt-1">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Sembol / Kod</Label>
-                      <Input
-                        value={modalAssetData.symbol}
-                        onChange={e => setModalAssetData({ ...modalAssetData, symbol: e.target.value })}
-                        placeholder="Örn: THYAO, BTC"
-                        className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] uppercase font-bold"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Para Birimi</Label>
-                      <Select
-                        value={modalAssetData.currency}
-                        onValueChange={(v: any) => setModalAssetData({ ...modalAssetData, currency: String(v) })}
-                      >
-                        <SelectTrigger className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-extrabold text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {MAIN_CURRENCIES.map(c => <SelectItem key={c.code} value={c.code}>{c.flag} {c.code}</SelectItem>)}
-                          {OTHER_CURRENCIES.map(c => <SelectItem key={c.code} value={c.code}>{c.flag} {c.code}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Birim Miktarı / Adet</Label>
-                      <Input
-                        type="number"
-                        value={modalAssetData.quantity}
-                        onChange={e => setModalAssetData({ ...modalAssetData, quantity: e.target.value })}
-                        placeholder="1"
-                        className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-bold"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Toplam Tutar / Değer</Label>
-                      <Input
-                        type="number"
-                        value={modalAssetData.amount}
-                        onChange={e => setModalAssetData({ ...modalAssetData, amount: e.target.value })}
-                        placeholder="0.00"
-                        className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-black text-primary"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Açıklama (Banka/Kurum)</Label>
-                    <Input
-                      value={modalAssetData.description}
-                      onChange={e => setModalAssetData({ ...modalAssetData, description: e.target.value })}
-                      placeholder="Örn: Akbank, Binance, Ziraat"
-                      className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-medium text-xs"
-                    />
-                  </div>
-                </div>
-
-                {/* Footer Buttons */}
-                <div className="flex gap-3 pt-2 border-t border-border/10">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    onClick={() => setActiveAssetModal(null)}
-                    className="flex-1 h-11 rounded-xl font-bold"
-                  >
-                    İptal
-                  </Button>
-                  <Button
-                    type="button"
-                    onClick={handleSaveAssetModal}
-                    className="flex-1 h-11 rounded-xl bg-[#8C5000] dark:bg-[#ffb874] text-white dark:text-[#120d0a] font-black shadow-lg shadow-[#8C5000]/25 hover:scale-[1.02] transition-all"
-                  >
-                    Varlığı Ekle
-                  </Button>
-                </div>
-              </motion.div>
             </div>
-          )}
-        </AnimatePresence>
+          </div>
+        )}
 
         {/* Footer */}
         <div className="flex items-center justify-between px-8 py-5 bg-[#fbf9f4] dark:bg-[#120d0a]/60 border-t border-[#8C5000]/10 dark:border-[#ffb874]/15 transition-colors duration-300 rounded-b-3xl">
