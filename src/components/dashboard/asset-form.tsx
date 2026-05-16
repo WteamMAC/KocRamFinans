@@ -94,7 +94,7 @@ export function AssetForm({ activeTab, onAdd, onCancel, loading, error, defaultA
   };
 
   return (
-    <div className="w-full bg-card border border-border/20 shadow-2xl rounded-[32px] overflow-hidden animate-in zoom-in-95 duration-300">
+    <div className="w-full bg-card/95 backdrop-blur-xl border border-border/20 shadow-2xl rounded-[32px] overflow-hidden animate-in zoom-in-95 duration-300">
       <div className="grid grid-cols-1 md:grid-cols-12">
         {/* Sol Bilgi & İkon Sütunu */}
         {/* Sol Bilgi & İkon Sütunu */}
@@ -397,7 +397,8 @@ export function AssetForm({ activeTab, onAdd, onCancel, loading, error, defaultA
 
             {error && <div className="mt-6 p-4 bg-destructive/10 text-rose-500/80 rounded-2xl text-sm font-bold border border-destructive/20">{error}</div>}
 
-            <div className="mt-10 flex justify-end">
+            {/* Sticky Save Button Container */}
+            <div className="sticky bottom-0 z-20 mt-10 -mx-8 md:-mx-12 -mb-8 md:-mb-12 px-8 md:px-12 py-6 bg-card/80 backdrop-blur-md border-t border-border/10 flex justify-end">
               <Button
                 onClick={handleSubmit}
                 disabled={loading}
