@@ -665,7 +665,7 @@ export function AssetList({
                                     "text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-tight",
                                     asset.liveProfit! >= 0 ? "bg-emerald-500/10 text-emerald-600" : "bg-rose-500/10 text-rose-600"
                                   )}>
-                                    Artış: {asset.liveProfit! >= 0 ? "+" : ""}{formatCur(asset.liveProfit, "TRY")} ({asset.liveProfitPercent?.toFixed(1) || 0}%)
+                                    Artış: {asset.liveProfit! >= 0 ? "+" : ""}{formatCur(asset.liveProfit)} ({asset.liveProfitPercent?.toFixed(1) || 0}%)
                                   </span>
                                 )}
                               </div>
@@ -680,13 +680,13 @@ export function AssetList({
                                   </div>
                                   <div className="text-xs font-bold text-muted-foreground mt-0.5 flex items-center justify-end gap-1">
                                     <span>Güncel Değer:</span>
-                                    <span className="text-foreground font-black">{formatCur(asset.value, "TRY")}</span>
+                                    <span className="text-foreground font-black">{formatCur(asset.value)}</span>
                                   </div>
                                 </>
                               ) : (
                                 <>
                                   <div className="text-xl font-heading font-black text-primary">
-                                    {formatCur(asset.value, "TRY")}
+                                    {formatCur(asset.value)}
                                   </div>
                                   <div className="text-[10px] font-medium text-muted-foreground opacity-60 mt-0.5">Tahmini Değer</div>
                                 </>
