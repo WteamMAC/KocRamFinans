@@ -387,7 +387,7 @@ export function AssetForm({ activeTab, onAdd, onCancel, loading, error, defaultA
               </div>
             )}
 
-            {error && <div className="mt-6 p-4 bg-destructive/10 text-destructive rounded-2xl text-sm font-bold border border-destructive/20">{error}</div>}
+            {error && <div className="mt-6 p-4 bg-destructive/10 text-rose-500/80 rounded-2xl text-sm font-bold border border-destructive/20">{error}</div>}
 
             <div className="mt-10 flex justify-end">
               <Button
@@ -398,6 +398,9 @@ export function AssetForm({ activeTab, onAdd, onCancel, loading, error, defaultA
                 {loading ? "Kaydediliyor..." : (activeTab === "financial" ? "Yatırımı Kaydet" : "Varlığı Kaydet")}
               </Button>
             </div>
-          </Card>
-          );
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
