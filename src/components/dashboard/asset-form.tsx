@@ -96,8 +96,8 @@ export function AssetForm({ activeTab, onAdd, onCancel, loading, error, defaultA
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto bg-card/95 backdrop-blur-xl border border-border/20 shadow-2xl rounded-[32px] overflow-hidden animate-in zoom-in-95 duration-300">
-      <div className="p-6 sm:p-10 flex flex-col justify-between">
+    <div className="w-full max-w-2xl mx-auto bg-card/40 backdrop-blur-3xl border border-border/20 shadow-2xl rounded-[32px] overflow-hidden animate-in zoom-in-95 duration-300">
+      <div className="p-6 sm:p-10 flex flex-col justify-between backdrop-blur-3xl">
         <div>
           {/* Üst Başlık & Kapatma Butonu */}
           <div className="flex justify-between items-center pb-6 mb-8 border-b border-border/10">
@@ -372,7 +372,7 @@ export function AssetForm({ activeTab, onAdd, onCancel, loading, error, defaultA
           {error && <div className="mt-6 p-4 bg-destructive/10 text-rose-500/80 rounded-2xl text-sm font-bold border border-destructive/20">{error}</div>}
 
           {/* Sticky Save Button Container */}
-          <div className="pt-8 mt-8 border-t border-border/10 flex justify-end">
+          <div className="pt-8 mt-8 border-t border-border/5 flex justify-end pb-2">
             <Button
               onClick={handleSubmit}
               disabled={loading}
