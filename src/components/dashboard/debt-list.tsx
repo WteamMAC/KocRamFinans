@@ -19,7 +19,7 @@ interface DebtListProps {
   monthlyPayments?: any[];
 }
 
-export function DebtList({ debts }: DebtListProps) {
+export function DebtList({ debts, monthlyPayments }: DebtListProps) {
     const router = useRouter();
     const { formatAmount, rates } = useCurrency();
     const [isAdding, setIsAdding] = useState(false);
@@ -225,7 +225,18 @@ export function DebtList({ debts }: DebtListProps) {
 
             {/* Add Debt Form */}
             {isAdding && (
-                <Card className="p-8 bg-card border-border/30 shadow-ambient-high rounded-[32px] animate-in fade-in slide-in-from-top-4 duration-500">
+                <Card className="p-8 bg-card border-border/30 shadow-ambient-high rounded-[32px] animate-in fade-in slide-in-from-top-4 duration-500 mb-8 border-t-4 border-t-primary">
+                    <div className="flex justify-between items-center mb-8">
+                        <h3 className="text-xl font-heading font-bold text-primary flex items-center gap-2">
+                            {refinanceId ? <Landmark className="w-6 h-6" /> : <Plus className="w-6 h-6" />}
+                            {refinanceId ? "Borç Yapılandırma" : "Yeni Borç Ekle"}
+                        </h3>
+                        {refinanceId && (
+                            <span className="text-xs font-bold text-muted-foreground bg-muted px-3 py-1 rounded-full uppercase tracking-tighter">
+                                Mevcut borç kapatılıp yenisi eklenecek
+                            </span>
+                        )}
+                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                         <div className="space-y-3">
                             <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Borç Türü</Label>
@@ -354,7 +365,7 @@ export function DebtList({ debts }: DebtListProps) {
                                 </div>
                                 <div className="flex flex-col gap-1 ml-4 mr-auto">
                                     {(() => {
-                                        const payment = monthlyPayments?.find(p => p.description.includes(debt.description || debt.type));
+                                        const payment = monthlyPayments?.find((p: any) => p.description?.includes(debt.description || debt.type));
                                         if (payment) {
                                             if (payment.amount === 0) return <span className="text-[10px] bg-amber-500/10 text-amber-600 px-2 py-0.5 rounded-full font-bold">ERTELENDİ</span>;
                                             return <span className="text-[10px] bg-emerald-500/10 text-emerald-600 px-2 py-0.5 rounded-full font-bold">ÖDENDİ</span>;
@@ -393,7 +404,8 @@ export function DebtList({ debts }: DebtListProps) {
                                             </DropdownMenuItem>
                                             <DropdownMenuItem 
                                                 className="cursor-pointer"
-                                                onClick={() => {
+                                                onSelect={(e) => {
+                                                    e.preventDefault(); // Menü kapanırken state kaybını önlemek için
                                                     setRefinanceId(debt.id);
                                                     setFormData({
                                                         type: debt.type,
@@ -405,8 +417,11 @@ export function DebtList({ debts }: DebtListProps) {
                                                         dueDate: debt.dueDate ? new Date(debt.dueDate).toISOString().split('T')[0] : "",
                                                         description: debt.description || debt.type,
                                                     });
-                                                    setIsAdding(true);
-                                                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                                                    setIsAdding(false); // Önce kapatıp
+                                                    setTimeout(() => {
+                                                        setIsAdding(true); // Hemen geri açıyoruz (Fresh state)
+                                                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                                                    }, 50);
                                                 }}
                                             >
                                                 <Landmark className="w-4 h-4 mr-2" /> Borcu Yapılandır
