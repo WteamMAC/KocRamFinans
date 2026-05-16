@@ -208,7 +208,21 @@ export function PortfolioChart({ assets }: PortfolioChartProps) {
                                     <Cell key={`cell-${index}`} fill={TYPE_COLORS[entry.name] || SYMBOL_COLORS[index % SYMBOL_COLORS.length]} />
                                 ))}
                             </Pie>
-                            <Tooltip formatter={formatter} contentStyle={tooltipStyle} />
+                            <Tooltip 
+                                content={({ active, payload }) => {
+                                    if (active && payload && payload.length) {
+                                        return (
+                                            <div className="bg-card/95 backdrop-blur-md p-4 border border-border/30 rounded-2xl shadow-ambient-high">
+                                                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">{payload[0].name}</p>
+                                                <p className="text-lg font-heading font-bold text-primary">
+                                                    {formatter(payload[0].value)}
+                                                </p>
+                                            </div>
+                                        );
+                                    }
+                                    return null;
+                                }}
+                            />
                             <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '12px' }} />
                         </PieChart>
                     </ResponsiveContainer>
@@ -226,7 +240,21 @@ export function PortfolioChart({ assets }: PortfolioChartProps) {
                                 <Cell key={`cell-${index}`} fill={SYMBOL_COLORS[index % SYMBOL_COLORS.length]} />
                             ))}
                         </Pie>
-                        <Tooltip formatter={formatter} contentStyle={tooltipStyle} />
+                        <Tooltip 
+                            content={({ active, payload }) => {
+                                if (active && payload && payload.length) {
+                                    return (
+                                        <div className="bg-card/95 backdrop-blur-md p-4 border border-border/30 rounded-2xl shadow-ambient-high">
+                                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">{payload[0].name}</p>
+                                            <p className="text-lg font-heading font-bold text-primary">
+                                                {formatter(payload[0].value)}
+                                            </p>
+                                        </div>
+                                    );
+                                }
+                                return null;
+                            }}
+                        />
                         <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '12px' }} />
                     </PieChart>
                 </ResponsiveContainer>

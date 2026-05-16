@@ -103,7 +103,7 @@ export function PerformanceChart({ incomes, expenses, investments }: Performance
 
   return (
     <>
-      <CardHeader className="bg-muted/30 border-b border-border/10 min-h-[80px] px-6 py-3 flex flex-row items-center justify-between">
+      <CardHeader className="bg-muted/30 border-b border-border/10 h-20 !flex flex-row items-center justify-between px-6 py-0">
         <CardTitle className="text-xl font-heading font-bold text-primary flex items-center gap-2">
           <TrendingUp className="h-5 w-5 text-accent" /> Gelişim Grafiği
         </CardTitle>
@@ -161,20 +161,29 @@ export function PerformanceChart({ incomes, expenses, investments }: Performance
                 tickFormatter={(value) => `${formatAmount(value)}`}
               />
               <Tooltip 
-                formatter={(value: any, name: any, props: any) => [
-                  formatAmount(name === "Nakit Bakiyesi" ? props.payload.rawBakiye : props.payload.rawYatirim),
-                  name
-                ]}
-                contentStyle={{ 
-                  backgroundColor: tooltipBg, 
-                  borderRadius: "16px", 
-                  border: `1px solid ${tooltipBorder}`,
-                  boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)",
-                  padding: "12px",
-                  color: textColor
+                content={({ active, payload, label }) => {
+                  if (active && payload && payload.length) {
+                    return (
+                      <div className="bg-card/95 backdrop-blur-md p-4 border border-border/30 rounded-2xl shadow-ambient-high min-w-[150px]">
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 border-b border-border/10 pb-1">{label}</p>
+                        <div className="space-y-1.5">
+                          {payload.map((entry: any, index: number) => (
+                            <div key={index} className="flex items-center justify-between gap-4">
+                              <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
+                                <span className="text-[11px] font-medium text-foreground/80">{entry.name}</span>
+                              </div>
+                              <span className="text-sm font-bold text-primary">
+                                {formatAmount(entry.name === "Nakit Bakiyesi" ? entry.payload.rawBakiye : entry.payload.rawYatirim)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
                 }}
-                itemStyle={{ fontSize: "12px", fontWeight: "bold" }}
-                labelStyle={{ color: primaryColor, fontWeight: "bold", marginBottom: "4px" }}
               />
               <Legend 
                 verticalAlign="top" 
