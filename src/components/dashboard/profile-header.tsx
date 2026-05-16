@@ -132,31 +132,34 @@ export function ProfileHeader({ profile, initialIsFollowing, currentUserRole }: 
               </div>
 
               {/* Profile Info */}
-              <div className="pb-2 space-y-2 pt-2 md:pt-4">
-                <div className="flex items-center gap-3">
-                  <h1 className="text-3xl md:text-4xl font-black tracking-tight text-foreground">
-                    {profile.name}
-                  </h1>
-                  {profile.isBanned && (
-                    <span className="bg-rose-500/10 text-rose-500 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-rose-500/20">
-                      Banned
+              <div className="pb-2 flex flex-col">
+                {/* Name & Tags - Kept within the 80px cover area */}
+                <div className="pt-2 flex flex-col gap-2">
+                  <div className="flex items-center gap-3">
+                    <h1 className="text-3xl md:text-4xl font-black tracking-tight text-foreground leading-none">
+                      {profile.name}
+                    </h1>
+                    {profile.isBanned && (
+                      <span className="bg-rose-500/10 text-rose-500 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-rose-500/20">
+                        Banned
+                      </span>
+                    )}
+                  </div>
+                  
+                  <div className="flex items-center gap-4">
+                    {profile.username && (
+                      <span className="text-sm font-bold text-primary px-3 py-1 bg-primary/10 rounded-xl border border-primary/10 leading-none">
+                        @{profile.username}
+                      </span>
+                    )}
+                    <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest opacity-60 leading-none">
+                      Finansal Profil
                     </span>
-                  )}
+                  </div>
                 </div>
                 
-                <div className="flex items-center gap-4">
-                  {profile.username && (
-                    <span className="text-sm font-bold text-primary px-3 py-1 bg-primary/10 rounded-xl border border-primary/10">
-                      @{profile.username}
-                    </span>
-                  )}
-                  <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">
-                    Finansal Profil
-                  </span>
-                </div>
-                
-                {/* Enhanced Bio Section */}
-                <div className="pt-3 max-w-lg min-h-[60px]">
+                {/* Enhanced Bio Section - Pushed below the cover line */}
+                <div className="mt-8 max-w-lg min-h-[60px]">
                   {isEditingBio ? (
                     <div className="flex flex-col gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
                       <textarea
