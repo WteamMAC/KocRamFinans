@@ -23,11 +23,11 @@ interface FixedAssetsSummaryProps {
 
 const COLORS = [
   "var(--primary)",
-  "#10b981",
-  "#3b82f6",
-  "#f59e0b",
-  "#6366f1",
-  "#f43f5e",
+  "var(--tertiary)",
+  "#64748b",
+  "#d97706",
+  "#0ea5e9",
+  "#14b8a6",
 ];
 
 export function FixedAssetsSummary({ fixedAssets }: FixedAssetsSummaryProps) {
@@ -91,7 +91,7 @@ export function FixedAssetsSummary({ fixedAssets }: FixedAssetsSummaryProps) {
                   const data = payload[0].payload as any;
                   const percent = ((data.rawVal / totalValue) * 100).toFixed(1);
                   return (
-                    <div className="bg-card/95 backdrop-blur-md p-4 border border-border/30 rounded-2xl shadow-ambient-high">
+                    <div className="bg-card/95 backdrop-blur-md p-4 border border-border/40 rounded-2xl shadow-ambient-high">
                       <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">{data.name}</p>
                       <p className="text-xl font-heading font-bold text-primary">
                         {formatAmount(data.rawVal)}
@@ -125,14 +125,14 @@ export function FixedAssetsSummary({ fixedAssets }: FixedAssetsSummaryProps) {
           {groupedData.map((item: any, index: number) => {
             const percent = ((item.rawVal / totalValue) * 100).toFixed(1);
             return (
-              <div key={index} className="flex items-center justify-between p-3 bg-card border border-border/10 rounded-xl hover:shadow-sm transition-all">
+              <div key={index} className="flex items-center justify-between p-3 bg-card border border-border/15 rounded-2xl hover:shadow-ambient-low transition-all">
                 <div className="flex items-center gap-3">
                   <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }}></div>
                   <span className="text-xs font-bold text-muted-foreground">{item.name}</span>
                 </div>
                 <div className="flex items-center gap-4">
                   <span className="text-xs font-bold text-primary">{formatAmount(item.rawVal)}</span>
-                  <span className="text-[10px] font-bold text-white bg-emerald-500/80 px-2 py-0.5 rounded-full">%{percent}</span>
+                  <span className="text-[10px] font-bold text-primary bg-primary/10 dark:bg-primary/20 px-2 py-0.5 rounded-xl border border-primary/15">%{percent}</span>
                 </div>
               </div>
             );
