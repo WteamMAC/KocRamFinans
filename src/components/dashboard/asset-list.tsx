@@ -673,24 +673,13 @@ export function AssetList({
                           </div>
                           <div className="flex items-center gap-4">
                             <div className="text-right">
-                              {!isTry ? (
-                                <>
-                                  <div className="text-xl font-heading font-black text-primary">
-                                    {origAmount.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {fxSymbol === "USD" ? "$" : fxSymbol === "EUR" ? "€" : fxSymbol === "GBP" ? "£" : fxSymbol === "XAU" ? "ALT" : fxSymbol}
-                                  </div>
-                                  <div className="text-xs font-bold text-muted-foreground mt-0.5 flex items-center justify-end gap-1">
-                                    <span>Güncel Değer:</span>
-                                    <span className="text-foreground font-black">{formatCur(asset.value)}</span>
-                                  </div>
-                                </>
-                              ) : (
-                                <>
-                                  <div className="text-xl font-heading font-black text-primary">
-                                    {formatCur(asset.value)}
-                                  </div>
-                                  <div className="text-[10px] font-medium text-muted-foreground opacity-60 mt-0.5">Tahmini Değer</div>
-                                </>
-                              )}
+                              <div className="text-xl font-heading font-black text-primary">
+                                {origAmount.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {isTry ? "₺" : fxSymbol === "USD" ? "$" : fxSymbol === "EUR" ? "€" : fxSymbol === "GBP" ? "£" : fxSymbol === "XAU" ? "ALT" : fxSymbol}
+                              </div>
+                              <div className="text-xs font-bold text-muted-foreground mt-0.5 flex items-center justify-end gap-1">
+                                <span>Güncel Değer:</span>
+                                <span className="text-foreground font-black">{formatCur(asset.value)}</span>
+                              </div>
                             </div>
                             <Button
                               variant="ghost"
