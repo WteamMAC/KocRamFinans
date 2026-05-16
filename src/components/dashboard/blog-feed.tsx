@@ -667,7 +667,7 @@ function CommunityAdminPanel({ communityId, communityDetails: initialDetails, on
   const toggleTag = (tag: string) => {
     setEditData(prev => ({
       ...prev,
-      tags: prev.tags.includes(tag) ? prev.tags.filter(t => t !== tag) : [...prev.tags, tag]
+      tags: prev.tags.includes(tag) ? prev.tags.filter((t: string) => t !== tag) : [...prev.tags, tag]
     }));
   };
 
@@ -707,17 +707,19 @@ function CommunityAdminPanel({ communityId, communityDetails: initialDetails, on
     });
   };
 
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [memberToRemove, setMemberToRemove] = useState<string | null>(null);
+
   const handleRemove = (userId: string) => {
-    if (!confirm("Bu üyeyi topluluktan çıkarmak istediğinize emin misiniz?")) return;
     startTransition(async () => {
       await removeMember(communityId, userId);
       setMembers(prev => prev.filter(m => m.userId !== userId));
+      setMemberToRemove(null);
       router.refresh();
     });
   };
 
   const handleDelete = () => {
-    if (!confirm("TÜM topluluğu silmek istediğinize emin misiniz? Bu işlem geri alınamaz!")) return;
     startTransition(async () => {
       await deleteCommunity(communityId);
       onClose();
@@ -728,7 +730,50 @@ function CommunityAdminPanel({ communityId, communityDetails: initialDetails, on
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="bg-card border border-border/20 rounded-[32px] w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+      <div className="bg-card border border-border/20 rounded-[32px] w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 relative">
+        
+        {/* Custom Delete Community Confirm */}
+        {showDeleteConfirm && (
+          <div className="absolute inset-0 z-[60] bg-background/80 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-300">
+            <div className="space-y-6 text-center animate-in zoom-in-95 duration-300">
+              <div className="w-16 h-16 bg-rose-500/10 rounded-full flex items-center justify-center mx-auto text-rose-500">
+                <Trash2 className="h-8 w-8" />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-lg font-black text-foreground">Topluluğu Sil?</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  TÜM topluluğu silmek istediğinize emin misiniz? Bu işlem geri alınamaz ve tüm içerikler silinecektir.
+                </p>
+              </div>
+              <div className="flex gap-3">
+                <Button variant="ghost" onClick={() => setShowDeleteConfirm(false)} className="flex-1 h-12 rounded-2xl font-bold hover:bg-muted">Vazgeç</Button>
+                <Button onClick={handleDelete} disabled={isPending} className="flex-1 h-12 rounded-2xl font-bold bg-rose-500 text-white hover:bg-rose-600 shadow-lg shadow-rose-500/20">{isPending ? "Siliniyor..." : "Evet, Sil"}</Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Custom Remove Member Confirm */}
+        {memberToRemove && (
+          <div className="absolute inset-0 z-[60] bg-background/80 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-300">
+            <div className="space-y-6 text-center animate-in zoom-in-95 duration-300">
+              <div className="w-16 h-16 bg-amber-500/10 rounded-full flex items-center justify-center mx-auto text-amber-500">
+                <UserMinus className="h-8 w-8" />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-lg font-black text-foreground">Üyeyi Çıkar?</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Bu üyeyi topluluktan çıkarmak istediğinize emin misiniz?
+                </p>
+              </div>
+              <div className="flex gap-3">
+                <Button variant="ghost" onClick={() => setMemberToRemove(null)} className="flex-1 h-12 rounded-2xl font-bold hover:bg-muted">Vazgeç</Button>
+                <Button onClick={() => handleRemove(memberToRemove)} disabled={isPending} className="flex-1 h-12 rounded-2xl font-bold bg-amber-500 text-white hover:bg-amber-600 shadow-lg shadow-amber-500/20">{isPending ? "Çıkarılıyor..." : "Evet, Çıkar"}</Button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="p-6 space-y-6">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-black text-foreground">Topluluk Yönetimi</h2>
@@ -775,7 +820,7 @@ function CommunityAdminPanel({ communityId, communityDetails: initialDetails, on
                        </div>
                     </div>
                     {m.role !== 'ADMIN' && (
-                      <button onClick={() => handleRemove(m.userId)} className="p-2 text-rose-400 hover:text-rose-600 hover:bg-rose-500/10 rounded-xl transition-all">
+                      <button onClick={() => setMemberToRemove(m.userId)} className="p-2 text-rose-400 hover:text-rose-600 hover:bg-rose-500/10 rounded-xl transition-all">
                         <UserMinus className="h-4 w-4" />
                       </button>
                     )}
@@ -821,7 +866,7 @@ function CommunityAdminPanel({ communityId, communityDetails: initialDetails, on
             {(activeTab !== 'edit' || !editData.name) && (
               <div className="pt-4 border-t border-border/10">
                 <button 
-                  onClick={handleDelete}
+                  onClick={() => setShowDeleteConfirm(true)}
                   className="w-full flex items-center justify-center gap-2 p-3 bg-rose-500/10 text-rose-600 rounded-2xl hover:bg-rose-500/20 transition-all font-bold text-sm"
                 >
                   <Trash2 className="h-4 w-4" /> Topluluğu Tamamen Sil
@@ -980,7 +1025,7 @@ export function BlogFeed({
     <div className="space-y-5">
       {mode === "feed" && (
         <div className="flex p-1 bg-muted/30 rounded-2xl border border-border/20">
-          {["explore", "following", "my-communities"].map((t) => (
+          {["explore", "following", "my-communities"].map((t: string) => (
             <button key={t} onClick={() => switchFeed(t as any)} className={cn("flex-1 py-2 text-sm font-bold rounded-xl transition-all", feedType === t && !selectedCommunity ? "bg-card text-primary shadow-sm" : "text-muted-foreground hover:text-foreground")}>
               {t === "explore" ? "Keşfet" : t === "following" ? "Takip" : "Topluluklar"}
             </button>
