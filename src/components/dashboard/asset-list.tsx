@@ -71,6 +71,7 @@ interface AssetListProps {
   defaultTab?: "financial" | "fixed";
   hideTabs?: boolean;
   userCurrency?: string;
+  defaultAssetType?: string;
 }
 
 
@@ -80,7 +81,8 @@ export function AssetList({
   fixedAssets,
   defaultTab = "financial",
   hideTabs = false,
-  userCurrency = "TRY"
+  userCurrency = "TRY",
+  defaultAssetType
 }: AssetListProps) {
   const router = useRouter();
   const [isAdding, setIsAdding] = useState(false);
@@ -400,6 +402,7 @@ export function AssetList({
               activeTab={activeTab} 
               loading={loading} 
               error={error} 
+              defaultAssetType={defaultAssetType}
               onCancel={() => setIsAdding(false)} 
               onAdd={activeTab === "financial" ? handleAdd : handleAddFixed} 
             />

@@ -24,15 +24,16 @@ interface AssetFormProps {
   onCancel: () => void;
   loading: boolean;
   error: string | null;
+  defaultAssetType?: string;
 }
 
-export function AssetForm({ activeTab, onAdd, onCancel, loading, error }: AssetFormProps) {
+export function AssetForm({ activeTab, onAdd, onCancel, loading, error, defaultAssetType }: AssetFormProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [showSearch, setShowSearch] = useState(false);
   
   const [formData, setFormData] = useState({
-    type: "BIST",
+    type: defaultAssetType || "BIST",
     symbol: "",
     quantity: 0,
     purchasePrice: 0,
