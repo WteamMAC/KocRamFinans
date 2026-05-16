@@ -82,6 +82,16 @@ export async function getLivePrices(symbols: string[]): Promise<Map<string, Pric
           usdToTryRate = fxData.rates.TRY;
           if (fxData.rates.EUR && fxData.rates.EUR > 0) eurToTryRate = fxData.rates.TRY / fxData.rates.EUR;
           if (fxData.rates.GBP && fxData.rates.GBP > 0) gbpToTryRate = fxData.rates.TRY / fxData.rates.GBP;
+
+          const allCurrencies = ["USD", "EUR", "GBP", "CHF", "JPY", "AED", "SAR", "RUB", "CAD", "AUD", "CNY", "SGD", "NOK", "SEK"];
+          allCurrencies.forEach(cur => {
+            if (fxData.rates[cur] && fxData.rates[cur] > 0) {
+              const curTryRate = fxData.rates.TRY / fxData.rates[cur];
+              results.set(cur, { symbol: cur, price: curTryRate, changePercent: 0.1 });
+              results.set(`${cur}TRY=X`, { symbol: `${cur}TRY=X`, price: curTryRate, changePercent: 0.1 });
+              results.set(`${cur}=X`, { symbol: `${cur}=X`, price: fxData.rates[cur], changePercent: 0.1 });
+            }
+          });
         }
       }
     } catch (fxErr) {
@@ -353,33 +363,44 @@ export function calculatePortfolioMetrics(investments: any[], livePrices: Map<st
 }
 
 /**
+ * Tüm para birimleri için evrensel kur getirme fonksiyonu
+ */
+export function getRateForCurrency(currency: string, livePrices: Map<string, PriceResult>): number {
+  const cur = (currency || "TRY").toUpperCase();
+  if (cur === "TRY" || cur === "TL") return 1;
+  
+  if (cur === "USD") return livePrices.get("USDTRY=X")?.price || livePrices.get("USD")?.price || 36.45;
+  if (cur === "EUR") return livePrices.get("EURTRY=X")?.price || livePrices.get("EUR")?.price || 38.65;
+  if (cur === "GBP") return livePrices.get("GBPTRY=X")?.price || livePrices.get("GBP")?.price || 45.85;
+  if (cur === "XAU" || cur === "GOLD" || cur === "ALT") return livePrices.get("XAUTRY=X")?.price || livePrices.get("GRAM ALTIN")?.price || livePrices.get("XAU")?.price || 3450;
+
+  const liveRate = livePrices.get(cur)?.price || livePrices.get(`${cur}TRY=X`)?.price;
+  if (liveRate && liveRate > 0) return liveRate;
+
+  const fallbacks: Record<string, number> = {
+    CHF: 41.20, JPY: 0.235, AED: 9.92, SAR: 9.72, RUB: 0.365,
+    CAD: 26.22, AUD: 23.95, CNY: 5.03, SGD: 27.20, NOK: 3.28, SEK: 3.34
+  };
+  return fallbacks[cur] || 1;
+}
+
+/**
  * Sabit Varlıklar için Canlı Değerleme ve Kur/Endeksleme Sistemi
  */
 export function calculateFixedAssetsMetrics(fixedAssets: any[], livePrices: Map<string, PriceResult>) {
   let totalOriginalCost = 0;
   let totalCurrentValue = 0;
 
-  const usdRate = livePrices.get("USDTRY=X")?.price || livePrices.get("USD")?.price || 36.45;
-  const eurRate = livePrices.get("EURTRY=X")?.price || livePrices.get("EUR")?.price || 38.65;
-  const gbpRate = livePrices.get("GBPTRY=X")?.price || livePrices.get("GBP")?.price || 45.85;
-  const xauRate = livePrices.get("XAUTRY=X")?.price || livePrices.get("GRAM ALTIN")?.price || 3450;
-
   const detailedFixedAssets = (fixedAssets || []).map(fa => {
     const originalAmount = fa.originalAmount || fa.value || 0;
     const curr = (fa.currency || "TRY").toUpperCase();
+    const rate = getRateForCurrency(curr, livePrices);
     let currentVal = fa.value || 0;
 
-    if (curr === "USD") {
-      currentVal = originalAmount * usdRate;
-    } else if (curr === "EUR") {
-      currentVal = originalAmount * eurRate;
-    } else if (curr === "GBP") {
-      currentVal = originalAmount * gbpRate;
-    } else if (curr === "XAU" || curr === "GOLD") {
-      currentVal = originalAmount * xauRate;
+    if (curr !== "TRY" && curr !== "TL") {
+      currentVal = originalAmount * rate;
     } else {
       const daysPassed = Math.max(0, (Date.now() - new Date(fa.createdAt).getTime()) / (1000 * 60 * 60 * 24));
-      // Türkiye piyasası ortalama yıllık değer artışı endeksi (Gayrimenkul %40, Taşıt %30, Diğer %20)
       const annualAppreciation = fa.type === "Gayrimenkul" ? 0.40 : (fa.type === "Taşıt" ? 0.30 : 0.20);
       const dailyAppreciation = annualAppreciation / 365;
       const multiplier = Math.pow(1 + dailyAppreciation, daysPassed);
@@ -411,4 +432,28 @@ export function calculateFixedAssetsMetrics(fixedAssets: any[], livePrices: Map<
     totalProfitPercent,
     assets: detailedFixedAssets,
   };
+}
+
+/**
+ * Gelir, Gider ve Borç kalemlerinin döviz kurlarına göre TL eşdeğerine dönüştürülmesi
+ */
+export function normalizeFinancialItemsToTry(items: any[], livePrices: Map<string, PriceResult>) {
+  if (!items || !Array.isArray(items)) return [];
+
+  return items.map(item => {
+    const cur = (item.currency || "TRY").toUpperCase();
+    const rate = getRateForCurrency(cur, livePrices);
+    
+    const dbAmount = Number(item.amount) || 0;
+    const origAmt = item.originalAmount != null ? Number(item.originalAmount) : (cur === "TRY" ? dbAmount : dbAmount / (item.fxRate || rate || 1));
+    const tryAmt = item.originalAmount != null ? (origAmt * (item.fxRate && item.fxRate > 0 ? item.fxRate : rate)) : (cur === "TRY" ? dbAmount : dbAmount * rate);
+
+    return {
+      ...item,
+      originalAmount: origAmt,
+      rawAmount: origAmt,
+      amount: tryAmt, // TL Karşılığı (Bütün toplama ve grafik işlemleri için)
+      currencyRate: item.fxRate && item.fxRate > 0 ? item.fxRate : rate
+    };
+  });
 }

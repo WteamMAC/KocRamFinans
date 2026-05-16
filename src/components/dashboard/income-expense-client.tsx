@@ -26,7 +26,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 
-import { useCurrency } from "@/context/currency-context";
+import { useCurrency, DISPLAY_CURRENCIES_MAP } from "@/context/currency-context";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -40,6 +40,7 @@ interface Transaction {
   currency?: string;
   originalAmount?: number;
   fxRate?: number;
+  tryAmount?: number;
 }
 
 interface IncomeExpenseClientProps {
@@ -71,7 +72,13 @@ export function IncomeExpenseClient({
   const [mounted, setMounted] = useState(false);
   const [filterCategory, setFilterCategory] = useState("Tümü");
 
-  const { formatAmount } = useCurrency();
+  const { formatAmount, displayCurrency } = useCurrency();
+
+  const formatTransactionAmount = (tx: Transaction) => {
+    const cur = (tx.currency || "TRY").toUpperCase();
+    const sym = DISPLAY_CURRENCIES_MAP[cur]?.symbol || cur;
+    return `${(tx.amount || 0).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: tx.amount < 1 ? 4 : 2 })} ${sym}`;
+  };
 
   useEffect(() => {
     setMounted(true);
@@ -460,8 +467,13 @@ export function IncomeExpenseClient({
                         </td>
                         <td className="px-10 py-8 text-right">
                           <p className={cn("text-xl font-black tracking-tight", isInc ? "text-emerald-500" : "text-rose-500")}>
-                            {isInc ? '+' : '-'} {formatAmount(tx.amount)}
+                            {isInc ? '+' : '-'} {formatTransactionAmount(tx)}
                           </p>
+                          {(!tx.currency || tx.currency.toUpperCase() !== displayCurrency.toUpperCase()) && (
+                            <p className="text-[11px] font-bold text-muted-foreground opacity-70 mt-1">
+                              ≈ {isInc ? '+' : '-'} {formatAmount(tx.tryAmount != null ? tx.tryAmount : (tx.amount * (tx.fxRate || 1)))}
+                            </p>
+                          )}
                         </td>
                       </tr>
                     );
@@ -514,8 +526,13 @@ export function IncomeExpenseClient({
                   </div>
                   <div className="text-right shrink-0">
                     <p className={cn("text-base md:text-lg font-black tracking-tight", isInc ? "text-emerald-500" : "text-rose-500")}>
-                      {isInc ? '+' : '-'} {formatAmount(tx.amount)}
+                      {isInc ? '+' : '-'} {formatTransactionAmount(tx)}
                     </p>
+                    {(!tx.currency || tx.currency.toUpperCase() !== displayCurrency.toUpperCase()) && (
+                      <p className="text-[10px] font-bold text-muted-foreground opacity-70 mt-0.5">
+                        ≈ {isInc ? '+' : '-'} {formatAmount(tx.tryAmount != null ? tx.tryAmount : (tx.amount * (tx.fxRate || 1)))}
+                      </p>
+                    )}
                   </div>
                 </motion.div>
               );
