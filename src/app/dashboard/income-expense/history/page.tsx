@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { IncomeExpenseClient } from "@/components/dashboard/income-expense-client";
 import { getUserCurrencyConfig } from "@/lib/currency-formatter";
+import { getLivePrices, normalizeFinancialItemsToTry } from "@/lib/price-service";
 
 import { getLivePrices, normalizeFinancialItemsToTry } from "@/lib/price-service";
 
