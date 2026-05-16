@@ -9,6 +9,9 @@ interface CategoryPageProps {
   params: Promise<{ category: string }>;
 }
 
+import { Suspense } from "react";
+import { DashboardSkeleton } from "@/components/dashboard/dashboard-skeleton";
+
 export default async function AssetCategoryPage({ params }: CategoryPageProps) {
   const { category } = await params;
   const { userId } = await auth();
@@ -30,12 +33,43 @@ export default async function AssetCategoryPage({ params }: CategoryPageProps) {
     return null;
   }
 
+  const categoryTitles: Record<string, string> = {
+    crypto: "Kripto Para Portföyü",
+    bist: "BIST Hisse Portföyü",
+    nasdaq: "NASDAQ Hisse Portföyü",
+    gold: "Altın & Emtia Portföyü",
+    fixed: "Sabit Varlıklarım",
+    bes: "Bireysel Emeklilik (BES)",
+    faiz: "Vadeli Mevduat (Faiz)",
+  };
+
+  return (
+    <div className="flex-1 space-y-10 p-8 pt-10 bg-background min-h-screen">
+      <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4 animate-in fade-in slide-in-from-top-4 duration-500">
+        <div>
+          <h1 className="text-3xl font-heading font-bold text-primary">{categoryTitles[category] || "Varlık Detayları"}</h1>
+          <p className="text-muted-foreground opacity-70 italic font-medium">Finansal varlıklarınızın detaylı analizi ve yönetimi.</p>
+        </div>
+        <div className="bg-primary/10 text-primary border border-primary/20 px-4 py-2 rounded-2xl text-xs font-bold flex items-center gap-2 w-fit">
+          <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+          Canlı Piyasa & Kur Endeksleme Aktif
+        </div>
+      </div>
+
+      <Suspense fallback={<DashboardSkeleton />}>
+        <CategoryContent category={category} user={user} />
+      </Suspense>
+    </div>
+  );
+}
+
+async function CategoryContent({ category, user }: { category: string; user: any }) {
   // === BES ve FAIZ için özel sayfa ===
   if (category === "bes" || category === "faiz") {
     const type = category === "bes" ? "BES" : "FAIZ";
     const investments = user.investments
-      .filter(inv => inv.type === type && inv.status === "OPEN")
-      .map(inv => ({
+      .filter((inv: any) => inv.type === type && inv.status === "OPEN")
+      .map((inv: any) => ({
         id: inv.id,
         symbol: inv.symbol,
         quantity: inv.quantity,
@@ -46,11 +80,7 @@ export default async function AssetCategoryPage({ params }: CategoryPageProps) {
         status: inv.status,
       }));
 
-    return (
-      <div className="flex-1 p-8 pt-10 bg-background min-h-screen">
-        <BesFaizDetail type={type} investments={investments} />
-      </div>
-    );
+    return <BesFaizDetail type={type} investments={investments} />;
   }
 
   // === Diğer kategoriler için mevcut akış ===
@@ -60,16 +90,16 @@ export default async function AssetCategoryPage({ params }: CategoryPageProps) {
   if (category === "fixed") {
     filteredInvestments = [];
   } else if (category === "gold") {
-    filteredInvestments = user.investments.filter(inv => inv.type === "GOLD" || inv.type === "Gold");
+    filteredInvestments = user.investments.filter((inv: any) => inv.type === "GOLD" || inv.type === "Gold");
     filteredFixedAssets = [];
   } else if (category === "crypto") {
-    filteredInvestments = user.investments.filter(inv => inv.type === "CRYPTO" || inv.type === "Crypto");
+    filteredInvestments = user.investments.filter((inv: any) => inv.type === "CRYPTO" || inv.type === "Crypto");
     filteredFixedAssets = [];
   } else if (category === "bist") {
-    filteredInvestments = user.investments.filter(inv => inv.type === "BIST" || inv.type === "Bist");
+    filteredInvestments = user.investments.filter((inv: any) => inv.type === "BIST" || inv.type === "Bist");
     filteredFixedAssets = [];
   } else if (category === "nasdaq") {
-    filteredInvestments = user.investments.filter(inv => inv.type === "NASDAQ" || inv.type === "Nasdaq");
+    filteredInvestments = user.investments.filter((inv: any) => inv.type === "NASDAQ" || inv.type === "Nasdaq");
     filteredFixedAssets = [];
   }
 
@@ -77,11 +107,11 @@ export default async function AssetCategoryPage({ params }: CategoryPageProps) {
   let fixedMetrics = { totalOriginalCost: 0, totalCurrentValue: 0, totalProfit: 0, totalProfitPercent: 0, assets: [] as any[] };
 
   try {
-    const symbols = Array.from(new Set(
+    const symbols: string[] = Array.from(new Set(
       filteredInvestments
-        .map(inv => inv.symbol)
-        .filter((s): s is string => !!s)
-    ));
+        .map((inv: any) => inv.symbol)
+        .filter((s: any): s is string => !!s)
+    )) as string[];
 
     const livePrices = await getLivePrices(symbols);
     metrics = calculatePortfolioMetrics(filteredInvestments, livePrices);
@@ -92,35 +122,17 @@ export default async function AssetCategoryPage({ params }: CategoryPageProps) {
     fixedMetrics = calculateFixedAssetsMetrics(filteredFixedAssets, new Map());
   }
 
-  const categoryTitles: Record<string, string> = {
-    crypto: "Kripto Para Portföyü",
-    bist: "BIST Hisse Portföyü",
-    nasdaq: "NASDAQ Hisse Portföyü",
-    gold: "Altın & Emtia Portföyü",
-    fixed: "Sabit Varlıklarım",
-  };
-
   return (
-    <div className="flex-1 space-y-10 p-8 pt-10 bg-background min-h-screen">
-      <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-heading font-bold text-primary">{categoryTitles[category] || "Varlık Detayları"}</h1>
-          <p className="text-muted-foreground opacity-70">Seçili varlık kategorisine ait detaylı analiz ve listeleme.</p>
-        </div>
-        <div className="bg-primary/10 text-primary border border-primary/20 px-4 py-2 rounded-2xl text-xs font-bold flex items-center gap-2 w-fit">
-          <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-          Canlı Piyasa & Kur Endeksleme Aktif
-        </div>
-      </div>
+    <div className="animate-in fade-in duration-700">
       <AssetList 
         assets={metrics.assets} 
-        allInvestments={filteredInvestments.map(inv => ({
+        allInvestments={filteredInvestments.map((inv: any) => ({
           ...inv,
           purchasePrice: inv.purchasePrice ?? undefined,
           soldPrice: inv.soldPrice ?? undefined,
           transactionType: inv.transactionType as "BUY" | "SELL"
         }))} 
-        fixedAssets={fixedMetrics.assets.map(fa => ({
+        fixedAssets={fixedMetrics.assets.map((fa: any) => ({
           ...fa,
           value: fa.currentValuation || fa.value,
           liveProfit: fa.liveProfit,
@@ -139,3 +151,4 @@ export default async function AssetCategoryPage({ params }: CategoryPageProps) {
     </div>
   );
 }
+

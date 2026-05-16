@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from "recharts";
 import { cn } from "@/lib/utils";
-import { deleteAsset, addAsset, fixMisclassifiedBesFaiz } from "@/app/actions/assets";
+import { deleteAsset, addAsset, fixMisclassifiedBesFaiz, addContributionToAsset } from "@/app/actions/assets";
 import { useCurrency } from "@/context/currency-context";
 
 interface InvestmentItem {
@@ -222,6 +222,19 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
     }
   }
 
+  async function handleAddContribution(id: string, amount: number) {
+    if (amount <= 0) return;
+    setLoading(true);
+    try {
+      await addContributionToAsset(id, amount);
+      router.refresh();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function handleFixOldRecords() {
     setFixLoading(true);
     setFixMessage(null);
@@ -292,7 +305,7 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="border-border/20 shadow-ambient-low rounded-2xl p-6 relative overflow-hidden">
           <div className={cn("absolute top-0 right-0 w-24 h-24 rounded-full -mr-8 -mt-8 opacity-30", accentBg)} />
-          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2">Toplam Ana Para</p>
+          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2">Toplam Kayıtlı Birikim</p>
           <p className="text-3xl font-heading font-bold text-primary">{formatAmount(totalPrincipal)}</p>
         </Card>
         <Card className="border-border/20 shadow-ambient-low rounded-2xl p-6 relative overflow-hidden">
@@ -335,7 +348,7 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
             </div>
             <div className="space-y-2">
               <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                {isBES ? "İlk Giriş Tutarı" : "Ana Para Tutarı"}
+                {isBES ? "Güncel Birikiminiz (₺)" : "Güncel Birikiminiz (₺)"}
               </Label>
               <Input
                 type="number"
@@ -429,7 +442,7 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
                     </div>
                     <div className="mt-4 pt-4 border-t border-border/10 grid grid-cols-2 gap-4">
                       <div>
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Ana Para</p>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Kayıtlı Birikim</p>
                         <p className="font-bold text-lg text-primary">{formatAmount(g.totalQuantity)}</p>
                       </div>
                       <div className="text-right">
@@ -483,11 +496,48 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
                     </div>
                   </div>
                   {isExp && (
-                    <div className="border-t border-border/10 bg-muted/30 p-4 space-y-3 animate-in slide-in-from-top-2 duration-300">
+                    <div className="border-t border-border/10 bg-muted/30 p-4 space-y-4 animate-in slide-in-from-top-2 duration-300">
+                      {/* Katkı Payı Ekleme Alanı (Sadece BES için daha belirgin) */}
+                      {isBES && (
+                        <div className="bg-primary/5 rounded-2xl p-4 border border-primary/10 mb-2">
+                          <p className="text-[10px] font-bold text-primary uppercase tracking-widest mb-3 flex items-center gap-2">
+                            <Plus className="h-3 w-3" /> Aylık Katkı Payı / Ödeme Ekle
+                          </p>
+                          <div className="flex gap-2">
+                            <div className="relative flex-1">
+                              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-primary/40 font-bold">₺</span>
+                              <Input
+                                type="number"
+                                placeholder="Örn: 2500"
+                                className="h-11 pl-8 rounded-xl bg-card border-primary/20 focus:ring-primary font-bold text-sm"
+                                id={`contrib-${g.symbol}`}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    const val = (document.getElementById(`contrib-${g.symbol}`) as HTMLInputElement).value;
+                                    if (val) handleAddContribution(g.items[0].id, Number(val));
+                                  }
+                                }}
+                              />
+                            </div>
+                            <Button 
+                              onClick={() => {
+                                const val = (document.getElementById(`contrib-${g.symbol}`) as HTMLInputElement).value;
+                                if (val) handleAddContribution(g.items[0].id, Number(val));
+                              }}
+                              disabled={loading}
+                              className="h-11 rounded-xl bg-primary px-6 font-bold shadow-sm hover:shadow-primary/20 transition-all"
+                            >
+                              {loading ? "..." : "Ekle"}
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">İşlem Geçmişi / Kayıtlar</p>
                       {g.items.map(item => {
                         const meta = parseMeta(item);
                         return (
-                          <div key={item.id} className="flex justify-between items-center bg-card rounded-xl p-3 border border-border/10">
+                          <div key={item.id} className="flex justify-between items-center bg-card rounded-xl p-3 border border-border/10 group/item">
                             <div>
                               <p className="text-sm font-bold">{formatAmount(item.quantity)}</p>
                               <p className={cn("text-[10px] font-bold", accentColor)}>
@@ -500,7 +550,7 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
                               size="icon"
                               variant="ghost"
                               onClick={e => { e.stopPropagation(); handleDelete(item.id); }}
-                              className="h-8 w-8 text-rose-500 hover:bg-rose-50"
+                              className="h-8 w-8 text-rose-500 hover:bg-rose-50 opacity-0 group-hover/item:opacity-100 transition-opacity"
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -612,7 +662,7 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
                           ? (isBES ? "Tahmini Toplam (BES)" : "Bileşik Faiz Toplamı")
                           : name === "faizKazanci"
                           ? "Kazanılan Faiz"
-                          : "Başlangıç Anapara"
+                          : "Kayıtlı Birikim"
                       ]}
                     />
                     <Area type="monotone" dataKey="toplam" stroke={accentSolid} strokeWidth={3} fillOpacity={1} fill="url(#colorProj)" />
@@ -640,7 +690,7 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
                 </span>
               )}
               <span className="flex items-center gap-1.5">
-                <span className="w-3 h-3 rounded-full border-2 border-blue-400 border-dashed" /> Başlangıç Anapara
+                <span className="w-3 h-3 rounded-full border-2 border-blue-400 border-dashed" /> Kayıtlı Birikim
               </span>
             </div>
           </Card>
@@ -657,7 +707,7 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
                     <tr className="bg-muted/50">
                       <th className="px-4 py-3 text-left text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Yıl</th>
                       <th className="px-4 py-3 text-right text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                        {isBES ? "Ana Para" : "Başlangıç Anapara"}
+                        {isBES ? "Kayıtlı Birikim" : "Kayıtlı Birikim"}
                       </th>
                       <th className="px-4 py-3 text-right text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
                         {isBES ? "Tahmini Toplam" : "Bileşik Toplam"}

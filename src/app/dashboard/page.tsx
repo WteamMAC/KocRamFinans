@@ -18,6 +18,9 @@ import { cn } from "@/lib/utils";
 import { getLivePrices, calculatePortfolioMetrics, calculateFixedAssetsMetrics } from "@/lib/price-service";
 import { DashboardCards } from "@/components/dashboard/dashboard-cards";
 
+import { Suspense } from "react";
+import { DashboardSkeleton } from "@/components/dashboard/dashboard-skeleton";
+
 export default async function DashboardPage() {
   await cookies();
   const { userId } = await auth();
@@ -44,6 +47,36 @@ export default async function DashboardPage() {
     return null;
   }
 
+  return (
+    <div className="flex-1 space-y-6 md:space-y-10 p-2 md:p-8 pt-6 md:pt-10 bg-background min-h-screen overflow-x-hidden w-full">
+      {/* Welcome Header - This renders immediately */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div>
+          <h2 className="text-4xl font-heading font-bold text-primary tracking-tight">
+            Finansal Özet
+          </h2>
+          <p className="text-muted-foreground mt-1 font-medium italic opacity-80">Geleceğinizi verilerle inşa ediyoruz.</p>
+        </div>
+        
+        <div className="bg-card p-4 rounded-2xl shadow-ambient-medium border border-border/20 flex items-center gap-6">
+           <div className="flex flex-col">
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Finansal Takip</span>
+              <span className="text-2xl font-bold font-heading text-primary">Aktif</span>
+           </div>
+           <div className="w-12 h-12 bg-muted rounded-xl flex items-center justify-center shadow-inner">
+              <TrendingUp className="h-6 w-6 text-primary" />
+           </div>
+        </div>
+      </div>
+
+      <Suspense fallback={<DashboardSkeleton />}>
+        <DashboardMetrics user={user} />
+      </Suspense>
+    </div>
+  );
+}
+
+async function DashboardMetrics({ user }: { user: any }) {
   // Bütün ilişkili dizileri güvenli (null/undefined korumalı) ve açık tipli hale getirelim
   const incomes: any[] = Array.isArray(user.incomes) ? user.incomes : [];
   const expenses: any[] = Array.isArray(user.expenses) ? user.expenses : [];
@@ -64,6 +97,7 @@ export default async function DashboardPage() {
         .filter((s: any): s is string => typeof s === "string" && s.trim().length > 0)
     ));
 
+    // Ağır veri çekme işlemi burada yapılıyor
     livePrices = await getLivePrices(symbols);
     portfolioMetrics = calculatePortfolioMetrics(investments, livePrices, incomes);
     fixedMetrics = calculateFixedAssetsMetrics(fixedAssets, livePrices);
@@ -101,32 +135,7 @@ export default async function DashboardPage() {
   };
 
   return (
-    <div className="flex-1 space-y-6 md:space-y-10 p-2 md:p-8 pt-6 md:pt-10 bg-background min-h-screen overflow-x-hidden w-full">
-      {/* Welcome Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div>
-          <h2 className="text-4xl font-heading font-bold text-primary tracking-tight">
-            Finansal Özet
-          </h2>
-          <p className="text-muted-foreground mt-1 font-medium italic opacity-80">Geleceğinizi verilerle inşa ediyoruz.</p>
-        </div>
-        
-        <div className="bg-card p-4 rounded-2xl shadow-ambient-medium border border-border/20 flex items-center gap-6">
-           <div className="flex flex-col">
-              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Tasarruf Oranı</span>
-              <span className={cn(
-                "text-2xl font-bold font-heading",
-                savingsRate > 20 ? "text-emerald-500" : "text-primary"
-              )}>
-                %{savingsRate.toFixed(1)}
-              </span>
-           </div>
-           <div className="w-12 h-12 bg-muted rounded-xl flex items-center justify-center shadow-inner">
-              <TrendingUp className="h-6 w-6 text-primary" />
-           </div>
-        </div>
-      </div>
-      
+    <div className="space-y-6 md:space-y-10 animate-in fade-in duration-700">
       {/* Smart Insights */}
       <SmartInsights financialData={financialDataForAI} />
 
@@ -231,3 +240,4 @@ export default async function DashboardPage() {
     </div>
   );
 }
+

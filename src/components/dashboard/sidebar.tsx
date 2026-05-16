@@ -88,8 +88,7 @@ const routes = [
     isExpandable: true,
     tourClass: "tour-step-income",
     subRoutes: [
-        { label: "Gelir Ekle", icon: PlusCircle, href: "/dashboard/income-expense/add-income", color: "text-emerald-500" },
-        { label: "Gider Ekle", icon: MinusCircle, href: "/dashboard/income-expense/add-expense", color: "text-rose-500" },
+        { label: "Gelir - Gider Ekle", icon: PlusCircle, href: "/dashboard/income-expense/add", color: "text-emerald-500" },
         { label: "Gelir Gider Göster", icon: History, href: "/dashboard/income-expense/history", color: "text-primary" },
     ]
   },
@@ -177,22 +176,22 @@ export function Sidebar({ isCollapsed, onToggle, hideToggle, theme, onToggleThem
           {routes.map((route) => (
             <div key={route.href} className="space-y-1">
               {route.isExpandable && !isCollapsed ? (
-                <div className={cn("flex items-center group", (route as any).tourClass)}>
+                <div className={cn(
+                  "flex items-stretch group rounded-xl overflow-hidden transition-all duration-200",
+                  pathname.startsWith(route.href) ? "bg-muted/30" : "hover:bg-muted/50",
+                  (route as any).tourClass
+                )}>
                   <Link
                     href={route.href}
                     className={cn(
-                      "text-sm flex p-3 flex-1 font-medium cursor-pointer rounded-l-xl transition-all duration-200",
+                      "text-sm flex items-center p-3 flex-1 font-medium cursor-pointer transition-all duration-200",
                       pathname === route.href
-                        ? "bg-muted text-primary shadow-ambient-low"
-                        : pathname.startsWith(route.href)
-                          ? "bg-muted/30 text-primary"
-                          : "text-muted-foreground hover:bg-muted/50 hover:text-primary"
+                        ? "text-primary font-bold"
+                        : "text-muted-foreground group-hover:text-primary"
                     )}
                   >
-                    <div className="flex items-center flex-1">
-                      <route.icon className={cn("h-5 w-5 flex-shrink-0 transition-transform group-hover:scale-110 mr-3", route.color)} />
-                      <span className="truncate">{route.label}</span>
-                    </div>
+                    <route.icon className={cn("h-5 w-5 flex-shrink-0 transition-transform group-hover:scale-110 mr-3", route.color)} />
+                    <span className="truncate">{route.label}</span>
                   </Link>
                   <button
                     onClick={(e) => {
@@ -200,12 +199,12 @@ export function Sidebar({ isCollapsed, onToggle, hideToggle, theme, onToggleThem
                       e.stopPropagation();
                       toggleSubMenu(route.label);
                     }}
-                    className={cn(
-                      "p-3 rounded-r-xl transition-all duration-200 border-l border-transparent hover:bg-muted/50",
-                      pathname.startsWith(route.href) && "bg-muted/30"
-                    )}
+                    className="px-4 flex items-center justify-center border-l border-border/10 hover:bg-muted/80 transition-all duration-200 group/btn"
                   >
-                    <ChevronDown className={cn("h-4 w-4 transition-transform duration-200 opacity-50", openSubMenus[route.label] && "rotate-180")} />
+                    <ChevronDown className={cn(
+                      "h-4 w-4 transition-transform duration-300 text-muted-foreground group-hover/btn:text-primary",
+                      openSubMenus[route.label] ? "rotate-180" : "opacity-50"
+                    )} />
                   </button>
                 </div>
               ) : (

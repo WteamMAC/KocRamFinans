@@ -301,7 +301,7 @@ export async function POST(req: Request) {
                   else if (type === "investment") await prisma.investment.delete({ where: { id: recordId } });
                   apiResponse = { success: true, message: "Kayıt veritabanından kalıcı olarak silindi." };
                 } else if (call.name === "getMarketPrice") {
-                  const symbols = Array.isArray(args.symbols) ? args.symbols : [args.symbols];
+                  const symbols: string[] = (Array.isArray(args.symbols) ? args.symbols : [args.symbols]) as string[];
                   const resultsMap = await getLivePrices(symbols);
                   apiResponse = { data: Object.fromEntries(resultsMap) };
                 }
