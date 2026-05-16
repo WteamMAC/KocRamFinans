@@ -6,11 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CreditCard, Plus, X, Landmark, TrendingDown, Clock, AlertCircle } from "lucide-react";
-import { addDebt, payDebtInstallment, closeDebt } from "@/app/actions/debts";
+import { CreditCard, Plus, X, Landmark, TrendingDown, Clock, AlertCircle, Calendar, Settings2, FastForward } from "lucide-react";
+import { addDebt, payDebtInstallment, closeDebt, postponeDebtInstallment, updateDebtPaymentDay } from "@/app/actions/debts";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useCurrency, DISPLAY_CURRENCIES_LIST } from "@/context/currency-context";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 interface DebtListProps {
   debts: any[];
@@ -29,6 +30,8 @@ export function DebtList({ debts }: DebtListProps) {
         amount: "",
         currency: "TRY",
         remainingInstallments: "",
+        interestRate: "",
+        paymentDay: "",
         description: "",
     });
 
@@ -48,14 +51,16 @@ export function DebtList({ debts }: DebtListProps) {
             await addDebt({
                 type: formData.type,
                 amount: amountInTry,
+                interestRate: formData.interestRate ? Number(formData.interestRate) : undefined,
                 remainingInstallments: formData.remainingInstallments ? Number(formData.remainingInstallments) : undefined,
+                paymentDay: formData.paymentDay ? Number(formData.paymentDay) : undefined,
                 description: formData.description,
                 currency: formData.currency,
                 originalAmount: originalAmount,
                 fxRate: selectedRate,
             });
             setIsAdding(false);
-            setFormData({ type: "Kredi Kartı", amount: "", currency: "TRY", remainingInstallments: "", description: "" });
+            setFormData({ type: "Kredi Kartı", amount: "", currency: "TRY", remainingInstallments: "", interestRate: "", paymentDay: "", description: "" });
             router.refresh();
         } catch (err: any) {
             setError(err.message);
@@ -168,6 +173,29 @@ export function DebtList({ debts }: DebtListProps) {
                                 />
                         </div>
                         <div className="space-y-3">
+                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Aylık Faiz Oranı % (Opsiyonel)</Label>
+                                <Input
+                                    type="number"
+                                    step="0.01"
+                                    value={formData.interestRate}
+                                    onChange={(e) => setFormData(p => ({ ...p, interestRate: e.target.value }))}
+                                    className="bg-muted border-border/30 h-12 rounded-xl focus:ring-destructive font-bold"
+                                    placeholder="Örn: 3.50"
+                                />
+                        </div>
+                        <div className="space-y-3">
+                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Ödeme Günü (1-31)</Label>
+                                <Input
+                                    type="number"
+                                    min="1"
+                                    max="31"
+                                    value={formData.paymentDay}
+                                    onChange={(e) => setFormData(p => ({ ...p, paymentDay: e.target.value }))}
+                                    className="bg-muted border-border/30 h-12 rounded-xl focus:ring-destructive font-bold"
+                                    placeholder="Ayın kaçıncı günü?"
+                                />
+                        </div>
+                        <div className="space-y-3">
                             <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Açıklama</Label>
                                 <Input
                                     value={formData.description}
@@ -176,7 +204,7 @@ export function DebtList({ debts }: DebtListProps) {
                                     placeholder="Örn: Ev Kredisi"
                                 />
                             <p className="text-[10px] text-muted-foreground/60 italic mt-1 px-1">
-                                * Borç eklemek, gelir listenize "Alınan Borç" olarak yansıtılacaktır.
+                                * Borçlar toplam yükümlülük olarak takip edilir, gelirinize dahil edilmez.
                             </p>
                         </div>
                     </div>
@@ -207,7 +235,39 @@ export function DebtList({ debts }: DebtListProps) {
                                 )}>
                                     {debt.type === "Kredi Kartı" ? <CreditCard className="w-6 h-6" /> : <Landmark className="w-6 h-6" />}
                                 </div>
-                                <div className="text-right">
+                                <div className="text-right flex flex-col items-end gap-1">
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 -mr-2 text-muted-foreground hover:text-primary">
+                                                <Settings2 className="w-4 h-4" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end" className="rounded-xl font-bold bg-card border-border/30">
+                                            <DropdownMenuItem 
+                                                className="text-rose-600 focus:text-rose-600 cursor-pointer"
+                                                onClick={async () => {
+                                                    if(confirm("Bu ayki taksit ödemesini atlamak/ertelemek istediğinize emin misiniz?")) {
+                                                        await postponeDebtInstallment(debt.id);
+                                                        router.refresh();
+                                                    }
+                                                }}
+                                            >
+                                                <FastForward className="w-4 h-4 mr-2" /> Bu Ayı Atla/Ertele
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem 
+                                                className="cursor-pointer"
+                                                onClick={() => {
+                                                    const day = prompt("Yeni ödeme gününü girin (1-31):", debt.paymentDay || "1");
+                                                    if(day) {
+                                                        updateDebtPaymentDay(debt.id, Number(day));
+                                                        router.refresh();
+                                                    }
+                                                }}
+                                            >
+                                                <Calendar className="w-4 h-4 mr-2" /> Ödeme Gününü Değiştir
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
                                     <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">Kalan Borç</span>
                                     <p className="text-2xl font-heading font-bold text-primary">{formatAmount(debt.amount)}</p>
                                     {debt.currency && debt.currency !== "TRY" && (
@@ -235,9 +295,29 @@ export function DebtList({ debts }: DebtListProps) {
                                         <TrendingDown className="w-4 h-4 opacity-40" /> Aylık Ödeme (Tahmini)
                                     </div>
                                     <span className="font-bold text-rose-600">
-                                        {formatAmount(monthlyTry)}
+                                        {formatAmount(debt.installmentAmount || monthlyTry)}
                                     </span>
                                 </div>
+                                {debt.paymentDay && (
+                                    <div className="flex items-center justify-between text-sm">
+                                        <div className="flex items-center gap-2 text-muted-foreground font-medium">
+                                            <Calendar className="w-4 h-4 opacity-40" /> Ödeme Günü
+                                        </div>
+                                        <span className="font-bold text-foreground">
+                                            Her ayın {debt.paymentDay}. günü
+                                        </span>
+                                    </div>
+                                )}
+                                {debt.interestRate && (
+                                    <div className="flex items-center justify-between text-sm">
+                                        <div className="flex items-center gap-2 text-muted-foreground font-medium">
+                                            <Landmark className="w-4 h-4 opacity-40" /> Faiz Oranı
+                                        </div>
+                                        <span className="font-bold text-foreground">
+                                            %{debt.interestRate} /ay
+                                        </span>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="grid grid-cols-2 gap-3 mt-8">
