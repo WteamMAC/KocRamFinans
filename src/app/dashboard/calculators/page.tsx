@@ -211,7 +211,7 @@ export default function CalculatorsPage() {
                         type="number" 
                         value={interestData.principal || ""} 
                         onChange={e => setInterestData(p => ({...p, principal: Number(e.target.value)}))}
-                        className="h-12 md:h-14 rounded-xl md:rounded-2xl bg-muted/30 border border-border/50 font-bold text-xl md:text-2xl text-primary transition-all focus-visible:ring-1 focus-visible:ring-primary"
+                        className="h-auto py-3 md:py-4 rounded-xl md:rounded-2xl bg-muted/30 border border-border/50 font-bold text-xl md:text-2xl text-primary transition-all focus-visible:ring-1 focus-visible:ring-primary leading-normal"
                       />
                       <div className="text-xs md:text-sm font-bold text-emerald-600 mt-2 ml-1 flex items-center gap-1">
                         <ArrowRight className="h-3 w-3" /> {interestData.principal.toLocaleString("tr-TR")} {curSymbol}
@@ -224,7 +224,7 @@ export default function CalculatorsPage() {
                       type="number" 
                       value={interestData.rate || ""} 
                       onChange={e => setInterestData(p => ({...p, rate: Number(e.target.value)}))}
-                      className="h-14 rounded-2xl bg-muted/30 border border-border/50 font-bold text-xl text-primary transition-all focus-visible:ring-1 focus-visible:ring-primary"
+                      className="h-auto py-3 md:py-4 rounded-xl md:rounded-2xl bg-muted/30 border border-border/50 font-bold text-xl text-primary transition-all focus-visible:ring-1 focus-visible:ring-primary leading-normal"
                     />
                   </div>
                   <div className="space-y-3">
@@ -233,7 +233,7 @@ export default function CalculatorsPage() {
                       type="number" 
                       value={interestData.term || ""} 
                       onChange={e => setInterestData(p => ({...p, term: Number(e.target.value)}))}
-                      className="h-14 rounded-2xl bg-muted/30 border border-border/50 font-bold text-xl text-primary transition-all focus-visible:ring-1 focus-visible:ring-primary"
+                      className="h-auto py-3 md:py-4 rounded-xl md:rounded-2xl bg-muted/30 border border-border/50 font-bold text-xl text-primary transition-all focus-visible:ring-1 focus-visible:ring-primary leading-normal"
                     />
                   </div>
                 </CardContent>
@@ -321,7 +321,7 @@ export default function CalculatorsPage() {
                         type="number" 
                         value={besData.monthly || ""} 
                         onChange={e => setBesData(p => ({...p, monthly: Number(e.target.value)}))}
-                        className="h-14 rounded-2xl bg-muted/30 border border-border/50 font-bold text-2xl text-primary transition-all focus-visible:ring-1 focus-visible:ring-primary"
+                        className="h-auto py-3 md:py-4 rounded-xl md:rounded-2xl bg-muted/30 border border-border/50 font-bold text-xl md:text-2xl text-primary transition-all focus-visible:ring-1 focus-visible:ring-primary leading-normal"
                       />
                       <div className="text-sm font-bold text-emerald-600 mt-2 ml-2 flex items-center gap-1">
                         <ArrowRight className="h-3 w-3" /> {besData.monthly.toLocaleString("tr-TR")} {curSymbol}
@@ -333,7 +333,7 @@ export default function CalculatorsPage() {
                     <Input 
                       type="number" 
                       value={besData.contribution || ""} 
-                      className="h-14 rounded-2xl bg-muted border-none font-bold text-xl text-primary opacity-60"
+                      className="h-auto py-3 md:py-4 rounded-xl md:rounded-2xl bg-muted border-none font-bold text-xl text-primary opacity-60 leading-normal"
                       disabled
                     />
                   </div>
@@ -343,7 +343,7 @@ export default function CalculatorsPage() {
                       type="number" 
                       value={besData.annualReturn || ""} 
                       onChange={e => setBesData(p => ({...p, annualReturn: Number(e.target.value)}))}
-                      className="h-14 rounded-2xl bg-muted/30 border border-border/50 font-bold text-xl text-primary transition-all focus-visible:ring-1 focus-visible:ring-primary"
+                      className="h-auto py-3 md:py-4 rounded-xl md:rounded-2xl bg-muted/30 border border-border/50 font-bold text-xl text-primary transition-all focus-visible:ring-1 focus-visible:ring-primary leading-normal"
                     />
                   </div>
                   <div className="space-y-3">
@@ -352,7 +352,7 @@ export default function CalculatorsPage() {
                       type="number" 
                       value={besData.years || ""} 
                       onChange={e => setBesData(p => ({...p, years: Number(e.target.value)}))}
-                      className="h-14 rounded-2xl bg-muted/30 border border-border/50 font-bold text-xl text-primary transition-all focus-visible:ring-1 focus-visible:ring-primary"
+                      className="h-auto py-3 md:py-4 rounded-xl md:rounded-2xl bg-muted/30 border border-border/50 font-bold text-xl text-primary transition-all focus-visible:ring-1 focus-visible:ring-primary leading-normal"
                     />
                   </div>
                 </CardContent>
@@ -474,7 +474,7 @@ export default function CalculatorsPage() {
                       type="number" 
                       value={leverageData.capital || ""} 
                       onChange={e => setLeverageData(p => ({...p, capital: Number(e.target.value)}))}
-                      className="h-14 rounded-2xl bg-muted/30 border border-border/50 font-bold text-2xl text-primary transition-all"
+                      className="h-auto py-3 md:py-4 rounded-xl md:rounded-2xl bg-muted/30 border border-border/50 font-bold text-xl md:text-2xl text-primary transition-all leading-normal"
                     />
                   </div>
 
@@ -508,7 +508,7 @@ export default function CalculatorsPage() {
                       type="number" 
                       value={leverageData.entryPrice || ""} 
                       onChange={e => setLeverageData(p => ({...p, entryPrice: Number(e.target.value)}))}
-                      className="h-14 rounded-2xl bg-muted/30 border border-border/50 font-bold text-xl text-primary transition-all"
+                      className="h-auto py-3 md:py-4 rounded-xl md:rounded-2xl bg-muted/30 border border-border/50 font-bold text-xl text-primary transition-all leading-normal"
                     />
                   </div>
 
@@ -518,7 +518,7 @@ export default function CalculatorsPage() {
                       type="number" 
                       value={leverageData.exitPrice || ""} 
                       onChange={e => setLeverageData(p => ({...p, exitPrice: Number(e.target.value)}))}
-                      className="h-14 rounded-2xl bg-muted/30 border border-border/50 font-bold text-xl text-primary transition-all"
+                      className="h-auto py-3 md:py-4 rounded-xl md:rounded-2xl bg-muted/30 border border-border/50 font-bold text-xl text-primary transition-all leading-normal"
                     />
                   </div>
                 </CardContent>
