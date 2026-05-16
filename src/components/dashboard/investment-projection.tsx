@@ -3,12 +3,13 @@
 import { useEffect, useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { TrendingUp, Sparkles, Loader2, Info } from "lucide-react";
-import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 import { format, addMonths } from "date-fns";
 import { tr } from "date-fns/locale";
 import { predictGrowthRate } from "@/app/actions/insights";
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { useCurrency } from "@/context/currency-context";
 
 interface InvestmentProjectionProps {
   currentValue: number;
@@ -18,6 +19,7 @@ interface InvestmentProjectionProps {
 }
 
 export function InvestmentProjection({ currentValue, investments = [], fixedAssets = [], monthlySavings = 0 }: InvestmentProjectionProps) {
+  const { formatAmount } = useCurrency();
   const [monthlyGrowthRate, setMonthlyGrowthRate] = useState(1.04);
   const [rationale, setRationale] = useState<string | null>(null);
   const [assetProjections, setAssetProjections] = useState<any[]>([]);
@@ -29,7 +31,6 @@ export function InvestmentProjection({ currentValue, investments = [], fixedAsse
       try {
         const result = await predictGrowthRate({ investments, fixedAssets, monthlySavings });
         if (result.success && result.monthlyRate) {
-          // Gelen oran 0.042 formatında, biz 1.042 formatına çeviriyoruz
           setMonthlyGrowthRate(1 + result.monthlyRate);
           setRationale(result.rationale);
           if (result.assetProjections) {
@@ -47,24 +48,25 @@ export function InvestmentProjection({ currentValue, investments = [], fixedAsse
     }
 
     fetchAIProjection();
-  }, [investments, fixedAssets]);
+  }, [investments, fixedAssets, monthlySavings]);
 
   let accumulatedValue = currentValue;
+  
   const data = Array.from({ length: 6 }).map((_, i) => {
     const date = addMonths(new Date(), i);
     
     if (i > 0) {
-      // Önceki ayın değerinin üzerine faiz/getiri ekle ve o ayki düzenli tasarrufu ekle
       accumulatedValue = (accumulatedValue * monthlyGrowthRate) + monthlySavings;
     }
     
     return {
       month: format(date, "MMM yyyy", { locale: tr }),
       deger: Math.round(accumulatedValue),
+      rawVal: accumulatedValue
     };
   });
 
-  const sixMonthValue = data[5].deger;
+  const sixMonthValue = data[5].rawVal;
   const profit = sixMonthValue - currentValue;
   const growthPercent = ((monthlyGrowthRate - 1) * 100).toFixed(1);
 
@@ -85,11 +87,11 @@ export function InvestmentProjection({ currentValue, investments = [], fixedAsse
         <div className="flex items-baseline justify-between mb-6">
           <div>
             <h3 className="text-3xl font-heading font-bold text-primary">
-               {sixMonthValue.toLocaleString("tr-TR")} ₺
+               {formatAmount(sixMonthValue)}
             </h3>
             <div className="text-sm font-bold text-emerald-500 flex items-center mt-1">
                <TrendingUp className="h-4 w-4 mr-1" />
-               +{profit.toLocaleString("tr-TR")} ₺
+               +{formatAmount(profit)}
             </div>
           </div>
           <div className="text-right">
@@ -135,7 +137,7 @@ export function InvestmentProjection({ currentValue, investments = [], fixedAsse
                 dy={10}
               />
               <Tooltip 
-                formatter={(value: any) => [`${Number(value).toLocaleString("tr-TR")} ₺`, "Tahmini Değer"]}
+                formatter={(value: any, name: any, props: any) => [formatAmount(props.payload.rawVal), "Tahmini Değer"]}
                 contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 40px -10px rgba(0,0,0,0.1)' }}
               />
               <Area 
@@ -156,7 +158,7 @@ export function InvestmentProjection({ currentValue, investments = [], fixedAsse
             <div className="flex overflow-x-auto space-x-3 pb-2 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
               {assetProjections.map((asset, idx) => {
                 const isPositive = asset.projectedValue >= asset.currentValue;
-                const percentChange = (((asset.projectedValue - asset.currentValue) / asset.currentValue) * 100) || 0;
+                const percentChange = (((asset.projectedValue - asset.currentValue) / (asset.currentValue || 1)) * 100) || 0;
                 
                 return (
                   <div key={idx} className="flex-none flex flex-col gap-1.5 bg-muted/40 p-4 rounded-2xl border border-border/20 w-[240px]">
@@ -168,7 +170,7 @@ export function InvestmentProjection({ currentValue, investments = [], fixedAsse
                         </span>
                      </div>
                      <div className="text-xs font-medium text-foreground">
-                       {asset.projectedValue.toLocaleString("tr-TR")} ₺ <span className="text-[10px] text-muted-foreground line-through ml-1">{asset.currentValue.toLocaleString("tr-TR")} ₺</span>
+                       {formatAmount(asset.projectedValue)} <span className="text-[10px] text-muted-foreground line-through ml-1">{formatAmount(asset.currentValue)}</span>
                      </div>
                      <div className="text-[10px] text-muted-foreground mt-1 leading-relaxed">
                         {asset.rationale}
@@ -185,7 +187,7 @@ export function InvestmentProjection({ currentValue, investments = [], fixedAsse
              ? "Yapay zeka portföyünüzü analiz ediyor..." 
              : apiError 
                ? "⚠️ Yapay zeka yapılandırması eksik olduğu için sabit %4 büyüme baz alınmıştır."
-               : `* Mevcut varlık dağılımınız${monthlySavings > 0 ? ' ve aylık ' + monthlySavings.toLocaleString("tr-TR") + ' ₺ düzenli tasarrufunuz ' : ' '}üzerinden AI tarafından tahmin edilmiştir.`}
+               : `* Mevcut varlık dağılımınız${monthlySavings > 0 ? ' ve aylık ' + formatAmount(monthlySavings) + ' düzenli tasarrufunuz ' : ' '}üzerinden AI tarafından tahmin edilmiştir.`}
         </p>
       </CardContent>
     </Card>

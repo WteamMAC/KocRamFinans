@@ -16,6 +16,7 @@ import {
 import { Search, Clock, ArrowUpRight, X } from "lucide-react";
 import { searchSymbolsAction } from "@/app/actions/market";
 import { cn } from "@/lib/utils";
+import { useCurrency } from "@/context/currency-context";
 
 interface AssetFormProps {
   activeTab: "financial" | "fixed";
@@ -42,7 +43,8 @@ export function AssetForm({ activeTab, onAdd, onCancel, loading, error }: AssetF
   const [fixedAssetFormData, setFixedAssetFormData] = useState({
     name: "",
     type: "Gayrimenkul",
-    value: 0
+    originalAmount: 0,
+    currency: "TRY"
   });
 
   const inputRef = useRef<HTMLDivElement>(null);
@@ -200,6 +202,30 @@ export function AssetForm({ activeTab, onAdd, onCancel, loading, error }: AssetF
                   </div>,
                   document.body
                 )}
+
+                {formData.type === "GOLD" && (
+                  <div className="flex flex-wrap gap-2 pt-2 animate-in fade-in duration-300">
+                    {[
+                      { name: "Gram Altın", symbol: "GRAM ALTIN (XAUTRY=X)" },
+                      { name: "Ons Altın ($)", symbol: "ONS ALTIN (GC=F)" },
+                      { name: "Gram Gümüş", symbol: "GRAM GÜMÜŞ (XAGTRY=X)" },
+                      { name: "Ons Gümüş ($)", symbol: "ONS GÜMÜŞ (SI=F)" },
+                      { name: "Brent Petrol", symbol: "BRENT PETROL (BZ=F)" },
+                    ].map((item) => (
+                      <button
+                        key={item.symbol}
+                        type="button"
+                        onClick={() => {
+                          setFormData(p => ({ ...p, symbol: item.symbol }));
+                          setSearchQuery(item.symbol);
+                        }}
+                        className="text-[11px] font-bold px-3 py-1.5 rounded-xl bg-amber-500/10 text-amber-600 border border-amber-500/20 hover:bg-amber-500/20 transition-all"
+                      >
+                        {item.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="space-y-3">
@@ -279,11 +305,27 @@ export function AssetForm({ activeTab, onAdd, onCancel, loading, error }: AssetF
           </div>
 
           <div className="space-y-3">
-            <Label className="text-[10px] font-black text-primary uppercase tracking-widest px-1">Değer (₺)</Label>
+            <Label className="text-[10px] font-black text-primary uppercase tracking-widest px-1">Para Birimi</Label>
+            <Select value={fixedAssetFormData.currency} onValueChange={(v) => setFixedAssetFormData((p) => ({ ...p, currency: String(v) }))}>
+              <SelectTrigger className="bg-muted/50 border-primary/10 h-12 rounded-2xl focus:ring-primary">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="rounded-2xl border-primary/10">
+                <SelectItem value="TRY">TRY (₺)</SelectItem>
+                <SelectItem value="USD">USD ($)</SelectItem>
+                <SelectItem value="EUR">EUR (€)</SelectItem>
+                <SelectItem value="GBP">GBP (£)</SelectItem>
+                <SelectItem value="XAU">Altın (XAU)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-3">
+            <Label className="text-[10px] font-black text-primary uppercase tracking-widest px-1">Değer</Label>
             <Input
               type="number"
-              value={fixedAssetFormData.value === 0 ? "" : fixedAssetFormData.value}
-              onChange={(e) => setFixedAssetFormData(p => ({ ...p, value: parseFloat(e.target.value) || 0 }))}
+              value={fixedAssetFormData.originalAmount === 0 ? "" : fixedAssetFormData.originalAmount}
+              onChange={(e) => setFixedAssetFormData(p => ({ ...p, originalAmount: parseFloat(e.target.value) || 0 }))}
               className="bg-muted/50 border-primary/10 h-12 rounded-2xl focus:ring-primary"
             />
           </div>

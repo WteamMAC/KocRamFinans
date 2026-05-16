@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { IncomeExpenseClient } from "@/components/dashboard/income-expense-client";
+import { getUserCurrencyConfig } from "@/lib/currency-formatter";
 
 export default async function IncomeExpenseHistoryPage() {
   await cookies();
@@ -30,7 +31,6 @@ export default async function IncomeExpenseHistoryPage() {
 
   const now = new Date();
   
-  // Actual totals (happened so far)
   const actualIncome = user.incomes
     .filter(inc => new Date(inc.date || inc.createdAt) <= now)
     .reduce((acc, inc) => acc + inc.amount, 0);
@@ -39,20 +39,17 @@ export default async function IncomeExpenseHistoryPage() {
     .filter(exp => new Date(exp.date || exp.createdAt) <= now)
     .reduce((acc, exp) => acc + exp.amount, 0);
 
-  // Projected totals (all entries this month/total)
   const totalIncome = user.incomes.reduce((acc, inc) => acc + inc.amount, 0);
   const totalExpense = user.expenses.reduce((acc, exp) => acc + exp.amount, 0);
   
   const netBalance = actualIncome - actualExpense;
   const projectedBalance = totalIncome - totalExpense;
 
-  // Build monthly data for comparison chart (last 6 months)
   const monthlyData: { month: string; income: number; expense: number }[] = [];
 
   for (let i = 5; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     const monthName = d.toLocaleDateString("tr-TR", { month: "short" });
-    const monthStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 
     const monthlyIncome = user.incomes
       .filter((inc) => {
@@ -81,21 +78,18 @@ export default async function IncomeExpenseHistoryPage() {
     });
   }
 
-  // Expense categories breakdown
   const expenseCategoryMap: Record<string, number> = {};
   user.expenses.forEach((exp) => {
     expenseCategoryMap[exp.type] =
       (expenseCategoryMap[exp.type] || 0) + exp.amount;
   });
 
-  // Income categories breakdown
   const incomeCategoryMap: Record<string, number> = {};
   user.incomes.forEach((inc) => {
     incomeCategoryMap[inc.type] =
       (incomeCategoryMap[inc.type] || 0) + inc.amount;
   });
 
-  // Recent transactions (merged, sorted by createdAt)
   const recentTransactions = [
     ...user.incomes.slice(0, 10).map((inc) => ({
       id: inc.id,
@@ -104,6 +98,9 @@ export default async function IncomeExpenseHistoryPage() {
       description: inc.description || inc.type,
       amount: inc.amount,
       createdAt: inc.date || inc.createdAt,
+      currency: inc.currency,
+      originalAmount: inc.originalAmount || undefined,
+      fxRate: inc.fxRate || undefined,
     })),
     ...user.expenses.slice(0, 10).map((exp) => ({
       id: exp.id,
@@ -112,6 +109,9 @@ export default async function IncomeExpenseHistoryPage() {
       description: exp.description || exp.type,
       amount: exp.amount,
       createdAt: exp.date || exp.createdAt,
+      currency: exp.currency,
+      originalAmount: exp.originalAmount || undefined,
+      fxRate: exp.fxRate || undefined,
     })),
   ]
     .sort(
@@ -121,6 +121,8 @@ export default async function IncomeExpenseHistoryPage() {
     .slice(0, 10);
 
   const maxMonthly = Math.max(...monthlyData.map((d) => Math.max(d.income, d.expense)), 1);
+
+  const currencyConfig = await getUserCurrencyConfig(user.currency);
 
   return (
     <IncomeExpenseClient

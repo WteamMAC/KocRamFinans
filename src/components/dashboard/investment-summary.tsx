@@ -4,6 +4,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recha
 import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
+import { useCurrency } from "@/context/currency-context";
 
 interface InvestmentSummaryProps {
   investments: any[];
@@ -16,6 +17,7 @@ const FIXED_COLORS = ["#8b5cf6", "#ec4899", "#f97316", "#06b6d4", "#84cc16", "#f
 export function InvestmentSummary({ investments, fixedAssets }: InvestmentSummaryProps) {
   const [isMounted, setIsMounted] = useState(false);
   const { theme } = useTheme();
+  const { formatAmount } = useCurrency();
 
   useEffect(() => {
     setIsMounted(true);
@@ -30,7 +32,6 @@ export function InvestmentSummary({ investments, fixedAssets }: InvestmentSummar
     FAIZ: "Vadeli Mevduat (Faiz)",
   };
 
-  // Yatırımları grupla
   const investmentGroups = investments.reduce((acc: any, inv: any) => {
     const type = inv.type || "Diğer";
     const value = inv.currentValue || inv.amount || 0;
@@ -42,25 +43,26 @@ export function InvestmentSummary({ investments, fixedAssets }: InvestmentSummar
   const investmentData = Object.entries(investmentGroups)
     .map(([name, value]) => ({ 
       name: categoryLabels[name] || name, 
-      value: value as number 
+      value: value as number,
+      rawVal: value as number
     }))
     .sort((a, b) => b.value - a.value);
 
-  const totalInvestment = investmentData.reduce((acc, curr) => acc + curr.value, 0);
+  const totalInvestment = investmentData.reduce((acc, curr) => acc + curr.rawVal, 0);
 
-  // Sabit Varlıkları grupla
   const fixedAssetGroups = (fixedAssets || []).reduce((acc: any, asset: any) => {
     const type = asset.type || "Diğer";
+    const val = asset.value;
     if (!acc[type]) acc[type] = 0;
-    acc[type] += asset.value;
+    acc[type] += val;
     return acc;
   }, {});
 
   const fixedAssetData = Object.entries(fixedAssetGroups)
-    .map(([name, value]) => ({ name, value: value as number }))
+    .map(([name, value]) => ({ name, value: value as number, rawVal: value as number }))
     .sort((a, b) => b.value - a.value);
 
-  const totalFixedAsset = fixedAssetData.reduce((acc, curr) => acc + curr.value, 0);
+  const totalFixedAsset = fixedAssetData.reduce((acc, curr) => acc + curr.rawVal, 0);
 
   if (!isMounted) {
     return <div className="h-[350px] w-full bg-muted animate-pulse rounded-[24px]" />;
@@ -77,7 +79,7 @@ export function InvestmentSummary({ investments, fixedAssets }: InvestmentSummar
         <div className="h-[300px] w-full relative">
           <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none pb-12">
             <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mb-0.5">Toplam</span>
-            <span className="text-xl font-heading font-bold text-primary">{totalInvestment.toLocaleString('tr-TR')} ₺</span>
+            <span className="text-xl font-heading font-bold text-primary">{formatAmount(totalInvestment)}</span>
           </div>
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
@@ -99,15 +101,15 @@ export function InvestmentSummary({ investments, fixedAssets }: InvestmentSummar
               <Tooltip 
                 content={({ active, payload }) => {
                   if (active && payload && payload.length) {
-                    const data = payload[0];
+                    const data = payload[0].payload as any;
                     return (
                       <div className="bg-card/95 backdrop-blur-md p-3 border border-border/30 rounded-xl shadow-lg">
                         <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mb-1">{data.name}</p>
                         <p className="text-base font-heading font-bold text-primary">
-                          {data.value?.toLocaleString('tr-TR')} ₺
+                          {formatAmount(data.rawVal)}
                         </p>
                         <p className="text-[9px] font-bold text-emerald-500 mt-1">
-                          Pay: %{((Number(data.value) / totalInvestment) * 100).toFixed(1)}
+                          Pay: %{((data.rawVal / (totalInvestment || 1)) * 100).toFixed(1)}
                         </p>
                       </div>
                     );
@@ -121,7 +123,7 @@ export function InvestmentSummary({ investments, fixedAssets }: InvestmentSummar
                 iconType="circle"
                 formatter={(value) => {
                   const item = investmentData.find(d => d.name === value);
-                  const percent = item ? ((item.value / totalInvestment) * 100).toFixed(1) : 0;
+                  const percent = item ? ((item.rawVal / (totalInvestment || 1)) * 100).toFixed(1) : 0;
                   return <span className="text-[10px] font-bold text-muted-foreground">{value} (%{percent})</span>;
                 }}
               />
@@ -137,7 +139,7 @@ export function InvestmentSummary({ investments, fixedAssets }: InvestmentSummar
           <div className="h-[300px] w-full relative">
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none pb-12">
               <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mb-0.5">Toplam</span>
-              <span className="text-xl font-heading font-bold text-primary">{totalFixedAsset.toLocaleString('tr-TR')} ₺</span>
+              <span className="text-xl font-heading font-bold text-primary">{formatAmount(totalFixedAsset)}</span>
             </div>
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -159,15 +161,15 @@ export function InvestmentSummary({ investments, fixedAssets }: InvestmentSummar
                 <Tooltip 
                   content={({ active, payload }) => {
                     if (active && payload && payload.length) {
-                      const data = payload[0];
+                      const data = payload[0].payload as any;
                       return (
                         <div className="bg-card/95 backdrop-blur-md p-3 border border-border/30 rounded-xl shadow-lg">
                           <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mb-1">{data.name}</p>
                           <p className="text-base font-heading font-bold text-primary">
-                            {data.value?.toLocaleString('tr-TR')} ₺
+                            {formatAmount(data.rawVal)}
                           </p>
                           <p className="text-[9px] font-bold text-primary mt-1">
-                            Pay: %{((Number(data.value) / totalFixedAsset) * 100).toFixed(1)}
+                            Pay: %{((data.rawVal / (totalFixedAsset || 1)) * 100).toFixed(1)}
                           </p>
                         </div>
                       );
@@ -181,7 +183,7 @@ export function InvestmentSummary({ investments, fixedAssets }: InvestmentSummar
                   iconType="circle"
                   formatter={(value) => {
                     const item = fixedAssetData.find(d => d.name === value);
-                    const percent = item ? ((item.value / totalFixedAsset) * 100).toFixed(1) : 0;
+                    const percent = item ? ((item.rawVal / (totalFixedAsset || 1)) * 100).toFixed(1) : 0;
                     return <span className="text-[10px] font-bold text-muted-foreground">{value} (%{percent})</span>;
                   }}
                 />

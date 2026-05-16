@@ -25,17 +25,41 @@ export async function searchSymbolsAction(query: string, category: string) {
 
 export async function getExchangeRatesAction() {
   try {
-    const symbols = ["TRY=X", "EURTRY=X", "GBPTRY=X", "GC=F"]; // USD, EUR, GBP, Gold
+    const symbols = [
+      "USDTRY=X", "EURUSD=X", "GBPUSD=X", "CHF=X", "JPY=X",
+      "AED=X", "SAR=X", "RUB=X", "CAD=X", "AUD=X",
+      "CNY=X", "SGD=X", "NOK=X", "SEK=X", "GC=F"
+    ];
     const results = await getLivePrices(symbols);
     
-    const usdRate = results.get("TRY=X")?.price || 0;
-    const goldUsdPerOunce = results.get("GC=F")?.price || 0;
+    const usdRate = results.get("USDTRY=X")?.price || results.get("TRY=X")?.price || 45.50;
+    const rawGold = results.get("GC=F")?.price || 2950;
+    const xauTryPerGram = (rawGold / 31.1035) * usdRate;
     
+    const getTryFromUsd = (symbol: string, defaultRate: number) => {
+      const quote = results.get(symbol)?.price || defaultRate;
+      return quote > 0 ? usdRate / quote : (usdRate / defaultRate);
+    };
+
+    const eurUsd = results.get("EURUSD=X")?.price || 1.085;
+    const gbpUsd = results.get("GBPUSD=X")?.price || 1.275;
+
     return {
       USD: usdRate,
-      EUR: results.get("EURTRY=X")?.price || 0,
-      GBP: results.get("GBPTRY=X")?.price || 0,
-      XAU: (goldUsdPerOunce / 31.1035) * usdRate, // Convert USD/Ounce to TRY/Gram
+      EUR: eurUsd * usdRate,
+      GBP: gbpUsd * usdRate,
+      CHF: getTryFromUsd("CHF=X", 0.885),
+      JPY: getTryFromUsd("JPY=X", 154.5),
+      AED: getTryFromUsd("AED=X", 3.6725),
+      SAR: getTryFromUsd("SAR=X", 3.75),
+      RUB: getTryFromUsd("RUB=X", 99.5),
+      CAD: getTryFromUsd("CAD=X", 1.39),
+      AUD: getTryFromUsd("AUD=X", 1.52),
+      CNY: getTryFromUsd("CNY=X", 7.24),
+      SGD: getTryFromUsd("SGD=X", 1.34),
+      NOK: getTryFromUsd("NOK=X", 11.10),
+      SEK: getTryFromUsd("SEK=X", 10.90),
+      XAU: xauTryPerGram || 4315,
     };
   } catch (error) {
     console.error("Exchange Rates Error:", error);

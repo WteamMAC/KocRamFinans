@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import * as z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { updateProfile } from "@/app/actions/profile";
+import { useCurrency } from "@/context/currency-context";
 
 const MIN_AGE = 13;
 function getMaxDate() {
@@ -43,6 +44,9 @@ const OTHER_CURRENCIES = [
   { code:"AUD", label:"Avustralya Doları",symbol:"A$",  flag:"🇦🇺" },
   { code:"CNY", label:"Çin Yuanı",        symbol:"¥",   flag:"🇨🇳" },
   { code:"SGD", label:"Singapur Doları",  symbol:"S$",  flag:"🇸🇬" },
+  { code:"NOK", label:"Norveç Kronu",     symbol:"kr",  flag:"🇳🇴" },
+  { code:"SEK", label:"İsveç Kronu",      symbol:"kr",  flag:"🇸🇪" },
+  { code:"XAU", label:"Altın (Gram)",     symbol:"ALT", flag:"🪙" },
 ];
 
 const ALL_COUNTRIES = [
@@ -103,10 +107,18 @@ interface Props {
 }
 
 export function ProfileSettingsForm({ initialData }: Props) {
+  const { setDisplayCurrency } = useCurrency();
   const [saving, setSaving]       = useState(false);
   const [saved,  setSaved]        = useState(false);
   const [showOtherCur, setShowOtherCur] = useState(false);
   const [showCountries, setShowCountries] = useState(false);
+
+  useEffect(() => {
+    if (initialData.currency && !sessionStorage.getItem("user_profile_cur_synced")) {
+      setDisplayCurrency(initialData.currency);
+      sessionStorage.setItem("user_profile_cur_synced", "true");
+    }
+  }, [initialData.currency, setDisplayCurrency]);
 
   const form = useForm<F>({
     resolver: zodResolver(schema),
@@ -137,6 +149,9 @@ export function ProfileSettingsForm({ initialData }: Props) {
     setSaving(true);
     try {
       await updateProfile(data);
+      setDisplayCurrency(data.currency);
+      sessionStorage.setItem("user_curr_synced_main", "true");
+      sessionStorage.setItem("user_curr_synced", "true");
       setSaved(true);
       form.reset(data);
       setTimeout(() => setSaved(false), 3000);

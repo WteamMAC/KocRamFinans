@@ -64,6 +64,7 @@ const OTHER_CURRENCIES = [
   { code:"SGD", label:"Singapur Doları",  symbol:"S$",  flag:"🇸🇬" },
   { code:"NOK", label:"Norveç Kronu",     symbol:"kr",  flag:"🇳🇴" },
   { code:"SEK", label:"İsveç Kronu",      symbol:"kr",  flag:"🇸🇪" },
+  { code:"XAU", label:"Altın (Gram)",     symbol:"ALT", flag:"🪙" },
 ];
 
 const REGIONS: { id:string; label:string; emoji:string; countries:{code:string;label:string;flag:string}[] }[] = [

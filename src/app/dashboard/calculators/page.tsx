@@ -8,9 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Calculator, TrendingUp, PiggyBank, Coins, ArrowRight, Sparkles, ZoomOut, Zap, Percent, Info, TrendingDown } from "lucide-react";
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid, ReferenceArea } from "recharts";
 import { cn } from "@/lib/utils";
+import { useCurrency, DISPLAY_CURRENCIES_MAP } from "@/context/currency-context";
+import { CompactCurrencyCalculator } from "@/components/dashboard/compact-currency-calculator";
 
 export default function CalculatorsPage() {
   const [activeTab, setActiveTab] = useState("interest");
+  const { displayCurrency } = useCurrency();
+  const curSymbol = DISPLAY_CURRENCIES_MAP[displayCurrency]?.symbol || "₺";
 
   // --- Faiz Hesaplama State ---
   const [interestData, setInterestData] = useState({
@@ -137,14 +141,17 @@ export default function CalculatorsPage() {
 
   return (
     <div className="flex-1 space-y-8 p-8 pt-10 bg-background min-h-screen pb-20">
-      <div className="flex items-center gap-4">
-        <div className="p-3 bg-primary/10 text-primary rounded-2xl">
-          <Calculator className="h-8 w-8" />
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-primary/10 text-primary rounded-2xl">
+            <Calculator className="h-8 w-8" />
+          </div>
+          <div>
+            <h1 className="text-4xl font-heading font-bold text-primary">Finansal Hesaplayıcılar</h1>
+            <p className="text-muted-foreground font-medium opacity-70">Gelecek yatırımlarınızı bugünden planlayın.</p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-4xl font-heading font-bold text-primary">Finansal Hesaplayıcılar</h1>
-          <p className="text-muted-foreground font-medium opacity-70">Gelecek yatırımlarınızı bugünden planlayın.</p>
-        </div>
+        <CompactCurrencyCalculator />
       </div>
 
       <div className="w-full space-y-8">
@@ -196,7 +203,7 @@ export default function CalculatorsPage() {
                 </CardHeader>
                 <CardContent className="p-8 space-y-8">
                   <div className="space-y-3">
-                    <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Anapara (₺)</Label>
+                    <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Anapara ({curSymbol})</Label>
                     <div>
                       <Input 
                         type="number" 
@@ -205,7 +212,7 @@ export default function CalculatorsPage() {
                         className="h-14 rounded-2xl bg-muted/30 border border-border/50 font-bold text-2xl text-primary transition-all focus-visible:ring-1 focus-visible:ring-primary"
                       />
                       <div className="text-sm font-bold text-emerald-600 mt-2 ml-2 flex items-center gap-1">
-                        <ArrowRight className="h-3 w-3" /> {interestData.principal.toLocaleString("tr-TR")} ₺
+                        <ArrowRight className="h-3 w-3" /> {interestData.principal.toLocaleString("tr-TR")} {curSymbol}
                       </div>
                     </div>
                   </div>
@@ -235,11 +242,11 @@ export default function CalculatorsPage() {
                   <Card className="bg-primary text-primary-foreground p-8 rounded-[32px] shadow-ambient-high relative overflow-hidden">
                      <div className="absolute top-0 right-0 p-8 bg-white/10 rounded-full -mr-10 -mt-10" />
                      <h3 className="text-xs font-bold uppercase tracking-widest opacity-70 mb-2">Vade Sonu Toplam</h3>
-                     <div className="text-4xl font-heading font-bold">{interestRes.finalAmount.toLocaleString("tr-TR")} ₺</div>
+                     <div className="text-4xl font-heading font-bold">{Math.round(interestRes.finalAmount).toLocaleString("tr-TR")} {curSymbol}</div>
                   </Card>
                   <Card className="bg-card border-border/30 p-8 rounded-[32px] shadow-ambient-medium">
                      <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2">Net Faiz Kazancı</h3>
-                     <div className="text-4xl font-heading font-bold text-emerald-500">+{interestRes.profit.toLocaleString("tr-TR")} ₺</div>
+                     <div className="text-4xl font-heading font-bold text-emerald-500">+{Math.round(interestRes.profit).toLocaleString("tr-TR")} {curSymbol}</div>
                   </Card>
                 </div>
 
@@ -282,7 +289,7 @@ export default function CalculatorsPage() {
                         <YAxis axisLine={false} tickLine={false} tick={{fontSize: 10}} tickFormatter={(val: any) => new Intl.NumberFormat("tr-TR", { notation: "compact" }).format(val)} dx={-10} />
                         <Tooltip 
                           contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 40px -10px rgba(0,0,0,0.1)' }}
-                          formatter={(val: any) => [`${Number(val).toLocaleString("tr-TR")} ₺`, "Bakiye"]}
+                          formatter={(val: any) => [`${Number(val).toLocaleString("tr-TR")} ${curSymbol}`, "Bakiye"]}
                         />
                         <Area type="monotone" dataKey="tutar" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorInt)" />
                         {intRefLeft && intRefRight ? (
@@ -306,7 +313,7 @@ export default function CalculatorsPage() {
                 </CardHeader>
                 <CardContent className="p-8 space-y-8">
                   <div className="space-y-3">
-                    <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Aylık Katkı Payı (₺)</Label>
+                    <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Aylık Katkı Payı ({curSymbol})</Label>
                     <div>
                       <Input 
                         type="number" 
@@ -315,7 +322,7 @@ export default function CalculatorsPage() {
                         className="h-14 rounded-2xl bg-muted/30 border border-border/50 font-bold text-2xl text-primary transition-all focus-visible:ring-1 focus-visible:ring-primary"
                       />
                       <div className="text-sm font-bold text-emerald-600 mt-2 ml-2 flex items-center gap-1">
-                        <ArrowRight className="h-3 w-3" /> {besData.monthly.toLocaleString("tr-TR")} ₺
+                        <ArrowRight className="h-3 w-3" /> {besData.monthly.toLocaleString("tr-TR")} {curSymbol}
                       </div>
                     </div>
                   </div>
@@ -353,15 +360,15 @@ export default function CalculatorsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <Card className="bg-emerald-600 text-white p-6 rounded-[32px] shadow-ambient-high">
                      <h3 className="text-[10px] font-bold uppercase tracking-widest opacity-70 mb-1">Toplam Birikim</h3>
-                     <div className="text-2xl font-heading font-bold">{besRes.totalValue.toLocaleString("tr-TR")} ₺</div>
+                     <div className="text-2xl font-heading font-bold">{Math.round(besRes.totalValue).toLocaleString("tr-TR")} {curSymbol}</div>
                   </Card>
                   <Card className="bg-card border-border/30 p-6 rounded-[32px] shadow-ambient-medium">
                      <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Ödediğiniz Tutar</h3>
-                     <div className="text-2xl font-heading font-bold text-primary">{besRes.totalPrincipal.toLocaleString("tr-TR")} ₺</div>
+                     <div className="text-2xl font-heading font-bold text-primary">{Math.round(besRes.totalPrincipal).toLocaleString("tr-TR")} {curSymbol}</div>
                   </Card>
                   <Card className="bg-card border-border/30 p-6 rounded-[32px] shadow-ambient-medium">
                      <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Devlet Katkısı</h3>
-                     <div className="text-2xl font-heading font-bold text-emerald-500">+{besRes.govtContribution.toLocaleString("tr-TR")} ₺</div>
+                     <div className="text-2xl font-heading font-bold text-emerald-500">+{Math.round(besRes.govtContribution).toLocaleString("tr-TR")} {curSymbol}</div>
                   </Card>
                 </div>
 
@@ -398,7 +405,7 @@ export default function CalculatorsPage() {
                         <YAxis axisLine={false} tickLine={false} tick={{fontSize: 10}} tickFormatter={(val: any) => new Intl.NumberFormat("tr-TR", { notation: "compact" }).format(val)} dx={-10} />
                         <Tooltip 
                            contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 40px -10px rgba(0,0,0,0.1)' }}
-                           formatter={(val: any) => [`${Number(val).toLocaleString("tr-TR")} ₺`, "Toplam"]}
+                           formatter={(val: any) => [`${Number(val).toLocaleString("tr-TR")} ${curSymbol}`, "Toplam"]}
                         />
                         <Area type="monotone" dataKey="birikim" stroke="#10b981" strokeWidth={3} fillOpacity={0.2} fill="#10b981" />
                         <Area type="monotone" dataKey="anaPara" stroke="#3b82f6" strokeWidth={2} fillOpacity={0.1} fill="#3b82f6" strokeDasharray="5 5" />
@@ -460,7 +467,7 @@ export default function CalculatorsPage() {
                   </div>
 
                   <div className="space-y-3">
-                    <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Marjin / Sermaye ($)</Label>
+                    <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Marjin / Sermaye ({curSymbol})</Label>
                     <Input 
                       type="number" 
                       value={leverageData.capital || ""} 
@@ -494,7 +501,7 @@ export default function CalculatorsPage() {
                   </div>
 
                   <div className="space-y-3">
-                    <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Giriş Fiyatı ($)</Label>
+                    <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Giriş Fiyatı ({curSymbol})</Label>
                     <Input 
                       type="number" 
                       value={leverageData.entryPrice || ""} 
@@ -504,7 +511,7 @@ export default function CalculatorsPage() {
                   </div>
 
                   <div className="space-y-3 border-t border-border/10 pt-6">
-                    <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Hedef/Tahmini Fiyat ($)</Label>
+                    <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Hedef/Tahmini Fiyat ({curSymbol})</Label>
                     <Input 
                       type="number" 
                       value={leverageData.exitPrice || ""} 
@@ -523,15 +530,15 @@ export default function CalculatorsPage() {
                   )}>
                      <div className="absolute top-0 right-0 p-8 bg-white/10 rounded-full -mr-10 -mt-10" />
                      <h3 className="text-xs font-bold uppercase tracking-widest opacity-70 mb-2">Likidasyon Fiyatı</h3>
-                     <div className="text-4xl font-heading font-bold">${levRes.liquidationPrice.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                     <div className="text-4xl font-heading font-bold">{curSymbol}{levRes.liquidationPrice.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                      <p className="text-[10px] mt-2 opacity-60 flex items-center gap-1 uppercase tracking-tighter">
                        <Info className="h-3 w-3" /> Fiyat bu seviyeye gelirse pozisyonunuz kapanır.
                      </p>
                   </Card>
                   <Card className="bg-card border-border/30 p-8 rounded-[32px] shadow-ambient-medium">
                      <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2">Pozisyon Büyüklüğü</h3>
-                     <div className="text-4xl font-heading font-bold text-primary">${levRes.positionSize.toLocaleString("en-US")}</div>
-                     <p className="text-xs font-medium text-muted-foreground mt-2">Sermaye: ${leverageData.capital.toLocaleString("en-US")} x {leverageData.leverage}x</p>
+                     <div className="text-4xl font-heading font-bold text-primary">{curSymbol}{levRes.positionSize.toLocaleString("tr-TR")}</div>
+                     <p className="text-xs font-medium text-muted-foreground mt-2">Sermaye: {curSymbol}{leverageData.capital.toLocaleString("tr-TR")} x {leverageData.leverage}x</p>
                   </Card>
                 </div>
 
@@ -542,7 +549,7 @@ export default function CalculatorsPage() {
                        "text-4xl font-heading font-bold",
                        levRes.pnl >= 0 ? "text-emerald-500" : "text-red-500"
                      )}>
-                       {levRes.pnl >= 0 ? "+" : ""}{levRes.pnl.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} $
+                       {levRes.pnl >= 0 ? "+" : ""}{levRes.pnl.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {curSymbol}
                      </div>
                   </Card>
                   <Card className="bg-card border-border/30 p-8 rounded-[32px] shadow-ambient-medium">

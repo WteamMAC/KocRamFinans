@@ -129,7 +129,7 @@ export default function DashboardLayout({
       </div>
 
       <main className={cn(
-        "flex-1 min-h-screen transition-all duration-300 ease-in-out",
+        "flex-1 min-h-screen transition-all duration-300 ease-in-out flex flex-col w-full overflow-x-hidden",
         "md:pl-0", // Default pl
         !isCollapsed ? "md:ml-72" : "md:ml-20"
       )}>

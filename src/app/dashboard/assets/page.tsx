@@ -1,12 +1,8 @@
 import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
-import { getLivePrices, calculatePortfolioMetrics } from "@/lib/price-service";
+import { getLivePrices, calculatePortfolioMetrics, calculateFixedAssetsMetrics } from "@/lib/price-service";
 import { AssetList } from "@/components/dashboard/asset-list";
-import { InvestmentSummary } from "@/components/dashboard/investment-summary";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingUp, Wallet, Banknote, ArrowUpRight, BarChart3 } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 export default async function AssetsPage() {
   const { userId } = await auth();
@@ -29,6 +25,7 @@ export default async function AssetsPage() {
   }
 
   let metrics = { totalCurrentValue: 0, totalCost: 0, totalProfit: 0, profitPercent: 0, assets: [] as any[] };
+  let fixedMetrics = { totalOriginalCost: 0, totalCurrentValue: 0, totalProfit: 0, totalProfitPercent: 0, assets: [] as any[] };
 
   try {
     const symbols = Array.from(new Set(
@@ -39,9 +36,11 @@ export default async function AssetsPage() {
 
     const livePrices = await getLivePrices(symbols);
     metrics = calculatePortfolioMetrics(user.investments, livePrices);
+    fixedMetrics = calculateFixedAssetsMetrics(user.fixedAssets, livePrices);
   } catch (error) {
     console.error("Assets Page Data Fetch Error:", error);
     metrics = calculatePortfolioMetrics(user.investments, new Map());
+    fixedMetrics = calculateFixedAssetsMetrics(user.fixedAssets, new Map());
   }
 
   return (
@@ -49,8 +48,9 @@ export default async function AssetsPage() {
       <AssetList 
         assets={metrics.assets} 
         allInvestments={user.investments} 
-        fixedAssets={user.fixedAssets}
-        metrics={metrics}
+        fixedAssets={fixedMetrics.assets.map(fa => ({ ...fa, value: fa.currentValuation || fa.value, liveProfit: fa.liveProfit, liveProfitPercent: fa.liveProfitPercent }))}
+        metrics={{ ...metrics, fixedMetrics }}
+        userCurrency={user.currency}
       />
     </div>
   );

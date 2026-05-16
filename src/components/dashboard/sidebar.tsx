@@ -292,7 +292,7 @@ export function Sidebar({ isCollapsed, onToggle, hideToggle, theme, onToggleThem
           )}
         </div>
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1.5 flex-wrap justify-end">
           <MessageBell className="h-8 w-8" />
           <NotificationBell />
           {theme && onToggleTheme && (

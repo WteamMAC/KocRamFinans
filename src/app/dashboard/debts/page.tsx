@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { DebtList } from "@/components/dashboard/debt-list";
+import { getUserCurrencyConfig } from "@/lib/currency-formatter";
 
 export default async function DebtsPage() {
   await cookies();
@@ -25,6 +26,8 @@ export default async function DebtsPage() {
     redirect("/onboarding");
     return null;
   }
+
+  const currencyConfig = await getUserCurrencyConfig(user.currency);
 
   return (
     <div className="flex-1 space-y-10 p-8 pt-10 bg-background min-h-screen">

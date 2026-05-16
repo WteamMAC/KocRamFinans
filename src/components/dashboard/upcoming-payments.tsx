@@ -1,11 +1,15 @@
+"use client";
+
 import { Clock, Calendar, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useCurrency } from "@/context/currency-context";
 
 interface UpcomingPaymentsProps {
   expenses: any[];
 }
 
 export function UpcomingPayments({ expenses }: UpcomingPaymentsProps) {
+  const { formatAmount } = useCurrency();
   const today = new Date().getDate();
 
   const sortedExpenses = [...expenses]
@@ -46,7 +50,7 @@ export function UpcomingPayments({ expenses }: UpcomingPaymentsProps) {
               </div>
             </div>
             <div className="flex items-center gap-4">
-              <div className="text-sm font-bold text-foreground">{exp.amount.toLocaleString()} ₺</div>
+              <div className="text-sm font-bold text-foreground">{formatAmount(exp.amount)}</div>
               <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-all transform -translate-x-2 group-hover:translate-x-0" />
               {isSoon && (
                 <div className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" title="Yaklaşıyor!" />

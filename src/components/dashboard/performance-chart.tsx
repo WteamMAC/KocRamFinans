@@ -18,6 +18,7 @@ import { useState, useEffect } from "react";
 import { CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useCurrency } from "@/context/currency-context";
 
 type TimeRange = '1w' | '1m' | '3m' | '6m' | '1y' | '10y';
 
@@ -29,12 +30,14 @@ interface PerformanceChartProps {
 
 export function PerformanceChart({ incomes, expenses, investments }: PerformanceChartProps) {
   const { theme } = useTheme();
+  const { formatAmount } = useCurrency();
   const [mounted, setMounted] = useState(false);
   const [timeRange, setTimeRange] = useState<TimeRange>('1m');
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
   const chartData = useMemo(() => {
     let steps: number;
     let stepFn: (date: Date, amount: number) => Date;
@@ -70,8 +73,10 @@ export function PerformanceChart({ incomes, expenses, investments }: Performance
 
       data.push({
         name: format(date, formatStr, { locale: tr }),
-        Bakiye: cumulativeIncome - cumulativeExpense,
-        Yatırım: cumulativeInvestment,
+        Bakiye: Math.round(cumulativeIncome - cumulativeExpense),
+        Yatırım: Math.round(cumulativeInvestment),
+        rawBakiye: cumulativeIncome - cumulativeExpense,
+        rawYatirim: cumulativeInvestment
       });
     }
     return data;
@@ -153,13 +158,13 @@ export function PerformanceChart({ incomes, expenses, investments }: Performance
                 axisLine={false}
                 tickLine={false}
                 tick={{ fontSize: 10, fill: textColor, fontWeight: "bold" }}
-                tickFormatter={(value) => {
-                  if (value >= 1000000) return `${(value / 1000000).toFixed(1).replace(/\\.0$/, '')}m`;
-                  if (value >= 1000) return `${(value / 1000).toFixed(0)}k`;
-                  return value;
-                }}
+                tickFormatter={(value) => `${formatAmount(value)}`}
               />
               <Tooltip 
+                formatter={(value: any, name: any, props: any) => [
+                  formatAmount(name === "Nakit Bakiyesi" ? props.payload.rawBakiye : props.payload.rawYatirim),
+                  name
+                ]}
                 contentStyle={{ 
                   backgroundColor: tooltipBg, 
                   borderRadius: "16px", 

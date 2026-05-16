@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import {
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from "recharts";
 import { cn } from "@/lib/utils";
 import { deleteAsset, addAsset, fixMisclassifiedBesFaiz } from "@/app/actions/assets";
+import { useCurrency } from "@/context/currency-context";
 
 interface InvestmentItem {
   id: string;
@@ -41,6 +42,7 @@ function parseMeta(inv: InvestmentItem): { rate: number; originalDescription: st
 
 export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
   const router = useRouter();
+  const { formatAmount } = useCurrency();
   const [isAdding, setIsAdding] = useState(false);
   const [loading, setLoading] = useState(false);
   const [fixLoading, setFixLoading] = useState(false);
@@ -48,7 +50,7 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [projYears, setProjYears] = useState(10);
   const [projMonthly, setProjMonthly] = useState(0); // only for BES
-  const [projReturn, setProjReturn] = useState(25);  // only for BES
+  const [projReturn, setProjReturn] = useState(45);  // only for BES
 
   const [formData, setFormData] = useState({
     symbol: "",
@@ -56,6 +58,13 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
     purchasePrice: 0,
     description: "",
   });
+
+  // Gerçek zamanlı saniyelik sayaç (Canlı Getiri hissi için)
+  const [currentTime, setCurrentTime] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   // Group by symbol
   const grouped = useMemo(() => {
@@ -68,7 +77,6 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
       }
       acc[sym].totalQuantity += inv.quantity;
       acc[sym].totalCost += inv.amount || inv.quantity;
-      // Weighted average rate calculation
       acc[sym].items.push(inv);
     }
     
@@ -89,21 +97,46 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
 
   const totalPrincipal = grouped.reduce((s, g) => s + g.totalQuantity, 0);
 
+  // Canlı saniyelik değerleme ve toplam biriken net kazanç
+  const liveTotals = useMemo(() => {
+    let totalVal = 0;
+    for (const g of grouped) {
+      if (g.items.length === 0) continue;
+      const firstCreated = new Date(Math.min(...g.items.map(i => new Date(i.createdAt).getTime())));
+      const msPassed = Math.max(0, currentTime - firstCreated.getTime());
+      const secondsPassed = msPassed / 1000;
+      const daysPassed = secondsPassed / (60 * 60 * 24);
+
+      if (type === "BES") {
+        const annualFundGrowth = 0.45;
+        const dailyGrowth = annualFundGrowth / 365;
+        const fundMultiplier = Math.pow(1 + dailyGrowth, daysPassed);
+        const stateMultiplier = 1 + (g.rate > 0 && g.rate <= 100 ? g.rate / 100 : 0.30);
+        totalVal += (g.totalQuantity * fundMultiplier) * stateMultiplier;
+      } else {
+        const secondlyRate = (g.rate / 100) / (365 * 24 * 3600);
+        const multiplier = Math.pow(1 + secondlyRate, secondsPassed);
+        totalVal += g.totalQuantity * multiplier;
+      }
+    }
+    return {
+      totalValuation: totalVal === 0 ? totalPrincipal : totalVal,
+      totalProfit: Math.max(0, totalVal - totalPrincipal)
+    };
+  }, [grouped, currentTime, totalPrincipal, type]);
+
   // Projection calculation
   const projectionData = useMemo(() => {
     if (type === "FAIZ") {
-      // Her hesabın ağırlıklı ortalama faiz oranı ve toplam anapara
       const totalPrin = grouped.reduce((s, g) => s + g.totalQuantity, 0);
       if (totalPrin <= 0) return [];
 
-      // Her grubu ayrı bileşik faizle hesaplayıp toplayalım (daha doğru)
       const yearlyTotals: number[] = Array(projYears + 1).fill(0);
       for (const g of grouped) {
         const monthlyRate = g.rate / 12 / 100;
         let bal = g.totalQuantity;
         for (let yr = 0; yr <= projYears; yr++) {
           yearlyTotals[yr] += bal;
-          // sonraki yıl için 12 aylık bileşik büyüme
           for (let m = 0; m < 12; m++) {
             bal = bal * (1 + monthlyRate);
           }
@@ -117,7 +150,6 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
         faizKazanci: Math.round(total - totalPrin),
       }));
     } else {
-      // BES: aylık ek katkı + bileşik getiri + devlet katkısı
       const govtRate = grouped.reduce((s, g) => s + g.rate, 0) / Math.max(grouped.length, 1);
       const monthlyRate = projReturn / 12 / 100;
       const totalMonths = projYears * 12;
@@ -154,6 +186,18 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
     } catch (err) {
       console.error(err);
     }
+  }
+
+  function handleToggleAdd() {
+    if (!isAdding) {
+      setFormData({
+        symbol: "",
+        quantity: 0,
+        purchasePrice: type === "BES" ? 30 : 45,
+        description: "",
+      });
+    }
+    setIsAdding(!isAdding);
   }
 
   async function handleAdd() {
@@ -231,7 +275,7 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
           <Button variant="outline" size="sm" onClick={() => router.refresh()} className="rounded-xl border-border/30">
             <RefreshCw className="h-4 w-4 mr-2" /> Yenile
           </Button>
-          <Button size="sm" onClick={() => setIsAdding(!isAdding)} className="rounded-xl bg-primary">
+          <Button size="sm" onClick={handleToggleAdd} className="rounded-xl bg-primary">
             <Plus className="h-4 w-4 mr-2" /> {isBES ? "BES Hesabı Ekle" : "Mevduat Ekle"}
           </Button>
         </div>
@@ -249,19 +293,23 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
         <Card className="border-border/20 shadow-ambient-low rounded-2xl p-6 relative overflow-hidden">
           <div className={cn("absolute top-0 right-0 w-24 h-24 rounded-full -mr-8 -mt-8 opacity-30", accentBg)} />
           <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2">Toplam Ana Para</p>
-          <p className="text-3xl font-heading font-bold text-primary">{totalPrincipal.toLocaleString("tr-TR")} ₺</p>
+          <p className="text-3xl font-heading font-bold text-primary">{formatAmount(totalPrincipal)}</p>
         </Card>
         <Card className="border-border/20 shadow-ambient-low rounded-2xl p-6 relative overflow-hidden">
           <div className={cn("absolute top-0 right-0 w-24 h-24 rounded-full -mr-8 -mt-8 opacity-30", accentBg)} />
-          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2">
-            {projYears} Yıl Sonra (Projeksiyon)
+          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 flex items-center gap-1.5">
+            <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+            Canlı Toplam Değer
           </p>
-          <p className={cn("text-3xl font-heading font-bold", accentColor)}>{finalValue.toLocaleString("tr-TR")} ₺</p>
+          <p className={cn("text-3xl font-heading font-bold", accentColor)}>{formatAmount(liveTotals.totalValuation)}</p>
         </Card>
         <Card className="border-border/20 shadow-ambient-low rounded-2xl p-6 relative overflow-hidden">
           <div className={cn("absolute top-0 right-0 w-24 h-24 rounded-full -mr-8 -mt-8 opacity-30", accentBg)} />
-          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2">Tahmini Net Kazanç</p>
-          <p className="text-3xl font-heading font-bold text-emerald-500">+{Math.max(0, netGain).toLocaleString("tr-TR")} ₺</p>
+          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 flex items-center gap-1.5">
+            <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+            Canlı Biriken Net Kazanç
+          </p>
+          <p className="text-3xl font-heading font-bold text-emerald-500">+{formatAmount(liveTotals.totalProfit)}</p>
         </Card>
       </div>
 
@@ -287,7 +335,7 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
             </div>
             <div className="space-y-2">
               <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                {isBES ? "İlk Giriş Tutarı (₺)" : "Ana Para Tutarı (₺)"}
+                {isBES ? "İlk Giriş Tutarı" : "Ana Para Tutarı"}
               </Label>
               <Input
                 type="number"
@@ -339,7 +387,7 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
             <Card className="border-dashed border-2 border-border/30 rounded-2xl p-12 text-center">
               <Icon className={cn("h-12 w-12 mx-auto mb-4 opacity-30", accentColor)} />
               <p className="text-muted-foreground text-sm">Henüz {isBES ? "BES hesabı" : "vadeli mevduat"} eklenmemiş.</p>
-              <Button variant="link" onClick={() => setIsAdding(true)} className="mt-2 text-primary font-bold">Hemen Ekle</Button>
+              <Button variant="link" onClick={handleToggleAdd} className="mt-2 text-primary font-bold">Hemen Ekle</Button>
             </Card>
           ) : (
             grouped.map(g => {
@@ -364,10 +412,15 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
                           <p className={cn("text-[11px] font-bold mt-0.5", accentColor)}>
                             {isBES ? `Devlet Katkısı: %${g.rate}` : `Faiz: %${g.rate} / Yıl`}
                           </p>
-                          {!isBES && (
+                          {!isBES ? (
                             <p className="text-[10px] font-black text-emerald-500 mt-1 uppercase tracking-tighter flex items-center gap-1">
                               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                              Günlük Getiri: ~{((g.totalQuantity * g.rate) / 365 / 100).toLocaleString("tr-TR", { maximumFractionDigits: 2 })} ₺
+                              Günlük Getiri: ~{formatAmount((g.totalQuantity * g.rate) / 365 / 100)}
+                            </p>
+                          ) : (
+                            <p className="text-[10px] font-black text-emerald-500 mt-1 uppercase tracking-tighter flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                              Tahmini Günlük Fon Getirisi: ~{formatAmount((g.totalQuantity * 45) / 365 / 100)}
                             </p>
                           )}
                         </div>
@@ -377,21 +430,34 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
                     <div className="mt-4 pt-4 border-t border-border/10 grid grid-cols-2 gap-4">
                       <div>
                         <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Ana Para</p>
-                        <p className="font-bold text-lg text-primary">{g.totalQuantity.toLocaleString("tr-TR")} ₺</p>
+                        <p className="font-bold text-lg text-primary">{formatAmount(g.totalQuantity)}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Birikmiş {isBES ? "Getiri" : "Faiz"}</p>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Canlı Biriken Kazanç</p>
                         {(() => {
-                          // Basit bir "bugüne kadar ne kazandı" hesabı (createdAt'ten bugüne)
                           const firstCreated = new Date(Math.min(...g.items.map(i => new Date(i.createdAt).getTime())));
-                          const monthsPassed = Math.max(0, (new Date().getFullYear() - firstCreated.getFullYear()) * 12 + (new Date().getMonth() - firstCreated.getMonth()));
-                          const monthlyRate = g.rate / 12 / 100;
-                          const currentVal = g.totalQuantity * Math.pow(1 + monthlyRate, monthsPassed);
-                          const earned = currentVal - g.totalQuantity;
+                          const msPassed = Math.max(0, currentTime - firstCreated.getTime());
+                          const secondsPassed = msPassed / 1000;
+                          const daysPassed = secondsPassed / (60 * 60 * 24);
+                          let currentVal = g.totalQuantity;
+                          let earned = 0;
+                          if (isBES) {
+                            const annualFundGrowth = 0.45;
+                            const dailyGrowth = annualFundGrowth / 365;
+                            const fundMultiplier = Math.pow(1 + dailyGrowth, daysPassed);
+                            const stateMultiplier = 1 + (g.rate > 0 && g.rate <= 100 ? g.rate / 100 : 0.30);
+                            currentVal = (g.totalQuantity * fundMultiplier) * stateMultiplier;
+                            earned = currentVal - g.totalQuantity;
+                          } else {
+                            const secondlyRate = (g.rate / 100) / (365 * 24 * 3600);
+                            const multiplier = Math.pow(1 + secondlyRate, secondsPassed);
+                            currentVal = g.totalQuantity * multiplier;
+                            earned = currentVal - g.totalQuantity;
+                          }
                           return (
                             <>
-                              <p className="font-bold text-lg text-emerald-500">+{Math.round(earned).toLocaleString("tr-TR")} ₺</p>
-                              <p className="text-[9px] text-muted-foreground italic">{monthsPassed} ayda birikti</p>
+                              <p className="font-bold text-lg text-emerald-500">+{formatAmount(earned)}</p>
+                              <p className="text-[9px] text-muted-foreground italic">{Math.round(daysPassed)} gün canlı birikim {isBES ? `(+%${g.rate || 30} Devlet Katkısı)` : ""}</p>
                             </>
                           );
                         })()}
@@ -400,17 +466,17 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
                         <div>
                           <p className="text-[9px] font-bold text-muted-foreground uppercase">1 Yıl Sonraki Tahmin</p>
                           <p className={cn("font-bold text-xl", accentColor)}>
-                            {isBES
-                              ? Math.round(g.totalQuantity * (1 + g.rate / 100)).toLocaleString("tr-TR")
-                              : Math.round(g.totalQuantity * Math.pow(1 + g.rate / 12 / 100, 12)).toLocaleString("tr-TR")} ₺
+                            {formatAmount(isBES
+                              ? (g.totalQuantity * 1.45) * (1 + (g.rate || 30) / 100)
+                              : g.totalQuantity * Math.pow(1 + g.rate / 12 / 100, 12))}
                           </p>
                         </div>
                         <div className="text-right">
-                           <p className="text-[9px] font-bold text-emerald-500 uppercase">Yıllık Kazanç</p>
+                           <p className="text-[9px] font-bold text-emerald-500 uppercase">Yıllık Tahmini Kazanç</p>
                            <p className="font-bold text-emerald-500">
-                             +{isBES 
-                               ? Math.round(g.totalQuantity * (g.rate / 100)).toLocaleString("tr-TR")
-                               : Math.round(g.totalQuantity * (Math.pow(1 + g.rate / 12 / 100, 12) - 1)).toLocaleString("tr-TR")} ₺
+                             +{formatAmount(isBES 
+                               ? ((g.totalQuantity * 1.45 * (1 + (g.rate || 30) / 100)) - g.totalQuantity)
+                               : (g.totalQuantity * (Math.pow(1 + g.rate / 12 / 100, 12) - 1)))}
                            </p>
                         </div>
                       </div>
@@ -423,7 +489,7 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
                         return (
                           <div key={item.id} className="flex justify-between items-center bg-card rounded-xl p-3 border border-border/10">
                             <div>
-                              <p className="text-sm font-bold">{item.quantity.toLocaleString("tr-TR")} ₺</p>
+                              <p className="text-sm font-bold">{formatAmount(item.quantity)}</p>
                               <p className={cn("text-[10px] font-bold", accentColor)}>
                                 {isBES ? `Katkı: %${meta.rate}` : `Oran: %${meta.rate}`}
                               </p>
@@ -473,7 +539,7 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
               {isBES ? (
                 <>
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Aylık Ek Ödeme (₺)</Label>
+                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Aylık Ek Ödeme</Label>
                     <Input
                       type="number"
                       value={projMonthly || ""}
@@ -512,7 +578,7 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
               <div>
                 <p className="font-bold text-foreground">{projYears} Yıllık Büyüme</p>
                 <p className="text-xs text-muted-foreground opacity-70">
-                  {totalPrincipal.toLocaleString("tr-TR")} ₺ → {finalValue.toLocaleString("tr-TR")} ₺
+                  {formatAmount(totalPrincipal)} → {formatAmount(finalValue)}
                 </p>
               </div>
               <div className={cn("px-4 py-2 rounded-full text-sm font-bold", accentBg, accentColor)}>
@@ -540,7 +606,7 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
                   <Tooltip
                     contentStyle={{ borderRadius: "16px", border: "none", boxShadow: "0 10px 40px -10px rgba(0,0,0,0.1)" }}
                     formatter={(val: any, name: any) => [
-                      `${Number(val).toLocaleString("tr-TR")} ₺`,
+                      formatAmount(Number(val)),
                       name === "toplam"
                         ? (isBES ? "Tahmini Toplam (BES)" : "Bileşik Faiz Toplamı")
                         : name === "faizKazanci"
@@ -587,17 +653,17 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
                       <th className="px-4 py-3 text-right text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
                         {isBES ? "Tahmini Toplam" : "Bileşik Toplam"}
                       </th>
-                      <th className="px-4 py-3 text-right text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Kazanılan Faiz</th>
+                      <th className="px-4 py-3 text-right text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Kazanılan Getiri</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/10">
                     {projectionData.filter((_, i) => i % 2 === 0 || i === projectionData.length - 1).map((row) => (
                       <tr key={row.label} className="hover:bg-muted/30 transition-colors">
                         <td className="px-4 py-3 font-bold text-foreground">{row.label}</td>
-                        <td className="px-4 py-3 text-right text-muted-foreground">{row.anaPara.toLocaleString("tr-TR")} ₺</td>
-                        <td className={cn("px-4 py-3 text-right font-bold", accentColor)}>{row.toplam.toLocaleString("tr-TR")} ₺</td>
+                        <td className="px-4 py-3 text-right text-muted-foreground">{formatAmount(row.anaPara)}</td>
+                        <td className={cn("px-4 py-3 text-right font-bold", accentColor)}>{formatAmount(row.toplam)}</td>
                         <td className="px-4 py-3 text-right text-emerald-500 font-bold">
-                          +{Math.max(0, row.faizKazanci ?? (row.toplam - row.anaPara)).toLocaleString("tr-TR")} ₺
+                          +{formatAmount(Math.max(0, row.faizKazanci ?? (row.toplam - row.anaPara)))}
                         </td>
                       </tr>
                     ))}

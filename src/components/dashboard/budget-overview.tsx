@@ -3,6 +3,7 @@
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Cell } from "recharts";
 import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
+import { useCurrency } from "@/context/currency-context";
 
 interface BudgetOverviewProps {
   incomes: any[];
@@ -12,6 +13,7 @@ interface BudgetOverviewProps {
 export function BudgetOverview({ incomes, expenses }: BudgetOverviewProps) {
   const [isMounted, setIsMounted] = useState(false);
   const { theme } = useTheme();
+  const { formatAmount } = useCurrency();
 
   useEffect(() => {
     setIsMounted(true);
@@ -21,8 +23,8 @@ export function BudgetOverview({ incomes, expenses }: BudgetOverviewProps) {
   const totalExpense = expenses.reduce((acc, exp) => acc + exp.amount, 0);
 
   const data = [
-    { name: "Gelir", total: totalIncome, gradient: "url(#colorIncome)" },
-    { name: "Gider", total: totalExpense, gradient: "url(#colorExpense)" },
+    { name: "Gelir", total: totalIncome, rawTotal: totalIncome, gradient: "url(#colorIncome)" },
+    { name: "Gider", total: totalExpense, rawTotal: totalExpense, gradient: "url(#colorExpense)" },
   ];
 
   if (!isMounted) {
@@ -58,18 +60,18 @@ export function BudgetOverview({ incomes, expenses }: BudgetOverviewProps) {
             fontWeight={600}
             tickLine={false}
             axisLine={false}
-            tickFormatter={(value) => `${value}₺`}
+            tickFormatter={(value) => `${formatAmount(value)}`}
           />
           <Tooltip 
             cursor={{ fill: theme === "dark" ? "rgba(255, 255, 255, 0.1)" : "#edeeef", radius: 12 }}
             content={({ active, payload }) => {
               if (active && payload && payload.length) {
-                const item = payload[0].payload;
+                const item = payload[0].payload as any;
                 return (
                   <div className="bg-card/95 backdrop-blur-md p-4 border border-border/30 rounded-2xl shadow-ambient-high">
                     <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">{item.name}</p>
                     <p className="text-xl font-heading font-bold text-primary">
-                      {payload[0]?.value?.toLocaleString('tr-TR')} ₺
+                      {formatAmount(item.rawTotal)}
                     </p>
                   </div>
                 );
