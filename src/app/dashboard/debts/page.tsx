@@ -19,6 +19,14 @@ export default async function DebtsPage() {
     where: { clerkUserId: userId as string },
     include: {
       debts: { orderBy: { createdAt: "desc" } },
+      expenses: {
+        where: {
+          type: { in: ["Borç Taksit Ödemesi", "Borç Kapatma"] },
+          date: {
+            gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+          }
+        }
+      }
     },
   });
 
@@ -40,7 +48,7 @@ export default async function DebtsPage() {
         </div>
       </div>
 
-      <DebtList debts={user.debts} />
+      <DebtList debts={user.debts} monthlyPayments={user.expenses} />
     </div>
   );
 }
