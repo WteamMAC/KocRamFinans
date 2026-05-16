@@ -606,6 +606,24 @@ function PostCard({ post, currentUserId, onTagClick, onCommunityClick, onComment
         </div>
       )}
       <div className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">{contentWithTagsAndMentions(post.content, onTagClick)}</div>
+      
+      {post.tags.length > 0 && (
+        <div className="flex flex-wrap gap-2 pt-1">
+          {post.tags.map(tag => (
+            <button
+              key={tag}
+              onClick={(e) => { 
+                e.stopPropagation(); 
+                onTagClick?.(tag); 
+              }}
+              className="text-[10px] font-black text-primary bg-primary/5 hover:bg-primary/10 border border-primary/10 px-2.5 py-1 rounded-lg transition-all"
+            >
+              {tag}
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="flex items-center gap-4 pt-2">
         <button onClick={handleLike} className={cn("flex items-center gap-1.5 text-xs font-bold transition-all", liked ? "text-rose-500" : "text-muted-foreground hover:text-rose-500")}>
           <Heart className={cn("h-4 w-4", liked && "fill-current", likeAnim && "animate-ping")} /> {likeCount}

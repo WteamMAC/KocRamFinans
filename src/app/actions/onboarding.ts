@@ -1,10 +1,11 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { auth, currentUser } from "@clerk/nextjs/server";
+import { auth, currentUser, clerkClient } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 
 export async function completeOnboarding(formData: {
+  username?:     string;
   firstName?:    string;
   lastName?:     string;
   birthDate?:    string;
@@ -44,23 +45,33 @@ export async function completeOnboarding(formData: {
     }
     for (const fa of formData.fixedAssets) if (fa.value <= 0) throw new Error("Tüm sabit varlık değerleri 0'dan büyük olmalıdır.");
 
-    let username = "user_" + Math.random().toString(36).substring(2, 10);
-    let email = `${username}@kocramfinans.internal`;
+    let username = formData.username?.trim();
+    let email = `user_${Math.random().toString(36).substring(2, 10)}@kocramfinans.internal`;
 
     try {
-      const userFromClerk = await currentUser();
+      const clerk = await clerkClient();
+      const userFromClerk = await clerk.users.getUser(userId);
+      
       if (userFromClerk?.emailAddresses?.[0]?.emailAddress) {
         email = userFromClerk.emailAddresses[0].emailAddress;
       }
       
-      if (userFromClerk?.username) {
-        username = userFromClerk.username;
-      } else if (userFromClerk?.emailAddresses?.[0]?.emailAddress) {
-        username = email.split("@")[0] + "_" + Math.random().toString(36).substring(2, 6);
+      if (!username) {
+        if (userFromClerk?.username) {
+          username = userFromClerk.username;
+        } else if (userFromClerk?.emailAddresses?.[0]?.emailAddress) {
+          // Bu kısım artık teorik olarak çalışmamalı çünkü kullanıcı adı zorunlu dediniz
+          // Ama yine de bir fallback kalsın, sadece random eklemeyi kaldıralım veya daha temiz yapalım
+          username = email.split("@")[0].replace(/[^a-zA-Z0-9_]/g, "_");
+        }
       }
     } catch (clerkErr) {
       console.error("Clerk fetch error in onboarding:", clerkErr);
+      // Fallback: Eğer formdan da gelmediyse ve Clerk hatası varsa rastgele ata (son çare)
+      if (!username) username = "user_" + Math.random().toString(36).substring(2, 10);
     }
+
+    if (!username) username = "user_" + Math.random().toString(36).substring(2, 10);
 
     // E-posta ve Kullanıcı adı çakışmalarını benzersizleştir
     const existingEmail = await prisma.user.findUnique({ where: { email } });
@@ -70,6 +81,10 @@ export async function completeOnboarding(formData: {
 
     const existingUsername = await prisma.user.findUnique({ where: { username } });
     if (existingUsername && existingUsername.clerkUserId !== userId) {
+      // Eğer kullanıcı kendi istediği kullanıcı adını girdiyse ve başkası almışsa hata ver
+      if (formData.username) {
+        return { success: false, error: "Bu kullanıcı adı zaten alınmış. Lütfen başka bir tane seçin." };
+      }
       username = `${username}_${Math.random().toString(36).substring(2, 8)}`;
     }
 
