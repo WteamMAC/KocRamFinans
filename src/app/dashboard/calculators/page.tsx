@@ -157,45 +157,43 @@ export default function CalculatorsPage() {
       </div>
 
       <div className="w-full space-y-6 md:space-y-8">
-        <div className="overflow-x-auto pb-1 scrollbar-none -mx-4 px-4 md:mx-0 md:px-0">
-          <div className="bg-muted/50 p-1 rounded-2xl border border-border/20 w-max md:w-fit h-auto flex gap-1">
-            <button 
-              onClick={() => setActiveTab("interest")}
-              className={cn(
-                "rounded-xl px-4 md:px-6 py-2.5 md:py-3 text-xs md:text-sm font-bold transition-all flex items-center whitespace-nowrap",
-                activeTab === "interest" ? "bg-card text-primary shadow-ambient-medium" : "text-muted-foreground hover:bg-muted"
-              )}
-            >
-              <TrendingUp className="h-4 w-4 mr-2" /> Mevduat (Faiz)
-            </button>
-            <button 
-              onClick={() => setActiveTab("bes")}
-              className={cn(
-                "rounded-xl px-4 md:px-6 py-2.5 md:py-3 text-xs md:text-sm font-bold transition-all flex items-center whitespace-nowrap",
-                activeTab === "bes" ? "bg-card text-primary shadow-ambient-medium" : "text-muted-foreground hover:bg-muted"
-              )}
-            >
-              <PiggyBank className="h-4 w-4 mr-2" /> BES Planlama
-            </button>
-            <button 
-              onClick={() => setActiveTab("gold")}
-              className={cn(
-                "rounded-xl px-4 md:px-6 py-2.5 md:py-3 text-xs md:text-sm font-bold transition-all flex items-center whitespace-nowrap",
-                activeTab === "gold" ? "bg-card text-primary shadow-ambient-medium" : "text-muted-foreground hover:bg-muted"
-              )}
-            >
-              <Coins className="h-4 w-4 mr-2" /> Altın Birikimi
-            </button>
-            <button 
-              onClick={() => setActiveTab("leverage")}
-              className={cn(
-                "rounded-xl px-4 md:px-6 py-2.5 md:py-3 text-xs md:text-sm font-bold transition-all flex items-center whitespace-nowrap",
-                activeTab === "leverage" ? "bg-card text-primary shadow-ambient-medium" : "text-muted-foreground hover:bg-muted"
-              )}
-            >
-              <Zap className="h-4 w-4 mr-2" /> Kaldıraç (Futures)
-            </button>
-          </div>
+        <div className="bg-muted/50 p-1 rounded-2xl border border-border/20 w-full md:w-fit h-auto grid grid-cols-2 md:flex gap-1 md:gap-1">
+          <button 
+            onClick={() => setActiveTab("interest")}
+            className={cn(
+              "rounded-xl px-4 md:px-6 py-2.5 md:py-3 text-xs md:text-sm font-bold transition-all flex items-center justify-center whitespace-nowrap w-full",
+              activeTab === "interest" ? "bg-card text-primary shadow-ambient-medium" : "text-muted-foreground hover:bg-muted"
+            )}
+          >
+            <TrendingUp className="h-4 w-4 mr-2" /> Mevduat (Faiz)
+          </button>
+          <button 
+            onClick={() => setActiveTab("bes")}
+            className={cn(
+              "rounded-xl px-4 md:px-6 py-2.5 md:py-3 text-xs md:text-sm font-bold transition-all flex items-center justify-center whitespace-nowrap w-full",
+              activeTab === "bes" ? "bg-card text-primary shadow-ambient-medium" : "text-muted-foreground hover:bg-muted"
+            )}
+          >
+            <PiggyBank className="h-4 w-4 mr-2" /> BES Planlama
+          </button>
+          <button 
+            onClick={() => setActiveTab("gold")}
+            className={cn(
+              "rounded-xl px-4 md:px-6 py-2.5 md:py-3 text-xs md:text-sm font-bold transition-all flex items-center justify-center whitespace-nowrap w-full",
+              activeTab === "gold" ? "bg-card text-primary shadow-ambient-medium" : "text-muted-foreground hover:bg-muted"
+            )}
+          >
+            <Coins className="h-4 w-4 mr-2" /> Altın Birikimi
+          </button>
+          <button 
+            onClick={() => setActiveTab("leverage")}
+            className={cn(
+              "rounded-xl px-4 md:px-6 py-2.5 md:py-3 text-xs md:text-sm font-bold transition-all flex items-center justify-center whitespace-nowrap w-full",
+              activeTab === "leverage" ? "bg-card text-primary shadow-ambient-medium" : "text-muted-foreground hover:bg-muted"
+            )}
+          >
+            <Zap className="h-4 w-4 mr-2" /> Kaldıraç (Futures)
+          </button>
         </div>
 
         {activeTab === "interest" && (
