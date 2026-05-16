@@ -413,7 +413,7 @@ export function AssetList({
 
       {/* Add Asset Form Modal */}
       {isAdding && (
-        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 md:p-6 bg-background/70 backdrop-blur-md animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 md:p-6 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300">
           <div className="relative w-full max-w-2xl max-h-[95vh] overflow-y-auto no-scrollbar">
             <AssetForm 
               activeTab={activeTab} 
