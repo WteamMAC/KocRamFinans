@@ -295,8 +295,15 @@ function TagFilterBar({ availableTags, activeTag, onSelect }: {
 }
 
 // ─── Comment Section ──────────────────────────────────────────────────
-function CommentSection({ post, onTagClick }: { post: Post; onTagClick?: (tag: string) => void }) {
+function CommentSection({ post, currentUserId, onTagClick, onCommentAdded, onCommentDeleted }: { 
+  post: Post; 
+  currentUserId: string;
+  onTagClick?: (tag: string) => void;
+  onCommentAdded?: (postId: string, comment: Comment) => void;
+  onCommentDeleted?: (postId: string, commentId: string) => void;
+}) {
   const router = useRouter();
+  const { user } = useUser();
   const [newComment, setNewComment] = useState("");
   const [isPending, startTransition] = useTransition();
   const [mentionSuggestions, setMentionSuggestions] = useState<any[]>([]);
@@ -332,14 +339,34 @@ function CommentSection({ post, onTagClick }: { post: Post; onTagClick?: (tag: s
 
   const handleAdd = () => {
     if (!newComment.trim()) return;
+    const commentText = newComment.trim();
+    
+    const optimisticComment: Comment = {
+      id: "temp-" + Date.now(),
+      content: commentText,
+      createdAt: new Date(),
+      authorId: currentUserId,
+      authorUsername: user?.username || null,
+      authorName: user?.firstName ? `${user.firstName} ${user.lastName || ""}`.trim() : "Ben",
+      authorImage: user?.imageUrl || "",
+      isMyComment: true
+    };
+
+    setNewComment("");
+    onCommentAdded?.(post.id, optimisticComment);
+
     startTransition(async () => {
-      await addComment(post.id, newComment.trim());
-      setNewComment(""); router.refresh();
+      await addComment(post.id, commentText);
+      router.refresh();
     });
   };
 
   const handleDelete = (commentId: string) => {
-    startTransition(async () => { await deleteComment(commentId); router.refresh(); });
+    onCommentDeleted?.(post.id, commentId);
+    startTransition(async () => { 
+      await deleteComment(commentId); 
+      router.refresh(); 
+    });
   };
 
   return (
@@ -442,11 +469,13 @@ function contentWithTagsAndMentions(text: string, onTagClick?: (tag: string) => 
 }
 
 // ─── Post Card ────────────────────────────────────────────────────────
-function PostCard({ post, currentUserId, onTagClick, onCommunityClick }: { 
+function PostCard({ post, currentUserId, onTagClick, onCommunityClick, onCommentAdded, onCommentDeleted }: { 
   post: Post; 
   currentUserId: string; 
   onTagClick?: (tag: string) => void;
   onCommunityClick?: (id: string, name: string) => void;
+  onCommentAdded?: (postId: string, comment: Comment) => void;
+  onCommentDeleted?: (postId: string, commentId: string) => void;
 }) {
   const router = useRouter();
   const [liked, setLiked] = useState(post.isLikedByMe);
@@ -525,7 +554,7 @@ function PostCard({ post, currentUserId, onTagClick, onCommunityClick }: {
           <MessageCircle className="h-4 w-4" /> {post.comments.length}
         </button>
       </div>
-      {showComments && <CommentSection post={post} onTagClick={onTagClick} />}
+      {showComments && <CommentSection post={post} currentUserId={currentUserId} onTagClick={onTagClick} onCommentAdded={onCommentAdded} onCommentDeleted={onCommentDeleted} />}
     </div>
   );
 }
@@ -686,6 +715,24 @@ export function BlogFeed({
   const [communityDetails, setCommunityDetails] = useState<any>(null);
   const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
 
+  const handleCommentAdded = (postId: string, comment: Comment) => {
+    setPosts(prev => prev.map(p => {
+      if (p.id === postId) {
+        return { ...p, comments: [...p.comments, comment] };
+      }
+      return p;
+    }));
+  };
+
+  const handleCommentDeleted = (postId: string, commentId: string) => {
+    setPosts(prev => prev.map(p => {
+      if (p.id === postId) {
+        return { ...p, comments: p.comments.filter(c => c.id !== commentId) };
+      }
+      return p;
+    }));
+  };
+
   useEffect(() => {
     const pollInterval = setInterval(async () => {
       try {
@@ -840,7 +887,15 @@ export function BlogFeed({
           ) : (
             <div className="space-y-4">
               {filtered.map((post) => (
-                <PostCard key={post.id} post={post} currentUserId={currentUserId} onTagClick={setActiveTag} onCommunityClick={handleSelectCommunity} />
+                <PostCard 
+                  key={post.id} 
+                  post={post} 
+                  currentUserId={currentUserId} 
+                  onTagClick={setActiveTag} 
+                  onCommunityClick={handleSelectCommunity}
+                  onCommentAdded={handleCommentAdded}
+                  onCommentDeleted={handleCommentDeleted}
+                />
               ))}
             </div>
           )}
