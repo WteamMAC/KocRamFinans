@@ -666,26 +666,6 @@ export function AssetList({
                                 <span className="text-[10px] font-bold text-muted-foreground bg-muted px-2 py-0.5 rounded-md uppercase tracking-tight">
                                   {asset.type}
                                 </span>
-                                {!isTry && (
-                                  <>
-                                    <span className="text-[10px] font-bold text-amber-700 bg-amber-500/15 px-2 py-0.5 rounded-md uppercase tracking-tight">
-                                      {origAmount.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {fxSymbol === "USD" ? "$" : fxSymbol === "EUR" ? "€" : fxSymbol === "GBP" ? "£" : fxSymbol === "XAU" ? "ALT" : fxSymbol}
-                                    </span>
-                                    {currKey !== targetCurrKey && (
-                                      <span className="text-[10px] font-bold text-blue-600 bg-blue-500/10 px-2 py-0.5 rounded-md uppercase tracking-tight">
-                                        Kur: {crossParity.toFixed(2)} {targetSym}
-                                      </span>
-                                    )}
-                                  </>
-                                )}
-                                {hasProfit && (
-                                  <span className={cn(
-                                    "text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-tight",
-                                    asset.liveProfit! >= 0 ? "bg-emerald-500/10 text-emerald-600" : "bg-rose-500/10 text-rose-600"
-                                  )}>
-                                    {asset.liveProfit! >= 0 ? "+" : ""}{formatCur(asset.liveProfit)} ({asset.liveProfitPercent?.toFixed(1) || 0}%)
-                                  </span>
-                                )}
                               </div>
                             </div>
                           </div>
