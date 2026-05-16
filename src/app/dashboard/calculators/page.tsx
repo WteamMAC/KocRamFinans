@@ -140,26 +140,28 @@ export default function CalculatorsPage() {
   const levRes = calculateLeverage();
 
   return (
-    <div className="flex-1 space-y-8 p-8 pt-10 bg-background min-h-screen pb-20">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div className="flex items-center gap-4">
-          <div className="p-3 bg-primary/10 text-primary rounded-2xl">
-            <Calculator className="h-8 w-8" />
+    <div className="flex-1 space-y-6 md:space-y-8 p-4 md:p-8 pt-6 md:pt-10 bg-background min-h-screen pb-20 overflow-x-hidden">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6">
+        <div className="flex items-center gap-3 md:gap-4">
+          <div className="p-2.5 md:p-3 bg-primary/10 text-primary rounded-xl md:rounded-2xl">
+            <Calculator className="h-6 w-6 md:h-8 md:w-8" />
           </div>
           <div>
-            <h1 className="text-4xl font-heading font-bold text-primary">Finansal Hesaplayıcılar</h1>
-            <p className="text-muted-foreground font-medium opacity-70">Gelecek yatırımlarınızı bugünden planlayın.</p>
+            <h1 className="text-2xl md:text-4xl font-heading font-bold text-primary">Finansal Hesaplayıcılar</h1>
+            <p className="text-[11px] md:text-sm font-medium text-muted-foreground opacity-70">Gelecek yatırımlarınızı bugünden planlayın.</p>
           </div>
         </div>
-        <CompactCurrencyCalculator />
+        <div className="w-full md:w-auto">
+          <CompactCurrencyCalculator />
+        </div>
       </div>
 
-      <div className="w-full space-y-8">
-        <div className="bg-muted/50 p-1 rounded-2xl border border-border/20 w-fit h-auto flex gap-1">
+      <div className="w-full space-y-6 md:space-y-8">
+        <div className="bg-muted/50 p-1 rounded-2xl border border-border/20 w-full md:w-fit h-auto grid grid-cols-2 md:flex gap-1 md:gap-1">
           <button 
             onClick={() => setActiveTab("interest")}
             className={cn(
-              "rounded-xl px-6 py-3 text-sm font-bold transition-all flex items-center",
+              "rounded-xl px-4 md:px-6 py-2.5 md:py-3 text-xs md:text-sm font-bold transition-all flex items-center justify-center whitespace-nowrap w-full",
               activeTab === "interest" ? "bg-card text-primary shadow-ambient-medium" : "text-muted-foreground hover:bg-muted"
             )}
           >
@@ -168,7 +170,7 @@ export default function CalculatorsPage() {
           <button 
             onClick={() => setActiveTab("bes")}
             className={cn(
-              "rounded-xl px-6 py-3 text-sm font-bold transition-all flex items-center",
+              "rounded-xl px-4 md:px-6 py-2.5 md:py-3 text-xs md:text-sm font-bold transition-all flex items-center justify-center whitespace-nowrap w-full",
               activeTab === "bes" ? "bg-card text-primary shadow-ambient-medium" : "text-muted-foreground hover:bg-muted"
             )}
           >
@@ -177,7 +179,7 @@ export default function CalculatorsPage() {
           <button 
             onClick={() => setActiveTab("gold")}
             className={cn(
-              "rounded-xl px-6 py-3 text-sm font-bold transition-all flex items-center",
+              "rounded-xl px-4 md:px-6 py-2.5 md:py-3 text-xs md:text-sm font-bold transition-all flex items-center justify-center whitespace-nowrap w-full",
               activeTab === "gold" ? "bg-card text-primary shadow-ambient-medium" : "text-muted-foreground hover:bg-muted"
             )}
           >
@@ -186,7 +188,7 @@ export default function CalculatorsPage() {
           <button 
             onClick={() => setActiveTab("leverage")}
             className={cn(
-              "rounded-xl px-6 py-3 text-sm font-bold transition-all flex items-center",
+              "rounded-xl px-4 md:px-6 py-2.5 md:py-3 text-xs md:text-sm font-bold transition-all flex items-center justify-center whitespace-nowrap w-full",
               activeTab === "leverage" ? "bg-card text-primary shadow-ambient-medium" : "text-muted-foreground hover:bg-muted"
             )}
           >
@@ -201,17 +203,17 @@ export default function CalculatorsPage() {
                 <CardHeader className="bg-primary/5 border-b border-border/10">
                   <CardTitle className="text-lg">Hesaplama Parametreleri</CardTitle>
                 </CardHeader>
-                <CardContent className="p-8 space-y-8">
+                <CardContent className="p-5 md:p-8 space-y-6 md:space-y-8">
                   <div className="space-y-3">
-                    <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Anapara ({curSymbol})</Label>
+                    <Label className="text-[10px] md:text-xs font-bold text-muted-foreground uppercase tracking-widest">Anapara ({curSymbol})</Label>
                     <div>
                       <Input 
                         type="number" 
                         value={interestData.principal || ""} 
                         onChange={e => setInterestData(p => ({...p, principal: Number(e.target.value)}))}
-                        className="h-14 rounded-2xl bg-muted/30 border border-border/50 font-bold text-2xl text-primary transition-all focus-visible:ring-1 focus-visible:ring-primary"
+                        className="h-auto py-3 md:py-4 rounded-xl md:rounded-2xl bg-muted/30 border border-border/50 font-bold text-xl md:text-2xl text-primary transition-all focus-visible:ring-1 focus-visible:ring-primary leading-normal"
                       />
-                      <div className="text-sm font-bold text-emerald-600 mt-2 ml-2 flex items-center gap-1">
+                      <div className="text-xs md:text-sm font-bold text-emerald-600 mt-2 ml-1 flex items-center gap-1">
                         <ArrowRight className="h-3 w-3" /> {interestData.principal.toLocaleString("tr-TR")} {curSymbol}
                       </div>
                     </div>
@@ -222,7 +224,7 @@ export default function CalculatorsPage() {
                       type="number" 
                       value={interestData.rate || ""} 
                       onChange={e => setInterestData(p => ({...p, rate: Number(e.target.value)}))}
-                      className="h-14 rounded-2xl bg-muted/30 border border-border/50 font-bold text-xl text-primary transition-all focus-visible:ring-1 focus-visible:ring-primary"
+                      className="h-auto py-3 md:py-4 rounded-xl md:rounded-2xl bg-muted/30 border border-border/50 font-bold text-xl text-primary transition-all focus-visible:ring-1 focus-visible:ring-primary leading-normal"
                     />
                   </div>
                   <div className="space-y-3">
@@ -231,22 +233,22 @@ export default function CalculatorsPage() {
                       type="number" 
                       value={interestData.term || ""} 
                       onChange={e => setInterestData(p => ({...p, term: Number(e.target.value)}))}
-                      className="h-14 rounded-2xl bg-muted/30 border border-border/50 font-bold text-xl text-primary transition-all focus-visible:ring-1 focus-visible:ring-primary"
+                      className="h-auto py-3 md:py-4 rounded-xl md:rounded-2xl bg-muted/30 border border-border/50 font-bold text-xl text-primary transition-all focus-visible:ring-1 focus-visible:ring-primary leading-normal"
                     />
                   </div>
                 </CardContent>
               </Card>
 
               <div className="lg:col-span-2 space-y-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <Card className="bg-primary text-primary-foreground p-8 rounded-[32px] shadow-ambient-high relative overflow-hidden">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                  <Card className="bg-primary text-primary-foreground p-6 md:p-8 rounded-[24px] md:rounded-[32px] shadow-ambient-high relative overflow-hidden">
                      <div className="absolute top-0 right-0 p-8 bg-white/10 rounded-full -mr-10 -mt-10" />
-                     <h3 className="text-xs font-bold uppercase tracking-widest opacity-70 mb-2">Vade Sonu Toplam</h3>
-                     <div className="text-4xl font-heading font-bold">{Math.round(interestRes.finalAmount).toLocaleString("tr-TR")} {curSymbol}</div>
+                     <h3 className="text-[10px] md:text-xs font-bold uppercase tracking-widest opacity-70 mb-2">Vade Sonu Toplam</h3>
+                     <div className="text-2xl md:text-4xl font-heading font-bold">{Math.round(interestRes.finalAmount).toLocaleString("tr-TR")} {curSymbol}</div>
                   </Card>
-                  <Card className="bg-card border-border/30 p-8 rounded-[32px] shadow-ambient-medium">
-                     <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2">Net Faiz Kazancı</h3>
-                     <div className="text-4xl font-heading font-bold text-emerald-500">+{Math.round(interestRes.profit).toLocaleString("tr-TR")} {curSymbol}</div>
+                  <Card className="bg-card border-border/30 p-6 md:p-8 rounded-[24px] md:rounded-[32px] shadow-ambient-medium">
+                     <h3 className="text-[10px] md:text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2">Net Faiz Kazancı</h3>
+                     <div className="text-2xl md:text-4xl font-heading font-bold text-emerald-500">+{Math.round(interestRes.profit).toLocaleString("tr-TR")} {curSymbol}</div>
                   </Card>
                 </div>
 
@@ -319,7 +321,7 @@ export default function CalculatorsPage() {
                         type="number" 
                         value={besData.monthly || ""} 
                         onChange={e => setBesData(p => ({...p, monthly: Number(e.target.value)}))}
-                        className="h-14 rounded-2xl bg-muted/30 border border-border/50 font-bold text-2xl text-primary transition-all focus-visible:ring-1 focus-visible:ring-primary"
+                        className="h-auto py-3 md:py-4 rounded-xl md:rounded-2xl bg-muted/30 border border-border/50 font-bold text-xl md:text-2xl text-primary transition-all focus-visible:ring-1 focus-visible:ring-primary leading-normal"
                       />
                       <div className="text-sm font-bold text-emerald-600 mt-2 ml-2 flex items-center gap-1">
                         <ArrowRight className="h-3 w-3" /> {besData.monthly.toLocaleString("tr-TR")} {curSymbol}
@@ -331,7 +333,7 @@ export default function CalculatorsPage() {
                     <Input 
                       type="number" 
                       value={besData.contribution || ""} 
-                      className="h-14 rounded-2xl bg-muted border-none font-bold text-xl text-primary opacity-60"
+                      className="h-auto py-3 md:py-4 rounded-xl md:rounded-2xl bg-muted border-none font-bold text-xl text-primary opacity-60 leading-normal"
                       disabled
                     />
                   </div>
@@ -341,7 +343,7 @@ export default function CalculatorsPage() {
                       type="number" 
                       value={besData.annualReturn || ""} 
                       onChange={e => setBesData(p => ({...p, annualReturn: Number(e.target.value)}))}
-                      className="h-14 rounded-2xl bg-muted/30 border border-border/50 font-bold text-xl text-primary transition-all focus-visible:ring-1 focus-visible:ring-primary"
+                      className="h-auto py-3 md:py-4 rounded-xl md:rounded-2xl bg-muted/30 border border-border/50 font-bold text-xl text-primary transition-all focus-visible:ring-1 focus-visible:ring-primary leading-normal"
                     />
                   </div>
                   <div className="space-y-3">
@@ -350,7 +352,7 @@ export default function CalculatorsPage() {
                       type="number" 
                       value={besData.years || ""} 
                       onChange={e => setBesData(p => ({...p, years: Number(e.target.value)}))}
-                      className="h-14 rounded-2xl bg-muted/30 border border-border/50 font-bold text-xl text-primary transition-all focus-visible:ring-1 focus-visible:ring-primary"
+                      className="h-auto py-3 md:py-4 rounded-xl md:rounded-2xl bg-muted/30 border border-border/50 font-bold text-xl text-primary transition-all focus-visible:ring-1 focus-visible:ring-primary leading-normal"
                     />
                   </div>
                 </CardContent>
@@ -472,7 +474,7 @@ export default function CalculatorsPage() {
                       type="number" 
                       value={leverageData.capital || ""} 
                       onChange={e => setLeverageData(p => ({...p, capital: Number(e.target.value)}))}
-                      className="h-14 rounded-2xl bg-muted/30 border border-border/50 font-bold text-2xl text-primary transition-all"
+                      className="h-auto py-3 md:py-4 rounded-xl md:rounded-2xl bg-muted/30 border border-border/50 font-bold text-xl md:text-2xl text-primary transition-all leading-normal"
                     />
                   </div>
 
@@ -506,7 +508,7 @@ export default function CalculatorsPage() {
                       type="number" 
                       value={leverageData.entryPrice || ""} 
                       onChange={e => setLeverageData(p => ({...p, entryPrice: Number(e.target.value)}))}
-                      className="h-14 rounded-2xl bg-muted/30 border border-border/50 font-bold text-xl text-primary transition-all"
+                      className="h-auto py-3 md:py-4 rounded-xl md:rounded-2xl bg-muted/30 border border-border/50 font-bold text-xl text-primary transition-all leading-normal"
                     />
                   </div>
 
@@ -516,7 +518,7 @@ export default function CalculatorsPage() {
                       type="number" 
                       value={leverageData.exitPrice || ""} 
                       onChange={e => setLeverageData(p => ({...p, exitPrice: Number(e.target.value)}))}
-                      className="h-14 rounded-2xl bg-muted/30 border border-border/50 font-bold text-xl text-primary transition-all"
+                      className="h-auto py-3 md:py-4 rounded-xl md:rounded-2xl bg-muted/30 border border-border/50 font-bold text-xl text-primary transition-all leading-normal"
                     />
                   </div>
                 </CardContent>

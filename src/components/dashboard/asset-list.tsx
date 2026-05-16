@@ -32,6 +32,18 @@ import { CompactCurrencyCalculator } from "./compact-currency-calculator";
 import { AssetForm } from "./asset-form";
 import { useCurrency } from "@/context/currency-context";
 
+const getUnitLabel = (type: string, symbol: string | null) => {
+  const sym = (symbol || "").toUpperCase();
+  if (type === "GOLD") {
+    if (sym === "ONS" || sym.includes("OUNCE") || sym.includes("XAU/USD")) return "Ons";
+    if (sym === "GRAM" || sym.includes("GAU") || sym.includes("GLD") || sym.includes("ALTIN") || sym.includes("XAU/TRY")) return "Gram";
+    return "Gram/Ons";
+  }
+  if (type === "BIST" || type === "NASDAQ") return "Lot";
+  if (type === "CRYPTO") return "Coin";
+  return "Adet";
+};
+
 interface Asset {
   id: string;
   type: string;
@@ -566,9 +578,9 @@ export function AssetList({
                                   </div>
                                 )}
                                 <p className="text-muted-foreground text-sm font-medium mt-1">
-                                  {group.type === "BES" || group.type === "FAIZ" 
+                                  {group.type === "BES" || group.type === "FAIZ" || group.type === "CASH"
                                     ? formatCur(group.totalQuantity) 
-                                    : `${group.totalQuantity.toLocaleString("tr-TR")} Adet`}
+                                    : `${group.totalQuantity.toLocaleString("tr-TR", { maximumFractionDigits: 4 })} ${getUnitLabel(group.type, group.symbol)}`}
                                   <span className="ml-2 text-[10px] font-bold text-muted-foreground bg-muted border border-border/10 px-2 py-0.5 rounded-md uppercase tracking-tighter">
                                     Pay: %{portfolioRatio.toFixed(1)}
                                   </span>
@@ -607,7 +619,9 @@ export function AssetList({
                                           {meta.originalDescription && <span className="text-[10px] text-muted-foreground opacity-80">{meta.originalDescription}</span>}
                                         </>
                                       ) : (
-                                        <span className="text-sm font-bold text-foreground">{item.quantity.toLocaleString("tr-TR")} @ {formatCur(item.purchasePrice || 0)}</span>
+                                        <span className="text-sm font-bold text-foreground">
+                                          {item.quantity.toLocaleString("tr-TR", { maximumFractionDigits: 4 })} {getUnitLabel(group.type, group.symbol)} @ {formatCur(item.purchasePrice && item.purchasePrice > 0 ? item.purchasePrice : (cPrice || group.currentPrice || 0))}
+                                        </span>
                                       )}
                                       <span className="text-[10px] text-muted-foreground opacity-60 mt-0.5">{new Date(item.createdAt).toLocaleDateString("tr-TR")}</span>
                                     </div>
