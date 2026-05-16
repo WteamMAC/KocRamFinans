@@ -80,11 +80,11 @@ export function FinancialCalendar({ incomes, expenses, debts, userChildren = [],
   specialEvents.forEach(evt => {
     const evtDate = new Date(evt.date);
     let targetDate = evtDate;
-    
+
     if (evt.isAnnual) {
       targetDate = new Date(currentDate.getFullYear(), evtDate.getMonth(), evtDate.getDate());
     }
-    
+
     addEvent(getDateKey(targetDate), 'specialEvents', evt);
   });
 
@@ -92,7 +92,7 @@ export function FinancialCalendar({ incomes, expenses, debts, userChildren = [],
   const prevMonth = () => setCurrentDate(subMonths(currentDate, 1));
 
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  
+
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [newEventTitle, setNewEventTitle] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -164,7 +164,7 @@ export function FinancialCalendar({ incomes, expenses, debts, userChildren = [],
             </div>
           ))}
         </div>
-        
+
         <div className="grid grid-cols-7 gap-1 md:gap-2">
           {Array.from({ length: (monthStart.getDay() + 6) % 7 }).map((_, i) => (
             <div key={`empty-${i}`} className="h-10 md:h-14 rounded-xl opacity-0" />
@@ -189,7 +189,7 @@ export function FinancialCalendar({ incomes, expenses, debts, userChildren = [],
                 <span className={cn("text-xs font-semibold", isSelected && "text-primary-foreground")}>
                   {format(day, "d")}
                 </span>
-                
+
                 {events && (
                   <div className="absolute bottom-1 md:bottom-1.5 flex gap-0.5">
                     {events.incomes.length > 0 && <span className={cn("w-1 h-1 md:w-1.5 md:h-1.5 rounded-full bg-emerald-500", isSelected && "bg-white")} />}
@@ -216,7 +216,7 @@ export function FinancialCalendar({ incomes, expenses, debts, userChildren = [],
                   <Plus className="h-3 w-3 mr-1" /> Özel Gün Ekle
                 </Button>
               </div>
-              
+
               {!selectedEvents || (selectedEvents.incomes.length === 0 && selectedEvents.expenses.length === 0 && selectedEvents.debts.length === 0 && selectedEvents.birthdays.length === 0 && !selectedEvents.anniversary && selectedEvents.specialEvents.length === 0) ? (
                 <div className="flex items-center gap-2 text-[10px] md:text-sm text-muted-foreground opacity-70">
                   <Info className="h-3 w-3 md:h-4 md:w-4" />
@@ -294,9 +294,9 @@ export function FinancialCalendar({ incomes, expenses, debts, userChildren = [],
               )}
             </div>
           ) : (
-             <div className="text-center text-[10px] md:text-xs text-muted-foreground opacity-60 mt-4">
-                Detayları görmek için takvimden bir güne tıklayın.
-             </div>
+            <div className="text-center text-[10px] md:text-xs text-muted-foreground opacity-60 mt-4">
+              Detayları görmek için takvimden bir güne tıklayın.
+            </div>
           )}
         </div>
       </CardContent>
@@ -309,13 +309,13 @@ export function FinancialCalendar({ incomes, expenses, debts, userChildren = [],
           <div className="space-y-4 py-4">
             <div className="text-sm text-muted-foreground">
               Seçili Tarih: <strong className="text-foreground">{selectedDate && format(selectedDate, "d MMMM yyyy", { locale: tr })}</strong>
-              <br/>
+              <br />
               <span className="text-xs text-emerald-500 mt-1 inline-block">* Bu etkinlik her yıl aynı ay ve günde takviminizde görünecektir.</span>
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Etkinlik/Özel Gün Adı</label>
-              <Input 
-                placeholder="Örn: Araç Sigortası Yenileme, Anneler Günü..." 
+              <Input
+                placeholder="Örn: Araç Sigortası Yenileme, Anneler Günü..."
                 value={newEventTitle}
                 onChange={(e) => setNewEventTitle(e.target.value)}
                 autoFocus

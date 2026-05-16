@@ -101,7 +101,7 @@ export default async function DashboardPage() {
   };
 
   return (
-    <div className="flex-1 space-y-10 p-4 md:p-8 pt-6 md:pt-10 bg-background min-h-screen overflow-x-hidden">
+    <div className="flex-1 space-y-6 md:space-y-10 p-2 md:p-8 pt-6 md:pt-10 bg-background min-h-screen overflow-x-hidden w-full">
       {/* Welcome Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
@@ -146,8 +146,8 @@ export default async function DashboardPage() {
       />
 
       {/* Performance & Budget Chart */}
-      <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="col-span-4 bg-card border-border/20 shadow-ambient-medium rounded-[32px] overflow-hidden flex flex-col">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-4 md:gap-8 w-full">
+        <Card className="col-span-1 md:col-span-1 lg:col-span-4 bg-card border-border/20 shadow-ambient-medium rounded-[32px] overflow-hidden flex flex-col w-full">
           <PerformanceChart 
             incomes={incomes} 
             expenses={expenses} 
@@ -155,47 +155,47 @@ export default async function DashboardPage() {
           />
         </Card>
 
-        <Card className="tour-step-6 col-span-3 bg-card border-border/20 shadow-ambient-medium rounded-[32px] overflow-hidden">
-          <CardHeader className="bg-muted/30 border-b border-border/10 py-6">
-            <CardTitle className="text-xl font-heading font-bold text-primary flex items-center gap-2">
+        <Card className="tour-step-6 col-span-1 md:col-span-1 lg:col-span-3 bg-card border-border/20 shadow-ambient-medium rounded-[32px] overflow-hidden w-full">
+          <CardHeader className="bg-muted/30 border-b border-border/10 py-4 md:py-6">
+            <CardTitle className="text-lg md:text-xl font-heading font-bold text-primary flex items-center gap-2">
               <PieChart className="h-5 w-5 text-accent fill-accent" /> Bütçe Dengesi
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-4 md:p-8">
+          <CardContent className="p-3 md:p-8">
             <BudgetOverview incomes={incomes} expenses={expenses} />
           </CardContent>
         </Card>
       </div>
 
       {/* Upcoming Payments & Calendar */}
-      <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="tour-step-7 col-span-4 bg-card border-border/20 shadow-ambient-medium rounded-[32px] overflow-hidden flex flex-col h-full">
-          <CardHeader className="bg-muted/30 border-b border-border/10 py-6">
-            <CardTitle className="text-xl font-heading font-bold text-primary flex items-center gap-2">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-4 md:gap-8 w-full">
+        <Card className="tour-step-7 col-span-1 md:col-span-1 lg:col-span-4 bg-card border-border/20 shadow-ambient-medium rounded-[32px] overflow-hidden flex flex-col h-full w-full">
+          <CardHeader className="bg-muted/30 border-b border-border/10 py-4 md:py-6">
+            <CardTitle className="text-lg md:text-xl font-heading font-bold text-primary flex items-center gap-2">
               <Calendar className="h-5 w-5 text-primary" /> Ödeme Takvimi
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-4 md:p-8 flex-1">
+          <CardContent className="p-3 md:p-8 flex-1">
             <UpcomingPayments expenses={expenses} />
           </CardContent>
         </Card>
         
-        <div className="col-span-3 h-full">
+        <div className="col-span-1 md:col-span-1 lg:col-span-3 h-full w-full">
           <FinancialCalendar incomes={incomes} expenses={expenses} debts={debts} userChildren={children} marriageDate={user.marriageDate} specialEvents={specialEvents} />
         </div>
       </div>
 
       {/* Assets & Projection Section */}
-      <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="col-span-4 bg-card border-border/20 shadow-ambient-medium rounded-[32px] overflow-hidden flex flex-col h-full">
-          <CardHeader className="bg-primary py-6 px-8 flex flex-row items-center justify-between">
-            <CardTitle className="text-xl font-heading font-bold text-primary-foreground">Varlık Dağılımı</CardTitle>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-4 md:gap-8 w-full">
+        <Card className="col-span-1 md:col-span-1 lg:col-span-4 bg-card border-border/20 shadow-ambient-medium rounded-[32px] overflow-hidden flex flex-col h-full w-full">
+          <CardHeader className="bg-primary py-4 md:py-6 px-4 md:px-8 flex flex-row items-center justify-between">
+            <CardTitle className="text-lg md:text-xl font-heading font-bold text-primary-foreground">Varlık Dağılımı</CardTitle>
             <div className="flex items-center gap-2 bg-primary-foreground/10 px-3 py-1 rounded-full">
                <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></div>
                <span className="text-[10px] font-bold text-primary-foreground/80 uppercase tracking-widest">Canlı Piyasa</span>
             </div>
           </CardHeader>
-          <CardContent className="p-4 md:p-8 flex-1">
+          <CardContent className="p-3 md:p-8 flex-1">
             <InvestmentSummary 
               investments={portfolioMetrics.assets} 
               fixedAssets={fixedMetrics.assets.map(fa => ({ ...fa, value: fa.currentValuation || fa.value }))}
@@ -203,7 +203,7 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
         
-        <div className="col-span-3 h-full">
+        <div className="col-span-1 md:col-span-1 lg:col-span-3 h-full w-full">
            <InvestmentProjection 
              currentValue={totalInvestment} 
              investments={portfolioMetrics.assets}

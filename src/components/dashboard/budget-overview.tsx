@@ -33,27 +33,27 @@ export function BudgetOverview({ incomes, expenses }: BudgetOverviewProps) {
   ];
 
   if (!isMounted) {
-    return <div className="h-[250px] md:h-[300px] w-full bg-muted animate-pulse rounded-3xl" />;
+    return <div className="h-[300px] md:h-[350px] w-full bg-muted animate-pulse rounded-3xl" />;
   }
 
   return (
-    <div className="h-[250px] md:h-[300px] w-full min-h-[250px] md:min-h-[300px]">
+    <div className="h-[300px] md:h-[350px] w-full">
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} margin={{ left: isMobile ? -20 : 0, right: 10 }}>
+        <BarChart data={data} margin={{ top: 20, right: 10, left: -20, bottom: 5 }}>
           <defs>
             <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor={theme === "dark" ? "#c084fc" : "#8c5000"} stopOpacity={1}/>
-              <stop offset="95%" stopColor={theme === "dark" ? "#c084fc" : "#8c5000"} stopOpacity={0.6}/>
+              <stop offset="5%" stopColor={theme === "dark" ? "#a855f7" : "#8c5000"} stopOpacity={1} />
+              <stop offset="95%" stopColor={theme === "dark" ? "#a855f7" : "#8c5000"} stopOpacity={0.6} />
             </linearGradient>
             <linearGradient id="colorExpense" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor={theme === "dark" ? "#fbbf24" : "#efe440"} stopOpacity={1}/>
-              <stop offset="95%" stopColor={theme === "dark" ? "#fbbf24" : "#efe440"} stopOpacity={0.6}/>
+              <stop offset="5%" stopColor={theme === "dark" ? "#eab308" : "#efe440"} stopOpacity={1} />
+              <stop offset="95%" stopColor={theme === "dark" ? "#eab308" : "#efe440"} stopOpacity={0.6} />
             </linearGradient>
           </defs>
           <XAxis
             dataKey="name"
             stroke={theme === "dark" ? "#94a3b8" : "#554336"}
-            fontSize={isMobile ? 10 : 11}
+            fontSize={12}
             fontWeight={600}
             tickLine={false}
             axisLine={false}
@@ -61,27 +61,27 @@ export function BudgetOverview({ incomes, expenses }: BudgetOverviewProps) {
           />
           <YAxis
             stroke={theme === "dark" ? "#94a3b8" : "#554336"}
-            fontSize={isMobile ? 9 : 11}
+            fontSize={9}
             fontWeight={600}
             tickLine={false}
             axisLine={false}
-            width={isMobile ? 60 : 80}
+            width={isMobile ? 40 : 70}
             tickFormatter={(value) => {
               if (isMobile) {
-                return new Intl.NumberFormat("tr-TR", { notation: "compact", maximumFractionDigits: 1 }).format(value) + " ₺";
+                return new Intl.NumberFormat("tr-TR", { notation: "compact", maximumFractionDigits: 0 }).format(value) + " ₺";
               }
               return formatAmount(value);
             }}
           />
-          <Tooltip 
-            cursor={{ fill: theme === "dark" ? "rgba(255, 255, 255, 0.1)" : "#edeeef", radius: 12 }}
+          <Tooltip
+            cursor={{ fill: theme === "dark" ? "rgba(255, 255, 255, 0.05)" : "#f8f9fa", radius: 16 }}
             content={({ active, payload }) => {
               if (active && payload && payload.length) {
                 const item = payload[0].payload as any;
                 return (
                   <div className="bg-card/95 backdrop-blur-md p-4 border border-border/30 rounded-2xl shadow-ambient-high">
                     <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">{item.name}</p>
-                    <p className="text-xl font-heading font-bold text-primary">
+                    <p className="text-lg font-heading font-bold text-primary">
                       {formatAmount(item.rawTotal)}
                     </p>
                   </div>
@@ -90,7 +90,11 @@ export function BudgetOverview({ incomes, expenses }: BudgetOverviewProps) {
               return null;
             }}
           />
-          <Bar dataKey="total" radius={[12, 12, 0, 0]} barSize={isMobile ? 40 : 80}>
+          <Bar
+            dataKey="total"
+            radius={[16, 16, 0, 0]}
+            barSize={isMobile ? 70 : 90}
+          >
             {data.map((entry, index) => (
               <Cell key={`cell-${index}`} fill={entry.gradient} />
             ))}
