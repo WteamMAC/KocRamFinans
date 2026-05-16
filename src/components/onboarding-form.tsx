@@ -305,7 +305,7 @@ export function OnboardingForm() {
                       </Label>
                       <Input {...form.register(f)} placeholder={f==="firstName"?"Adınız":"Soyadınız"}
                         className={cn("h-12 rounded-2xl bg-[#faf9f6] dark:bg-[#120d0a] border-[#dbc2b0]/50 dark:border-[#887364]/40 focus:border-[#8C5000] dark:focus:border-[#ffb874] font-semibold text-foreground placeholder:text-muted-foreground/50",errors[f]&&"border-destructive bg-destructive/10")}/>
-                      {errors[f]&&<p className="text-[10px] font-bold text-destructive flex items-center gap-1"><AlertCircle className="h-3 w-3"/>{errors[f]?.message}</p>}
+                      {errors[f]&&<p className="text-[10px] font-bold text-destructive flex items-center gap-1"><AlertCircle className="h-3 w-3"/>{errors[f]?.message as string}</p>}
                     </div>
                   ))}
                 </div>

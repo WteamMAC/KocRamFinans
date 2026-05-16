@@ -49,9 +49,12 @@ export async function completeOnboarding(formData: {
       const userFromClerk = await currentUser();
       if (userFromClerk?.emailAddresses?.[0]?.emailAddress) {
         email = userFromClerk.emailAddresses[0].emailAddress;
+      }
+      
+      if (userFromClerk?.username) {
+        username = userFromClerk.username;
+      } else if (userFromClerk?.emailAddresses?.[0]?.emailAddress) {
         username = email.split("@")[0] + "_" + Math.random().toString(36).substring(2, 6);
-      } else if (userFromClerk?.username) {
-        username = userFromClerk.username + "_" + Math.random().toString(36).substring(2, 6);
       }
     } catch (clerkErr) {
       console.error("Clerk fetch error in onboarding:", clerkErr);

@@ -75,11 +75,13 @@ function Avatar({ src, name, username, userId, size = "md" }: { src: string; nam
 }
 
 // ─── Create Post Box ──────────────────────────────────────────────────
-function CreatePostBox({ currentUserId, communityId, communityName, userRole }: { 
+function CreatePostBox({ currentUserId, communityId, communityName, userRole, onPostAdded, onPostIdUpdate }: { 
   currentUserId: string; 
   communityId?: string;
   communityName?: string;
   userRole?: string;
+  onPostAdded?: (post: Post) => void;
+  onPostIdUpdate?: (tempId: string, realId: string) => void;
 }) {
   const { user } = useUser();
   const router = useRouter();
@@ -146,11 +148,40 @@ function CreatePostBox({ currentUserId, communityId, communityName, userRole }: 
     if ((!content.trim() && !imageUrl) || content.length > MAX_CHARS) return;
     const extractedTags = content.match(HASHTAG_REGEX) || [];
     const allTags = Array.from(new Set([...selectedTags, ...extractedTags]));
+    const postContent = content.trim();
+
+    const tempId = "temp-post-" + Date.now();
+    const optimisticPost: Post = {
+      id: tempId,
+      content: postContent,
+      tags: allTags,
+      createdAt: new Date(),
+      authorId: currentUserId,
+      authorUsername: user?.username || null,
+      authorName: user?.firstName ? `${user.firstName} ${user.lastName || ""}`.trim() : "Ben",
+      authorImage: user?.imageUrl || "",
+      likeCount: 0,
+      isLikedByMe: false,
+      isMyPost: true,
+      isAdmin: userRole === "ADMIN",
+      isAnnouncement: isAnnouncement,
+      comments: [],
+      imageUrl: imageUrl || null,
+      communityId: communityId || undefined,
+      communityName: communityName || undefined
+    };
+
+    onPostAdded?.(optimisticPost);
+    setContent(""); setSelectedTags([]); setFocused(false); setImageUrl(null); setIsAnnouncement(false);
 
     startTransition(async () => {
-      await createPost(content.trim(), allTags, imageUrl || undefined, communityId, isAnnouncement);
-      setContent(""); setSelectedTags([]); setFocused(false); setImageUrl(null); setIsAnnouncement(false);
-      router.refresh();
+      try {
+        const res = await createPost(postContent, allTags, imageUrl || undefined, communityId, isAnnouncement);
+        if (res?.id) onPostIdUpdate?.(tempId, res.id);
+        router.refresh();
+      } catch (err) {
+        console.error("Gönderi hatası:", err);
+      }
     });
   };
 
@@ -295,8 +326,16 @@ function TagFilterBar({ availableTags, activeTag, onSelect }: {
 }
 
 // ─── Comment Section ──────────────────────────────────────────────────
-function CommentSection({ post, onTagClick }: { post: Post; onTagClick?: (tag: string) => void }) {
+function CommentSection({ post, currentUserId, onTagClick, onCommentAdded, onCommentDeleted, onCommentIdUpdate }: { 
+  post: Post; 
+  currentUserId: string;
+  onTagClick?: (tag: string) => void;
+  onCommentAdded?: (postId: string, comment: Comment) => void;
+  onCommentDeleted?: (postId: string, commentId: string) => void;
+  onCommentIdUpdate?: (postId: string, tempId: string, realId: string) => void;
+}) {
   const router = useRouter();
+  const { user } = useUser();
   const [newComment, setNewComment] = useState("");
   const [isPending, startTransition] = useTransition();
   const [mentionSuggestions, setMentionSuggestions] = useState<any[]>([]);
@@ -332,14 +371,45 @@ function CommentSection({ post, onTagClick }: { post: Post; onTagClick?: (tag: s
 
   const handleAdd = () => {
     if (!newComment.trim()) return;
+    const commentText = newComment.trim();
+    
+    const tempId = "temp-" + Date.now();
+    const optimisticComment: Comment = {
+      id: tempId,
+      content: commentText,
+      createdAt: new Date(),
+      authorId: currentUserId,
+      authorUsername: user?.username || null,
+      authorName: user?.firstName ? `${user.firstName} ${user.lastName || ""}`.trim() : "Ben",
+      authorImage: user?.imageUrl || "",
+      isMyComment: true
+    };
+
+    setNewComment("");
+    onCommentAdded?.(post.id, optimisticComment);
+
     startTransition(async () => {
-      await addComment(post.id, newComment.trim());
-      setNewComment(""); router.refresh();
+      try {
+        const res = await addComment(post.id, commentText);
+        if (res?.id) onCommentIdUpdate?.(post.id, tempId, res.id);
+        router.refresh();
+      } catch (err) {
+        console.error("Yorum hatası:", err);
+      }
     });
   };
 
   const handleDelete = (commentId: string) => {
-    startTransition(async () => { await deleteComment(commentId); router.refresh(); });
+    if (commentId.startsWith("temp-")) return;
+    onCommentDeleted?.(post.id, commentId);
+    startTransition(async () => { 
+      try {
+        await deleteComment(commentId); 
+        router.refresh(); 
+      } catch (err) {
+        console.error("Silme hatası:", err);
+      }
+    });
   };
 
   return (
@@ -442,11 +512,15 @@ function contentWithTagsAndMentions(text: string, onTagClick?: (tag: string) => 
 }
 
 // ─── Post Card ────────────────────────────────────────────────────────
-function PostCard({ post, currentUserId, onTagClick, onCommunityClick }: { 
+function PostCard({ post, currentUserId, onTagClick, onCommunityClick, onCommentAdded, onCommentDeleted, onPostDeleted, onCommentIdUpdate }: { 
   post: Post; 
   currentUserId: string; 
   onTagClick?: (tag: string) => void;
   onCommunityClick?: (id: string, name: string) => void;
+  onCommentAdded?: (postId: string, comment: Comment) => void;
+  onCommentDeleted?: (postId: string, commentId: string) => void;
+  onPostDeleted?: (postId: string) => void;
+  onCommentIdUpdate?: (postId: string, tempId: string, realId: string) => void;
 }) {
   const router = useRouter();
   const [liked, setLiked] = useState(post.isLikedByMe);
@@ -464,8 +538,17 @@ function PostCard({ post, currentUserId, onTagClick, onCommunityClick }: {
   };
 
   const handleDelete = () => {
+    if (post.id.startsWith("temp-")) return;
     if (!confirm("Bu paylaşımı silmek istediğinize emin misiniz?")) return;
-    startTransition(async () => { await deletePost(post.id); router.refresh(); });
+    onPostDeleted?.(post.id);
+    startTransition(async () => { 
+      try {
+        await deletePost(post.id); 
+        router.refresh(); 
+      } catch (err) {
+        console.error("Silme hatası:", err);
+      }
+    });
   };
 
   const accentMap: Record<string, string> = {
@@ -525,7 +608,7 @@ function PostCard({ post, currentUserId, onTagClick, onCommunityClick }: {
           <MessageCircle className="h-4 w-4" /> {post.comments.length}
         </button>
       </div>
-      {showComments && <CommentSection post={post} onTagClick={onTagClick} />}
+      {showComments && <CommentSection post={post} currentUserId={currentUserId} onTagClick={onTagClick} onCommentAdded={onCommentAdded} onCommentDeleted={onCommentDeleted} onCommentIdUpdate={onCommentIdUpdate} />}
     </div>
   );
 }
@@ -686,6 +769,48 @@ export function BlogFeed({
   const [communityDetails, setCommunityDetails] = useState<any>(null);
   const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
 
+  const handleCommentAdded = (postId: string, comment: Comment) => {
+    setPosts(prev => prev.map(p => {
+      if (p.id === postId) {
+        return { ...p, comments: [...p.comments, comment] };
+      }
+      return p;
+    }));
+  };
+
+  const handleCommentDeleted = (postId: string, commentId: string) => {
+    setPosts(prev => prev.map(p => {
+      if (p.id === postId) {
+        return { ...p, comments: p.comments.filter(c => c.id !== commentId) };
+      }
+      return p;
+    }));
+  };
+
+  const handlePostAdded = (post: Post) => {
+    setPosts(prev => [post, ...prev]);
+  };
+
+  const handlePostDeleted = (postId: string) => {
+    setPosts(prev => prev.filter(p => p.id !== postId));
+  };
+
+  const handleCommentIdUpdate = (postId: string, tempId: string, realId: string) => {
+    setPosts(prev => prev.map(p => {
+      if (p.id === postId) {
+        return { 
+          ...p, 
+          comments: p.comments.map(c => c.id === tempId ? { ...c, id: realId } : c) 
+        };
+      }
+      return p;
+    }));
+  };
+
+  const handlePostIdUpdate = (tempId: string, realId: string) => {
+    setPosts(prev => prev.map(p => p.id === tempId ? { ...p, id: realId } : p));
+  };
+
   useEffect(() => {
     const pollInterval = setInterval(async () => {
       try {
@@ -827,6 +952,8 @@ export function BlogFeed({
               communityId={selectedCommunity?.id} 
               communityName={selectedCommunity?.name} 
               userRole={userRole}
+              onPostAdded={handlePostAdded}
+              onPostIdUpdate={handlePostIdUpdate}
             />
           )}
           
@@ -840,7 +967,17 @@ export function BlogFeed({
           ) : (
             <div className="space-y-4">
               {filtered.map((post) => (
-                <PostCard key={post.id} post={post} currentUserId={currentUserId} onTagClick={setActiveTag} onCommunityClick={handleSelectCommunity} />
+                <PostCard 
+                  key={post.id} 
+                  post={post} 
+                  currentUserId={currentUserId} 
+                  onTagClick={setActiveTag} 
+                  onCommunityClick={handleSelectCommunity}
+                  onCommentAdded={handleCommentAdded}
+                  onCommentDeleted={handleCommentDeleted}
+                  onPostDeleted={handlePostDeleted}
+                  onCommentIdUpdate={handleCommentIdUpdate}
+                />
               ))}
             </div>
           )}

@@ -148,6 +148,7 @@ model Debt {
   installmentAmount     Float?   // Aylık Taksit Tutarı
   remainingInstallments Int?     // Kalan Taksit Sayısı
   paymentDay            Int?     // Her ayın hangi günü ödenecek (1-31)
+  dueDate               DateTime? // Taksitli değilse son ödeme tarihi
   description           String?
   currency              String   @default("TRY")
   originalAmount        Float?
