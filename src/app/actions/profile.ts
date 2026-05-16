@@ -26,3 +26,27 @@ export async function updateProfile(data: {
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/settings");
 }
+
+export async function completeTour() {
+  const { userId } = await auth();
+  if (!userId) return;
+
+  await prisma.user.update({
+    where: { clerkUserId: userId },
+    data: { hasCompletedTour: true },
+  });
+
+  revalidatePath("/dashboard");
+}
+
+export async function getTourStatus() {
+  const { userId } = await auth();
+  if (!userId) return true; // Oturum yoksa gösterme
+
+  const user = await prisma.user.findUnique({
+    where: { clerkUserId: userId },
+    select: { hasCompletedTour: true }
+  });
+
+  return user?.hasCompletedTour ?? false;
+}

@@ -6,6 +6,7 @@ import { useTheme } from "next-themes";
 import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { X, ChevronRight, ChevronLeft, Sparkles, Navigation, Wallet, TrendingUp, PieChart, CalendarDays, Palette, BotMessageSquare, ArrowRightLeft } from "lucide-react";
+import { getTourStatus, completeTour } from "@/app/actions/profile";
 
 function CustomTooltip({
   index,
@@ -208,13 +209,19 @@ export function OnboardingTour() {
 
     setSteps(adjustedSteps);
 
-    const hasCompletedTour = localStorage.getItem("hasCompletedTour");
-    if (!hasCompletedTour && pathname === "/dashboard") {
-      const timer = setTimeout(() => {
-        setRun(true);
-      }, 1500);
-      return () => clearTimeout(timer);
-    }
+    // Veritabanından tur durumunu kontrol et
+    const checkTourStatus = async () => {
+      if (pathname === "/dashboard") {
+        const hasCompleted = await getTourStatus();
+        if (!hasCompleted) {
+          setTimeout(() => {
+            setRun(true);
+          }, 2000); // Sayfanın tam yüklenmesi için 2 saniye bekle
+        }
+      }
+    };
+
+    checkTourStatus();
   }, [pathname]);
 
   useEffect(() => {
@@ -232,13 +239,14 @@ export function OnboardingTour() {
     return () => window.removeEventListener("start-tour", handleStartTour);
   }, [pathname, router]);
 
-  const handleJoyrideCallback = (data: EventData) => {
+  const handleJoyrideCallback = async (data: EventData) => {
     const { status, type, step } = data;
     const finishedStatuses: string[] = [STATUS.FINISHED, STATUS.SKIPPED];
 
     if (finishedStatuses.includes(status)) {
       setRun(false);
       localStorage.setItem("hasCompletedTour", "true");
+      await completeTour(); // Veritabanına kalıcı olarak kaydet
       window.dispatchEvent(new Event("close-mobile-menu"));
     }
 
