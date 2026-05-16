@@ -43,6 +43,8 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
 
     const activeDebts = debts.filter(d => d.amount > 0);
     const totalDebt = activeDebts.reduce((sum, d) => sum + d.amount, 0);
+    const maxRemaining = Math.max(...activeDebts.map(d => d.remainingInstallments || 0), 1);
+    const displayCount = Math.min(maxRemaining, 60); // En fazla 5 yıllık ödeme projeksiyonu
 
     // Bu ayki ödeme takibi
     const currentMonthExpected = activeDebts.reduce((sum, d) => {
@@ -173,8 +175,6 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
                                     const months = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
                                     const currentMonth = new Date().getMonth();
                                     const data = [];
-                                    const maxRemaining = Math.max(...activeDebts.map(d => d.remainingInstallments || 0), 1);
-                                    const displayCount = Math.min(maxRemaining, 60); // Cap at 5 years
 
                                     for (let i = 0; i < displayCount; i++) {
                                         const mIdx = (currentMonth + i) % 12;

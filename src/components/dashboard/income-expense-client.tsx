@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -15,7 +17,11 @@ import {
   Sparkles,
   Search,
   Filter,
-  ArrowRightLeft
+  ArrowRightLeft,
+  ShoppingCart,
+  Utensils,
+  Car,
+  Home
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
