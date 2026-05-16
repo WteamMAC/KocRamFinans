@@ -23,7 +23,6 @@ export default function Footer() {
           <nav className="flex flex-wrap justify-center md:justify-end gap-x-10 gap-y-4">
             <Link className="text-secondary-foreground/80 dark:text-foreground/80 hover:text-secondary-foreground dark:hover:text-foreground font-bold transition-colors uppercase tracking-widest text-xs" href="/hakkimizda">Hakkımızda</Link>
             <a className="text-secondary-foreground/80 dark:text-foreground/80 hover:text-secondary-foreground dark:hover:text-foreground font-bold transition-colors uppercase tracking-widest text-xs" href="#">Gizlilik</a>
-            <a className="text-secondary-foreground/80 dark:text-foreground/80 hover:text-secondary-foreground dark:hover:text-foreground font-bold transition-colors uppercase tracking-widest text-xs" href="#">Kullanım</a>
             <a className="text-secondary-foreground/80 dark:text-foreground/80 hover:text-secondary-foreground dark:hover:text-foreground font-bold transition-colors uppercase tracking-widest text-xs" href="#">İletişim</a>
             <a className="text-secondary-foreground/80 dark:text-foreground/80 hover:text-secondary-foreground dark:hover:text-foreground font-bold transition-colors uppercase tracking-widest text-xs" href="#">SSS</a>
           </nav>
