@@ -142,15 +142,19 @@ export function CommunityDiscovery({ onSelectCommunity }: { onSelectCommunity?: 
                   </div>
                   <div>
                     <h3 className="font-bold text-foreground group-hover:text-primary transition-colors">{c.name}</h3>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 mt-1">
                       {c.isPrivate ? (
-                        <span className="flex items-center gap-1 text-[9px] font-black text-amber-600 uppercase tracking-tighter"><Shield className="h-2.5 w-2.5" /> Gizli</span>
+                        <span className="flex items-center gap-1 text-[10px] font-bold text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20 uppercase tracking-wider">
+                          <Shield className="h-3 w-3" /> Gizli
+                        </span>
                       ) : (
-                        <span className="flex items-center gap-1 text-[9px] font-black text-emerald-600 uppercase tracking-tighter"><Globe className="h-2.5 w-2.5" /> Açık</span>
+                        <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20 uppercase tracking-wider">
+                          <Globe className="h-3 w-3" /> Açık
+                        </span>
                       )}
-                      <div className="flex gap-1">
+                      <div className="flex gap-1.5">
                         {c.tags.slice(0, 2).map(tag => (
-                          <span key={tag} className="text-[8px] font-bold bg-muted/50 px-1.5 py-0.5 rounded text-muted-foreground">#{tag}</span>
+                          <span key={tag} className="text-[10px] font-medium bg-muted/50 px-2 py-0.5 rounded-full text-muted-foreground border border-border/5">#{tag}</span>
                         ))}
                       </div>
                     </div>
