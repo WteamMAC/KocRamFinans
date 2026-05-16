@@ -98,6 +98,7 @@ export async function completeOnboarding(formData: {
       user = await prisma.user.update({
         where: { clerkUserId: userId },
         data: {
+          username, // <-- BURASI EKSİKTİ!
           firstName:    formData.firstName ?? user.firstName,
           lastName:     formData.lastName  ?? user.lastName,
           birthDate:    formData.birthDate ? new Date(formData.birthDate) : user.birthDate,

@@ -314,7 +314,7 @@ export function OnboardingForm() {
 
   return (
     <div className="w-full max-w-xl mx-auto px-4">
-      <div className="bg-card border border-[#8C5000]/20 dark:border-[#ffb874]/20 rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-700 transition-colors duration-300 relative">
+      <div className="bg-card border border-[#8C5000]/20 dark:border-[#ffb874]/20 rounded-3xl shadow-2xl animate-in fade-in zoom-in-95 duration-700 transition-colors duration-300 relative">
 
         {/* Yumuşak Sıcak Turuncu Header */}
         <div className="relative px-8 pt-8 pb-6 bg-[#fbf9f4] dark:bg-[#120d0a]/60 border-b border-[#8C5000]/15 dark:border-[#ffb874]/15 overflow-hidden transition-colors duration-300 rounded-t-3xl">

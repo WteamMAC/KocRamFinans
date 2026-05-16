@@ -62,7 +62,7 @@ export function DatePicker({ date, setDate, placeholder = "Tarih seçin", classN
       </div>
 
       {isOpen && (
-        <div className="absolute top-full left-0 mt-2 z-50 min-w-[300px] bg-card border border-border/30 rounded-2xl shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+        <div className="absolute top-full left-0 mt-2 z-[100] min-w-[300px] bg-card border border-border/30 rounded-2xl shadow-2xl animate-in fade-in zoom-in-95 duration-200">
           <Calendar
             selected={date}
             onSelect={(d) => {
