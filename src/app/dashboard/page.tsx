@@ -44,37 +44,46 @@ export default async function DashboardPage() {
     return null;
   }
 
+  // Bütün ilişkili dizileri güvenli (null/undefined korumalı) ve açık tipli hale getirelim
+  const incomes: any[] = Array.isArray(user.incomes) ? user.incomes : [];
+  const expenses: any[] = Array.isArray(user.expenses) ? user.expenses : [];
+  const debts: any[] = Array.isArray(user.debts) ? user.debts : [];
+  const investments: any[] = Array.isArray(user.investments) ? user.investments : [];
+  const fixedAssets: any[] = Array.isArray(user.fixedAssets) ? user.fixedAssets : [];
+  const children: any[] = Array.isArray(user.children) ? user.children : [];
+  const specialEvents: any[] = Array.isArray(user.specialEvents) ? user.specialEvents : [];
+
   let portfolioMetrics = { totalCost: 0, totalCurrentValue: 0, totalProfit: 0, profitPercent: 0, assets: [] as any[] };
   let fixedMetrics = { totalOriginalCost: 0, totalCurrentValue: 0, totalProfit: 0, totalProfitPercent: 0, assets: [] as any[] };
   let livePrices = new Map();
 
   try {
-    const symbols = Array.from(new Set(
-      (user.investments as any[])
-        .map(inv => inv.symbol)
-        .filter((s): s is string => !!s)
+    const symbols: string[] = Array.from(new Set(
+      investments
+        .map((inv: any) => inv.symbol)
+        .filter((s: any): s is string => typeof s === "string" && s.trim().length > 0)
     ));
 
     livePrices = await getLivePrices(symbols);
-    portfolioMetrics = calculatePortfolioMetrics(user.investments, livePrices, user.incomes);
-    fixedMetrics = calculateFixedAssetsMetrics(user.fixedAssets, livePrices);
+    portfolioMetrics = calculatePortfolioMetrics(investments, livePrices, incomes);
+    fixedMetrics = calculateFixedAssetsMetrics(fixedAssets, livePrices);
   } catch (error) {
     console.error("Dashboard Data Fetch Error:", error);
-    portfolioMetrics = calculatePortfolioMetrics(user.investments, new Map(), user.incomes);
-    fixedMetrics = calculateFixedAssetsMetrics(user.fixedAssets, new Map());
+    portfolioMetrics = calculatePortfolioMetrics(investments, new Map(), incomes);
+    fixedMetrics = calculateFixedAssetsMetrics(fixedAssets, new Map());
   }
 
-  const totalIncome = (user.incomes as any[]).reduce((acc: number, inc: any) => acc + inc.amount, 0);
-  const totalExpense = (user.expenses as any[]).reduce((acc: number, exp: any) => acc + exp.amount, 0);
-  const totalDebt = (user.debts as any[]).reduce((acc: number, debt: any) => acc + debt.amount, 0);
-  const totalInvestment = portfolioMetrics.totalCurrentValue;
-  const totalFixedAssets = fixedMetrics.totalCurrentValue;
-  const totalProfit = portfolioMetrics.totalProfit + fixedMetrics.totalProfit;
+  const totalIncome = incomes.reduce((acc: number, inc: any) => acc + (inc.amount || 0), 0);
+  const totalExpense = expenses.reduce((acc: number, exp: any) => acc + (exp.amount || 0), 0);
+  const totalDebt = debts.reduce((acc: number, debt: any) => acc + (debt.amount || 0), 0);
+  const totalInvestment = portfolioMetrics.totalCurrentValue || 0;
+  const totalFixedAssets = fixedMetrics.totalCurrentValue || 0;
+  const totalProfit = (portfolioMetrics.totalProfit || 0) + (fixedMetrics.totalProfit || 0);
   const profitPercent = (portfolioMetrics.totalCost + fixedMetrics.totalOriginalCost) > 0 
     ? (totalProfit / (portfolioMetrics.totalCost + fixedMetrics.totalOriginalCost)) * 100 
     : 0;
   const totalRealizedProfit = (portfolioMetrics as any).totalRealizedProfit || 0;
-  const totalUnrealizedProfit = ((portfolioMetrics as any).totalUnrealizedProfit || 0) + fixedMetrics.totalProfit;
+  const totalUnrealizedProfit = ((portfolioMetrics as any).totalUnrealizedProfit || 0) + (fixedMetrics.totalProfit || 0);
   const totalDividends = (portfolioMetrics as any).totalDividends || 0;
   
   const netWorth = totalInvestment + (totalIncome - totalExpense) + totalFixedAssets - totalDebt;
@@ -87,8 +96,8 @@ export default async function DashboardPage() {
     totalInvestment,
     netWorth,
     savingsRate,
-    recentExpenses: user.expenses.slice(0, 5).map((e: any) => ({ type: e.type, amount: e.amount })),
-    recentIncomes: user.incomes.slice(0, 5).map((i: any) => ({ type: i.type, amount: i.amount }))
+    recentExpenses: expenses.slice(0, 5).map((e: any) => ({ type: e.type, amount: e.amount })),
+    recentIncomes: incomes.slice(0, 5).map((i: any) => ({ type: i.type, amount: i.amount }))
   };
 
   return (
@@ -140,9 +149,9 @@ export default async function DashboardPage() {
       <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-7">
         <Card className="col-span-4 bg-card border-border/20 shadow-ambient-medium rounded-[32px] overflow-hidden flex flex-col">
           <PerformanceChart 
-            incomes={user.incomes} 
-            expenses={user.expenses} 
-            investments={user.investments}
+            incomes={incomes} 
+            expenses={expenses} 
+            investments={investments}
           />
         </Card>
 
@@ -153,7 +162,7 @@ export default async function DashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-4 md:p-8">
-            <BudgetOverview incomes={user.incomes} expenses={user.expenses} />
+            <BudgetOverview incomes={incomes} expenses={expenses} />
           </CardContent>
         </Card>
       </div>
@@ -167,12 +176,12 @@ export default async function DashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-4 md:p-8 flex-1">
-            <UpcomingPayments expenses={user.expenses} />
+            <UpcomingPayments expenses={expenses} />
           </CardContent>
         </Card>
         
         <div className="col-span-3 h-full">
-          <FinancialCalendar incomes={user.incomes} expenses={user.expenses} debts={user.debts} userChildren={user.children} marriageDate={user.marriageDate} specialEvents={user.specialEvents} />
+          <FinancialCalendar incomes={incomes} expenses={expenses} debts={debts} userChildren={children} marriageDate={user.marriageDate} specialEvents={specialEvents} />
         </div>
       </div>
 
