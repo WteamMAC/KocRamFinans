@@ -1,12 +1,32 @@
 import { OnboardingForm } from "@/components/onboarding-form";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { auth } from "@clerk/nextjs/server";
+import { prisma } from "@/lib/prisma";
+import { redirect } from "next/navigation";
 
 export const metadata = {
   title: "Profil Kurulumu | Koç Ram Finans",
   description: "Kişisel finans yolculuğuna başlamak için birkaç bilgini paylaş.",
 };
 
-export default function OnboardingPage() {
+export default async function OnboardingPage() {
+  const { userId } = await auth();
+  
+  if (!userId) {
+    redirect("/sign-in");
+  }
+
+  // Kullanıcı zaten veritabanında var mı kontrol et
+  const user = await prisma.user.findUnique({
+    where: { clerkUserId: userId },
+    select: { id: true }
+  });
+
+  // Eğer kullanıcı zaten varsa, kurulumu tamamlamış demektir
+  if (user) {
+    redirect("/dashboard");
+  }
+
   return (
     <div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden py-12 px-4 bg-background transition-colors duration-300">
       {/* Sağ üstte Karanlık Mod Butonu */}

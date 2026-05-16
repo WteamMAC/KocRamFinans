@@ -266,6 +266,41 @@ export async function getCommunityMembers(communityId: string) {
   });
 }
 
+export async function updateCommunity(
+  communityId: string,
+  data: {
+    name?: string;
+    description?: string;
+    tags?: string[];
+    imageUrl?: string;
+    isPrivate?: boolean;
+  }
+) {
+  const { userId: clerkUserId } = await auth();
+  if (!clerkUserId) throw new Error("Unauthorized");
+  const me = await getInternalUser(clerkUserId);
+  if (!me) throw new Error("User not found");
+
+  const community = await prisma.community.findUnique({ where: { id: communityId } });
+  if (!community) throw new Error("Topluluk bulunamadı");
+  
+  if (community.creatorId !== me.id && me.role !== "ADMIN") throw new Error("Yetki yok");
+
+  const updated = await prisma.community.update({
+    where: { id: communityId },
+    data: {
+      name: data.name,
+      description: data.description,
+      tags: data.tags,
+      imageUrl: data.imageUrl,
+      isPrivate: data.isPrivate
+    }
+  });
+
+  revalidatePath("/dashboard/blog");
+  return updated;
+}
+
 export async function deleteCommunity(communityId: string) {
   const { userId: clerkUserId } = await auth();
   if (!clerkUserId) throw new Error("Unauthorized");

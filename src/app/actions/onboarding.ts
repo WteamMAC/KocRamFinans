@@ -5,23 +5,23 @@ import { auth, currentUser, clerkClient } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 
 export async function completeOnboarding(formData: {
-  username?:     string;
-  firstName?:    string;
-  lastName?:     string;
-  birthDate?:    string;
-  gender?:       string;
-  currency?:     string;
-  country?:      string;
-  interests?:    string[];
-  familyCount:   number;
+  username?: string;
+  firstName?: string;
+  lastName?: string;
+  birthDate?: string;
+  gender?: string;
+  currency?: string;
+  country?: string;
+  interests?: string[];
+  familyCount: number;
   maritalStatus?: string;
-  marriageDate?:  string;
-  hasChildren?:   boolean;
-  children?:      { birthDate: string }[];
-  incomes:        { type: string; amount: number; date?: string; description?: string; currency?: string }[];
-  expenses:       { type: string; amount: number; date?: string; isRecurring: boolean; description?: string; currency?: string }[];
-  debts:          { type: string; amount: number; remainingInstallments?: number; description?: string; currency?: string }[];
-  investments:    {
+  marriageDate?: string;
+  hasChildren?: boolean;
+  children?: { birthDate: string }[];
+  incomes: { type: string; amount: number; date?: string; description?: string; currency?: string }[];
+  expenses: { type: string; amount: number; date?: string; isRecurring: boolean; description?: string; currency?: string }[];
+  debts: { type: string; amount: number; remainingInstallments?: number; description?: string; currency?: string }[];
+  investments: {
     type: string; symbol?: string; quantity?: number;
     purchasePrice?: number; amount?: number; currentValuation?: number; description?: string; currency?: string;
   }[];
@@ -51,11 +51,11 @@ export async function completeOnboarding(formData: {
     try {
       const clerk = await clerkClient();
       const userFromClerk = await clerk.users.getUser(userId);
-      
+
       if (userFromClerk?.emailAddresses?.[0]?.emailAddress) {
         email = userFromClerk.emailAddresses[0].emailAddress;
       }
-      
+
       if (!username) {
         username = userFromClerk?.username || email.split("@")[0].replace(/[^a-zA-Z0-9_]/g, "_");
       }
@@ -92,37 +92,37 @@ export async function completeOnboarding(formData: {
       user = await prisma.user.update({
         where: { clerkUserId: userId },
         data: {
-          username: user.username || username, // Eğer veritabanında kullanıcı adı zaten varsa dokunma, sadece boşsa ata
-          firstName:    formData.firstName ?? user.firstName,
-          lastName:     formData.lastName  ?? user.lastName,
-          birthDate:    formData.birthDate ? new Date(formData.birthDate) : user.birthDate,
-          gender:       formData.gender    ?? user.gender,
-          currency:     formData.currency,
-          country:      formData.country,
-          interests:    formData.interests ?? user.interests,
-          familyCount:  formData.familyCount ?? 1,
+          username: formData.username ? username : (user.username || username), // Formdan geliyorsa onu kullan, yoksa mevcut olanı tut
+          firstName: formData.firstName ?? user.firstName,
+          lastName: formData.lastName ?? user.lastName,
+          birthDate: formData.birthDate ? new Date(formData.birthDate) : user.birthDate,
+          gender: formData.gender ?? user.gender,
+          currency: formData.currency,
+          country: formData.country,
+          interests: formData.interests ?? user.interests,
+          familyCount: formData.familyCount ?? 1,
           maritalStatus: formData.maritalStatus ?? "Bekar",
-          hasChildren:   formData.hasChildren ?? false,
+          hasChildren: formData.hasChildren ?? false,
         }
       });
     } else {
       // Yeni kayıt
       user = await prisma.user.create({
         data: {
-          clerkUserId:   userId,
+          clerkUserId: userId,
           username,
           email,
-          role:          "USER",
-          firstName:     formData.firstName,
-          lastName:      formData.lastName,
-          birthDate:     formData.birthDate ? new Date(formData.birthDate) : null,
-          gender:        formData.gender,
-          currency:      formData.currency,
-          country:       formData.country,
-          interests:     formData.interests ?? [],
-          familyCount:   formData.familyCount ?? 1,
+          role: "USER",
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          birthDate: formData.birthDate ? new Date(formData.birthDate) : null,
+          gender: formData.gender,
+          currency: formData.currency,
+          country: formData.country,
+          interests: formData.interests ?? [],
+          familyCount: formData.familyCount ?? 1,
           maritalStatus: formData.maritalStatus ?? "Bekar",
-          hasChildren:   formData.hasChildren ?? false,
+          hasChildren: formData.hasChildren ?? false,
         }
       });
     }
@@ -143,7 +143,7 @@ export async function completeOnboarding(formData: {
         data: formData.incomes.map(inc => ({
           type: inc.type, amount: Number(inc.amount) || 0,
           date: inc.date ? new Date(inc.date) : new Date(),
-          description: inc.description, 
+          description: inc.description,
           currency: inc.currency || formData.currency || "TRY",
           userId: user!.id,
         })),
@@ -157,7 +157,7 @@ export async function completeOnboarding(formData: {
           return {
             type: exp.type, amount: Number(exp.amount) || 0,
             date: d, dueDate: d.getDate(), isRecurring: exp.isRecurring ?? true,
-            description: exp.description, 
+            description: exp.description,
             currency: exp.currency || formData.currency || "TRY",
             userId: user!.id,
           };
@@ -170,7 +170,7 @@ export async function completeOnboarding(formData: {
         data: formData.debts.map(d => ({
           type: d.type, amount: Number(d.amount) || 0,
           remainingInstallments: d.remainingInstallments,
-          description: d.description, 
+          description: d.description,
           currency: d.currency || formData.currency || "TRY",
           userId: user!.id,
         })),
@@ -215,7 +215,7 @@ export async function completeOnboarding(formData: {
     if ((formData.fixedAssets ?? []).length > 0) {
       await prisma.fixedAsset.createMany({
         data: formData.fixedAssets.map(a => ({
-          name: a.name, type: a.type, value: Number(a.value) || 0, 
+          name: a.name, type: a.type, value: Number(a.value) || 0,
           currency: a.currency || formData.currency || "TRY",
           userId: user!.id,
         })),
@@ -232,4 +232,3 @@ export async function completeOnboarding(formData: {
     return { success: false, error: err?.message || "Veritabanı kayıt hatası." };
   }
 }
-

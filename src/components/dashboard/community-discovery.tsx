@@ -32,6 +32,7 @@ export function CommunityDiscovery({ onSelectCommunity }: { onSelectCommunity?: 
   const [showAll, setShowAll] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTag, setActiveTag] = useState<string | null>(null);
+  const [communityToLeave, setCommunityToLeave] = useState<{ id: string, name: string } | null>(null);
 
   const loadCommunities = async () => {
     setIsLoading(true);
@@ -71,10 +72,10 @@ export function CommunityDiscovery({ onSelectCommunity }: { onSelectCommunity?: 
   };
 
   const handleLeave = (id: string) => {
-    if (!confirm("Bu topluluktan ayrılmak istediğinize emin misiniz?")) return;
     startTransition(async () => {
       try {
         await leaveCommunity(id);
+        setCommunityToLeave(null);
         await loadCommunities();
         router.refresh();
       } catch (error) {
@@ -192,7 +193,7 @@ export function CommunityDiscovery({ onSelectCommunity }: { onSelectCommunity?: 
                      <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleLeave(c.id)}
+                        onClick={() => setCommunityToLeave({ id: c.id, name: c.name })}
                         disabled={isPendingAction}
                         className="h-8 w-8 p-0 rounded-xl text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10"
                       >
@@ -243,6 +244,29 @@ export function CommunityDiscovery({ onSelectCommunity }: { onSelectCommunity?: 
       {showAll && communities.length === 0 && !isLoading && (
         <div className="text-center py-12">
           <p className="text-muted-foreground">Aradığınız kriterlerde topluluk bulunamadı.</p>
+        </div>
+      )}
+
+      {/* Leave Confirmation Modal */}
+      {communityToLeave && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-card border border-border/20 rounded-[32px] w-full max-w-sm shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+            <div className="p-8 text-center space-y-6">
+              <div className="w-16 h-16 bg-rose-500/10 rounded-full flex items-center justify-center mx-auto text-rose-500">
+                <LogOut className="h-8 w-8" />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-lg font-black text-foreground">Topluluktan Ayrıl?</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  <span className="font-bold text-foreground">{communityToLeave.name}</span> topluluğundan ayrılmak istediğinize emin misiniz?
+                </p>
+              </div>
+              <div className="flex gap-3">
+                <Button variant="ghost" onClick={() => setCommunityToLeave(null)} className="flex-1 h-12 rounded-2xl font-bold hover:bg-muted">Vazgeç</Button>
+                <Button onClick={() => handleLeave(communityToLeave.id)} disabled={isPendingAction} className="flex-1 h-12 rounded-2xl font-bold bg-rose-500 text-white hover:bg-rose-600 shadow-lg shadow-rose-500/20">{isPendingAction ? "Ayrılıyor..." : "Evet, Ayrıl"}</Button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
