@@ -268,12 +268,6 @@ export function ProfileHeader({ profile, initialIsFollowing, currentUserRole }: 
                </div>
             </div>
             
-            <MessageModal 
-              isOpen={isMessageModalOpen}
-              onClose={() => setIsMessageModalOpen(false)}
-              initialTargetUsername={profile.isMe ? null : profile.username}
-              currentUsername={user?.username || ""}
-            />
           </div>
 
           {/* Stats Bar - Optimized for Mobile Grid */}
@@ -310,6 +304,13 @@ export function ProfileHeader({ profile, initialIsFollowing, currentUserRole }: 
           </div>
         </div>
       </div>
+
+      <MessageModal 
+        isOpen={isMessageModalOpen}
+        onClose={() => setIsMessageModalOpen(false)}
+        initialTargetUsername={profile.isMe ? null : profile.username}
+        currentUsername={user?.username || ""}
+      />
 
       {/* Modern Follow List Dialog */}
       {(showFollowers || showFollowing) && (

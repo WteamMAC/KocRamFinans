@@ -11,7 +11,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { getUserNotifications, markNotificationAsRead, markAllNotificationsAsRead } from "@/app/actions/notifications";
+import { getUserNotifications, markNotificationAsRead, markAllNotificationsAsRead, deleteNotification } from "@/app/actions/notifications";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 
@@ -64,6 +64,16 @@ export function NotificationBell() {
     }
   };
 
+  const handleDelete = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    await deleteNotification(id);
+    setNotifications(prev => prev.filter(n => n.id !== id));
+    setUnreadCount(prev => {
+      const deleted = notifications.find(n => n.id === id);
+      return deleted && !deleted.isRead ? Math.max(0, prev - 1) : prev;
+    });
+  };
+
   const handleMarkAllAsRead = async () => {
     await markAllNotificationsAsRead();
     setUnreadCount(0);
@@ -75,15 +85,15 @@ export function NotificationBell() {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger render={
-        <button className="relative text-primary rounded-full hover:bg-primary/10 transition-all p-2.5 h-11 w-11 inline-flex items-center justify-center focus:outline-none border border-border/10 bg-card/50 shadow-sm group" />
-      }>
-        <Bell className="h-5 w-5 group-hover:scale-110 transition-transform" />
-        {unreadCount > 0 && (
-          <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 min-w-[20px] flex items-center justify-center p-0.5 text-[10px] animate-pulse border-2 border-background ring-2 ring-destructive/20">
-            {unreadCount > 9 ? "9+" : unreadCount}
-          </Badge>
-        )}
-      </DialogTrigger>
+        <button className="relative text-primary rounded-full hover:bg-primary/10 transition-all h-10 w-10 inline-flex items-center justify-center focus:outline-none border border-border/10 bg-card shadow-sm group">
+          <Bell className="h-5 w-5 group-hover:scale-110 transition-transform" />
+          {unreadCount > 0 && (
+            <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 min-w-[20px] flex items-center justify-center p-0.5 text-[10px] animate-pulse border-2 border-background ring-2 ring-destructive/20">
+              {unreadCount > 9 ? "9+" : unreadCount}
+            </Badge>
+          )}
+        </button>
+      } />
       <DialogContent className="sm:max-w-md rounded-[32px] p-0 overflow-hidden border-none shadow-2xl bg-background/95 backdrop-blur-xl">
         <div className="bg-primary/5 p-6 border-b border-border/10">
           <DialogHeader>
@@ -128,16 +138,24 @@ export function NotificationBell() {
                 )}
               >
                 {!notif.isRead && (
-                  <div className="absolute top-4 right-4 h-2 w-2 bg-primary rounded-full shadow-[0_0_8px_rgba(var(--primary),0.5)]" />
+                  <div className="absolute top-4 right-10 h-2 w-2 bg-primary rounded-full shadow-[0_0_8px_rgba(var(--primary),0.5)]" />
                 )}
                 <div className="flex w-full items-start justify-between gap-2">
                   <span className={cn("text-xs font-black uppercase tracking-wider", !notif.isRead ? "text-primary" : "text-muted-foreground")}>
                     {notif.type === "MENTION" ? "Etiketlendin 👤" : notif.type === "LIKE" ? "Beğeni ❤️" : notif.type === "COMMENT" ? "Yorum 💬" : "Sistem ⚙️"}
                   </span>
-                  <span className="text-[10px] font-bold text-muted-foreground/40 bg-muted/20 px-2 py-0.5 rounded-md">
-                    {new Date(notif.createdAt).getHours().toString().padStart(2, '0')}:
-                    {new Date(notif.createdAt).getMinutes().toString().padStart(2, '0')}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold text-muted-foreground/40 bg-muted/20 px-2 py-0.5 rounded-md">
+                      {new Date(notif.createdAt).getHours().toString().padStart(2, '0')}:
+                      {new Date(notif.createdAt).getMinutes().toString().padStart(2, '0')}
+                    </span>
+                    <button 
+                      onClick={(e) => handleDelete(e, notif.id)}
+                      className="p-1.5 rounded-lg text-muted-foreground/40 hover:text-rose-500 hover:bg-rose-500/10 transition-all opacity-0 group-hover:opacity-100"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
                 </div>
                 <h4 className="text-sm font-bold text-foreground mt-1.5">{notif.title}</h4>
                 <p className="text-xs text-muted-foreground/80 mt-1 leading-relaxed line-clamp-2">
