@@ -17,7 +17,7 @@ const FIXED_COLORS = ["var(--primary)", "var(--tertiary)", "#64748b", "#d97706",
 export function InvestmentSummary({ investments, fixedAssets }: InvestmentSummaryProps) {
   const [isMounted, setIsMounted] = useState(false);
   const { theme } = useTheme();
-  const { formatAmount } = useCurrency();
+  const { formatAmount, displayCurrency } = useCurrency();
 
   useEffect(() => {
     setIsMounted(true);
@@ -64,6 +64,12 @@ export function InvestmentSummary({ investments, fixedAssets }: InvestmentSummar
 
   const totalFixedAsset = fixedAssetData.reduce((acc, curr) => acc + curr.rawVal, 0);
 
+  const isAllInvSameCur = investments.length > 0 && investments.every(i => (i.currency || "TRY").toUpperCase() === (displayCurrency || "TRY").toUpperCase());
+  const exactTotalInvOrig = isAllInvSameCur ? investments.reduce((acc, i) => acc + (i.amount || i.currentValue || 0), 0) : undefined;
+
+  const isAllFixedSameCur = (fixedAssets || []).length > 0 && (fixedAssets || []).every(a => (a.currency || "TRY").toUpperCase() === (displayCurrency || "TRY").toUpperCase());
+  const exactTotalFixedOrig = isAllFixedSameCur ? (fixedAssets || []).reduce((acc, a) => acc + (a.originalAmount || (a.fxRate ? a.value / a.fxRate : a.value)), 0) : undefined;
+
   if (!isMounted) {
     return <div className="h-[350px] w-full bg-muted animate-pulse rounded-[24px]" />;
   }
@@ -79,7 +85,9 @@ export function InvestmentSummary({ investments, fixedAssets }: InvestmentSummar
         <div className="h-[300px] w-full relative">
           <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none pb-12">
             <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mb-0.5">Toplam</span>
-            <span className="text-xl font-heading font-bold text-primary">{formatAmount(totalInvestment)}</span>
+            <span className="text-xl font-heading font-bold text-primary">
+              {formatAmount(totalInvestment, undefined, exactTotalInvOrig ? { amount: exactTotalInvOrig, currency: displayCurrency } : undefined)}
+            </span>
           </div>
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
@@ -102,11 +110,12 @@ export function InvestmentSummary({ investments, fixedAssets }: InvestmentSummar
                 content={({ active, payload }) => {
                   if (active && payload && payload.length) {
                     const data = payload[0].payload as any;
+                    const exactItemOrig = isAllInvSameCur && totalInvestment > 0 ? exactTotalInvOrig! * (data.rawVal / totalInvestment) : undefined;
                     return (
                       <div className="bg-card/95 backdrop-blur-md p-3 border border-border/30 rounded-xl shadow-lg">
                         <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mb-1">{data.name}</p>
                         <p className="text-base font-heading font-bold text-primary">
-                          {formatAmount(data.rawVal)}
+                          {formatAmount(data.rawVal, undefined, exactItemOrig ? { amount: exactItemOrig, currency: displayCurrency } : undefined)}
                         </p>
                         <p className="text-[9px] font-bold text-emerald-500 mt-1">
                           Pay: %{((data.rawVal / (totalInvestment || 1)) * 100).toFixed(1)}
@@ -139,7 +148,9 @@ export function InvestmentSummary({ investments, fixedAssets }: InvestmentSummar
           <div className="h-[300px] w-full relative">
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none pb-12">
               <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mb-0.5">Toplam</span>
-              <span className="text-xl font-heading font-bold text-primary">{formatAmount(totalFixedAsset)}</span>
+              <span className="text-xl font-heading font-bold text-primary">
+                {formatAmount(totalFixedAsset, undefined, exactTotalFixedOrig ? { amount: exactTotalFixedOrig, currency: displayCurrency } : undefined)}
+              </span>
             </div>
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -162,11 +173,12 @@ export function InvestmentSummary({ investments, fixedAssets }: InvestmentSummar
                   content={({ active, payload }) => {
                     if (active && payload && payload.length) {
                       const data = payload[0].payload as any;
+                      const exactItemOrig = isAllFixedSameCur && totalFixedAsset > 0 ? exactTotalFixedOrig! * (data.rawVal / totalFixedAsset) : undefined;
                       return (
                         <div className="bg-card/95 backdrop-blur-md p-3 border border-border/30 rounded-xl shadow-lg">
                           <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mb-1">{data.name}</p>
                           <p className="text-base font-heading font-bold text-primary">
-                            {formatAmount(data.rawVal)}
+                            {formatAmount(data.rawVal, undefined, exactItemOrig ? { amount: exactItemOrig, currency: displayCurrency } : undefined)}
                           </p>
                           <p className="text-[9px] font-bold text-primary mt-1">
                             Pay: %{((data.rawVal / (totalFixedAsset || 1)) * 100).toFixed(1)}
