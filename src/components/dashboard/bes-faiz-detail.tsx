@@ -638,7 +638,7 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
             <div className="h-[300px]">
               {projectionData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={projectionData}>
+                  <AreaChart data={projectionData} margin={{ left: -25, right: 10 }}>
                     <defs>
                       <linearGradient id="colorProj" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor={accentSolid} stopOpacity={0.3} />
@@ -652,7 +652,7 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
                       tickLine={false}
                       tick={{ fontSize: 10 }}
                       tickFormatter={v => new Intl.NumberFormat("tr-TR", { notation: "compact" }).format(v)}
-                      dx={-10}
+                      dx={0}
                     />
                     <Tooltip
                       contentStyle={{ borderRadius: "16px", border: "none", boxShadow: "0 10px 40px -10px rgba(0,0,0,0.1)" }}
