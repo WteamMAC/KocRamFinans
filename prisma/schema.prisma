@@ -170,6 +170,7 @@ model Investment {
   amount           Float    // Toplam alış tutarı (quantity * purchasePrice)
   currentValuation Float?   // Güncel toplam değer (quantity * currentPrice)
   description      String?
+  currency         String   @default("TRY")
   
   // İşlem Durumu
   status           String   @default("OPEN")    // "OPEN" | "CLOSED"
