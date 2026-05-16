@@ -75,11 +75,12 @@ function Avatar({ src, name, username, userId, size = "md" }: { src: string; nam
 }
 
 // ─── Create Post Box ──────────────────────────────────────────────────
-function CreatePostBox({ currentUserId, communityId, communityName, userRole }: { 
+function CreatePostBox({ currentUserId, communityId, communityName, userRole, onPostAdded }: { 
   currentUserId: string; 
   communityId?: string;
   communityName?: string;
   userRole?: string;
+  onPostAdded?: (post: Post) => void;
 }) {
   const { user } = useUser();
   const router = useRouter();
@@ -146,10 +147,33 @@ function CreatePostBox({ currentUserId, communityId, communityName, userRole }: 
     if ((!content.trim() && !imageUrl) || content.length > MAX_CHARS) return;
     const extractedTags = content.match(HASHTAG_REGEX) || [];
     const allTags = Array.from(new Set([...selectedTags, ...extractedTags]));
+    const postContent = content.trim();
+
+    const optimisticPost: Post = {
+      id: "temp-post-" + Date.now(),
+      content: postContent,
+      tags: allTags,
+      createdAt: new Date(),
+      authorId: currentUserId,
+      authorUsername: user?.username || null,
+      authorName: user?.firstName ? `${user.firstName} ${user.lastName || ""}`.trim() : "Ben",
+      authorImage: user?.imageUrl || "",
+      likeCount: 0,
+      isLikedByMe: false,
+      isMyPost: true,
+      isAdmin: userRole === "ADMIN",
+      isAnnouncement: isAnnouncement,
+      comments: [],
+      imageUrl: imageUrl || null,
+      communityId: communityId || undefined,
+      communityName: communityName || undefined
+    };
+
+    onPostAdded?.(optimisticPost);
+    setContent(""); setSelectedTags([]); setFocused(false); setImageUrl(null); setIsAnnouncement(false);
 
     startTransition(async () => {
-      await createPost(content.trim(), allTags, imageUrl || undefined, communityId, isAnnouncement);
-      setContent(""); setSelectedTags([]); setFocused(false); setImageUrl(null); setIsAnnouncement(false);
+      await createPost(postContent, allTags, imageUrl || undefined, communityId, isAnnouncement);
       router.refresh();
     });
   };
@@ -469,13 +493,14 @@ function contentWithTagsAndMentions(text: string, onTagClick?: (tag: string) => 
 }
 
 // ─── Post Card ────────────────────────────────────────────────────────
-function PostCard({ post, currentUserId, onTagClick, onCommunityClick, onCommentAdded, onCommentDeleted }: { 
+function PostCard({ post, currentUserId, onTagClick, onCommunityClick, onCommentAdded, onCommentDeleted, onPostDeleted }: { 
   post: Post; 
   currentUserId: string; 
   onTagClick?: (tag: string) => void;
   onCommunityClick?: (id: string, name: string) => void;
   onCommentAdded?: (postId: string, comment: Comment) => void;
   onCommentDeleted?: (postId: string, commentId: string) => void;
+  onPostDeleted?: (postId: string) => void;
 }) {
   const router = useRouter();
   const [liked, setLiked] = useState(post.isLikedByMe);
@@ -494,6 +519,7 @@ function PostCard({ post, currentUserId, onTagClick, onCommunityClick, onComment
 
   const handleDelete = () => {
     if (!confirm("Bu paylaşımı silmek istediğinize emin misiniz?")) return;
+    onPostDeleted?.(post.id);
     startTransition(async () => { await deletePost(post.id); router.refresh(); });
   };
 
@@ -733,6 +759,14 @@ export function BlogFeed({
     }));
   };
 
+  const handlePostAdded = (post: Post) => {
+    setPosts(prev => [post, ...prev]);
+  };
+
+  const handlePostDeleted = (postId: string) => {
+    setPosts(prev => prev.filter(p => p.id !== postId));
+  };
+
   useEffect(() => {
     const pollInterval = setInterval(async () => {
       try {
@@ -874,6 +908,7 @@ export function BlogFeed({
               communityId={selectedCommunity?.id} 
               communityName={selectedCommunity?.name} 
               userRole={userRole}
+              onPostAdded={handlePostAdded}
             />
           )}
           
@@ -895,6 +930,7 @@ export function BlogFeed({
                   onCommunityClick={handleSelectCommunity}
                   onCommentAdded={handleCommentAdded}
                   onCommentDeleted={handleCommentDeleted}
+                  onPostDeleted={handlePostDeleted}
                 />
               ))}
             </div>
