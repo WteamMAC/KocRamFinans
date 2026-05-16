@@ -235,6 +235,7 @@ export function OnboardingForm() {
   const selectedCurrency = form.watch("currency");
   const selectedCountry = form.watch("country");
   const selectedInterests = form.watch("interests");
+  const watchedInvestments = form.watch("investments") || [];
 
   const incomesField = useFieldArray({ control: form.control, name: "incomes" });
   const expensesField = useFieldArray({ control: form.control, name: "expenses" });
@@ -378,15 +379,15 @@ export function OnboardingForm() {
           <div className="absolute top-0 right-0 w-64 h-64 bg-[#f18d02]/15 dark:bg-[#ffb874]/10 rounded-full blur-3xl pointer-events-none" />
 
           {/* Step indicator dots */}
-          <div className="relative flex items-center justify-center gap-2 mb-6 z-10">
+          <div className="relative flex items-center justify-center gap-1 sm:gap-2 mb-6 z-10 overflow-x-auto py-2 px-1 no-scrollbar max-w-full">
             {STEPS.map((s, i) => (
-              <div key={s.id} className="flex items-center">
-                <div className={cn("w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs transition-all duration-500",
+              <div key={s.id} className="flex items-center shrink-0">
+                <div className={cn("w-7 sm:w-8 h-7 sm:h-8 rounded-full flex items-center justify-center font-bold text-xs transition-all duration-500 shrink-0",
                   step === s.id ? "bg-[#8C5000] dark:bg-[#ffb874] text-white dark:text-[#120d0a] scale-110 shadow-lg shadow-[#8C5000]/30 dark:shadow-black/50" :
                     step > s.id ? "bg-[#b07d4b] dark:bg-[#ffb874]/80 text-white dark:text-[#120d0a]" : "bg-[#dbc2b0]/30 dark:bg-[#887364]/30 text-[#887364] dark:text-[#dbc2b0]")}>
                   {step > s.id ? <Check className="w-3.5 h-3.5" /> : s.id}
                 </div>
-                {i < STEPS.length - 1 && <div className={cn("w-6 sm:w-8 h-0.5 mx-1.5 rounded-full transition-all duration-500", step > s.id ? "bg-[#b07d4b] dark:bg-[#ffb874]/80" : "bg-[#dbc2b0]/40 dark:bg-[#887364]/30")} />}
+                {i < STEPS.length - 1 && <div className={cn("w-3 sm:w-8 h-0.5 mx-1 sm:mx-1.5 rounded-full transition-all duration-500", step > s.id ? "bg-[#b07d4b] dark:bg-[#ffb874]/80" : "bg-[#dbc2b0]/40 dark:bg-[#887364]/30")} />}
               </div>
             ))}
           </div>
@@ -856,34 +857,45 @@ export function OnboardingForm() {
                   <div className="flex items-center justify-between pt-4 border-t border-border/20">
                     <Label className="text-xs font-extrabold text-[#887364] dark:text-[#dbc2b0]">Eklenen Varlıklarınız</Label>
                     <span className="text-xs font-black px-3 py-1 rounded-full bg-[#8C5000]/10 text-[#8C5000] dark:bg-[#ffb874]/10 dark:text-[#ffb874]">
-                      {investmentsField.fields.length} Varlık
+                      {watchedInvestments.length} Varlık
                     </span>
                   </div>
 
-                  {investmentsField.fields.length === 0 && (
+                  {watchedInvestments.length === 0 && (
                     <div className="text-center py-10 border-2 border-dashed border-[#dbc2b0]/30 rounded-3xl bg-[#faf9f6]/50 dark:bg-[#120d0a]/30">
                       <p className="text-xs font-bold text-[#887364]/60">Henüz varlık eklenmedi. Yukarıdaki kategorilerden birine tıklayarak ekleyebilirsiniz.</p>
                     </div>
                   )}
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {investmentsField.fields.map((item: any, i) => {
+                    {watchedInvestments.map((item: any, i: number) => {
                       const catObj = ASSET_CATEGORIES.find(c => c.id === item.type);
                       return (
-                        <div key={item.id} className="p-4 rounded-3xl bg-[#faf9f6] dark:bg-[#120d0a] border border-[#dbc2b0]/50 dark:border-[#887364]/40 flex items-center justify-between gap-3 shadow-sm hover:border-[#8C5000]/40 transition-all">
+                        <div key={i} className="p-4 rounded-3xl bg-[#faf9f6] dark:bg-[#120d0a] border border-[#dbc2b0]/50 dark:border-[#887364]/40 flex items-center justify-between gap-3 shadow-sm hover:border-[#8C5000]/40 transition-all">
                           <div className="flex items-center gap-3">
                             <div className="h-12 w-12 rounded-2xl bg-white dark:bg-[#1c140e] flex items-center justify-center text-2xl border border-[#dbc2b0]/40 dark:border-[#887364]/40 shrink-0 shadow-sm">
                               {catObj?.emoji || "🪙"}
                             </div>
                             <div>
-                              <div className="text-xs font-black text-foreground flex items-center gap-1.5">
-                                {catObj?.title || item.type}
-                                {item.symbol && <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-[#8C5000]/10 text-[#8C5000] dark:bg-[#ffb874]/10 dark:text-[#ffb874] font-bold uppercase">{item.symbol}</span>}
+                              <div className="text-sm font-black text-foreground flex items-center gap-2">
+                                <span className="text-base font-extrabold">{item.symbol || catObj?.title || item.type}</span>
+                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#8C5000]/10 text-[#8C5000] dark:bg-[#ffb874]/10 dark:text-[#ffb874] font-bold uppercase">
+                                  {catObj?.title || item.type}
+                                </span>
                               </div>
-                              <div className="text-[11px] font-extrabold text-[#8C5000] dark:text-[#ffb874] mt-0.5">
+                              <div className="text-xs font-extrabold text-[#8C5000] dark:text-[#ffb874] mt-1">
                                 {Number(item.amount).toLocaleString("tr-TR", { minimumFractionDigits: 2 })} {item.currency || selectedCurrency || "TRY"}
+                                {item.quantity && item.quantity !== item.amount && (
+                                  <span className="text-[10px] text-muted-foreground font-semibold ml-1">
+                                    ({item.quantity} Adet/Pay)
+                                  </span>
+                                )}
                               </div>
-                              {item.description && <div className="text-[10px] text-muted-foreground font-medium mt-0.5">{item.description}</div>}
+                              {item.description && (
+                                <div className="text-xs text-muted-foreground font-semibold mt-1 bg-[#887364]/10 dark:bg-[#dbc2b0]/10 px-2 py-1 rounded-lg inline-block border border-border/10">
+                                  🏢 Kurum/Firma: {item.description}
+                                </div>
+                              )}
                             </div>
                           </div>
 
