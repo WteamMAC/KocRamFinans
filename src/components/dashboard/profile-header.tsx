@@ -113,17 +113,17 @@ export function ProfileHeader({ profile, initialIsFollowing, currentUserRole }: 
           <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
         </div>
         
-        <div className="px-6 md:px-10 pb-10 -mt-20 relative">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
-            <div className="flex flex-col md:flex-row md:items-start gap-6 md:gap-8">
+        <div className="px-4 md:px-10 pb-10 -mt-12 md:-mt-20 relative">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 md:gap-8">
+            <div className="flex flex-row items-start gap-4 md:gap-8">
               {/* Avatar Container */}
-              <div className="relative group">
-                <div className="w-36 h-36 md:w-40 md:h-40 relative rounded-[36px] p-1.5 bg-gradient-to-br from-primary/50 to-purple-500/50 shadow-2xl transition-transform duration-500 group-hover:scale-[1.02]">
-                  <div className="w-full h-full relative rounded-[32px] border-4 border-card bg-muted overflow-hidden">
+              <div className="relative group shrink-0">
+                <div className="w-24 h-24 md:w-40 md:h-40 relative rounded-3xl md:rounded-[36px] p-1 md:p-1.5 bg-gradient-to-br from-primary/50 to-purple-500/50 shadow-2xl transition-transform duration-500 group-hover:scale-[1.02]">
+                  <div className="w-full h-full relative rounded-[20px] md:rounded-[32px] border-2 md:border-4 border-card bg-muted overflow-hidden">
                     {profile.imageUrl ? (
                       <Image src={profile.imageUrl} alt={profile.name} fill className="object-cover transition-transform duration-700 group-hover:scale-110" />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/10 to-primary/5 text-primary text-5xl font-black">
+                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/10 to-primary/5 text-primary text-3xl md:text-5xl font-black">
                         {profile.name[0]}
                       </div>
                     )}
@@ -134,9 +134,9 @@ export function ProfileHeader({ profile, initialIsFollowing, currentUserRole }: 
               {/* Profile Info */}
               <div className="pb-2 flex flex-col">
                 {/* Name & Tags - Kept within the 80px cover area */}
-                <div className="pt-2 flex flex-col gap-2">
-                  <div className="flex items-center gap-3">
-                    <h1 className="text-3xl md:text-4xl font-black tracking-tight text-foreground leading-none">
+                <div className="pt-1 md:pt-2 flex flex-col gap-1 md:gap-2">
+                  <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-3">
+                    <h1 className="text-xl md:text-4xl font-black tracking-tight text-foreground leading-tight">
                       {profile.name}
                     </h1>
                     {profile.isBanned && (
@@ -146,20 +146,20 @@ export function ProfileHeader({ profile, initialIsFollowing, currentUserRole }: 
                     )}
                   </div>
                   
-                  <div className="flex items-center gap-4">
+                  <div className="flex flex-wrap items-center gap-2 md:gap-4 mt-1 md:mt-0">
                     {profile.username && (
-                      <span className="text-sm font-bold text-primary px-3 py-1 bg-primary/10 rounded-xl border border-primary/10 leading-none">
+                      <span className="text-[10px] md:text-sm font-bold text-primary px-2 md:px-3 py-0.5 md:py-1 bg-primary/10 rounded-lg md:rounded-xl border border-primary/10 leading-none">
                         @{profile.username}
                       </span>
                     )}
-                    <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest opacity-60 leading-none">
+                    <span className="text-[9px] md:text-[11px] font-bold text-muted-foreground uppercase tracking-widest opacity-60 leading-none">
                       Finansal Profil
                     </span>
                   </div>
                 </div>
                 
-                {/* Enhanced Bio Section - Pushed below the cover line */}
-                <div className="mt-8 max-w-lg min-h-[60px]">
+                {/* Enhanced Bio Section - Pushed below the name on mobile, side by side with photo */}
+                <div className="mt-3 md:mt-8 max-w-lg min-h-[40px] md:min-h-[60px]">
                   {isEditingBio ? (
                     <div className="flex flex-col gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
                       <textarea
@@ -195,16 +195,16 @@ export function ProfileHeader({ profile, initialIsFollowing, currentUserRole }: 
                       </div>
                     </div>
                   ) : (
-                    <div className="group relative pr-8">
-                      <p className="text-sm md:text-base text-foreground/80 leading-relaxed font-medium">
-                        {profile.bio || (profile.isMe ? "Henüz bir biyografi eklemediniz. Profilinizi tamamlamak için ekleyin!" : "Bu kullanıcı henüz bir açıklama eklememiş.")}
+                    <div className="group relative pr-4 md:pr-8">
+                      <p className="text-xs md:text-base text-foreground/80 leading-relaxed font-medium line-clamp-3 md:line-clamp-none">
+                        {profile.bio || (profile.isMe ? "Biyografi ekleyin..." : "Açıklama yok.")}
                       </p>
                       {profile.isMe && (
                         <button 
                           onClick={() => setIsEditingBio(true)}
-                          className="absolute right-0 top-0 p-2 opacity-0 group-hover:opacity-100 transition-all text-primary hover:bg-primary/10 rounded-xl"
+                          className="absolute right-0 top-0 p-1.5 opacity-0 group-hover:opacity-100 transition-all text-primary hover:bg-primary/10 rounded-lg"
                         >
-                          <Pencil className="h-3.5 w-3.5" />
+                          <Pencil className="h-3 w-3" />
                         </button>
                       )}
                     </div>
@@ -214,7 +214,7 @@ export function ProfileHeader({ profile, initialIsFollowing, currentUserRole }: 
             </div>
 
             {/* Action Group */}
-            <div className="flex flex-row md:flex-col items-center md:items-end gap-3 mt-4 md:mt-0">
+            <div className="flex flex-row md:flex-col items-center md:items-end gap-3 mt-0 md:mt-0">
 
                
                <div className="flex items-center gap-3">
