@@ -4,6 +4,8 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, Sector } fro
 import { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
 
+import { useCurrency } from "@/context/currency-context";
+
 interface Asset {
     id: string;
     symbol: string;
@@ -17,7 +19,7 @@ interface PortfolioChartProps {
 
 const renderActiveShape = (props: any) => {
     const RADIAN = Math.PI / 180;
-    const { cx, cy, midAngle, innerRadius, outerRadius, startAngle, endAngle, fill, payload, percent, value } = props;
+    const { cx, cy, midAngle, innerRadius, outerRadius, startAngle, endAngle, fill, payload, percent, value, formatAmount } = props;
     const sin = Math.sin(-RADIAN * midAngle);
     const cos = Math.cos(-RADIAN * midAngle);
     const sx = cx + (outerRadius + 10) * cos;
@@ -28,7 +30,7 @@ const renderActiveShape = (props: any) => {
     const ey = my;
     const textAnchor = cos >= 0 ? 'start' : 'end';
 
-    const formattedValue = new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(value);
+    const formattedValue = formatAmount ? formatAmount(value) : new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(value);
 
     return (
         <g>
@@ -71,6 +73,7 @@ export function PortfolioChart({ assets }: PortfolioChartProps) {
     const [activeIndexSymbol, setActiveIndexSymbol] = useState(0);
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
     const { theme } = useTheme();
+    const { formatAmount } = useCurrency();
 
     useEffect(() => {
         setIsMounted(true);
@@ -161,14 +164,14 @@ export function PortfolioChart({ assets }: PortfolioChartProps) {
         color: theme === "dark" ? "#f1f5f9" : "#1e293b"
     };
 
-    const formatter = (value: any) => new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(Number(value));
+    const formatter = (value: any) => formatAmount(Number(value));
 
     // Ekranı ikiye bölecek miyiz?
     const showTwoCharts = !isSingleType && categoryData.length > 1;
 
     const categoryPieProps: any = {
         activeIndex: activeIndexCategory,
-        activeShape: renderActiveShape,
+        activeShape: (props: any) => renderActiveShape({ ...props, formatAmount }),
         data: categoryData,
         cx: "50%",
         cy: "50%",
@@ -183,7 +186,7 @@ export function PortfolioChart({ assets }: PortfolioChartProps) {
 
     const symbolPieProps: any = {
         activeIndex: activeIndexSymbol,
-        activeShape: renderActiveShape,
+        activeShape: (props: any) => renderActiveShape({ ...props, formatAmount }),
         data: symbolData,
         cx: "50%",
         cy: "50%",
