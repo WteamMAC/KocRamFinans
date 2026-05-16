@@ -19,7 +19,7 @@ interface DebtListProps {
   monthlyPayments?: any[];
 }
 
-export function DebtList({ debts }: DebtListProps) {
+export function DebtList({ debts, monthlyPayments }: DebtListProps) {
     const router = useRouter();
     const { formatAmount, rates } = useCurrency();
     const [isAdding, setIsAdding] = useState(false);
