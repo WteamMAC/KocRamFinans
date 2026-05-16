@@ -6,7 +6,7 @@ import * as z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { completeOnboarding } from "@/app/actions/onboarding";
 import { cn } from "@/lib/utils";
-import { Check, ChevronRight, ChevronLeft, User, Globe, Hash, AlertCircle, ChevronDown, Plus, Trash2, Wallet, CreditCard } from "lucide-react";
+import { Check, ChevronRight, ChevronLeft, User, Globe, Hash, AlertCircle, ChevronDown, Plus, Trash2, Wallet, CreditCard, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -381,7 +381,7 @@ export function OnboardingForm() {
                         })}
                       </div>
                       <div className="relative">
-                        <button type="button" onClick={()=>setShowOtherCur(v=>!v)}
+                        <button type="button" onClick={()=>{setShowOtherCur(v=>!v); setSelectedRegion(null);}}
                           className={cn("w-full flex items-center justify-between px-5 py-3.5 rounded-2xl border text-sm font-extrabold transition-all",
                             showOtherCur||OTHER_CURRENCIES.some(c=>c.code===field.value)
                               ?"bg-[#8C5000]/10 border-[#8C5000]/30 text-[#8C5000] dark:text-[#ffb874]":"bg-[#faf9f6] dark:bg-[#120d0a] border-[#dbc2b0]/40 text-[#887364] dark:text-[#dbc2b0] hover:border-[#8C5000]/30")}>
@@ -427,7 +427,7 @@ export function OnboardingForm() {
                             const activeCountry = r.countries.find(c=>c.code===field.value);
                             return (
                               <button key={r.id} type="button"
-                                onClick={()=>setSelectedRegion(active?null:r.id)}
+                                onClick={()=>{setSelectedRegion(active?null:r.id); setShowOtherCur(false);}}
                                 className={cn("p-3.5 rounded-2xl border text-center text-xs font-bold transition-all duration-200",
                                   active||hasSelected?"bg-[#8C5000] dark:bg-[#ffb874] text-white dark:text-[#120d0a] border-[#8C5000] dark:border-[#ffb874] shadow-md scale-[1.02]":"bg-[#faf9f6] dark:bg-[#120d0a] border-[#dbc2b0]/40 hover:border-[#8C5000]/30")}>
                                 <div className="text-2xl mb-1">{r.emoji}</div>
@@ -438,24 +438,47 @@ export function OnboardingForm() {
                             );
                           })}
                         </div>
-                        {selectedRegion&&(
-                          <div className="absolute top-full left-0 right-0 mt-2 z-50 p-2 bg-card border border-border/30 rounded-2xl shadow-2xl grid grid-cols-2 gap-2 max-h-60 overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
-                            <div className="col-span-2 px-3 py-2 border-b border-border/10 flex justify-between items-center">
-                              <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{REGIONS.find(r=>r.id===selectedRegion)?.label}</span>
-                              <button onClick={()=>setSelectedRegion(null)} className="text-[10px] font-bold text-primary hover:underline">Kapat</button>
-                            </div>
-                            {regionCountries.map(c=>{
-                              const isActive=field.value===c.code;
-                              return (
-                                <button key={c.code} type="button" onClick={()=>{field.onChange(c.code); setSelectedRegion(null);}}
-                                  className={cn("flex items-center gap-2.5 p-3 rounded-2xl border text-left transition-all duration-200 font-bold",
-                                    isActive?"bg-[#8C5000] dark:bg-[#ffb874] text-white dark:text-[#120d0a] border-[#8C5000] dark:border-[#ffb874] shadow-md scale-[1.02]":"bg-[#faf9f6] dark:bg-[#120d0a] border-[#dbc2b0]/40 hover:border-[#8C5000]/30")}>
-                                  <span className="text-lg">{c.flag}</span>
-                                  <span className={cn("text-xs font-black",isActive?"text-white dark:text-[#120d0a]":"text-[#5a3100] dark:text-[#fbf9f4]")}>{c.label}</span>
-                                  {isActive&&<Check className="w-3.5 h-3.5 ml-auto text-white dark:text-[#120d0a]"/>}
+                        {selectedRegion && (
+                          <div className="absolute inset-0 z-50 flex items-center justify-center p-4">
+                            <div className="absolute inset-0 bg-background/40 backdrop-blur-md rounded-3xl" onClick={() => setSelectedRegion(null)} />
+                            <div className="relative w-full max-h-[85%] bg-card border border-[#8C5000]/20 dark:border-[#ffb874]/20 rounded-3xl shadow-ambient-high overflow-hidden flex flex-col animate-in zoom-in-95 fade-in duration-300">
+                              <div className="px-6 py-4 border-b border-border/10 flex justify-between items-center bg-muted/30">
+                                <div>
+                                  <span className="text-[10px] font-black text-[#8C5000]/60 dark:text-[#ffb874]/60 uppercase tracking-widest block">Ülke Seçimi</span>
+                                  <h3 className="text-sm font-black text-primary">{REGIONS.find(r => r.id === selectedRegion)?.label}</h3>
+                                </div>
+                                <button 
+                                  type="button"
+                                  onClick={() => setSelectedRegion(null)} 
+                                  className="h-8 w-8 rounded-full bg-background/80 flex items-center justify-center hover:bg-rose-50 hover:text-rose-500 transition-colors shadow-sm"
+                                >
+                                  <X className="h-4 w-4" />
                                 </button>
-                              );
-                            })}
+                              </div>
+                              <div className="p-4 grid grid-cols-2 gap-2.5 overflow-y-auto">
+                                {regionCountries.map(c => {
+                                  const isActive = field.value === c.code;
+                                  return (
+                                    <button 
+                                      key={c.code} 
+                                      type="button" 
+                                      onClick={() => { field.onChange(c.code); setSelectedRegion(null); }}
+                                      className={cn("flex items-center gap-3 p-4 rounded-2xl border text-left transition-all duration-200 group",
+                                        isActive 
+                                          ? "bg-[#8C5000] dark:bg-[#ffb874] text-white dark:text-[#120d0a] border-[#8C5000] dark:border-[#ffb874] shadow-md" 
+                                          : "bg-[#faf9f6] dark:bg-[#120d0a] border-[#dbc2b0]/30 hover:border-[#8C5000]/30 hover:shadow-sm"
+                                      )}
+                                    >
+                                      <span className="text-2xl transition-transform group-hover:scale-110 duration-200">{c.flag}</span>
+                                      <span className="text-xs font-bold leading-tight">{c.label}</span>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                              <div className="p-4 border-t border-border/10 bg-muted/10">
+                                <p className="text-[10px] text-center text-muted-foreground font-medium">Bölgenizdeki para birimi ve yerel ayarlar otomatik olarak yapılandırılacaktır.</p>
+                              </div>
+                            </div>
                           </div>
                         )}
                       </div>
