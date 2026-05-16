@@ -204,7 +204,9 @@ export async function completeOnboarding(formData: {
             type: inv.type, symbol: inv.symbol,
             quantity: finalQuantity, purchasePrice: finalPurchasePrice,
             currentValuation: inv.currentValuation ? Number(inv.currentValuation) : null,
-            description: finalDescription, amount: finalAmount, userId: user!.id,
+            description: finalDescription, amount: finalAmount, 
+            currency: inv.currency || formData.currency || "TRY",
+            userId: user!.id,
           };
         }),
       });
