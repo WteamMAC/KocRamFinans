@@ -827,6 +827,7 @@ export function OnboardingForm() {
             </Button>
           )}
         </div>
+        </div>
       </div>
     </div>
   );
