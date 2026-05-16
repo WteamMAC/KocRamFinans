@@ -46,7 +46,7 @@ export async function completeOnboarding(formData: {
     for (const fa of formData.fixedAssets) if (fa.value <= 0) throw new Error("Tüm sabit varlık değerleri 0'dan büyük olmalıdır.");
 
     let username = formData.username?.trim();
-    let email = `user_${Math.random().toString(36).substring(2, 10)}@kocramfinans.internal`;
+    let email = "";
 
     try {
       const clerk = await clerkClient();
@@ -57,21 +57,14 @@ export async function completeOnboarding(formData: {
       }
       
       if (!username) {
-        if (userFromClerk?.username) {
-          username = userFromClerk.username;
-        } else if (userFromClerk?.emailAddresses?.[0]?.emailAddress) {
-          // Bu kısım artık teorik olarak çalışmamalı çünkü kullanıcı adı zorunlu dediniz
-          // Ama yine de bir fallback kalsın, sadece random eklemeyi kaldıralım veya daha temiz yapalım
-          username = email.split("@")[0].replace(/[^a-zA-Z0-9_]/g, "_");
-        }
+        username = userFromClerk?.username || email.split("@")[0].replace(/[^a-zA-Z0-9_]/g, "_");
       }
     } catch (clerkErr) {
       console.error("Clerk fetch error in onboarding:", clerkErr);
-      // Fallback: Eğer formdan da gelmediyse ve Clerk hatası varsa rastgele ata (son çare)
       if (!username) username = "user_" + Math.random().toString(36).substring(2, 10);
     }
 
-    if (!username) username = "user_" + Math.random().toString(36).substring(2, 10);
+    if (!email) email = `${username}@kocramfinans.internal`;
 
     // E-posta ve Kullanıcı adı çakışmalarını benzersizleştir
     const existingEmail = await prisma.user.findUnique({ where: { email } });
@@ -81,10 +74,11 @@ export async function completeOnboarding(formData: {
 
     const existingUsername = await prisma.user.findUnique({ where: { username } });
     if (existingUsername && existingUsername.clerkUserId !== userId) {
-      // Eğer kullanıcı kendi istediği kullanıcı adını girdiyse ve başkası almışsa hata ver
+      // Eğer kullanıcı adı başkası tarafından alınmışsa ve formdan gelmişse hata ver
       if (formData.username) {
         return { success: false, error: "Bu kullanıcı adı zaten alınmış. Lütfen başka bir tane seçin." };
       }
+      // Clerk'ten gelen isim çakışıyorsa son çare olarak benzersizleştir
       username = `${username}_${Math.random().toString(36).substring(2, 8)}`;
     }
 
@@ -98,7 +92,7 @@ export async function completeOnboarding(formData: {
       user = await prisma.user.update({
         where: { clerkUserId: userId },
         data: {
-          username, // <-- BURASI EKSİKTİ!
+          username: user.username || username, // Eğer veritabanında kullanıcı adı zaten varsa dokunma, sadece boşsa ata
           firstName:    formData.firstName ?? user.firstName,
           lastName:     formData.lastName  ?? user.lastName,
           birthDate:    formData.birthDate ? new Date(formData.birthDate) : user.birthDate,
