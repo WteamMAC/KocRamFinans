@@ -980,7 +980,7 @@ export function OnboardingForm() {
         {/* Hazır Sistem Varlık Ekleme Popup Modalı (AssetForm) */}
         {activeAssetModal && (
           <div className="absolute inset-0 z-[110] flex items-center justify-center p-4 md:p-6 bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
-            <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto no-scrollbar rounded-[32px] shadow-2xl border border-border/40">
+            <div className="relative w-full max-w-xl max-h-[90vh] overflow-y-auto no-scrollbar rounded-[32px] shadow-2xl border border-border/40">
               <AssetForm
                 activeTab="financial"
                 defaultAssetType={activeAssetModal}
