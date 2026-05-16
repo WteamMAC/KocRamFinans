@@ -5,6 +5,7 @@ import { auth, currentUser } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 
 export async function completeOnboarding(formData: {
+  username:      string;
   firstName?:    string;
   lastName?:     string;
   birthDate?:    string;
@@ -42,22 +43,23 @@ export async function completeOnboarding(formData: {
     }
     for (const fa of formData.fixedAssets) if (fa.value <= 0) throw new Error("Tüm sabit varlık değerleri 0'dan büyük olmalıdır.");
 
-    let username = "user_" + Math.random().toString(36).substring(2, 10);
+    if (!formData.username || formData.username.trim() === "") {
+      return { success: false, error: "Kullanıcı adı zorunludur." };
+    }
+
+    let username = formData.username.trim();
     let email = `${username}@kocramfinans.internal`;
 
     try {
       const userFromClerk = await currentUser();
       if (userFromClerk?.emailAddresses?.[0]?.emailAddress) {
         email = userFromClerk.emailAddresses[0].emailAddress;
-        username = email.split("@")[0] + "_" + Math.random().toString(36).substring(2, 6);
-      } else if (userFromClerk?.username) {
-        username = userFromClerk.username + "_" + Math.random().toString(36).substring(2, 6);
       }
     } catch (clerkErr) {
       console.error("Clerk fetch error in onboarding:", clerkErr);
     }
 
-    // E-posta ve Kullanıcı adı çakışmalarını benzersizleştir
+    // E-posta ve Kullanıcı adı çakışmalarını kontrol et
     const existingEmail = await prisma.user.findUnique({ where: { email } });
     if (existingEmail && existingEmail.clerkUserId !== userId) {
       email = `${email.split("@")[0]}_${Math.random().toString(36).substring(2, 8)}@kocramfinans.internal`;
@@ -65,7 +67,7 @@ export async function completeOnboarding(formData: {
 
     const existingUsername = await prisma.user.findUnique({ where: { username } });
     if (existingUsername && existingUsername.clerkUserId !== userId) {
-      username = `${username}_${Math.random().toString(36).substring(2, 8)}`;
+      return { success: false, error: "Bu kullanıcı adı zaten alınmış, lütfen başka bir tane deneyin." };
     }
 
     // Mevcut bir kullanıcı var mı kontrol et
