@@ -59,14 +59,14 @@ export function InvestmentProjection({ currentValue, investments = [], fixedAsse
   }, [investments, fixedAssets, monthlySavings]);
 
   let accumulatedValue = currentValue;
-  
+
   const data = Array.from({ length: 6 }).map((_, i) => {
     const date = addMonths(new Date(), i);
-    
+
     if (i > 0) {
       accumulatedValue = (accumulatedValue * monthlyGrowthRate) + monthlySavings;
     }
-    
+
     return {
       month: format(date, "MMM yyyy", { locale: tr }),
       deger: Math.round(accumulatedValue),
@@ -83,7 +83,7 @@ export function InvestmentProjection({ currentValue, investments = [], fixedAsse
       <CardHeader className="bg-muted/30 border-b border-border/10 py-6">
         <CardTitle className="text-xl font-heading font-bold text-primary flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Sparkles className={cn("h-5 w-5", apiError ? "text-rose-500" : "text-accent animate-pulse")} /> 
+            <Sparkles className={cn("h-5 w-5", apiError ? "text-rose-500" : "text-accent animate-pulse")} />
             <span className="text-base md:text-xl">{apiError ? "Varsayılan Büyüme" : "AI Tahmini"}</span>
           </div>
           <span className="text-[8px] md:text-[10px] font-bold text-muted-foreground bg-muted px-2 py-1 rounded-full uppercase tracking-wider">
@@ -95,39 +95,39 @@ export function InvestmentProjection({ currentValue, investments = [], fixedAsse
         <div className="flex flex-row items-baseline justify-between mb-6 gap-2">
           <div className="overflow-hidden">
             <h3 className="text-xl md:text-3xl font-heading font-bold text-primary truncate">
-               {isMobile ? new Intl.NumberFormat("tr-TR", { notation: "compact", maximumFractionDigits: 1 }).format(sixMonthValue) + " ₺" : formatAmount(sixMonthValue)}
+              {isMobile ? new Intl.NumberFormat("tr-TR", { notation: "compact", maximumFractionDigits: 1 }).format(sixMonthValue) + " ₺" : formatAmount(sixMonthValue)}
             </h3>
             <div className="text-[10px] md:text-sm font-bold text-emerald-500 flex items-center mt-1">
-               <TrendingUp className="h-3 w-3 md:h-4 md:w-4 mr-1" />
-               +{isMobile ? new Intl.NumberFormat("tr-TR", { notation: "compact", maximumFractionDigits: 1 }).format(profit) + " ₺" : formatAmount(profit)}
+              <TrendingUp className="h-3 w-3 md:h-4 md:w-4 mr-1" />
+              +{isMobile ? new Intl.NumberFormat("tr-TR", { notation: "compact", maximumFractionDigits: 1 }).format(profit) + " ₺" : formatAmount(profit)}
             </div>
           </div>
           <div className="text-right shrink-0">
-             <div className="text-[8px] md:text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">AYLIK ORAN</div>
-             <div className="flex items-center gap-1.5 justify-end">
-                {loading ? (
-                  <Loader2 className="h-3 w-3 md:h-4 md:w-4 text-primary animate-spin" />
-                ) : (
-                  <>
-                    <span className="text-sm md:text-xl font-bold text-primary">%{growthPercent}</span>
-                    {rationale && (
-                      <TooltipProvider>
-                        <UITooltip>
-                          <TooltipTrigger>
-                            <Info className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground cursor-help" />
-                          </TooltipTrigger>
-                          <TooltipContent className="max-w-[200px] p-3 rounded-xl bg-card border-border shadow-lg">
-                            <p className="text-xs font-medium leading-relaxed">{rationale}</p>
-                          </TooltipContent>
-                        </UITooltip>
-                      </TooltipProvider>
-                    )}
-                  </>
-                )}
-             </div>
+            <div className="text-[8px] md:text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">AYLIK ORAN</div>
+            <div className="flex items-center gap-1.5 justify-end">
+              {loading ? (
+                <Loader2 className="h-3 w-3 md:h-4 md:w-4 text-primary animate-spin" />
+              ) : (
+                <>
+                  <span className="text-sm md:text-xl font-bold text-primary">%{growthPercent}</span>
+                  {rationale && (
+                    <TooltipProvider>
+                      <UITooltip>
+                        <TooltipTrigger>
+                          <Info className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-[200px] p-3 rounded-xl bg-card border-border shadow-lg">
+                          <p className="text-xs font-medium leading-relaxed">{rationale}</p>
+                        </TooltipContent>
+                      </UITooltip>
+                    </TooltipProvider>
+                  )}
+                </>
+              )}
+            </div>
           </div>
         </div>
-        
+
         <div className="flex-1 min-h-[150px] md:min-h-[180px] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={data} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
@@ -137,10 +137,10 @@ export function InvestmentProjection({ currentValue, investments = [], fixedAsse
                   <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <XAxis 
-                dataKey="month" 
-                axisLine={false} 
-                tickLine={false} 
+              <XAxis
+                dataKey="month"
+                axisLine={false}
+                tickLine={false}
                 tick={(props: any) => {
                   const { x, y, payload } = props;
                   // Mobilde sadece 1., 3. ve 6. ayları göster
@@ -152,22 +152,22 @@ export function InvestmentProjection({ currentValue, investments = [], fixedAsse
                   );
                 }}
               />
-              <Tooltip 
+              <Tooltip
                 formatter={(value: any, name: any, props: any) => [formatAmount(props.payload.rawVal), "Tahmini Değer"]}
                 contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 40px -10px rgba(0,0,0,0.1)', fontSize: '12px' }}
               />
-              <Area 
-                type="monotone" 
-                dataKey="deger" 
-                stroke="#10b981" 
+              <Area
+                type="monotone"
+                dataKey="deger"
+                stroke="#10b981"
                 strokeWidth={isMobile ? 2 : 3}
-                fillOpacity={1} 
-                fill="url(#colorDeger)" 
+                fillOpacity={1}
+                fill="url(#colorDeger)"
               />
             </AreaChart>
           </ResponsiveContainer>
         </div>
-        
+
         {assetProjections && assetProjections.length > 0 && (
           <div className="mt-4 md:mt-6 border-t border-border/10 pt-4">
             <h4 className="text-[8px] md:text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-3">Varlık Tahminleri</h4>
@@ -175,32 +175,32 @@ export function InvestmentProjection({ currentValue, investments = [], fixedAsse
               {assetProjections.map((asset, idx) => {
                 const isPositive = asset.projectedValue >= asset.currentValue;
                 const percentChange = (((asset.projectedValue - asset.currentValue) / (asset.currentValue || 1)) * 100) || 0;
-                
+
                 return (
                   <div key={idx} className="flex-none flex flex-col gap-1 md:gap-1.5 bg-muted/40 p-3 md:p-4 rounded-2xl border border-border/20 w-[180px] md:w-[240px]">
-                     <div className="flex items-center justify-between">
-                        <span className="text-xs md:text-sm font-bold text-primary truncate">{asset.symbol || "Varlık"}</span>
-                        <span className={`text-[10px] md:text-xs font-bold flex items-center ${isPositive ? 'text-emerald-500' : 'text-rose-500'}`}>
-                          {isPositive ? <TrendingUp className="h-2.5 w-2.5 md:h-3 md:w-3 mr-1" /> : <TrendingUp className="h-2.5 w-2.5 md:h-3 md:w-3 mr-1 rotate-180" />}
-                          {isPositive ? '+' : ''}{percentChange.toFixed(1)}%
-                        </span>
-                     </div>
-                     <div className="text-[10px] md:text-xs font-medium text-foreground">
-                       {new Intl.NumberFormat("tr-TR", { notation: "compact" }).format(asset.projectedValue)} ₺ <span className="text-[8px] md:text-[10px] text-muted-foreground line-through ml-1">{new Intl.NumberFormat("tr-TR", { notation: "compact" }).format(asset.currentValue)} ₺</span>
-                     </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs md:text-sm font-bold text-primary truncate">{asset.symbol || "Varlık"}</span>
+                      <span className={`text-[10px] md:text-xs font-bold flex items-center ${isPositive ? 'text-emerald-500' : 'text-rose-500'}`}>
+                        {isPositive ? <TrendingUp className="h-2.5 w-2.5 md:h-3 md:w-3 mr-1" /> : <TrendingUp className="h-2.5 w-2.5 md:h-3 md:w-3 mr-1 rotate-180" />}
+                        {isPositive ? '+' : ''}{percentChange.toFixed(1)}%
+                      </span>
+                    </div>
+                    <div className="text-[10px] md:text-xs font-medium text-foreground">
+                      {new Intl.NumberFormat("tr-TR", { notation: "compact" }).format(asset.projectedValue)} ₺ <span className="text-[8px] md:text-[10px] text-muted-foreground line-through ml-1">{new Intl.NumberFormat("tr-TR", { notation: "compact" }).format(asset.currentValue)} ₺</span>
+                    </div>
                   </div>
                 );
               })}
             </div>
           </div>
         )}
-        
+
         <p className="text-[9px] md:text-xs text-muted-foreground opacity-60 text-center mt-4 italic leading-relaxed">
-           {loading 
-             ? "Yapay zeka portföyünüzü analiz ediyor..." 
-             : apiError 
-               ? "⚠️ AI yapılandırması eksik, sabit %4 büyüme baz alınmıştır."
-               : `* Mevcut varlık dağılımınız üzerinden AI tarafından tahmin edilmiştir.`}
+          {loading
+            ? "Yapay zeka portföyünüzü analiz ediyor..."
+            : apiError
+              ? "⚠️ AI yapılandırması eksik, sabit %4 büyüme baz alınmıştır."
+              : `* Mevcut varlık dağılımınız üzerinden AI tarafından tahmin edilmiştir.`}
         </p>
       </CardContent>
     </Card>

@@ -49,7 +49,7 @@ export function Calendar({ selected, onSelect, className }: CalendarProps) {
   const nextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
   const prevMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
 
-  const years = Array.from({ length: 100 }, (_, i) => getYear(new Date()) - i);
+  const years = Array.from({ length: 100 }, (_, i) => getYear(new Date()) + 20 - i);
   const months = [
     "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", 
     "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"
@@ -57,32 +57,32 @@ export function Calendar({ selected, onSelect, className }: CalendarProps) {
 
   return (
     <div className={cn("p-4 bg-card text-card-foreground", className)}>
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex gap-2">
+      <div className="flex items-center justify-between mb-6 px-1">
+        <div className="flex items-center gap-1">
           <Select 
             value={getMonth(currentMonth).toString()}
             onValueChange={(v) => setCurrentMonth(setMonth(currentMonth, parseInt(v as string)))}
           >
-            <SelectTrigger className="h-8 w-[100px] bg-transparent border-none p-0 hover:text-primary transition-colors font-bold text-sm">
+            <SelectTrigger className="h-9 w-[110px] bg-muted/40 border-none px-3 hover:bg-muted/60 transition-all font-black text-xs rounded-xl">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="min-w-[120px]">
+            <SelectContent className="min-w-[130px] rounded-2xl border-primary/10">
               {months.map((m, i) => (
-                <SelectItem key={m} value={i.toString()}>{m}</SelectItem>
+                <SelectItem key={m} value={i.toString()} className="text-xs font-bold">{m}</SelectItem>
               ))}
             </SelectContent>
           </Select>
-
+          
           <Select 
             value={getYear(currentMonth).toString()}
             onValueChange={(v) => setCurrentMonth(setYear(currentMonth, parseInt(v as string)))}
           >
-            <SelectTrigger className="h-8 w-[80px] bg-transparent border-none p-0 hover:text-primary transition-colors font-bold text-sm">
+            <SelectTrigger className="h-9 w-[85px] bg-muted/40 border-none px-3 hover:bg-muted/60 transition-all font-black text-xs rounded-xl">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="min-w-[100px]">
+            <SelectContent className="min-w-[100px] rounded-2xl border-primary/10">
               {years.map(y => (
-                <SelectItem key={y} value={y.toString()}>{y}</SelectItem>
+                <SelectItem key={y} value={y.toString()} className="text-xs font-bold">{y}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -116,7 +116,7 @@ export function Calendar({ selected, onSelect, className }: CalendarProps) {
               key={i}
               onClick={() => onSelect?.(day)}
               className={cn(
-                "h-9 w-9 rounded-xl flex items-center justify-center text-sm font-semibold transition-all relative",
+                "h-9 w-9 rounded-xl flex items-center justify-center text-sm font-semibold transition-all relative outline-none focus:ring-2 focus:ring-primary/20",
                 !isCurrentMonth && "text-muted-foreground/30",
                 isCurrentMonth && !isSelected && "hover:bg-muted text-foreground",
                 isSelected && "bg-primary text-primary-foreground shadow-lg shadow-primary/20",
