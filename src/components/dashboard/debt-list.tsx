@@ -531,9 +531,30 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
                 })}
 
                 {activeDebts.length === 0 && !isAdding && (
-                    <div className="col-span-full py-20 flex flex-col items-center justify-center text-muted-foreground opacity-50 italic">
-                        <AlertCircle className="w-12 h-12 mb-4 opacity-20" />
-                        Aktif borç veya kredi kaydı bulunmuyor.
+                    <div className="col-span-full py-16 flex flex-col items-center justify-center text-center bg-muted/20 border border-dashed rounded-[40px] border-border/50 animate-in fade-in duration-700">
+                        <div className="w-20 h-20 bg-rose-500/10 rounded-full flex items-center justify-center mb-6">
+                            <CreditCard className="w-10 h-10 text-rose-500/40" />
+                        </div>
+                        <h3 className="text-xl font-heading font-bold text-primary mb-3">Borç ve Yükümlülük Takibi</h3>
+                        <p className="text-sm text-muted-foreground max-w-[400px] mb-10 leading-relaxed">
+                            Kredi kartı borçları, banka kredileri veya şahsi borçlarınızı ekleyerek aylık ödeme planınızı ve toplam yükümlülüğünüzü takip edin.
+                        </p>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-2xl px-4">
+                            <div className="bg-card p-5 rounded-[24px] border border-border/40 text-left shadow-sm">
+                                <p className="text-xs font-black text-rose-500 uppercase tracking-widest mb-1.5 flex items-center gap-2">
+                                  <span className="w-2 h-2 rounded-full bg-rose-500" />
+                                  Kredi Kartları
+                                </p>
+                                <p className="text-[11px] text-muted-foreground leading-relaxed">Ekstre borçlarınızı ve taksitli alışverişlerinizi kaydedin.</p>
+                            </div>
+                            <div className="bg-card p-5 rounded-[24px] border border-border/40 text-left shadow-sm">
+                                <p className="text-xs font-black text-primary uppercase tracking-widest mb-1.5 flex items-center gap-2">
+                                  <span className="w-2 h-2 rounded-full bg-primary" />
+                                  Bankalardan Krediler
+                                </p>
+                                <p className="text-[11px] text-muted-foreground leading-relaxed">Konut, taşıt veya ihtiyaç kredilerinizin taksitlerini takip edin.</p>
+                            </div>
+                        </div>
                     </div>
                 )}
             </div>

@@ -58,6 +58,38 @@ export function InvestmentProjection({ currentValue, investments = [], fixedAsse
     fetchAIProjection();
   }, [investments, fixedAssets, monthlySavings]);
 
+  const hasData = currentValue > 0 || (investments && investments.length > 0) || (fixedAssets && fixedAssets.length > 0);
+
+  if (!hasData) {
+    return (
+      <Card className="bg-card border-border/20 shadow-ambient-medium rounded-[32px] overflow-hidden flex flex-col h-full min-h-[400px]">
+        <CardHeader className="bg-muted/30 border-b border-border/10 h-20 !flex flex-row items-center px-6 py-0">
+          <CardTitle className="text-xl font-heading font-bold text-primary flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-accent" /> AI Gelecek Tahmini
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-12 flex-1 flex flex-col items-center justify-center text-center">
+            <div className="w-20 h-20 bg-accent/10 rounded-full flex items-center justify-center mb-6 animate-pulse">
+                <Sparkles className="h-10 w-10 text-accent/50" />
+            </div>
+            <h3 className="text-xl font-heading font-bold text-primary mb-3">AI Portföyünüzü Bekliyor</h3>
+            <p className="text-sm text-muted-foreground max-w-[340px] mb-8 leading-relaxed">
+                Yapay zekanın 6 aylık servet projeksiyonu hazırlayabilmesi için en az bir yatırım veya sabit varlık eklemiş olmanız gerekir.
+            </p>
+            <div className="p-5 bg-primary/5 border border-primary/10 rounded-[24px] text-left w-full max-w-sm">
+              <div className="flex items-center gap-2 mb-2">
+                <Info className="h-4 w-4 text-primary" />
+                <p className="text-[11px] font-black text-primary uppercase tracking-widest">Nasıl Çalışır?</p>
+              </div>
+              <p className="text-[10px] text-muted-foreground leading-relaxed">
+                Yapay zekamız, eklediğiniz varlıkların geçmiş performansını ve piyasa trendlerini analiz ederek gelecek aylardaki potansiyel büyümenizi simüle eder.
+              </p>
+            </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   let accumulatedValue = currentValue;
 
   const data = Array.from({ length: 6 }).map((_, i) => {

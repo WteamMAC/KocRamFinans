@@ -157,45 +157,43 @@ export default function CalculatorsPage() {
       </div>
 
       <div className="w-full space-y-6 md:space-y-8">
-        <div className="overflow-x-auto pb-1 scrollbar-none -mx-4 px-4 md:mx-0 md:px-0">
-          <div className="bg-muted/50 p-1 rounded-2xl border border-border/20 w-max md:w-fit h-auto flex gap-1">
-            <button 
-              onClick={() => setActiveTab("interest")}
-              className={cn(
-                "rounded-xl px-4 md:px-6 py-2.5 md:py-3 text-xs md:text-sm font-bold transition-all flex items-center whitespace-nowrap",
-                activeTab === "interest" ? "bg-card text-primary shadow-ambient-medium" : "text-muted-foreground hover:bg-muted"
-              )}
-            >
-              <TrendingUp className="h-4 w-4 mr-2" /> Mevduat (Faiz)
-            </button>
-            <button 
-              onClick={() => setActiveTab("bes")}
-              className={cn(
-                "rounded-xl px-4 md:px-6 py-2.5 md:py-3 text-xs md:text-sm font-bold transition-all flex items-center whitespace-nowrap",
-                activeTab === "bes" ? "bg-card text-primary shadow-ambient-medium" : "text-muted-foreground hover:bg-muted"
-              )}
-            >
-              <PiggyBank className="h-4 w-4 mr-2" /> BES Planlama
-            </button>
-            <button 
-              onClick={() => setActiveTab("gold")}
-              className={cn(
-                "rounded-xl px-4 md:px-6 py-2.5 md:py-3 text-xs md:text-sm font-bold transition-all flex items-center whitespace-nowrap",
-                activeTab === "gold" ? "bg-card text-primary shadow-ambient-medium" : "text-muted-foreground hover:bg-muted"
-              )}
-            >
-              <Coins className="h-4 w-4 mr-2" /> Altın Birikimi
-            </button>
-            <button 
-              onClick={() => setActiveTab("leverage")}
-              className={cn(
-                "rounded-xl px-4 md:px-6 py-2.5 md:py-3 text-xs md:text-sm font-bold transition-all flex items-center whitespace-nowrap",
-                activeTab === "leverage" ? "bg-card text-primary shadow-ambient-medium" : "text-muted-foreground hover:bg-muted"
-              )}
-            >
-              <Zap className="h-4 w-4 mr-2" /> Kaldıraç (Futures)
-            </button>
-          </div>
+        <div className="bg-muted/50 p-1 rounded-2xl border border-border/20 w-full md:w-fit h-auto grid grid-cols-2 md:flex gap-1 md:gap-1">
+          <button 
+            onClick={() => setActiveTab("interest")}
+            className={cn(
+              "rounded-xl px-4 md:px-6 py-2.5 md:py-3 text-xs md:text-sm font-bold transition-all flex items-center justify-center whitespace-nowrap w-full",
+              activeTab === "interest" ? "bg-card text-primary shadow-ambient-medium" : "text-muted-foreground hover:bg-muted"
+            )}
+          >
+            <TrendingUp className="h-4 w-4 mr-2" /> Mevduat (Faiz)
+          </button>
+          <button 
+            onClick={() => setActiveTab("bes")}
+            className={cn(
+              "rounded-xl px-4 md:px-6 py-2.5 md:py-3 text-xs md:text-sm font-bold transition-all flex items-center justify-center whitespace-nowrap w-full",
+              activeTab === "bes" ? "bg-card text-primary shadow-ambient-medium" : "text-muted-foreground hover:bg-muted"
+            )}
+          >
+            <PiggyBank className="h-4 w-4 mr-2" /> BES Planlama
+          </button>
+          <button 
+            onClick={() => setActiveTab("gold")}
+            className={cn(
+              "rounded-xl px-4 md:px-6 py-2.5 md:py-3 text-xs md:text-sm font-bold transition-all flex items-center justify-center whitespace-nowrap w-full",
+              activeTab === "gold" ? "bg-card text-primary shadow-ambient-medium" : "text-muted-foreground hover:bg-muted"
+            )}
+          >
+            <Coins className="h-4 w-4 mr-2" /> Altın Birikimi
+          </button>
+          <button 
+            onClick={() => setActiveTab("leverage")}
+            className={cn(
+              "rounded-xl px-4 md:px-6 py-2.5 md:py-3 text-xs md:text-sm font-bold transition-all flex items-center justify-center whitespace-nowrap w-full",
+              activeTab === "leverage" ? "bg-card text-primary shadow-ambient-medium" : "text-muted-foreground hover:bg-muted"
+            )}
+          >
+            <Zap className="h-4 w-4 mr-2" /> Kaldıraç (Futures)
+          </button>
         </div>
 
         {activeTab === "interest" && (
@@ -213,7 +211,7 @@ export default function CalculatorsPage() {
                         type="number" 
                         value={interestData.principal || ""} 
                         onChange={e => setInterestData(p => ({...p, principal: Number(e.target.value)}))}
-                        className="h-12 md:h-14 rounded-xl md:rounded-2xl bg-muted/30 border border-border/50 font-bold text-xl md:text-2xl text-primary transition-all focus-visible:ring-1 focus-visible:ring-primary"
+                        className="h-auto py-3 md:py-4 rounded-xl md:rounded-2xl bg-muted/30 border border-border/50 font-bold text-xl md:text-2xl text-primary transition-all focus-visible:ring-1 focus-visible:ring-primary leading-normal"
                       />
                       <div className="text-xs md:text-sm font-bold text-emerald-600 mt-2 ml-1 flex items-center gap-1">
                         <ArrowRight className="h-3 w-3" /> {interestData.principal.toLocaleString("tr-TR")} {curSymbol}
@@ -226,7 +224,7 @@ export default function CalculatorsPage() {
                       type="number" 
                       value={interestData.rate || ""} 
                       onChange={e => setInterestData(p => ({...p, rate: Number(e.target.value)}))}
-                      className="h-14 rounded-2xl bg-muted/30 border border-border/50 font-bold text-xl text-primary transition-all focus-visible:ring-1 focus-visible:ring-primary"
+                      className="h-auto py-3 md:py-4 rounded-xl md:rounded-2xl bg-muted/30 border border-border/50 font-bold text-xl text-primary transition-all focus-visible:ring-1 focus-visible:ring-primary leading-normal"
                     />
                   </div>
                   <div className="space-y-3">
@@ -235,7 +233,7 @@ export default function CalculatorsPage() {
                       type="number" 
                       value={interestData.term || ""} 
                       onChange={e => setInterestData(p => ({...p, term: Number(e.target.value)}))}
-                      className="h-14 rounded-2xl bg-muted/30 border border-border/50 font-bold text-xl text-primary transition-all focus-visible:ring-1 focus-visible:ring-primary"
+                      className="h-auto py-3 md:py-4 rounded-xl md:rounded-2xl bg-muted/30 border border-border/50 font-bold text-xl text-primary transition-all focus-visible:ring-1 focus-visible:ring-primary leading-normal"
                     />
                   </div>
                 </CardContent>
@@ -323,7 +321,7 @@ export default function CalculatorsPage() {
                         type="number" 
                         value={besData.monthly || ""} 
                         onChange={e => setBesData(p => ({...p, monthly: Number(e.target.value)}))}
-                        className="h-14 rounded-2xl bg-muted/30 border border-border/50 font-bold text-2xl text-primary transition-all focus-visible:ring-1 focus-visible:ring-primary"
+                        className="h-auto py-3 md:py-4 rounded-xl md:rounded-2xl bg-muted/30 border border-border/50 font-bold text-xl md:text-2xl text-primary transition-all focus-visible:ring-1 focus-visible:ring-primary leading-normal"
                       />
                       <div className="text-sm font-bold text-emerald-600 mt-2 ml-2 flex items-center gap-1">
                         <ArrowRight className="h-3 w-3" /> {besData.monthly.toLocaleString("tr-TR")} {curSymbol}
@@ -335,7 +333,7 @@ export default function CalculatorsPage() {
                     <Input 
                       type="number" 
                       value={besData.contribution || ""} 
-                      className="h-14 rounded-2xl bg-muted border-none font-bold text-xl text-primary opacity-60"
+                      className="h-auto py-3 md:py-4 rounded-xl md:rounded-2xl bg-muted border-none font-bold text-xl text-primary opacity-60 leading-normal"
                       disabled
                     />
                   </div>
@@ -345,7 +343,7 @@ export default function CalculatorsPage() {
                       type="number" 
                       value={besData.annualReturn || ""} 
                       onChange={e => setBesData(p => ({...p, annualReturn: Number(e.target.value)}))}
-                      className="h-14 rounded-2xl bg-muted/30 border border-border/50 font-bold text-xl text-primary transition-all focus-visible:ring-1 focus-visible:ring-primary"
+                      className="h-auto py-3 md:py-4 rounded-xl md:rounded-2xl bg-muted/30 border border-border/50 font-bold text-xl text-primary transition-all focus-visible:ring-1 focus-visible:ring-primary leading-normal"
                     />
                   </div>
                   <div className="space-y-3">
@@ -354,7 +352,7 @@ export default function CalculatorsPage() {
                       type="number" 
                       value={besData.years || ""} 
                       onChange={e => setBesData(p => ({...p, years: Number(e.target.value)}))}
-                      className="h-14 rounded-2xl bg-muted/30 border border-border/50 font-bold text-xl text-primary transition-all focus-visible:ring-1 focus-visible:ring-primary"
+                      className="h-auto py-3 md:py-4 rounded-xl md:rounded-2xl bg-muted/30 border border-border/50 font-bold text-xl text-primary transition-all focus-visible:ring-1 focus-visible:ring-primary leading-normal"
                     />
                   </div>
                 </CardContent>
@@ -476,7 +474,7 @@ export default function CalculatorsPage() {
                       type="number" 
                       value={leverageData.capital || ""} 
                       onChange={e => setLeverageData(p => ({...p, capital: Number(e.target.value)}))}
-                      className="h-14 rounded-2xl bg-muted/30 border border-border/50 font-bold text-2xl text-primary transition-all"
+                      className="h-auto py-3 md:py-4 rounded-xl md:rounded-2xl bg-muted/30 border border-border/50 font-bold text-xl md:text-2xl text-primary transition-all leading-normal"
                     />
                   </div>
 
@@ -510,7 +508,7 @@ export default function CalculatorsPage() {
                       type="number" 
                       value={leverageData.entryPrice || ""} 
                       onChange={e => setLeverageData(p => ({...p, entryPrice: Number(e.target.value)}))}
-                      className="h-14 rounded-2xl bg-muted/30 border border-border/50 font-bold text-xl text-primary transition-all"
+                      className="h-auto py-3 md:py-4 rounded-xl md:rounded-2xl bg-muted/30 border border-border/50 font-bold text-xl text-primary transition-all leading-normal"
                     />
                   </div>
 
@@ -520,7 +518,7 @@ export default function CalculatorsPage() {
                       type="number" 
                       value={leverageData.exitPrice || ""} 
                       onChange={e => setLeverageData(p => ({...p, exitPrice: Number(e.target.value)}))}
-                      className="h-14 rounded-2xl bg-muted/30 border border-border/50 font-bold text-xl text-primary transition-all"
+                      className="h-auto py-3 md:py-4 rounded-xl md:rounded-2xl bg-muted/30 border border-border/50 font-bold text-xl text-primary transition-all leading-normal"
                     />
                   </div>
                 </CardContent>

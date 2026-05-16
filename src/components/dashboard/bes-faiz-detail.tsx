@@ -586,39 +586,48 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
               </div>
             </div>
             <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={projectionData}>
-                  <defs>
-                    <linearGradient id="colorProj" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor={accentSolid} stopOpacity={0.3} />
-                      <stop offset="95%" stopColor={accentSolid} stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} strokeOpacity={0.1} />
-                  <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 10 }} dy={10} />
-                  <YAxis
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: 10 }}
-                    tickFormatter={v => new Intl.NumberFormat("tr-TR", { notation: "compact" }).format(v)}
-                    dx={-10}
-                  />
-                  <Tooltip
-                    contentStyle={{ borderRadius: "16px", border: "none", boxShadow: "0 10px 40px -10px rgba(0,0,0,0.1)" }}
-                    formatter={(val: any, name: any) => [
-                      formatAmount(Number(val)),
-                      name === "toplam"
-                        ? (isBES ? "Tahmini Toplam (BES)" : "Bileşik Faiz Toplamı")
-                        : name === "faizKazanci"
-                        ? "Kazanılan Faiz"
-                        : "Başlangıç Anapara"
-                    ]}
-                  />
-                  <Area type="monotone" dataKey="toplam" stroke={accentSolid} strokeWidth={3} fillOpacity={1} fill="url(#colorProj)" />
-                  {!isBES && <Area type="monotone" dataKey="faizKazanci" stroke="#10b981" strokeWidth={2} strokeDasharray="4 4" fillOpacity={0.08} fill="#10b981" />}
-                  <Area type="monotone" dataKey="anaPara" stroke="#3b82f6" strokeWidth={2} strokeDasharray="5 5" fillOpacity={0.05} fill="#3b82f6" />
-                </AreaChart>
-              </ResponsiveContainer>
+              {projectionData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={projectionData}>
+                    <defs>
+                      <linearGradient id="colorProj" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor={accentSolid} stopOpacity={0.3} />
+                        <stop offset="95%" stopColor={accentSolid} stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} strokeOpacity={0.1} />
+                    <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 10 }} dy={10} />
+                    <YAxis
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fontSize: 10 }}
+                      tickFormatter={v => new Intl.NumberFormat("tr-TR", { notation: "compact" }).format(v)}
+                      dx={-10}
+                    />
+                    <Tooltip
+                      contentStyle={{ borderRadius: "16px", border: "none", boxShadow: "0 10px 40px -10px rgba(0,0,0,0.1)" }}
+                      formatter={(val: any, name: any) => [
+                        formatAmount(Number(val)),
+                        name === "toplam"
+                          ? (isBES ? "Tahmini Toplam (BES)" : "Bileşik Faiz Toplamı")
+                          : name === "faizKazanci"
+                          ? "Kazanılan Faiz"
+                          : "Başlangıç Anapara"
+                      ]}
+                    />
+                    <Area type="monotone" dataKey="toplam" stroke={accentSolid} strokeWidth={3} fillOpacity={1} fill="url(#colorProj)" />
+                    {!isBES && <Area type="monotone" dataKey="faizKazanci" stroke="#10b981" strokeWidth={2} strokeDasharray="4 4" fillOpacity={0.08} fill="#10b981" />}
+                    <Area type="monotone" dataKey="anaPara" stroke="#3b82f6" strokeWidth={2} strokeDasharray="5 5" fillOpacity={0.05} fill="#3b82f6" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full w-full flex flex-col items-center justify-center text-center p-6 border border-dashed rounded-3xl border-border/30 bg-muted/5">
+                    <Sparkles className={cn("h-10 w-10 mb-4 opacity-20", accentColor)} />
+                    <p className="text-xs font-bold text-muted-foreground max-w-[200px]">
+                      Projeksiyon oluşturmak için ilk {isBES ? "BES" : "vadeli"} hesabınızı ekleyin.
+                    </p>
+                </div>
+              )}
             </div>
             <div className="flex justify-center flex-wrap gap-5 mt-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
               <span className="flex items-center gap-1.5">
