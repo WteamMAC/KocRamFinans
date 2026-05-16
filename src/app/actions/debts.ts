@@ -10,6 +10,7 @@ export async function addDebt(data: {
   interestRate?: number; // Aylık Faiz Oranı (%)
   remainingInstallments?: number; 
   paymentDay?: number; 
+  dueDate?: string; // Yeni: Son ödeme tarihi
   description?: string;
   currency?: string;
   originalAmount?: number;
@@ -54,6 +55,7 @@ export async function addDebt(data: {
       installmentAmount: monthlyInstallment,
       remainingInstallments: data.remainingInstallments,
       paymentDay: data.paymentDay,
+      dueDate: data.dueDate ? new Date(data.dueDate) : null,
       description: data.description,
       currency: data.currency ?? "TRY",
       originalAmount: data.originalAmount,
@@ -187,7 +189,7 @@ export async function processAutoPayments(userId: string) {
   }
 }
 
-export async function closeDebt(debtId: string) {
+export async function closeDebt(debtId: string, isTransfer: boolean = false) {
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthorized");
 
@@ -208,19 +210,21 @@ export async function closeDebt(debtId: string) {
     },
   });
 
-  // RECORD AS EXPENSE
-  await prisma.expense.create({
-    data: {
-      userId: debt.userId,
-      type: "Borç Kapatma",
-      amount: closingAmount,
-      isRecurring: false,
-      description: `${debt.description || debt.type} borcu tamamen kapatıldı.`,
-      currency: debt.currency,
-      originalAmount: closingAmount / (debt.fxRate || 1),
-      fxRate: debt.fxRate,
-    },
-  });
+  // RECORD AS EXPENSE: Only if it's NOT a transfer
+  if (!isTransfer) {
+    await prisma.expense.create({
+      data: {
+        userId: debt.userId,
+        type: "Borç Kapatma",
+        amount: closingAmount,
+        isRecurring: false,
+        description: `${debt.description || debt.type} borcu tamamen kapatıldı.`,
+        currency: debt.currency,
+        originalAmount: closingAmount / (debt.fxRate || 1),
+        fxRate: debt.fxRate,
+      },
+    });
+  }
 
   revalidatePath("/dashboard/debts");
   revalidatePath("/dashboard/income-expense");
