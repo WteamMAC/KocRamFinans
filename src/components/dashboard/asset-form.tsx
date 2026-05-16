@@ -97,32 +97,29 @@ export function AssetForm({ activeTab, onAdd, onCancel, loading, error, defaultA
     <div className="w-full bg-card border border-border/20 shadow-2xl rounded-[32px] overflow-hidden animate-in zoom-in-95 duration-300">
       <div className="grid grid-cols-1 md:grid-cols-12">
         {/* Sol Bilgi & İkon Sütunu */}
-        <div className="md:col-span-4 bg-gradient-to-b from-stone-900 via-stone-900 to-stone-950 text-stone-100 p-8 md:p-10 flex flex-col items-center justify-center relative overflow-hidden">
-          {/* Arka plan ışıltısı */}
-          <div className="absolute -top-12 -left-12 w-40 h-40 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-12 -right-12 w-40 h-40 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
-
+        {/* Sol Bilgi & İkon Sütunu */}
+        <div className="md:col-span-4 bg-muted/60 dark:bg-muted/30 p-8 md:p-10 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-border/40 relative overflow-hidden">
           {/* Yuvarlak İkon Çerçevesi */}
-          <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-amber-600 to-amber-500 text-white flex items-center justify-center shadow-2xl shadow-amber-500/30 mb-6 transition-transform hover:scale-105 duration-300 relative z-10">
+          <div className="w-20 h-20 rounded-full bg-primary/10 text-primary flex items-center justify-center shadow-sm mb-6 transition-transform hover:scale-105 duration-300">
             {activeTab === "financial" ? (
-              <Coins className="h-12 w-12" />
+              <Coins className="h-10 w-10" />
             ) : (
-              <Wallet className="h-12 w-12" />
+              <Wallet className="h-10 w-10" />
             )}
           </div>
 
-          <h3 className="text-2xl font-heading font-bold text-center tracking-tight text-white mb-2 relative z-10">
+          <h3 className="text-xl font-heading font-bold text-center tracking-tight text-primary mb-2">
             {activeTab === "financial" ? "Finansal Yatırım" : "Sabit Varlık"}
           </h3>
           
-          <p className="text-xs text-stone-400 text-center font-medium leading-relaxed max-w-[220px] relative z-10">
+          <p className="text-xs text-muted-foreground text-center font-medium leading-relaxed max-w-[220px]">
             {activeTab === "financial"
               ? "Hisse, fon, kripto veya döviz yatırımlarınızı kolayca takip edin ve canlı piyasa verileriyle güncel kalın."
               : "Gayrimenkul, araç veya değerli eşyalarınızı portföyünüze ekleyerek toplam net varlığınızı eksiksiz yönetin."}
           </p>
 
-          <div className="mt-8 pt-8 border-t border-stone-800 w-full flex items-center justify-center gap-2 text-[11px] text-stone-500 font-medium">
-            <CheckCircle2 className="h-4 w-4 text-amber-500" />
+          <div className="mt-8 pt-8 border-t border-border/40 w-full flex items-center justify-center gap-2 text-[11px] text-muted-foreground font-medium">
+            <CheckCircle2 className="h-4 w-4 text-primary" />
             <span>Güvenli & Şifreli Kayıt</span>
           </div>
         </div>
@@ -401,14 +398,14 @@ export function AssetForm({ activeTab, onAdd, onCancel, loading, error, defaultA
           {/* Footer / Kaydet Alanı */}
           <div className="mt-12 pt-6 border-t border-border/10 flex flex-col sm:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-2.5 text-xs font-medium text-muted-foreground">
-              <div className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse shrink-0 shadow-sm shadow-amber-500/50" />
+              <div className="w-2.5 h-2.5 rounded-full bg-primary/60 animate-pulse shrink-0" />
               <span>Varlık portföyünüze anında eklenir ve net değerinize yansır.</span>
             </div>
 
             <Button
               onClick={handleSubmit}
               disabled={loading}
-              className="bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-700 hover:to-amber-600 text-white rounded-2xl px-10 py-6 h-auto text-base font-bold shadow-xl shadow-amber-500/20 hover:shadow-amber-500/30 transition-all w-full sm:w-auto"
+              className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-2xl px-10 py-6 h-auto text-base font-bold shadow-sm transition-all w-full sm:w-auto"
             >
               {loading ? "Kaydediliyor..." : (activeTab === "financial" ? "Yatırımı Kaydet" : "Varlığı Kaydet")}
             </Button>
