@@ -17,14 +17,14 @@ export async function completeOnboarding(formData: {
   marriageDate?:  string;
   hasChildren?:   boolean;
   children?:      { birthDate: string }[];
-  incomes:        { type: string; amount: number; date?: string; description?: string }[];
-  expenses:       { type: string; amount: number; date?: string; isRecurring: boolean; description?: string }[];
-  debts:          { type: string; amount: number; remainingInstallments?: number; description?: string }[];
+  incomes:        { type: string; amount: number; date?: string; description?: string; currency?: string }[];
+  expenses:       { type: string; amount: number; date?: string; isRecurring: boolean; description?: string; currency?: string }[];
+  debts:          { type: string; amount: number; remainingInstallments?: number; description?: string; currency?: string }[];
   investments:    {
     type: string; symbol?: string; quantity?: number;
-    purchasePrice?: number; amount?: number; currentValuation?: number; description?: string;
+    purchasePrice?: number; amount?: number; currentValuation?: number; description?: string; currency?: string;
   }[];
-  fixedAssets: { name: string; type: string; value: number }[];
+  fixedAssets: { name: string; type: string; value: number; currency?: string }[];
 }) {
   const { userId } = await auth();
   if (!userId) {
@@ -133,7 +133,9 @@ export async function completeOnboarding(formData: {
         data: formData.incomes.map(inc => ({
           type: inc.type, amount: Number(inc.amount) || 0,
           date: inc.date ? new Date(inc.date) : new Date(),
-          description: inc.description, userId: user!.id,
+          description: inc.description, 
+          currency: inc.currency || formData.currency || "TRY",
+          userId: user!.id,
         })),
       });
     }
@@ -145,7 +147,9 @@ export async function completeOnboarding(formData: {
           return {
             type: exp.type, amount: Number(exp.amount) || 0,
             date: d, dueDate: d.getDate(), isRecurring: exp.isRecurring ?? true,
-            description: exp.description, userId: user!.id,
+            description: exp.description, 
+            currency: exp.currency || formData.currency || "TRY",
+            userId: user!.id,
           };
         }),
       });
@@ -156,7 +160,9 @@ export async function completeOnboarding(formData: {
         data: formData.debts.map(d => ({
           type: d.type, amount: Number(d.amount) || 0,
           remainingInstallments: d.remainingInstallments,
-          description: d.description, userId: user!.id,
+          description: d.description, 
+          currency: d.currency || formData.currency || "TRY",
+          userId: user!.id,
         })),
       });
     }
@@ -197,7 +203,9 @@ export async function completeOnboarding(formData: {
     if ((formData.fixedAssets ?? []).length > 0) {
       await prisma.fixedAsset.createMany({
         data: formData.fixedAssets.map(a => ({
-          name: a.name, type: a.type, value: Number(a.value) || 0, userId: user!.id,
+          name: a.name, type: a.type, value: Number(a.value) || 0, 
+          currency: a.currency || formData.currency || "TRY",
+          userId: user!.id,
         })),
       });
     }
@@ -212,3 +220,4 @@ export async function completeOnboarding(formData: {
     return { success: false, error: err?.message || "Veritabanı kayıt hatası." };
   }
 }
+
