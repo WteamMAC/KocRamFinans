@@ -64,7 +64,7 @@ export default function SlidingAuth() {
         
         {/* Form Container */}
         <motion.div 
-          className="absolute inset-y-0 left-0 w-full lg:w-1/2 bg-card z-10 overflow-y-auto"
+          className={`w-full lg:w-1/2 bg-card z-20 ${isLargeScreen ? "absolute inset-y-0 left-0 overflow-y-auto" : "relative"}`}
           animate={isLargeScreen ? { x: isLogin ? "100%" : "0%" } : { x: 0 }}
           transition={{ type: "spring", stiffness: 260, damping: 28 }}
         >
@@ -84,7 +84,7 @@ export default function SlidingAuth() {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: isLargeScreen ? 30 : 0 }}
                   transition={{ duration: 0.4 }}
-                  className="w-full max-w-md"
+                  className="w-full max-w-md relative z-30"
                 >
                   <SignIn 
                     routing="path"
@@ -188,7 +188,7 @@ export default function SlidingAuth() {
                       </div>
                     )}
                     
-                    <div className={!isTermsAccepted ? "opacity-20 pointer-events-none select-none filter blur-[2px] transition-all duration-300" : "transition-all duration-300"}>
+                    <div className={!isTermsAccepted ? "opacity-20 pointer-events-none select-none filter blur-[2px] transition-all duration-300" : "relative z-30 transition-all duration-300"}>
                       <SignUp 
                         routing="path"
                         path="/sign-up"
