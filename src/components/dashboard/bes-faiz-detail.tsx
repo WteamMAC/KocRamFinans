@@ -597,9 +597,9 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
 
           {/* Projection Controls */}
           <Card className="border-border/20 shadow-ambient-low rounded-2xl p-6">
-            <div className={cn("grid gap-4", isBES ? "grid-cols-2 md:grid-cols-3" : "grid-cols-2")}>
-              <div className="space-y-2">
-                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Süre (Yıl)</Label>
+            <div className={cn("grid gap-4 items-end", isBES ? "grid-cols-2 md:grid-cols-3" : "grid-cols-2")}>
+              <div className="space-y-0">
+                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest min-h-[32px] flex items-end mb-2">Süre (Yıl)</Label>
                 <Input
                   type="number"
                   value={projYears}
@@ -609,8 +609,8 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
               </div>
               {isBES ? (
                 <>
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Aylık Ek Ödeme</Label>
+                  <div className="space-y-0">
+                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest min-h-[32px] flex items-end mb-2">Aylık Ek Ödeme</Label>
                     <Input
                       type="number"
                       value={projMonthly || ""}
@@ -619,8 +619,8 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
                       placeholder="0"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Tahmini Yıllık Getiri (%)</Label>
+                  <div className="space-y-0">
+                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest min-h-[32px] flex items-end mb-2">Tahmini Yıllık Getiri (%)</Label>
                     <Input
                       type="number"
                       value={projReturn}
@@ -630,8 +630,8 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
                   </div>
                 </>
               ) : (
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Ağırlıklı Ortalama Faiz (%)</Label>
+                <div className="space-y-0">
+                  <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest min-h-[32px] flex items-end mb-2">Ağırlıklı Ortalama Faiz (%)</Label>
                   <div className="h-11 rounded-xl bg-muted/30 border border-border/20 flex items-center px-4">
                     <span className={cn("font-bold text-lg", accentColor)}>
                       %{(grouped.reduce((s, g) => s + (g.rate * g.totalQuantity), 0) / Math.max(totalPrincipal, 1)).toFixed(2)}
