@@ -62,7 +62,7 @@ export default async function LandingPage() {
                   src="/mascot.png" 
                 />
                 {/* Floating Badge */}
-                <div className="absolute -bottom-8 -left-8 bg-card p-5 rounded-2xl shadow-ambient-high flex items-center gap-4 border border-border/20 animate-bounce [animation-duration:3s]">
+                <div className="absolute -bottom-4 md:-bottom-8 -left-4 md:-left-8 bg-card p-4 md:p-5 rounded-2xl shadow-ambient-high flex items-center gap-3 md:gap-4 border border-border/20 animate-bounce [animation-duration:3s]">
                   <div className="bg-primary/10 text-primary w-12 h-12 rounded-xl flex items-center justify-center">
                     <CheckCircle2 className="h-7 w-7" />
                   </div>
@@ -215,7 +215,7 @@ export default async function LandingPage() {
                 </div>
                 
                 {/* Stats floating card */}
-                <div className="absolute -bottom-10 -left-10 bg-card p-8 rounded-3xl shadow-ambient-high border border-border/20 flex gap-12 animate-in slide-in-from-bottom-8 duration-700">
+                <div className="absolute -bottom-6 md:-bottom-10 -left-4 md:-left-10 bg-card p-6 md:p-8 rounded-2xl md:rounded-3xl shadow-ambient-high border border-border/20 flex gap-8 md:gap-12 animate-in slide-in-from-bottom-8 duration-700">
                   <div className="text-center">
                     <p className="text-4xl font-heading font-bold text-primary mb-1">10+</p>
                     <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest opacity-60">Yıllık Tecrübe</p>
