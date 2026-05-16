@@ -15,7 +15,11 @@ import {
   Sparkles,
   Search,
   Filter,
-  ArrowRightLeft
+  ArrowRightLeft,
+  ShoppingCart,
+  Utensils,
+  Car,
+  Home
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
