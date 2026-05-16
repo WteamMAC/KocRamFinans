@@ -49,7 +49,7 @@ export function Calendar({ selected, onSelect, className }: CalendarProps) {
   const nextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
   const prevMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
 
-  const years = Array.from({ length: 100 }, (_, i) => getYear(new Date()) - i);
+  const years = Array.from({ length: 100 }, (_, i) => getYear(new Date()) + 20 - i);
   const months = [
     "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", 
     "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"

@@ -23,7 +23,9 @@ export function DatePicker({ date, setDate, placeholder = "Tarih seçin", classN
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
       // Don't close if clicking inside a portal (like Select dropdown)
-      if (target.closest('[data-slot="select-content"]') || target.closest('[data-slot="select-popup"]')) {
+      if (target.closest('[data-slot="select-content"]') || 
+          target.closest('[data-slot="select-popup"]') ||
+          target.closest('[data-slot="select-item"]')) {
         return;
       }
       if (containerRef.current && !containerRef.current.contains(target)) {
