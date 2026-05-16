@@ -9,39 +9,19 @@ import {
   ArrowDownRight, 
   Wallet, 
   RefreshCw, 
-  Plus,
-  ShoppingCart,
-  Utensils,
   Receipt,
-  Car,
-  Home,
-  ArrowRightLeft,
   Calendar,
   Layers,
   Sparkles,
   Search,
-  Filter
+  Filter,
+  ArrowRightLeft
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Checkbox } from "@/components/ui/checkbox";
 import { useRouter } from "next/navigation";
-import { addIncome, addExpense } from "@/app/actions/income-expense";
-import { payDebtInstallment, addDebt } from "@/app/actions/debts";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogTrigger,
-  DialogFooter
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useCurrency, DISPLAY_CURRENCIES_LIST } from "@/context/currency-context";
-import { DatePicker } from "@/components/ui/date-picker";
-import { parseISO } from "date-fns";
-import { motion, AnimatePresence } from "framer-motion";
+
+import { useCurrency } from "@/context/currency-context";
+import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface Transaction {
@@ -81,26 +61,11 @@ export function IncomeExpenseClient({
   debts,
 }: IncomeExpenseClientProps) {
   const router = useRouter();
-  const { formatAmount, rates } = useCurrency();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [transactionType, setTransactionType] = useState<"income" | "expense" | "debt_payment" | "new_debt">("income");
-  const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    type: "",
-    amount: "",
-    currency: "TRY",
-    description: "",
-    debtId: "",
-    remainingInstallments: "",
-    interestRate: "",
-    paymentDay: "",
-    isRecurring: false,
-    dueDate: "",
-    date: new Date().toISOString().split('T')[0],
-  });
   const [filterCategory, setFilterCategory] = useState("Tümü");
+
+  const { formatAmount } = useCurrency();
 
   useEffect(() => {
     setMounted(true);
@@ -110,64 +75,6 @@ export function IncomeExpenseClient({
     setIsRefreshing(true);
     router.refresh();
     setTimeout(() => setIsRefreshing(false), 1000);
-  };
-
-  const handleSave = async () => {
-    if (!formData.amount) return;
-    setLoading(true);
-
-    const selectedRate = rates[formData.currency] || 1;
-    const originalAmount = Number(formData.amount);
-    const amountInTry = originalAmount * selectedRate;
-
-    try {
-        if (transactionType === "income") {
-            await addIncome({
-                type: formData.type || "Diğer",
-                amount: amountInTry,
-                isRecurring: formData.isRecurring,
-                dueDate: formData.dueDate ? Number(formData.dueDate) : undefined,
-                date: new Date(formData.date),
-                description: formData.description,
-                currency: formData.currency,
-                originalAmount: originalAmount,
-                fxRate: selectedRate,
-            });
-        } else if (transactionType === "expense") {
-            await addExpense({
-                type: formData.type || "Diğer",
-                amount: amountInTry,
-                isRecurring: formData.isRecurring,
-                dueDate: formData.dueDate ? Number(formData.dueDate) : undefined,
-                date: new Date(formData.date),
-                description: formData.description,
-                currency: formData.currency,
-                originalAmount: originalAmount,
-                fxRate: selectedRate,
-            });
-        } else if (transactionType === "debt_payment") {
-            await payDebtInstallment(formData.debtId, amountInTry, false, formData.currency, originalAmount, selectedRate);
-        } else if (transactionType === "new_debt") {
-            await addDebt({
-                type: formData.type || "Diğer",
-                amount: amountInTry,
-                remainingInstallments: formData.remainingInstallments ? Number(formData.remainingInstallments) : undefined,
-                interestRate: formData.interestRate ? Number(formData.interestRate) : undefined,
-                paymentDay: formData.paymentDay ? Number(formData.paymentDay) : undefined,
-                description: formData.description,
-                currency: formData.currency,
-                originalAmount: originalAmount,
-                fxRate: selectedRate,
-            });
-        }
-        setIsModalOpen(false);
-        setFormData({ type: "", amount: "", currency: "TRY", description: "", debtId: "", remainingInstallments: "", interestRate: "", paymentDay: "", isRecurring: false, dueDate: "", date: new Date().toISOString().split('T')[0] });
-        router.refresh();
-    } catch (err) {
-        console.error(err);
-    } finally {
-        setLoading(false);
-    }
   };
 
   if (!mounted) return null;
@@ -204,142 +111,6 @@ export function IncomeExpenseClient({
             <RefreshCw className={cn("mr-2 h-4 w-4", isRefreshing && "animate-spin")} />
             {isRefreshing ? "Yenileniyor..." : "Yenile"}
           </Button>
-          
-          <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-            <DialogTrigger render={
-              <Button className="h-12 px-8 rounded-2xl bg-primary text-white shadow-xl shadow-primary/20 hover:scale-[1.02] transition-all font-black text-xs uppercase tracking-widest active:scale-95">
-                <Plus className="w-5 h-5 mr-2" /> İşlem Ekle
-              </Button>
-            } />
-            <DialogContent className="sm:max-w-[500px] rounded-[40px] border-border/20 shadow-ambient-high bg-card/90 backdrop-blur-2xl">
-              <DialogHeader>
-                <DialogTitle className="text-2xl font-heading font-black text-primary tracking-tight">Yeni Finansal Kayıt</DialogTitle>
-              </DialogHeader>
-              <div className="grid gap-6 py-4">
-                <div className="flex p-1.5 bg-muted/50 rounded-[24px] border border-border/20">
-                    <button 
-                        onClick={() => setTransactionType("income")}
-                        className={cn("flex-1 py-2.5 px-4 rounded-[18px] text-[10px] font-black uppercase tracking-widest transition-all", transactionType === "income" ? "bg-card shadow-lg text-emerald-500" : "text-muted-foreground/60 hover:text-muted-foreground")}
-                    >
-                        Gelir
-                    </button>
-                    <button 
-                        onClick={() => setTransactionType("expense")}
-                        className={cn("flex-1 py-2.5 px-4 rounded-[18px] text-[10px] font-black uppercase tracking-widest transition-all", transactionType === "expense" ? "bg-card shadow-lg text-rose-500" : "text-muted-foreground/60 hover:text-muted-foreground")}
-                    >
-                        Gider
-                    </button>
-                    <button 
-                        onClick={() => setTransactionType("debt_payment")}
-                        className={cn("flex-1 py-2.5 px-4 rounded-[18px] text-[10px] font-black uppercase tracking-widest transition-all", transactionType === "debt_payment" ? "bg-card shadow-lg text-blue-500" : "text-muted-foreground/60 hover:text-muted-foreground")}
-                    >
-                        Borç Öde
-                    </button>
-                    <button 
-                        onClick={() => setTransactionType("new_debt")}
-                        className={cn("flex-1 py-2.5 px-4 rounded-[18px] text-[10px] font-black uppercase tracking-widest transition-all", transactionType === "new_debt" ? "bg-card shadow-lg text-orange-500" : "text-muted-foreground/60 hover:text-muted-foreground")}
-                    >
-                        Borç Al
-                    </button>
-                </div>
-
-                <div className="grid gap-5">
-                    {transactionType === "debt_payment" ? (
-                        <div className="space-y-2.5">
-                            <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-1">Ödenecek Borç</Label>
-                            <Select onValueChange={(v) => setFormData(p => ({ ...p, debtId: String(v ?? "") }))}>
-                                <SelectTrigger className="bg-muted/30 border-border/20 h-14 rounded-2xl font-bold">
-                                    <SelectValue placeholder="Borç Seçin" />
-                                </SelectTrigger>
-                                <SelectContent className="rounded-2xl bg-card font-bold">
-                                    {debts.map(debt => (
-                                        <SelectItem key={debt.id} value={debt.id} className="rounded-xl m-1">
-                                            {debt.description || debt.type} ({formatAmount(debt.amount)})
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    ) : (
-                        <div className="space-y-2.5">
-                            <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-1">Kategori</Label>
-                            <Select onValueChange={(v) => setFormData(p => ({ ...p, type: String(v ?? "") }))}>
-                                <SelectTrigger className="bg-muted/30 border-border/20 h-14 rounded-2xl font-bold">
-                                    <SelectValue placeholder="Seçiniz..." />
-                                </SelectTrigger>
-                                <SelectContent className="rounded-2xl bg-card font-bold">
-                                    {transactionType === "income" ? (
-                                        ["Maaş", "Kira Geliri", "Yatırım Geliri", "Freelance", "Hediye", "Diğer"].map(c => <SelectItem key={c} value={c} className="rounded-xl m-1">{c}</SelectItem>)
-                                    ) : transactionType === "new_debt" ? (
-                                        ["Banka Kredisi", "Kredi Kartı", "Şahsi Borç", "Diğer"].map(c => <SelectItem key={c} value={c} className="rounded-xl m-1">{c}</SelectItem>)
-                                    ) : (
-                                        ["Market", "Kira", "Fatura", "Ulaşım", "Eğlence", "Sağlık", "Diğer"].map(c => <SelectItem key={c} value={c} className="rounded-xl m-1">{c}</SelectItem>)
-                                    )}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    )}
-
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="col-span-2 space-y-2.5">
-                          <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-1">Tutar</Label>
-                          <Input 
-                              type="number" 
-                              placeholder="0.00" 
-                              value={formData.amount}
-                              onChange={(e) => setFormData(p => ({ ...p, amount: e.target.value }))}
-                              className="bg-muted/30 border-border/20 h-14 rounded-2xl font-black text-lg"
-                          />
-                      </div>
-                      <div className="space-y-2.5">
-                          <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-1">Birim</Label>
-                          <Select value={formData.currency} onValueChange={(v) => setFormData(p => ({ ...p, currency: String(v) }))}>
-                              <SelectTrigger className="bg-muted/30 border-border/20 h-14 rounded-2xl font-bold">
-                                  <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent className="rounded-2xl bg-card font-bold">
-                                  {DISPLAY_CURRENCIES_LIST.map(c => (
-                                      <SelectItem key={c.code} value={c.code} className="rounded-xl m-1">
-                                          {c.flag} {c.code}
-                                      </SelectItem>
-                                  ))}
-                              </SelectContent>
-                          </Select>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2.5">
-                        <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-1">Tarih</Label>
-                        <DatePicker
-                            date={formData.date ? parseISO(formData.date) : undefined}
-                            setDate={(d) => setFormData(p => ({ ...p, date: d ? d.toISOString().split('T')[0] : "" }))}
-                            placeholder="GG.AA.YYYY"
-                            className="h-14 rounded-2xl bg-muted/30 border-border/20 font-bold"
-                        />
-                    </div>
-
-                    <div className="space-y-2.5">
-                        <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-1">Açıklama</Label>
-                        <Input 
-                            placeholder="Notlar..." 
-                            value={formData.description}
-                            onChange={(e) => setFormData(p => ({ ...p, description: e.target.value }))}
-                            className="bg-muted/30 border-border/20 h-14 rounded-2xl font-bold"
-                        />
-                    </div>
-                </div>
-              </div>
-              <DialogFooter className="pt-4">
-                <Button 
-                    onClick={handleSave}
-                    disabled={loading}
-                    className="w-full bg-primary h-14 rounded-[24px] font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
-                >
-                    {loading ? "İŞLENİYOR..." : "KAYDI TAMAMLA"}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
         </motion.div>
       </div>
 
