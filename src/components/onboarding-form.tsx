@@ -19,7 +19,6 @@ function getMaxDate() {
 }
 
 const schema = z.object({
-  username: z.string().min(3, "En az 3 karakter").regex(/^[a-zA-Z0-9_]+$/, "Sadece harf, rakam ve alt tire (_) kullanılabilir"),
   firstName: z.string().min(2, "En az 2 karakter"),
   lastName:  z.string().min(2, "En az 2 karakter"),
   birthDate: z.string().refine(v => {
@@ -159,7 +158,7 @@ export function OnboardingForm() {
   const form = useForm<F>({
     resolver: zodResolver(schema) as any,
     defaultValues: {
-      username:"", firstName:"", lastName:"", birthDate:"", gender:undefined, currency:"TRY", country:"",
+      firstName:"", lastName:"", birthDate:"", gender:undefined, currency:"TRY", country:"",
       incomes:  [{ type:"Maaş", amount:0, date:new Date().toISOString().split("T")[0], description:"" }],
       expenses: [{ type:"Ev Kirası / İpotek", amount:0, date:new Date().toISOString().split("T")[0], isRecurring:true, description:"" }],
       interests: []
@@ -213,7 +212,7 @@ export function OnboardingForm() {
 
   const nextStep = async () => {
     const fields: (keyof F)[][] = [
-      ["username","firstName","lastName","birthDate","gender"],
+      ["firstName","lastName","birthDate","gender"],
       ["currency","country"],
       ["incomes"],
       ["expenses"],
@@ -298,15 +297,6 @@ export function OnboardingForm() {
             {/* STEP 1: Profil Bilgileri */}
             {step===1&&(
               <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] uppercase tracking-widest">
-                    Kullanıcı Adı <span className="text-destructive">*</span>
-                  </Label>
-                  <Input {...form.register("username")} placeholder="Kullanıcı adınız (Örn: ali_yilmaz)"
-                    className={cn("h-12 rounded-2xl bg-[#faf9f6] dark:bg-[#120d0a] border-[#dbc2b0]/50 dark:border-[#887364]/40 focus:border-[#8C5000] dark:focus:border-[#ffb874] font-semibold text-foreground placeholder:text-muted-foreground/50",errors.username&&"border-destructive bg-destructive/10")}/>
-                  {errors.username&&<p className="text-[10px] font-bold text-destructive flex items-center gap-1"><AlertCircle className="h-3 w-3"/>{errors.username?.message as string}</p>}
-                </div>
-
                 <div className="grid grid-cols-2 gap-4">
                   {(["firstName","lastName"] as const).map(f=>(
                     <div key={f} className="space-y-2">
