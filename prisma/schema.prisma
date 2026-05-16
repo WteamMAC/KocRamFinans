@@ -60,6 +60,7 @@ model User {
   receivedMessages Message[] @relation("ReceivedMessages")
   blocking         UserBlock[] @relation("Blocker")
   blockedBy        UserBlock[] @relation("Blocked")
+  hasCompletedTour Boolean  @default(false)
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

@@ -94,11 +94,11 @@ export function AssetForm({ activeTab, onAdd, onCancel, loading, error, defaultA
   };
 
   return (
-    <div className="w-full bg-card border border-border/20 shadow-2xl rounded-[32px] overflow-hidden animate-in zoom-in-95 duration-300">
+    <div className="w-full bg-card/95 backdrop-blur-xl border border-border/20 shadow-2xl rounded-[32px] overflow-hidden animate-in zoom-in-95 duration-300">
       <div className="grid grid-cols-1 md:grid-cols-12">
         {/* Sol Bilgi & İkon Sütunu */}
         {/* Sol Bilgi & İkon Sütunu */}
-        <div className="md:col-span-4 bg-muted/60 dark:bg-muted/30 p-8 md:p-10 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-border/40 relative overflow-hidden">
+        <div className="hidden md:flex md:col-span-4 bg-muted/60 dark:bg-muted/30 p-10 flex-col items-center justify-center border-r border-border/40 relative overflow-hidden">
           {/* Yuvarlak İkon Çerçevesi */}
           <div className="w-20 h-20 rounded-full bg-primary/10 text-primary flex items-center justify-center shadow-sm mb-6 transition-transform hover:scale-105 duration-300">
             {activeTab === "financial" ? (
@@ -125,7 +125,7 @@ export function AssetForm({ activeTab, onAdd, onCancel, loading, error, defaultA
         </div>
 
         {/* Sağ Form Sütunu */}
-        <div className="md:col-span-8 p-8 md:p-12 flex flex-col justify-between bg-card">
+        <div className="col-span-1 md:col-span-8 p-8 md:p-12 flex flex-col justify-between bg-card">
           <div>
             {/* Üst Başlık & Kapatma Butonu */}
             <div className="flex justify-between items-center pb-6 mb-8 border-b border-border/10">
@@ -397,7 +397,8 @@ export function AssetForm({ activeTab, onAdd, onCancel, loading, error, defaultA
 
             {error && <div className="mt-6 p-4 bg-destructive/10 text-rose-500/80 rounded-2xl text-sm font-bold border border-destructive/20">{error}</div>}
 
-            <div className="mt-10 flex justify-end">
+            {/* Sticky Save Button Container */}
+            <div className="sticky bottom-0 z-20 mt-10 -mx-8 md:-mx-12 -mb-8 md:-mb-12 px-8 md:px-12 py-6 bg-card/80 backdrop-blur-md border-t border-border/10 flex justify-end">
               <Button
                 onClick={handleSubmit}
                 disabled={loading}
