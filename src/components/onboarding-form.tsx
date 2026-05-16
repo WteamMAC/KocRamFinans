@@ -10,6 +10,9 @@ import { Check, ChevronRight, ChevronLeft, User, Globe, Hash, AlertCircle, Chevr
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { DatePicker } from "@/components/ui/date-picker";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { parseISO } from "date-fns";
 
 const MIN_AGE = 13;
 function getMaxDate() {
@@ -31,13 +34,13 @@ const schema = z.object({
   country:   z.string().min(1, "Ülke seçiniz"),
   incomes:   z.array(z.object({
     type: z.string().min(1, "Gelir türü seçiniz"),
-    amount: z.coerce.number().min(0, "Miktar giriniz"),
+    amount: z.coerce.number().positive("Miktar 0'dan büyük olmalıdır"),
     date: z.string().optional(),
     description: z.string().optional(),
   })),
   expenses:  z.array(z.object({
     type: z.string().min(1, "Gider türü seçiniz"),
-    amount: z.coerce.number().min(0, "Miktar giriniz"),
+    amount: z.coerce.number().positive("Miktar 0'dan büyük olmalıdır"),
     date: z.string().optional(),
     isRecurring: z.boolean().default(true),
     description: z.string().optional(),
@@ -253,7 +256,7 @@ export function OnboardingForm() {
 
   return (
     <div className="w-full max-w-xl mx-auto px-4">
-      <div className="bg-card border border-[#8C5000]/20 dark:border-[#ffb874]/20 rounded-[36px] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-700 transition-colors duration-300">
+      <div className="bg-card border border-[#8C5000]/20 dark:border-[#ffb874]/20 rounded-3xl shadow-2xl overflow-visible animate-in fade-in zoom-in-95 duration-700 transition-colors duration-300">
 
         {/* Yumuşak Sıcak Turuncu Header */}
         <div className="relative px-8 pt-8 pb-6 bg-[#fbf9f4] dark:bg-[#120d0a]/60 border-b border-[#8C5000]/15 dark:border-[#ffb874]/15 overflow-hidden transition-colors duration-300">
@@ -265,10 +268,10 @@ export function OnboardingForm() {
               <div key={s.id} className="flex items-center">
                 <div className={cn("w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs transition-all duration-500",
                   step===s.id?"bg-[#8C5000] dark:bg-[#ffb874] text-white dark:text-[#120d0a] scale-110 shadow-lg shadow-[#8C5000]/30 dark:shadow-black/50":
-                  step>s.id ?"bg-[#36684d] dark:bg-[#b8efcc] text-white dark:text-[#0d442b]":"bg-[#dbc2b0]/30 dark:bg-[#887364]/30 text-[#887364] dark:text-[#dbc2b0]")}>
+                  step>s.id ?"bg-[#b07d4b] dark:bg-[#ffb874]/80 text-white dark:text-[#120d0a]":"bg-[#dbc2b0]/30 dark:bg-[#887364]/30 text-[#887364] dark:text-[#dbc2b0]")}>
                   {step>s.id?<Check className="w-3.5 h-3.5"/>:s.id}
                 </div>
-                {i<STEPS.length-1&&<div className={cn("w-6 sm:w-8 h-0.5 mx-1.5 rounded-full transition-all duration-500",step>s.id?"bg-[#36684d] dark:bg-[#b8efcc]":"bg-[#dbc2b0]/40 dark:bg-[#887364]/30")}/>}
+                {i<STEPS.length-1&&<div className={cn("w-6 sm:w-8 h-0.5 mx-1.5 rounded-full transition-all duration-500",step>s.id?"bg-[#b07d4b] dark:bg-[#ffb874]/80":"bg-[#dbc2b0]/40 dark:bg-[#887364]/30")}/>}
               </div>
             ))}
           </div>
@@ -284,8 +287,8 @@ export function OnboardingForm() {
         {/* Content */}
         <div className="p-8 bg-card transition-colors duration-300">
           {dbError && (
-            <div className="mb-6 p-4 rounded-2xl bg-destructive/10 border border-destructive/20 text-destructive text-xs font-bold flex items-center gap-2 animate-in fade-in duration-300">
-              <AlertCircle className="h-5 w-5 flex-shrink-0 text-destructive" />
+            <div className="mb-6 p-4 rounded-2xl bg-destructive/10 border border-destructive/20 text-rose-500/80 text-xs font-bold flex items-center gap-2 animate-in fade-in duration-300">
+              <AlertCircle className="h-5 w-5 flex-shrink-0 text-rose-500/80" />
               <div>
                 <p className="font-extrabold">Kayıt Hatası</p>
                 <p className="font-normal opacity-90">{dbError}</p>
@@ -300,28 +303,38 @@ export function OnboardingForm() {
                 <div className="grid grid-cols-2 gap-4">
                   {(["firstName","lastName"] as const).map(f=>(
                     <div key={f} className="space-y-2">
-                      <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] uppercase tracking-widest">
-                        {f==="firstName"?"Ad":"Soyad"} <span className="text-destructive">*</span>
+                      <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] uppercase tracking-widest px-2 mb-1.5 block">
+                        {f==="firstName"?"Ad":"Soyad"} <span className="text-rose-500/80">*</span>
                       </Label>
                       <Input {...form.register(f)} placeholder={f==="firstName"?"Adınız":"Soyadınız"}
-                        className={cn("h-12 rounded-2xl bg-[#faf9f6] dark:bg-[#120d0a] border-[#dbc2b0]/50 dark:border-[#887364]/40 focus:border-[#8C5000] dark:focus:border-[#ffb874] font-semibold text-foreground placeholder:text-muted-foreground/50",errors[f]&&"border-destructive bg-destructive/10")}/>
-                      {errors[f]&&<p className="text-[10px] font-bold text-destructive flex items-center gap-1"><AlertCircle className="h-3 w-3"/>{errors[f]?.message as string}</p>}
+                        className={cn("h-12 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] border-[#dbc2b0]/50 dark:border-[#887364]/40 focus:border-[#8C5000] dark:focus:border-[#ffb874] font-semibold text-foreground placeholder:text-muted-foreground/50",errors[f]&&"border-destructive bg-destructive/10")}/>
+                      {errors[f]&&<p className="text-[10px] font-bold text-rose-500/80 flex items-center gap-1 px-2"><AlertCircle className="h-3 w-3"/>{errors[f]?.message as string}</p>}
                     </div>
                   ))}
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] uppercase tracking-widest">
-                    Doğum Tarihi <span className="text-destructive">*</span>
+                  <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] uppercase tracking-widest px-2 mb-1.5 block">
+                    Doğum Tarihi <span className="text-rose-500/80">*</span>
                   </Label>
-                  <Input type="date" {...form.register("birthDate")} max={getMaxDate()}
-                    className={cn("h-12 rounded-2xl bg-[#faf9f6] dark:bg-[#120d0a] border-[#dbc2b0]/50 dark:border-[#887364]/40 focus:border-[#8C5000] dark:focus:border-[#ffb874] font-semibold text-foreground",errors.birthDate&&"border-destructive bg-destructive/10")}/>
-                  {errors.birthDate&&<p className="text-[10px] font-bold text-destructive flex items-center gap-1"><AlertCircle className="h-3 w-3"/>{errors.birthDate.message}</p>}
+                  <Controller
+                    name="birthDate"
+                    control={form.control}
+                    render={({ field }) => (
+                      <DatePicker
+                        date={field.value ? parseISO(field.value) : undefined}
+                        setDate={(d) => field.onChange(d ? d.toISOString().split("T")[0] : "")}
+                        placeholder="GG.AA.YYYY"
+                        className={cn(errors.birthDate && "border-destructive")}
+                      />
+                    )}
+                  />
+                  {errors.birthDate&&<p className="text-[10px] font-bold text-rose-500/80 flex items-center gap-1 px-2"><AlertCircle className="h-3 w-3"/>{errors.birthDate.message}</p>}
                 </div>
 
                 <div className="space-y-3">
-                  <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] uppercase tracking-widest">
-                    Cinsiyet <span className="text-destructive">*</span>
+                  <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] uppercase tracking-widest px-2 mb-1.5 block">
+                    Cinsiyet <span className="text-rose-500/80">*</span>
                   </Label>
                   <div className="grid grid-cols-2 gap-4">
                     {[
@@ -331,9 +344,9 @@ export function OnboardingForm() {
                       const isActive = selectedGender===g.v;
                       return (
                         <button key={g.v} type="button" onClick={()=>handleGender(g.v as F["gender"])}
-                          className={cn("relative p-5 rounded-3xl border transition-all duration-300 overflow-hidden font-bold flex flex-col items-center justify-center",
+                          className={cn("relative p-5 rounded-2xl border transition-all duration-300 overflow-hidden font-bold flex flex-col items-center justify-center",
                             isActive?"bg-[#8C5000] dark:bg-[#ffb874] text-white dark:text-[#120d0a] border-[#8C5000] dark:border-[#ffb874] shadow-lg scale-[1.03]":"bg-[#faf9f6] dark:bg-[#120d0a] border-[#dbc2b0]/40 dark:border-[#887364]/40 text-[#5a3100] dark:text-[#dbc2b0] hover:border-[#8C5000]/40 hover:scale-[1.01] text-xs font-black")}>
-                          {isActive&&genderAnim&&<span className="absolute inset-0 rounded-3xl bg-white/30 dark:bg-black/20 animate-ping"/>}
+                          {isActive&&genderAnim&&<span className="absolute inset-0 rounded-2xl bg-white/30 dark:bg-black/20 animate-ping"/>}
                           <span className="text-3xl block mb-2">{g.emoji}</span>
                           <span className="text-sm font-black">{g.label}</span>
                           {isActive&&<span className="absolute top-3 right-3 w-5 h-5 rounded-full bg-white/30 dark:bg-black/20 flex items-center justify-center"><Check className="w-3.5 h-3.5"/></span>}
@@ -341,7 +354,7 @@ export function OnboardingForm() {
                       );
                     })}
                   </div>
-                  {errors.gender&&<p className="text-[10px] font-bold text-destructive flex items-center gap-1"><AlertCircle className="h-3 w-3"/>{errors.gender.message}</p>}
+                  {errors.gender&&<p className="text-[10px] font-bold text-rose-500/80 flex items-center gap-1 px-2"><AlertCircle className="h-3 w-3"/>{errors.gender.message}</p>}
                 </div>
               </div>
             )}
@@ -350,7 +363,7 @@ export function OnboardingForm() {
             {step===2&&(
               <div className="space-y-7 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <div className="space-y-3">
-                  <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] uppercase tracking-widest">Para Birimi <span className="text-destructive">*</span></Label>
+                  <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] uppercase tracking-widest mb-1.5 block">Para Birimi <span className="text-rose-500/80">*</span></Label>
                   <Controller name="currency" control={form.control} render={({field})=>(
                     <div className="space-y-3">
                       <div className="grid grid-cols-3 gap-3">
@@ -367,77 +380,88 @@ export function OnboardingForm() {
                           );
                         })}
                       </div>
-                      <button type="button" onClick={()=>setShowOtherCur(v=>!v)}
-                        className={cn("w-full flex items-center justify-between px-5 py-3.5 rounded-2xl border text-sm font-extrabold transition-all",
-                          showOtherCur||OTHER_CURRENCIES.some(c=>c.code===field.value)
-                            ?"bg-[#8C5000]/10 border-[#8C5000]/30 text-[#8C5000] dark:text-[#ffb874]":"bg-[#faf9f6] dark:bg-[#120d0a] border-[#dbc2b0]/40 text-[#887364] dark:text-[#dbc2b0] hover:border-[#8C5000]/30")}>
-                        <span>
-                          {OTHER_CURRENCIES.find(c=>c.code===field.value)
-                            ? `${OTHER_CURRENCIES.find(c=>c.code===field.value)!.flag} ${OTHER_CURRENCIES.find(c=>c.code===field.value)!.label}`
-                            : "Diğer para birimi..."}
-                        </span>
-                        <ChevronDown className={cn("w-4 h-4 transition-transform",showOtherCur&&"rotate-180")}/>
-                      </button>
-                      {showOtherCur&&(
-                        <div className="grid grid-cols-2 gap-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                          {OTHER_CURRENCIES.map(c=>{
-                            const isActive=field.value===c.code;
-                            return (
-                              <button key={c.code} type="button" onClick={()=>{field.onChange(c.code);}}
-                                className={cn("flex items-center gap-3 p-3.5 rounded-2xl border text-left transition-all font-bold",
-                                  isActive?"bg-[#8C5000] dark:bg-[#ffb874] text-white dark:text-[#120d0a] border-[#8C5000] dark:border-[#ffb874] shadow":"bg-[#faf9f6] dark:bg-[#120d0a] border-[#dbc2b0]/40 hover:border-[#8C5000]/30")}>
-                                <span className="text-xl">{c.flag}</span>
-                                <div>
-                                  <div className={cn("text-xs font-black",isActive?"text-white dark:text-[#120d0a]":"text-[#5a3100] dark:text-[#fbf9f4]")}>{c.code}</div>
-                                  <div className={cn("text-[10px]",isActive?"text-white/80 dark:text-[#120d0a]/80":"text-[#887364] dark:text-[#dbc2b0]")}>{c.label}</div>
-                                </div>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
+                      <div className="relative">
+                        <button type="button" onClick={()=>setShowOtherCur(v=>!v)}
+                          className={cn("w-full flex items-center justify-between px-5 py-3.5 rounded-2xl border text-sm font-extrabold transition-all",
+                            showOtherCur||OTHER_CURRENCIES.some(c=>c.code===field.value)
+                              ?"bg-[#8C5000]/10 border-[#8C5000]/30 text-[#8C5000] dark:text-[#ffb874]":"bg-[#faf9f6] dark:bg-[#120d0a] border-[#dbc2b0]/40 text-[#887364] dark:text-[#dbc2b0] hover:border-[#8C5000]/30")}>
+                          <span>
+                            {OTHER_CURRENCIES.find(c=>c.code===field.value)
+                              ? `${OTHER_CURRENCIES.find(c=>c.code===field.value)!.flag} ${OTHER_CURRENCIES.find(c=>c.code===field.value)!.label}`
+                              : "Diğer para birimi..."}
+                          </span>
+                          <ChevronDown className={cn("w-4 h-4 transition-transform",showOtherCur&&"rotate-180")}/>
+                        </button>
+                        {showOtherCur&&(
+                          <div className="absolute top-full left-0 right-0 mt-2 z-50 p-2 bg-card border border-border/30 rounded-2xl shadow-2xl grid grid-cols-2 gap-2 max-h-60 overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
+                            {OTHER_CURRENCIES.map(c=>{
+                              const isActive=field.value===c.code;
+                              return (
+                                <button key={c.code} type="button" onClick={()=>{field.onChange(c.code); setShowOtherCur(false);}}
+                                  className={cn("flex items-center gap-3 p-3.5 rounded-2xl border text-left transition-all font-bold",
+                                    isActive?"bg-[#8C5000] dark:bg-[#ffb874] text-white dark:text-[#120d0a] border-[#8C5000] dark:border-[#ffb874] shadow":"bg-[#faf9f6] dark:bg-[#120d0a] border-[#dbc2b0]/40 hover:border-[#8C5000]/30")}>
+                                  <span className="text-xl">{c.flag}</span>
+                                  <div>
+                                    <div className={cn("text-xs font-black",isActive?"text-white dark:text-[#120d0a]":"text-[#5a3100] dark:text-[#fbf9f4]")}>{c.code}</div>
+                                    <div className={cn("text-[10px]",isActive?"text-white/80 dark:text-[#120d0a]/80":"text-[#887364] dark:text-[#dbc2b0]")}>{c.label}</div>
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}/>
                 </div>
 
                 <div className="space-y-3">
-                  <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] uppercase tracking-widest">Kıta / Bölge <span className="text-destructive">*</span></Label>
+                  <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] uppercase tracking-widest mb-1.5 block">Kıta / Bölge <span className="text-rose-500/80">*</span></Label>
                   <Controller name="country" control={form.control} render={({field})=>(
                     <div className="space-y-3">
-                      <div className="grid grid-cols-2 gap-2">
-                        {REGIONS.map(r=>{
-                          const active=selectedRegion===r.id;
-                          const hasSelected=r.countries.some(c=>c.code===field.value);
-                          return (
-                            <button key={r.id} type="button"
-                              onClick={()=>setSelectedRegion(active?null:r.id)}
-                              className={cn("p-3.5 rounded-2xl border text-center text-xs font-bold transition-all duration-200",
-                                active||hasSelected?"bg-[#8C5000] dark:bg-[#ffb874] text-white dark:text-[#120d0a] border-[#8C5000] dark:border-[#ffb874] shadow-md scale-[1.02]":"bg-[#faf9f6] dark:bg-[#120d0a] border-[#dbc2b0]/40 hover:border-[#8C5000]/30")}>
-                              <div className="text-2xl mb-1">{r.emoji}</div>
-                              <div className={cn("text-xs font-extrabold",active||hasSelected?"text-white dark:text-[#120d0a]":"text-[#5a3100] dark:text-[#fbf9f4]")}>{r.label}</div>
-                            </button>
-                          );
-                        })}
-                      </div>
-                      {selectedRegion&&(
-                        <div className="grid grid-cols-2 gap-2 animate-in fade-in slide-in-from-top-3 duration-300">
-                          {regionCountries.map(c=>{
-                            const isActive=field.value===c.code;
+                      <div className="relative">
+                        <div className="grid grid-cols-2 gap-2">
+                          {REGIONS.map(r=>{
+                            const active=selectedRegion===r.id;
+                            const hasSelected=r.countries.some(c=>c.code===field.value);
+                            const activeCountry = r.countries.find(c=>c.code===field.value);
                             return (
-                              <button key={c.code} type="button" onClick={()=>field.onChange(c.code)}
-                                className={cn("flex items-center gap-2.5 p-3 rounded-2xl border text-left transition-all duration-200 font-bold",
-                                  isActive?"bg-[#8C5000] dark:bg-[#ffb874] text-white dark:text-[#120d0a] border-[#8C5000] dark:border-[#ffb874] shadow-md scale-[1.02]":"bg-[#faf9f6] dark:bg-[#120d0a] border-[#dbc2b0]/40 hover:border-[#8C5000]/30")}>
-                                <span className="text-lg">{c.flag}</span>
-                                <span className={cn("text-xs font-black",isActive?"text-white dark:text-[#120d0a]":"text-[#5a3100] dark:text-[#fbf9f4]")}>{c.label}</span>
-                                {isActive&&<Check className="w-3.5 h-3.5 ml-auto text-white dark:text-[#120d0a]"/>}
+                              <button key={r.id} type="button"
+                                onClick={()=>setSelectedRegion(active?null:r.id)}
+                                className={cn("p-3.5 rounded-2xl border text-center text-xs font-bold transition-all duration-200",
+                                  active||hasSelected?"bg-[#8C5000] dark:bg-[#ffb874] text-white dark:text-[#120d0a] border-[#8C5000] dark:border-[#ffb874] shadow-md scale-[1.02]":"bg-[#faf9f6] dark:bg-[#120d0a] border-[#dbc2b0]/40 hover:border-[#8C5000]/30")}>
+                                <div className="text-2xl mb-1">{r.emoji}</div>
+                                <div className={cn("text-xs font-extrabold",active||hasSelected?"text-white dark:text-[#120d0a]":"text-[#5a3100] dark:text-[#fbf9f4]")}>
+                                  {hasSelected && !active ? `${activeCountry?.flag} ${activeCountry?.label}` : r.label}
+                                </div>
                               </button>
                             );
                           })}
                         </div>
-                      )}
+                        {selectedRegion&&(
+                          <div className="absolute top-full left-0 right-0 mt-2 z-50 p-2 bg-card border border-border/30 rounded-2xl shadow-2xl grid grid-cols-2 gap-2 max-h-60 overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
+                            <div className="col-span-2 px-3 py-2 border-b border-border/10 flex justify-between items-center">
+                              <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{REGIONS.find(r=>r.id===selectedRegion)?.label}</span>
+                              <button onClick={()=>setSelectedRegion(null)} className="text-[10px] font-bold text-primary hover:underline">Kapat</button>
+                            </div>
+                            {regionCountries.map(c=>{
+                              const isActive=field.value===c.code;
+                              return (
+                                <button key={c.code} type="button" onClick={()=>{field.onChange(c.code); setSelectedRegion(null);}}
+                                  className={cn("flex items-center gap-2.5 p-3 rounded-2xl border text-left transition-all duration-200 font-bold",
+                                    isActive?"bg-[#8C5000] dark:bg-[#ffb874] text-white dark:text-[#120d0a] border-[#8C5000] dark:border-[#ffb874] shadow-md scale-[1.02]":"bg-[#faf9f6] dark:bg-[#120d0a] border-[#dbc2b0]/40 hover:border-[#8C5000]/30")}>
+                                  <span className="text-lg">{c.flag}</span>
+                                  <span className={cn("text-xs font-black",isActive?"text-white dark:text-[#120d0a]":"text-[#5a3100] dark:text-[#fbf9f4]")}>{c.label}</span>
+                                  {isActive&&<Check className="w-3.5 h-3.5 ml-auto text-white dark:text-[#120d0a]"/>}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}/>
-                  {errors.country&&<p className="text-[10px] font-bold text-destructive flex items-center gap-1"><AlertCircle className="h-3 w-3"/>{errors.country.message}</p>}
+                  {errors.country&&<p className="text-[10px] font-bold text-rose-500/80 flex items-center gap-1"><AlertCircle className="h-3 w-3"/>{errors.country.message}</p>}
                 </div>
               </div>
             )}
@@ -456,30 +480,58 @@ export function OnboardingForm() {
                   {incomesField.fields.map((item, i) => (
                     <div key={item.id} className="p-4 rounded-2xl bg-[#faf9f6] dark:bg-[#120d0a] border border-[#dbc2b0]/40 dark:border-[#887364]/40 space-y-3 relative">
                       <div className="flex items-center justify-between gap-3">
-                        <select {...form.register(`incomes.${i}.type`)}
-                          className="flex-1 h-11 px-3 rounded-xl bg-white dark:bg-[#1c140e] border border-[#dbc2b0]/50 dark:border-[#887364]/40 font-bold text-sm text-[#191c1d] dark:text-[#fbf9f4]">
-                          {INCOME_TYPES.map(t=><option key={t} value={t}>{t}</option>)}
-                        </select>
+                        <Controller
+                          name={`incomes.${i}.type`}
+                          control={form.control}
+                          render={({ field }) => (
+                            <Select value={field.value} onValueChange={field.onChange}>
+                              <SelectTrigger className="flex-1 h-11 rounded-xl bg-white dark:bg-[#1c140e]">
+                                <SelectValue placeholder="Gelir türü" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {INCOME_TYPES.map(t => (
+                                  <SelectItem key={t} value={t}>{t}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        />
                         {incomesField.fields.length > 1 && (
-                          <Button type="button" variant="ghost" size="icon" onClick={()=>incomesField.remove(i)} className="text-destructive hover:bg-destructive/10">
+                           <Button type="button" variant="ghost" size="icon" onClick={()=>incomesField.remove(i)} className="text-rose-500 hover:bg-rose-500/10 h-10 w-10 rounded-xl transition-colors">
                             <Trash2 className="w-4 h-4" />
                           </Button>
                         )}
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <div>
-                          <Label className="text-[10px] font-bold text-[#887364] dark:text-[#dbc2b0]">Miktar ({selectedCurrency})</Label>
+                          <Label className="text-[10px] font-bold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Miktar ({selectedCurrency})</Label>
                           <Input type="number" {...form.register(`incomes.${i}.amount`, { valueAsNumber: true })} placeholder="0" className="h-11 rounded-xl bg-white dark:bg-[#1c140e] font-black text-foreground" />
                         </div>
                         <div>
-                          <Label className="text-[10px] font-bold text-[#887364] dark:text-[#dbc2b0]">Tarih</Label>
-                          <Input type="date" {...form.register(`incomes.${i}.date`)} className="h-11 rounded-xl bg-white dark:bg-[#1c140e] font-semibold text-foreground" />
+                          <Label className="text-[10px] font-bold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Tarih</Label>
+                          <Controller
+                            name={`incomes.${i}.date`}
+                            control={form.control}
+                            render={({ field }) => (
+                              <DatePicker
+                                date={field.value ? parseISO(field.value) : undefined}
+                                setDate={(d) => field.onChange(d ? d.toISOString().split("T")[0] : "")}
+                                placeholder="Tarih seç"
+                                className="h-11"
+                              />
+                            )}
+                          />
                         </div>
                         <div>
-                          <Label className="text-[10px] font-bold text-[#887364] dark:text-[#dbc2b0]">Açıklama</Label>
+                          <Label className="text-[10px] font-bold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Açıklama</Label>
                           <Input {...form.register(`incomes.${i}.description`)} placeholder="Örn: Kurum / Şirket" className="h-11 rounded-xl bg-white dark:bg-[#1c140e] font-medium text-foreground" />
                         </div>
                       </div>
+                      {errors.incomes?.[i]?.amount && (
+                        <p className="text-[10px] font-bold text-rose-500/80 mt-1 flex items-center gap-1">
+                          <AlertCircle className="h-3 w-3"/> {errors.incomes[i].amount.message}
+                        </p>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -500,30 +552,58 @@ export function OnboardingForm() {
                   {expensesField.fields.map((item, i) => (
                     <div key={item.id} className="p-4 rounded-2xl bg-[#faf9f6] dark:bg-[#120d0a] border border-[#dbc2b0]/40 dark:border-[#887364]/40 space-y-3 relative">
                       <div className="flex items-center justify-between gap-3">
-                        <select {...form.register(`expenses.${i}.type`)}
-                          className="flex-1 h-11 px-3 rounded-xl bg-white dark:bg-[#1c140e] border border-[#dbc2b0]/50 dark:border-[#887364]/40 font-bold text-sm text-[#191c1d] dark:text-[#fbf9f4]">
-                          {EXPENSE_TYPES.map(t=><option key={t} value={t}>{t}</option>)}
-                        </select>
+                        <Controller
+                          name={`expenses.${i}.type`}
+                          control={form.control}
+                          render={({ field }) => (
+                            <Select value={field.value} onValueChange={field.onChange}>
+                              <SelectTrigger className="flex-1 h-11 rounded-xl bg-white dark:bg-[#1c140e]">
+                                <SelectValue placeholder="Gider türü" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {EXPENSE_TYPES.map(t => (
+                                  <SelectItem key={t} value={t}>{t}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        />
                         {expensesField.fields.length > 1 && (
-                          <Button type="button" variant="ghost" size="icon" onClick={()=>expensesField.remove(i)} className="text-destructive hover:bg-destructive/10">
+                           <Button type="button" variant="ghost" size="icon" onClick={()=>expensesField.remove(i)} className="text-rose-500 hover:bg-rose-500/10 h-10 w-10 rounded-xl transition-colors">
                             <Trash2 className="w-4 h-4" />
                           </Button>
                         )}
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <div>
-                          <Label className="text-[10px] font-bold text-[#887364] dark:text-[#dbc2b0]">Miktar ({selectedCurrency})</Label>
+                          <Label className="text-[10px] font-bold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Miktar ({selectedCurrency})</Label>
                           <Input type="number" {...form.register(`expenses.${i}.amount`, { valueAsNumber: true })} placeholder="0" className="h-11 rounded-xl bg-white dark:bg-[#1c140e] font-black text-foreground" />
                         </div>
                         <div>
-                          <Label className="text-[10px] font-bold text-[#887364] dark:text-[#dbc2b0]">Tarih</Label>
-                          <Input type="date" {...form.register(`expenses.${i}.date`)} className="h-11 rounded-xl bg-white dark:bg-[#1c140e] font-semibold text-foreground" />
+                          <Label className="text-[10px] font-bold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Tarih</Label>
+                          <Controller
+                            name={`expenses.${i}.date`}
+                            control={form.control}
+                            render={({ field }) => (
+                              <DatePicker
+                                date={field.value ? parseISO(field.value) : undefined}
+                                setDate={(d) => field.onChange(d ? d.toISOString().split("T")[0] : "")}
+                                placeholder="Tarih seç"
+                                className="h-11"
+                              />
+                            )}
+                          />
                         </div>
                         <div>
-                          <Label className="text-[10px] font-bold text-[#887364] dark:text-[#dbc2b0]">Açıklama</Label>
+                          <Label className="text-[10px] font-bold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Açıklama</Label>
                           <Input {...form.register(`expenses.${i}.description`)} placeholder="Örn: Kira / Elektrik" className="h-11 rounded-xl bg-white dark:bg-[#1c140e] font-medium text-foreground" />
                         </div>
                       </div>
+                      {errors.expenses?.[i]?.amount && (
+                        <p className="text-[10px] font-bold text-rose-500/80 mt-1 flex items-center gap-1">
+                          <AlertCircle className="h-3 w-3"/> {errors.expenses[i].amount.message}
+                        </p>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -544,7 +624,7 @@ export function OnboardingForm() {
                     placeholder="Özel ilgi alanı ekle ve Boşluk tuşuna bas (Örn: #Kripto #NFT)..."
                     className="h-12 rounded-2xl bg-[#faf9f6] dark:bg-[#120d0a] border-[#8C5000]/40 dark:border-[#ffb874]/40 font-bold text-[#191c1d] dark:text-[#fbf9f4] placeholder:text-[#887364]/60 pr-10 focus:border-[#8C5000] dark:focus:border-[#ffb874] shadow-sm"
                   />
-                  <span className="absolute right-3.5 top-3.5 text-xs font-black text-[#8C5000] dark:text-[#ffb874]">#</span>
+                  <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-black text-[#8C5000] dark:text-[#ffb874]">#</span>
                 </div>
 
                 <div className="flex flex-wrap gap-2.5 pt-2">
@@ -561,24 +641,7 @@ export function OnboardingForm() {
                   })}
                 </div>
 
-                {/* Seçili Özel Hashtag'lerin Gösterimi */}
-                {selectedInterests.length>0&&(
-                  <div className="p-4 bg-[#8C5000]/10 dark:bg-[#ffb874]/10 border border-[#8C5000]/20 rounded-2xl animate-in fade-in duration-300">
-                    <p className="text-[10px] font-black text-[#8C5000] dark:text-[#ffb874] uppercase tracking-widest mb-2.5">{selectedInterests.length} İlgi Alanı Seçildi</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {selectedInterests.map(t => {
-                        const h = HASHTAGS.find(x => x.tag === t);
-                        return (
-                          <button key={t} type="button" onClick={()=>toggleTag(t)} className="group flex items-center gap-1.5 text-xs font-black bg-[#8C5000] dark:bg-[#ffb874] text-white dark:text-[#120d0a] px-3 py-1.5 rounded-xl shadow-sm hover:opacity-90 transition-opacity">
-                            <span>{h ? h.emoji : "🏷️"} #{h ? h.label : t.toUpperCase()}</span>
-                            <span className="text-[10px] opacity-60 group-hover:opacity-100">✕</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-                {errors.interests&&<p className="text-[10px] font-bold text-destructive flex items-center gap-1"><AlertCircle className="h-3 w-3"/>{errors.interests.message}</p>}
+                {errors.interests&&<p className="text-[10px] font-bold text-rose-500/80 flex items-center gap-1"><AlertCircle className="h-3 w-3"/>{errors.interests.message}</p>}
               </div>
             )}
           </form>
@@ -586,16 +649,16 @@ export function OnboardingForm() {
 
         {/* Footer */}
         <div className="flex items-center justify-between px-8 py-5 bg-[#fbf9f4] dark:bg-[#120d0a]/60 border-t border-[#8C5000]/10 dark:border-[#ffb874]/15 transition-colors duration-300">
-          <Button type="button" variant="ghost" onClick={()=>setStep(s=>Math.max(s-1,1))} disabled={step===1||loading} className="h-12 px-6 rounded-2xl font-bold text-[#5a3100] dark:text-[#dbc2b0] hover:bg-[#dbc2b0]/30">
+          <Button type="button" variant="ghost" onClick={()=>setStep(s=>Math.max(s-1,1))} disabled={step===1||loading} className="h-12 px-6 rounded-xl font-bold text-[#5a3100] dark:text-[#dbc2b0] hover:bg-[#dbc2b0]/30">
             <ChevronLeft className="w-4 h-4 mr-1"/> Geri
           </Button>
           {step<5?(
-            <Button type="button" onClick={nextStep} className="h-12 px-8 rounded-2xl bg-gradient-to-r from-[#f18d02] to-[#8C5000] dark:from-[#ffb874] dark:to-[#8C5000] text-white dark:text-[#120d0a] font-extrabold sm:font-black shadow-lg shadow-[#8C5000]/25 hover:scale-[1.02] transition-all">
+            <Button type="button" onClick={nextStep} className="h-12 px-8 rounded-xl bg-gradient-to-r from-[#f18d02] to-[#8C5000] dark:from-[#ffb874] dark:to-[#8C5000] text-white dark:text-[#120d0a] font-extrabold sm:font-black shadow-lg shadow-[#8C5000]/25 hover:scale-[1.02] transition-all">
               Devam Et <ChevronRight className="w-5 h-5 ml-1"/>
             </Button>
           ):(
-            <Button type="button" onClick={form.handleSubmit(onSubmit)} disabled={loading} className="h-12 px-8 sm:px-10 rounded-2xl bg-gradient-to-r from-[#36684d] to-[#1c5036] dark:from-[#b8efcc] dark:to-[#36684d] text-white dark:text-[#0d442b] font-extrabold sm:font-black shadow-xl shadow-[#36684d]/30 hover:scale-[1.03] transition-all">
-              {loading?"Kaydediliyor...":"Kurulumu Tamamla 🚀"}{!loading&&<Check className="w-5 h-5 ml-2"/>}
+            <Button type="button" onClick={form.handleSubmit(onSubmit)} disabled={loading} className="h-12 px-8 sm:px-10 rounded-xl bg-gradient-to-r from-[#b07d4b] to-[#8C5000] dark:from-[#ffb874] dark:to-[#8C5000] text-white dark:text-[#120d0a] font-extrabold sm:font-black shadow-xl shadow-[#8C5000]/30 hover:scale-[1.03] transition-all">
+              {loading?"Kaydediliyor...":"Kurulumu Tamamla"}{!loading&&<Check className="w-5 h-5 ml-2"/>}
             </Button>
           )}
         </div>

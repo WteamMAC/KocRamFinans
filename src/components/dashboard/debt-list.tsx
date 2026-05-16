@@ -13,6 +13,8 @@ import { cn } from "@/lib/utils";
 import { useCurrency, DISPLAY_CURRENCIES_LIST } from "@/context/currency-context";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Cell, PieChart, Pie } from "recharts";
+import { DatePicker } from "@/components/ui/date-picker";
+import { parseISO } from "date-fns";
 
 interface DebtListProps {
   debts: any[];
@@ -134,12 +136,12 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
                 </div>
 
                 <div className="bg-card px-6 py-3 rounded-2xl border border-border/30 shadow-sm flex items-center gap-4 animate-in fade-in slide-in-from-left-4 duration-500 delay-100">
-                    <div className="p-3 bg-emerald-500/10 rounded-xl">
-                      <Clock className="w-6 h-6 text-emerald-600" />
+                    <div className="p-3 bg-primary/10 rounded-xl">
+                      <Clock className="w-6 h-6 text-primary" />
                     </div>
                     <div>
                         <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">Bu Ay Beklenen / Kalan</p>
-                        <p className="text-2xl font-heading font-bold text-emerald-600">
+                        <p className="text-2xl font-heading font-bold text-primary">
                             {formatAmount(currentMonthPaid)} / <span className="text-rose-500">{formatAmount(remainingExpected)}</span>
                         </p>
                     </div>
@@ -239,7 +241,7 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                         <div className="space-y-3">
-                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Borç Türü</Label>
+                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1 mb-1.5 block">Borç Türü</Label>
                             <Select value={formData.type} onValueChange={(v) => setFormData((p) => ({ ...p, type: String(v ?? "") }))}>
                                 <SelectTrigger className="bg-muted border-border/30 h-12 rounded-xl focus:ring-destructive font-bold">
                                     <SelectValue />
@@ -254,7 +256,7 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
                             </Select>
                         </div>
                         <div className="space-y-3">
-                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Toplam Tutar</Label>
+                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1 mb-1.5 block">Toplam Tutar</Label>
                             <div className="flex gap-2">
                               <Input
                                   type="number"
@@ -278,7 +280,7 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
                             </div>
                         </div>
                         <div className="space-y-3">
-                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Taksit Sayısı (Opsiyonel)</Label>
+                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1 mb-1.5 block">Taksit Sayısı (Opsiyonel)</Label>
                                 <Input
                                     type="number"
                                     min="1"
@@ -289,7 +291,7 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
                                 />
                         </div>
                         <div className="space-y-3">
-                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Aylık Faiz Oranı % (Opsiyonel)</Label>
+                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1 mb-1.5 block">Aylık Faiz Oranı % (Opsiyonel)</Label>
                                 <Input
                                     type="number"
                                     step="0.01"
@@ -301,7 +303,7 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
                         </div>
                         {formData.remainingInstallments && Number(formData.remainingInstallments) > 0 ? (
                             <div className="space-y-3">
-                                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Taksit Ödeme Günü (1-31)</Label>
+                                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1 mb-1.5 block">Taksit Ödeme Günü (1-31)</Label>
                                     <Input
                                         type="number"
                                         min="1"
@@ -314,17 +316,17 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
                             </div>
                         ) : (
                             <div className="space-y-3">
-                                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Son Ödeme Tarihi</Label>
-                                    <Input
-                                        type="date"
-                                        value={formData.dueDate}
-                                        onChange={(e) => setFormData(p => ({ ...p, dueDate: e.target.value }))}
-                                        className="bg-muted border-border/30 h-12 rounded-xl focus:ring-destructive font-bold"
-                                    />
+                                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1 mb-1.5 block">Son Ödeme Tarihi</Label>
+                                    <DatePicker
+                                         date={formData.dueDate ? parseISO(formData.dueDate) : undefined}
+                                         setDate={(d) => setFormData(p => ({ ...p, dueDate: d ? d.toISOString().split('T')[0] : "" }))}
+                                         placeholder="GG.AA.YYYY"
+                                         className="h-12"
+                                     />
                             </div>
                         )}
                         <div className="space-y-3">
-                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Açıklama</Label>
+                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1 mb-1.5 block">Açıklama</Label>
                                 <Input
                                     value={formData.description}
                                     onChange={(e) => setFormData(p => ({ ...p, description: e.target.value }))}
@@ -336,7 +338,7 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
                             </p>
                         </div>
                     </div>
-                    {error && <div className="mt-6 p-4 bg-destructive/10 text-destructive rounded-xl text-sm font-medium border border-destructive/20">{error}</div>}
+                    {error && <div className="mt-6 p-4 bg-destructive/10 text-rose-500/80 rounded-xl text-sm font-medium border border-destructive/20">{error}</div>}
                     <div className="mt-8 flex justify-end">
                         <Button
                             onClick={handleAdd}
@@ -555,7 +557,7 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
                             </div>
 
                             <div className="space-y-3">
-                                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Ödenecek Tutar</Label>
+                                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1 mb-1.5 block">Ödenecek Tutar</Label>
                                 <Input
                                     type="number"
                                     value={payModal.amount}

@@ -79,8 +79,8 @@ export default function SlidingAuth() {
                         headerTitle: "text-3xl font-heading font-bold text-foreground mb-2",
                         headerSubtitle: "text-muted-foreground font-medium mb-8",
                         socialButtonsBlockButton: "rounded-xl border-border/30 hover:bg-muted h-12 text-foreground",
-                        formButtonPrimary: "h-12 rounded-xl text-base font-bold bg-primary hover:brightness-110 text-primary-foreground",
-                        formFieldInput: "h-12 rounded-xl bg-background border-border text-foreground",
+                        formButtonPrimary: "h-12 rounded-xl text-base font-bold bg-gradient-to-r from-[#f18d02] to-[#8C5000] hover:brightness-110 active:scale-95 transition-all text-white shadow-lg shadow-[#8C5000]/20 disabled:opacity-70 disabled:brightness-90",
+                        formFieldInput: "h-12 rounded-xl bg-background border-border text-foreground focus:ring-2 focus:ring-[#f18d02]/20",
                         formFieldLabel: "text-foreground",
                         footer: "hidden",
                       }
@@ -118,8 +118,8 @@ export default function SlidingAuth() {
                         headerTitle: "text-3xl font-heading font-bold text-foreground mb-2",
                         headerSubtitle: "text-muted-foreground font-medium mb-8",
                         socialButtonsBlockButton: "rounded-xl border-border/30 hover:bg-muted h-12 text-foreground",
-                        formButtonPrimary: "h-12 rounded-xl text-base font-bold bg-primary hover:brightness-110 text-primary-foreground",
-                        formFieldInput: "h-12 rounded-xl bg-background border-border text-foreground",
+                        formButtonPrimary: "h-12 rounded-xl text-base font-bold bg-gradient-to-r from-[#f18d02] to-[#8C5000] hover:brightness-110 active:scale-95 transition-all text-white shadow-lg shadow-[#8C5000]/20 disabled:opacity-70 disabled:brightness-90",
+                        formFieldInput: "h-12 rounded-xl bg-background border-border text-foreground focus:ring-2 focus:ring-[#f18d02]/20",
                         formFieldLabel: "text-foreground",
                         footer: "hidden",
                       }
