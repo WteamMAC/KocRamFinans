@@ -472,3 +472,44 @@ export async function deleteFixedAsset(id: string) {
     throw new Error(error.message || "Silme işlemi başarısız oldu.");
   }
 }
+/**
+ * Mevcut bir varlığa katkı payı (ekleme) yapar.
+ * BES aylık ödemeleri veya mevduat eklemeleri için kullanılır.
+ */
+export async function addContributionToAsset(id: string, amount: number) {
+  try {
+    const { userId } = await auth();
+    if (!userId) throw new Error("Oturum açmanız gerekiyor.");
+
+    const investment = await prisma.investment.findUnique({
+      where: { id },
+      include: { user: true },
+    });
+
+    if (!investment || investment.user.clerkUserId !== userId) {
+      throw new Error("Varlık bulunamadı veya yetkiniz yok.");
+    }
+
+    const contribution = Number(amount);
+    if (isNaN(contribution) || contribution <= 0) {
+      throw new Error("Geçerli bir tutar girmelisiniz.");
+    }
+
+    const newQuantity = Number(investment.quantity) + contribution;
+
+    await prisma.investment.update({
+      where: { id },
+      data: {
+        quantity: newQuantity,
+        amount: newQuantity * (investment.purchasePrice || 1),
+      },
+    });
+
+    revalidatePath("/dashboard");
+    revalidatePath("/dashboard/assets");
+    return { success: true };
+  } catch (error: any) {
+    console.error("addContributionToAsset error:", error);
+    throw new Error(error.message || "Katkı payı eklenirken bir hata oluştu.");
+  }
+}

@@ -17,6 +17,12 @@ import {
   Receipt,
   Car,
   Home,
+  ArrowRightLeft,
+  Calendar,
+  Layers,
+  Sparkles,
+  Search,
+  Filter
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "next-themes";
@@ -38,6 +44,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useCurrency, DISPLAY_CURRENCIES_LIST } from "@/context/currency-context";
 import { DatePicker } from "@/components/ui/date-picker";
 import { parseISO } from "date-fns";
+import { motion, AnimatePresence } from "framer-motion";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface Transaction {
   id: string;
@@ -101,10 +109,6 @@ export function IncomeExpenseClient({
   useEffect(() => {
     setMounted(true);
   }, []);
-
-  const toggleTheme = () => {
-    setTheme(theme === "dark" ? "light" : "dark");
-  };
 
   const handleRefresh = () => {
     setIsRefreshing(true);
@@ -170,191 +174,136 @@ export function IncomeExpenseClient({
     }
   };
 
+  if (!mounted) return null;
+
   return (
-    <div className="space-y-8 pb-20 max-w-[1440px] mx-auto">
-      {/* Header */}
-      <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
-        <div className="animate-in fade-in slide-in-from-left-4 duration-500">
-          <h1 className="text-3xl md:text-4xl font-heading font-bold text-primary mb-1">Gelir - Gider Analizi</h1>
-          <p className="text-muted-foreground text-base">Nakit akışınızı ve harcama alışkanlıklarınızı takip edin.</p>
-        </div>
-        <div className="flex flex-wrap gap-3 animate-in fade-in slide-in-from-right-4 duration-500">
-          {mounted && (
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={toggleTheme}
-              className="rounded-xl w-10 h-10 shrink-0 text-muted-foreground border-border/30 hover:bg-muted bg-card"
-            >
-              {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-            </Button>
-          )}
+    <div className="space-y-10 pb-20 max-w-[1440px] mx-auto py-6">
+      {/* Premium Header */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+        <motion.div 
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="space-y-2"
+        >
+          <div className="flex items-center gap-3 mb-1">
+            <div className="p-2.5 bg-primary/10 rounded-2xl shadow-inner border border-primary/10">
+              <ArrowRightLeft className="h-6 w-6 text-primary" />
+            </div>
+            <h1 className="text-4xl font-heading font-black text-primary tracking-tight">Gelir - Gider Analizi</h1>
+          </div>
+          <p className="text-muted-foreground font-bold opacity-60 text-sm uppercase tracking-[0.2em] px-1">Finansal Akış ve Nakit Yönetimi</p>
+        </motion.div>
+
+        <motion.div 
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="flex flex-wrap gap-3"
+        >
           <Button
             variant="outline"
             onClick={handleRefresh}
             disabled={isRefreshing}
-            className="rounded-xl px-4 py-2 h-10 text-sm font-semibold text-muted-foreground border-border/30 hover:bg-muted bg-card"
+            className="rounded-2xl h-12 px-6 border-border/20 bg-card/50 backdrop-blur-xl hover:bg-muted/50 transition-all font-black text-xs uppercase tracking-widest"
           >
             <RefreshCw className={cn("mr-2 h-4 w-4", isRefreshing && "animate-spin")} />
-            Yenile
+            {isRefreshing ? "Yenileniyor..." : "Yenile"}
           </Button>
           
           <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-            <DialogTrigger
-              render={
-                <Button className="px-5 py-2 h-10 rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/20 hover:opacity-90 transition-all font-semibold">
-                  <Plus className="w-4 h-4 mr-2" /> İşlem Ekle
-                </Button>
-              }
-            />
-            <DialogContent className="sm:max-w-[500px] rounded-[32px] border-border/30 shadow-2xl bg-card">
+            <DialogTrigger asChild>
+              <Button className="h-12 px-8 rounded-2xl bg-primary text-white shadow-xl shadow-primary/20 hover:scale-[1.02] transition-all font-black text-xs uppercase tracking-widest active:scale-95">
+                <Plus className="w-5 h-5 mr-2" /> İşlem Ekle
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[500px] rounded-[40px] border-border/20 shadow-ambient-high bg-card/90 backdrop-blur-2xl">
               <DialogHeader>
-                <DialogTitle className="text-2xl font-heading font-bold text-primary">Yeni İşlem Ekle</DialogTitle>
+                <DialogTitle className="text-2xl font-heading font-black text-primary tracking-tight">Yeni Finansal Kayıt</DialogTitle>
               </DialogHeader>
-              <div className="grid gap-6 py-6">
-                <div className="flex p-1 bg-muted rounded-2xl border border-border/20">
+              <div className="grid gap-6 py-4">
+                <div className="flex p-1.5 bg-muted/50 rounded-[24px] border border-border/20">
                     <button 
                         onClick={() => setTransactionType("income")}
-                        className={cn("flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all", transactionType === "income" ? "bg-card text-primary shadow-sm" : "text-muted-foreground opacity-60")}
+                        className={cn("flex-1 py-2.5 px-4 rounded-[18px] text-[10px] font-black uppercase tracking-widest transition-all", transactionType === "income" ? "bg-card shadow-lg text-emerald-500" : "text-muted-foreground/60 hover:text-muted-foreground")}
                     >
                         Gelir
                     </button>
                     <button 
                         onClick={() => setTransactionType("expense")}
-                        className={cn("flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all", transactionType === "expense" ? "bg-card text-primary shadow-sm" : "text-muted-foreground opacity-60")}
+                        className={cn("flex-1 py-2.5 px-4 rounded-[18px] text-[10px] font-black uppercase tracking-widest transition-all", transactionType === "expense" ? "bg-card shadow-lg text-rose-500" : "text-muted-foreground/60 hover:text-muted-foreground")}
                     >
                         Gider
                     </button>
                     <button 
                         onClick={() => setTransactionType("debt_payment")}
-                        className={cn("flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all", transactionType === "debt_payment" ? "bg-card text-rose-600 shadow-sm" : "text-muted-foreground opacity-60")}
+                        className={cn("flex-1 py-2.5 px-4 rounded-[18px] text-[10px] font-black uppercase tracking-widest transition-all", transactionType === "debt_payment" ? "bg-card shadow-lg text-blue-500" : "text-muted-foreground/60 hover:text-muted-foreground")}
                     >
                         Borç Öde
                     </button>
                     <button 
                         onClick={() => setTransactionType("new_debt")}
-                        className={cn("flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all", transactionType === "new_debt" ? "bg-card text-rose-600 shadow-sm" : "text-muted-foreground opacity-60")}
+                        className={cn("flex-1 py-2.5 px-4 rounded-[18px] text-[10px] font-black uppercase tracking-widest transition-all", transactionType === "new_debt" ? "bg-card shadow-lg text-orange-500" : "text-muted-foreground/60 hover:text-muted-foreground")}
                     >
                         Borç Al
                     </button>
                 </div>
 
-                <div className="grid gap-4">
+                <div className="grid gap-5">
                     {transactionType === "debt_payment" ? (
-                        <div className="space-y-3">
-                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1 mb-1.5 block">Ödenecek Borç</Label>
+                        <div className="space-y-2.5">
+                            <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-1">Ödenecek Borç</Label>
                             <Select onValueChange={(v) => setFormData(p => ({ ...p, debtId: String(v ?? "") }))}>
-                                <SelectTrigger className="bg-muted border-border/30 h-12 rounded-xl">
+                                <SelectTrigger className="bg-muted/30 border-border/20 h-14 rounded-2xl font-bold">
                                     <SelectValue placeholder="Borç Seçin" />
                                 </SelectTrigger>
-                                <SelectContent className="rounded-xl bg-card">
+                                <SelectContent className="rounded-2xl bg-card font-bold">
                                     {debts.map(debt => (
-                                        <SelectItem key={debt.id} value={debt.id}>
-                                            {debt.description || debt.type} (Kalan: {formatAmount(debt.amount)})
+                                        <SelectItem key={debt.id} value={debt.id} className="rounded-xl m-1">
+                                            {debt.description || debt.type} ({formatAmount(debt.amount)})
                                         </SelectItem>
                                     ))}
-                                    {debts.length === 0 && <SelectItem value="none" disabled>Aktif borç bulunamadı</SelectItem>}
                                 </SelectContent>
                             </Select>
                         </div>
                     ) : (
-                        <div className="space-y-3">
-                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1 mb-1.5 block">Kategori</Label>
+                        <div className="space-y-2.5">
+                            <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-1">Kategori</Label>
                             <Select onValueChange={(v) => setFormData(p => ({ ...p, type: String(v ?? "") }))}>
-                                <SelectTrigger className="bg-muted border-border/30 h-12 rounded-xl">
-                                    <SelectValue placeholder="Kategori Seçin" />
+                                <SelectTrigger className="bg-muted/30 border-border/20 h-14 rounded-2xl font-bold">
+                                    <SelectValue placeholder="Seçiniz..." />
                                 </SelectTrigger>
-                                <SelectContent className="rounded-xl bg-card">
+                                <SelectContent className="rounded-2xl bg-card font-bold">
                                     {transactionType === "income" ? (
-                                        <>
-                                            <SelectItem value="Maaş">Maaş</SelectItem>
-                                            <SelectItem value="Kira Geliri">Kira Geliri</SelectItem>
-                                            <SelectItem value="Yatırım Geliri">Yatırım Geliri</SelectItem>
-                                            <SelectItem value="Freelance">Freelance</SelectItem>
-                                            <SelectItem value="Diğer">Diğer</SelectItem>
-                                        </>
+                                        ["Maaş", "Kira Geliri", "Yatırım Geliri", "Freelance", "Hediye", "Diğer"].map(c => <SelectItem key={c} value={c} className="rounded-xl m-1">{c}</SelectItem>)
                                     ) : transactionType === "new_debt" ? (
-                                        <>
-                                            <SelectItem value="Banka Kredisi">Banka Kredisi</SelectItem>
-                                            <SelectItem value="Kredi Kartı">Kredi Kartı</SelectItem>
-                                            <SelectItem value="Şahsi Borç">Şahsi Borç</SelectItem>
-                                            <SelectItem value="Diğer">Diğer</SelectItem>
-                                        </>
+                                        ["Banka Kredisi", "Kredi Kartı", "Şahsi Borç", "Diğer"].map(c => <SelectItem key={c} value={c} className="rounded-xl m-1">{c}</SelectItem>)
                                     ) : (
-                                        <>
-                                            <SelectItem value="Market">Market</SelectItem>
-                                            <SelectItem value="Kira">Kira</SelectItem>
-                                            <SelectItem value="Fatura">Fatura</SelectItem>
-                                            <SelectItem value="Ulaşım">Ulaşım</SelectItem>
-                                            <SelectItem value="Eğlence">Eğlence</SelectItem>
-                                            <SelectItem value="Diğer">Diğer</SelectItem>
-                                        </>
+                                        ["Market", "Kira", "Fatura", "Ulaşım", "Eğlence", "Sağlık", "Diğer"].map(c => <SelectItem key={c} value={c} className="rounded-xl m-1">{c}</SelectItem>)
                                     )}
                                 </SelectContent>
                             </Select>
                         </div>
                     )}
 
-                    {transactionType === "new_debt" && (
-                        <>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-3">
-                                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1 mb-1.5 block">Taksit Sayısı</Label>
-                                    <Input 
-                                        type="number" 
-                                        placeholder="Örn: 12" 
-                                        value={formData.remainingInstallments}
-                                        onChange={(e) => setFormData(p => ({ ...p, remainingInstallments: e.target.value }))}
-                                        className="bg-muted border-border/30 h-12 rounded-xl"
-                                    />
-                                </div>
-                                <div className="space-y-3">
-                                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1 mb-1.5 block">Aylık Faiz (%)</Label>
-                                    <Input 
-                                        type="number" 
-                                        step="0.01"
-                                        placeholder="Örn: 3.50" 
-                                        value={formData.interestRate}
-                                        onChange={(e) => setFormData(p => ({ ...p, interestRate: e.target.value }))}
-                                        className="bg-muted border-border/30 h-12 rounded-xl"
-                                    />
-                                </div>
-                            </div>
-                            <div className="space-y-3">
-                                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1 mb-1.5 block">Ödeme Günü (1-31)</Label>
-                                <Input 
-                                    type="number" 
-                                    min="1"
-                                    max="31"
-                                    placeholder="Her ayın hangi günü ödenecek?" 
-                                    value={formData.paymentDay}
-                                    onChange={(e) => setFormData(p => ({ ...p, paymentDay: e.target.value }))}
-                                    className="bg-muted border-border/30 h-12 rounded-xl"
-                                />
-                            </div>
-                        </>
-                    )}
-
                     <div className="grid grid-cols-3 gap-4">
-                      <div className="col-span-2 space-y-3">
-                          <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1 mb-1.5 block">Tutar</Label>
+                      <div className="col-span-2 space-y-2.5">
+                          <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-1">Tutar</Label>
                           <Input 
                               type="number" 
                               placeholder="0.00" 
                               value={formData.amount}
                               onChange={(e) => setFormData(p => ({ ...p, amount: e.target.value }))}
-                              className="bg-muted border-border/30 h-12 rounded-xl font-bold text-lg"
+                              className="bg-muted/30 border-border/20 h-14 rounded-2xl font-black text-lg"
                           />
                       </div>
-                      <div className="space-y-3">
-                          <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1 mb-1.5 block">Para Birimi</Label>
+                      <div className="space-y-2.5">
+                          <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-1">Birim</Label>
                           <Select value={formData.currency} onValueChange={(v) => setFormData(p => ({ ...p, currency: String(v) }))}>
-                              <SelectTrigger className="bg-muted border-border/30 h-12 rounded-xl font-bold">
+                              <SelectTrigger className="bg-muted/30 border-border/20 h-14 rounded-2xl font-bold">
                                   <SelectValue />
                               </SelectTrigger>
-                              <SelectContent className="rounded-xl bg-card font-bold">
+                              <SelectContent className="rounded-2xl bg-card font-bold">
                                   {DISPLAY_CURRENCIES_LIST.map(c => (
-                                      <SelectItem key={c.code} value={c.code}>
+                                      <SelectItem key={c.code} value={c.code} className="rounded-xl m-1">
                                           {c.flag} {c.code}
                                       </SelectItem>
                                   ))}
@@ -363,344 +312,409 @@ export function IncomeExpenseClient({
                       </div>
                     </div>
 
-                    <div className="space-y-3">
-                        <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1 mb-1.5 block">İşlem Tarihi</Label>
+                    <div className="space-y-2.5">
+                        <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-1">Tarih</Label>
                         <DatePicker
                             date={formData.date ? parseISO(formData.date) : undefined}
                             setDate={(d) => setFormData(p => ({ ...p, date: d ? d.toISOString().split('T')[0] : "" }))}
                             placeholder="GG.AA.YYYY"
-                            className="h-12"
+                            className="h-14 rounded-2xl bg-muted/30 border-border/20 font-bold"
                         />
                     </div>
 
-                    <div className="space-y-3">
-                        <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1 mb-1.5 block">Açıklama</Label>
+                    <div className="space-y-2.5">
+                        <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-1">Açıklama</Label>
                         <Input 
-                            placeholder="İşlem detayları..." 
+                            placeholder="Notlar..." 
                             value={formData.description}
                             onChange={(e) => setFormData(p => ({ ...p, description: e.target.value }))}
-                            className="bg-muted border-border/30 h-12 rounded-xl"
+                            className="bg-muted/30 border-border/20 h-14 rounded-2xl font-bold"
                         />
                     </div>
-
-                    {(transactionType === "income" || transactionType === "expense") && (
-                        <div className="space-y-4">
-                            <div className="flex items-center space-x-3 bg-muted/50 p-4 rounded-2xl border border-border/20 transition-all hover:bg-muted">
-                                <Checkbox 
-                                    id="isRecurring" 
-                                    checked={formData.isRecurring} 
-                                    onCheckedChange={(checked) => setFormData(p => ({ ...p, isRecurring: !!checked }))}
-                                    className="border-primary data-[state=checked]:bg-primary"
-                                />
-                                <Label htmlFor="isRecurring" className="text-sm font-semibold text-muted-foreground cursor-pointer select-none">
-                                    Düzenli (Her Ay Tekrarlanan) {transactionType === "income" ? "Gelir" : "Gider"}
-                                </Label>
-                            </div>
-
-                            {formData.isRecurring && (
-                                <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
-                                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1 mb-1.5 block">Ayın Kaçıncı Günü? (1-31)</Label>
-                                    <Input 
-                                        type="number" 
-                                        min="1"
-                                        max="31"
-                                        placeholder="Örn: 15" 
-                                        value={formData.dueDate}
-                                        onChange={(e) => setFormData(p => ({ ...p, dueDate: e.target.value }))}
-                                        className="bg-muted border-border/30 h-12 rounded-xl"
-                                    />
-                                </div>
-                            )}
-                        </div>
-                    )}
                 </div>
               </div>
-              <DialogFooter>
+              <DialogFooter className="pt-4">
                 <Button 
                     onClick={handleSave}
                     disabled={loading}
-                    className="w-full bg-primary hover:bg-primary/90 text-primary-foreground h-12 rounded-xl font-bold shadow-lg"
+                    className="w-full bg-primary h-14 rounded-[24px] font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
                 >
-                    {loading ? "Kaydediliyor..." : "İşlemi Kaydet"}
+                    {loading ? "İŞLENİYOR..." : "KAYDI TAMAMLA"}
                 </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
-        </div>
-      </header>
+        </motion.div>
+      </div>
 
-      {/* Summary Cards */}
-      <section className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">
-        <div className="bg-card p-8 rounded-2xl shadow-ambient-low border border-border/20 relative overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full -mr-8 -mt-8"></div>
-          <div className="flex items-center gap-3 mb-4 relative z-10">
-            <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest opacity-70">Toplam Gelir</span>
-            <div className="bg-primary/10 p-2 rounded-xl">
-              <TrendingUp className="w-5 h-5 text-primary" />
-            </div>
-          </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-heading font-bold text-foreground">{formatAmount(totalIncome)}</span>
-          </div>
-          <p className="text-primary text-[13px] font-semibold mt-4 flex items-center gap-1">
-            <ArrowUpRight className="w-4 h-4" /> Pozitif nakit akışı
-          </p>
-        </div>
-
-        <div className="bg-card p-8 rounded-2xl shadow-ambient-low border border-border/20 relative overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-rose-500/5 rounded-full -mr-8 -mt-8"></div>
-          <div className="flex items-center gap-3 mb-4 relative z-10">
-            <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest opacity-70">Toplam Gider</span>
-            <div className="bg-rose-500/10 p-2 rounded-xl">
-              <TrendingDown className="w-5 h-5 text-rose-600" />
-            </div>
-          </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-heading font-bold text-foreground">{formatAmount(totalExpense)}</span>
-          </div>
-          <p className="text-rose-600 text-[13px] font-semibold mt-4 flex items-center gap-1">
-            <ArrowDownRight className="w-4 h-4" /> Bütçe takibi
-          </p>
-        </div>
-
-        <div className="bg-card p-8 rounded-2xl shadow-ambient-low border border-border/20 relative overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 delay-300">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full -mr-8 -mt-8"></div>
-          <div className="flex items-center gap-3 mb-4 relative z-10">
-            <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest opacity-70">Net Durum (Güncel)</span>
-            <div className="bg-primary/10 p-2 rounded-xl">
-              <Wallet className="w-5 h-5 text-primary" />
-            </div>
-          </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-heading font-bold text-foreground">{formatAmount(netBalance)}</span>
-          </div>
-          <div className="mt-4 pt-4 border-t border-border/10">
-            <div className="flex justify-between items-center text-[11px] font-bold">
-              <span className="text-muted-foreground uppercase tracking-wider">Ay Sonu Beklenen:</span>
-              <span className={cn(projectedBalance >= 0 ? "text-emerald-500" : "text-rose-500")}>{formatAmount(projectedBalance)}</span>
-            </div>
-          </div>
-        </div>
+      {/* Hero Stats */}
+      <section className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        {[
+          { 
+            label: "Toplam Gelir", 
+            val: totalIncome, 
+            icon: TrendingUp, 
+            color: "text-emerald-500", 
+            bg: "bg-emerald-500/10",
+            border: "border-emerald-500/20",
+            msg: "Pozitif Akış"
+          },
+          { 
+            label: "Toplam Gider", 
+            val: totalExpense, 
+            icon: TrendingDown, 
+            color: "text-rose-500", 
+            bg: "bg-rose-500/10",
+            border: "border-rose-500/20",
+            msg: "Bütçe Kontrolü"
+          },
+          { 
+            label: "Net Bakiye", 
+            val: netBalance, 
+            icon: Wallet, 
+            color: "text-primary", 
+            bg: "bg-primary/10",
+            border: "border-primary/20",
+            msg: projectedBalance >= 0 ? "Kârlı Durum" : "Bütçe Aşımı"
+          }
+        ].map((stat, i) => (
+          <motion.div
+            key={stat.label}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.1 }}
+          >
+            <Card className={cn(
+              "border-border/20 shadow-ambient-medium rounded-[32px] p-8 relative overflow-hidden bg-card/60 backdrop-blur-xl group hover:shadow-ambient-high transition-all duration-500",
+              stat.border
+            )}>
+              <div className={cn("absolute top-0 right-0 w-32 h-32 rounded-full -mr-12 -mt-12 opacity-40 transition-transform group-hover:scale-110", stat.bg)} />
+              <div className="flex items-center justify-between mb-4 relative z-10">
+                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">{stat.label}</p>
+                <div className={cn("p-3 rounded-2xl shadow-inner", stat.bg, stat.color)}>
+                  <stat.icon className="w-6 h-6" />
+                </div>
+              </div>
+              <p className={cn("text-3xl font-heading font-black tracking-tight", stat.color)}>{formatAmount(stat.val)}</p>
+              <div className="mt-6 flex items-center justify-between">
+                <span className={cn("px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest", stat.bg, stat.color)}>
+                  {stat.msg}
+                </span>
+                {stat.label === "Net Bakiye" && (
+                  <p className="text-[10px] font-bold text-muted-foreground opacity-60">
+                    Beklenen: <span className={cn("font-black", projectedBalance >= 0 ? "text-emerald-500" : "text-rose-500")}>{formatAmount(projectedBalance)}</span>
+                  </p>
+                )}
+              </div>
+            </Card>
+          </motion.div>
+        ))}
       </section>
 
-      {/* Main Analytics Grid */}
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 mb-8">
-        <div className="xl:col-span-8 space-y-8">
-          {/* Comparison Chart */}
-          <div className="bg-card p-8 rounded-2xl shadow-ambient-low border border-border/20 animate-in fade-in zoom-in-95 duration-700">
-            <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-10 gap-4">
-              <h3 className="text-xl font-heading font-bold text-foreground">Gelir & Gider Karşılaştırması</h3>
-              <div className="flex gap-4">
-                <span className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-                  <span className="w-3 h-3 rounded-full bg-primary/60"></span> Gelir
-                </span>
-                <span className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-                  <span className="w-3 h-3 rounded-full bg-primary"></span> Gider
-                </span>
+      {/* Comparison & Category Breakdown */}
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
+        {/* Main Chart */}
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.98 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6 }}
+          className="xl:col-span-8"
+        >
+          <Card className="border-border/20 shadow-ambient-high rounded-[40px] p-10 bg-card/40 backdrop-blur-3xl relative overflow-hidden h-full min-h-[500px]">
+            <div className="absolute top-0 right-0 w-96 h-96 bg-primary/5 rounded-full blur-[100px] -mr-32 -mt-32 pointer-events-none" />
+            
+            <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-12 gap-6 relative z-10">
+              <div className="space-y-1">
+                <h3 className="text-2xl font-heading font-black text-foreground flex items-center gap-3">
+                  <Layers className="h-6 w-6 text-primary" /> Analitik Görünüm
+                </h3>
+                <p className="text-xs text-muted-foreground font-bold opacity-60 uppercase tracking-widest">Son 6 Aylık Finansal Karşılaştırma</p>
+              </div>
+              <div className="flex gap-6">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-emerald-500/30 border border-emerald-500/50" />
+                  <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Gelir</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-primary border border-primary" />
+                  <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Gider</span>
+                </div>
               </div>
             </div>
-            <div className="h-72 flex items-end justify-between gap-2 sm:gap-6 px-2 sm:px-4 border-b border-border/20 pb-4">
-              {monthlyData.slice().reverse().map((d, i) => {
-                const incHeight = maxMonthly > 0 ? Math.max((d.income / maxMonthly) * 100, d.income > 0 ? 5 : 0) : 0;
-                const expHeight = maxMonthly > 0 ? Math.max((d.expense / maxMonthly) * 100, d.expense > 0 ? 5 : 0) : 0;
-                const isCurrentMonth = i === monthlyData.length - 1;
 
-                return (
-                  <div key={i} className="flex-1 flex flex-col items-center gap-4 group">
-                    <div className="w-full flex gap-1 sm:gap-1.5 items-end h-48 relative">
-                      <div className={cn("flex-1 rounded-t-md transition-all duration-500", isCurrentMonth ? "bg-primary/80 shadow-lg shadow-primary/20" : "bg-primary/30 group-hover:bg-primary/50")} style={{ height: `${incHeight}%` }}></div>
-                      <div className={cn("flex-1 rounded-t-md transition-all duration-500", isCurrentMonth ? "bg-primary shadow-lg shadow-primary/20" : "bg-primary/40 group-hover:bg-primary/60")} style={{ height: `${expHeight}%` }}></div>
-                      
-                      <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-card px-3 py-2 rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 whitespace-nowrap text-xs font-bold flex flex-col gap-1 border border-border/30">
-                        <span className="text-primary/80">Gelir: {formatAmount(d.income)}</span>
-                        <span className="text-primary">Gider: {formatAmount(d.expense)}</span>
-                      </div>
-                    </div>
-                    <span className={cn("text-xs", isCurrentMonth ? "font-bold text-foreground" : "font-semibold text-muted-foreground")}>{d.month}</span>
+            <div className="h-80 flex items-end justify-between gap-4 sm:gap-8 px-4 border-b border-border/10 pb-6 relative z-10">
+              {monthlyData.every(d => d.income === 0 && d.expense === 0) ? (
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-8">
+                  <div className="p-4 bg-muted/30 rounded-full mb-4">
+                    <TrendingUp className="h-8 w-8 text-muted-foreground/40" />
                   </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Timeline Section */}
-          <div className="bg-card p-8 rounded-2xl shadow-ambient-low border border-border/20 animate-in fade-in slide-in-from-bottom-6 duration-700">
-            <h3 className="text-xl font-heading font-bold text-foreground mb-8">Zaman Çizelgesi</h3>
-            <div className="space-y-6">
-              {recentTransactions.slice(0, 3).map((tx, idx) => (
-                <div key={tx.id} className="flex gap-6 items-start group">
-                  <div className="flex flex-col items-center">
-                    <div className={cn("w-4 h-4 rounded-full border-4 border-card ring-1 transition-transform group-hover:scale-125", tx.type === 'income' ? "bg-primary/80 ring-primary/20" : "bg-primary ring-primary/20")}></div>
-                    {idx !== Math.min(recentTransactions.length, 3) - 1 && (
-                      <div className="w-0.5 h-16 bg-border/30 mt-1"></div>
-                    )}
-                  </div>
-                  <div className={cn("flex-1 bg-muted p-5 rounded-2xl border border-border/20 transition-colors cursor-default", tx.type === 'income' ? "hover:border-primary/40" : "hover:border-primary/30")}>
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <p className="font-semibold text-foreground">{tx.description || tx.category}</p>
-                        <p className="text-[13px] text-muted-foreground mt-1">{tx.category}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className={cn("font-bold text-lg", tx.type === 'income' ? "text-primary/80" : "text-primary")}>
-                          {tx.type === 'income' ? '+' : '-'}{formatAmount(tx.amount)}
-                        </p>
-                        {tx.currency && tx.currency !== "TRY" && (
-                          <p className="text-[11px] text-muted-foreground font-semibold">
-                            (Orijinal: {tx.originalAmount?.toLocaleString()} {tx.currency})
-                          </p>
-                        )}
-                        <p className="text-[11px] text-muted-foreground uppercase tracking-wide mt-1">
-                          {new Date(tx.createdAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+                  <p className="text-sm font-black text-muted-foreground uppercase tracking-widest">Henüz Veri Yok</p>
+                  <p className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-tighter mt-2 max-w-[200px]">
+                    İşlem eklediğinizde son 6 aya ait gelir-gider karşılaştırmanız burada görünecek.
+                  </p>
                 </div>
-              ))}
-              {recentTransactions.length === 0 && (
-                <div className="text-muted-foreground opacity-70 italic">Henüz işlem bulunmuyor.</div>
+              ) : (
+                monthlyData.slice().reverse().map((d, i) => {
+                  const incHeight = maxMonthly > 0 ? Math.max((d.income / maxMonthly) * 100, d.income > 0 ? 8 : 0) : 0;
+                  const expHeight = maxMonthly > 0 ? Math.max((d.expense / maxMonthly) * 100, d.expense > 0 ? 8 : 0) : 0;
+                  const isCurrent = i === monthlyData.length - 1;
+
+                  return (
+                    <div key={i} className="flex-1 flex flex-col items-center gap-6 group relative">
+                      <div className="w-full flex gap-1.5 sm:gap-2 items-end h-64 relative">
+                        <motion.div 
+                          initial={{ height: 0 }}
+                          animate={{ height: `${incHeight}%` }}
+                          transition={{ duration: 1, delay: i * 0.1, ease: "circOut" }}
+                          className={cn(
+                            "flex-1 rounded-t-2xl transition-all duration-500 relative overflow-hidden group/bar",
+                            isCurrent ? "bg-emerald-500 shadow-[0_-4px_20px_rgba(16,185,129,0.3)]" : "bg-emerald-500/30 group-hover:bg-emerald-500/50"
+                          )}
+                        >
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+                        </motion.div>
+                        <motion.div 
+                          initial={{ height: 0 }}
+                          animate={{ height: `${expHeight}%` }}
+                          transition={{ duration: 1, delay: i * 0.1 + 0.2, ease: "circOut" }}
+                          className={cn(
+                            "flex-1 rounded-t-2xl transition-all duration-500 relative overflow-hidden group/bar",
+                            isCurrent ? "bg-primary shadow-[0_-4px_20px_rgba(189,194,176,0.3)]" : "bg-primary/40 group-hover:bg-primary/60"
+                          )}
+                        >
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+                        </motion.div>
+                        
+                        <div className="absolute -top-16 left-1/2 -translate-x-1/2 bg-card/90 backdrop-blur-xl px-4 py-3 rounded-2xl shadow-ambient-high opacity-0 group-hover:opacity-100 transition-all pointer-events-none z-20 whitespace-nowrap border border-border/20 scale-90 group-hover:scale-100">
+                          <div className="flex flex-col gap-1.5">
+                            <p className="text-[10px] font-black text-muted-foreground uppercase mb-1 border-b border-border/10 pb-1">{d.month}</p>
+                            <div className="flex items-center justify-between gap-4">
+                              <span className="text-[10px] font-bold text-emerald-500">GELİR</span>
+                              <span className="text-sm font-black text-emerald-500">{formatAmount(d.income)}</span>
+                            </div>
+                            <div className="flex items-center justify-between gap-4">
+                              <span className="text-[10px] font-bold text-primary">GİDER</span>
+                              <span className="text-sm font-black text-primary">{formatAmount(d.expense)}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <span className={cn(
+                        "text-[10px] font-black uppercase tracking-widest transition-colors",
+                        isCurrent ? "text-primary" : "text-muted-foreground/60"
+                      )}>{d.month}</span>
+                    </div>
+                  );
+                })
               )}
             </div>
-          </div>
-        </div>
+          </Card>
+        </motion.div>
 
-        {/* Category Breakdown */}
-        <div className="xl:col-span-4 flex flex-col gap-8">
-          <div className="bg-card p-8 rounded-2xl shadow-ambient-low border border-border/20 h-full animate-in fade-in slide-in-from-right-6 duration-700">
-            <h3 className="text-xl font-heading font-bold text-foreground mb-10">Harcama Kategorileri</h3>
+        {/* Categories Breakdown */}
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.98 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="xl:col-span-4"
+        >
+          <Card className="border-border/20 shadow-ambient-high rounded-[40px] p-10 bg-card/60 backdrop-blur-2xl h-full flex flex-col items-center">
+            <h3 className="text-xl font-heading font-black text-foreground mb-12 self-start flex items-center gap-3">
+              <Filter className="h-5 w-5 text-primary" /> Dağılım Analizi
+            </h3>
             
-            <div className="relative w-56 h-56 mx-auto mb-12 flex items-center justify-center group">
-              <svg className="w-full h-full transform -rotate-90 transition-transform duration-1000 group-hover:scale-105" viewBox="0 0 36 36">
+            <div className="relative w-64 h-64 flex items-center justify-center mb-12 group">
+              <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
                 {(() => {
                   const entries = Object.entries(expenseCategoryMap).sort(([,a], [,b]) => (b as number) - (a as number));
                   const total = totalExpense || 1;
                   let offset = 0;
-                  const colors = ["var(--primary)", "#10b981", "#f59e0b", "#6366f1", "#f43f5e"];
+                  const colors = ["#bdc2b0", "#10b981", "#3b82f6", "#f59e0b", "#f43f5e"];
                   
                   if (entries.length === 0) {
-                    return <path className="text-[#dbc2b0]/30" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeDasharray="100, 100" strokeWidth="4" />
+                    return <circle cx="18" cy="18" r="15.9155" fill="none" stroke="currentColor" strokeWidth="4" className="text-muted/10" strokeDasharray="100, 100" />
                   }
 
-                  return entries.slice(0, 4).map(([cat, amt], idx) => {
+                  return entries.slice(0, 5).map(([cat, amt], idx) => {
                     const pct = (amt / total) * 100;
                     const dasharray = `${pct}, 100`;
                     const currentOffset = offset;
                     offset -= pct;
                     return (
-                      <path key={cat} stroke={colors[idx % colors.length]} d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" strokeDasharray={dasharray} strokeDashoffset={currentOffset} strokeWidth="4" className="transition-all duration-1000 ease-out" />
+                      <motion.path 
+                        key={cat} 
+                        initial={{ strokeDasharray: "0, 100" }}
+                        animate={{ strokeDasharray: dasharray }}
+                        transition={{ duration: 1.5, delay: 0.5, ease: "circOut" }}
+                        stroke={colors[idx % colors.length]} 
+                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" 
+                        fill="none" 
+                        strokeDashoffset={currentOffset} 
+                        strokeWidth="4" 
+                        className="transition-all duration-500 hover:stroke-width-6 cursor-pointer"
+                      />
                     );
                   });
                 })()}
               </svg>
               <div className="absolute text-center">
-                <p className="text-2xl font-heading font-bold text-foreground">{formatAmount(totalExpense)}</p>
-                <p className="text-[12px] text-muted-foreground uppercase tracking-widest mt-1">Toplam</p>
+                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest opacity-60 mb-1">Toplam Gider</p>
+                <p className="text-2xl font-heading font-black text-primary tracking-tight">{formatAmount(totalExpense)}</p>
               </div>
             </div>
 
-            <ul className="space-y-6">
-              {Object.entries(expenseCategoryMap).sort(([,a], [,b]) => (b as number) - (a as number)).slice(0, 4).map(([cat, amt], idx) => {
-                const colors = ["bg-primary", "bg-primary/60", "bg-accent", "bg-border"];
+            <div className="w-full space-y-4">
+              {Object.entries(expenseCategoryMap).sort(([,a], [,b]) => (b as number) - (a as number)).slice(0, 5).map(([cat, amt], idx) => {
+                const colors = ["bg-primary", "bg-emerald-500", "bg-blue-500", "bg-orange-500", "bg-rose-500"];
                 const pct = totalExpense > 0 ? Math.round((amt / totalExpense) * 100) : 0;
                 return (
-                  <li key={cat} className="flex justify-between items-center group cursor-default">
-                    <div className="flex items-center gap-4">
-                      <span className={cn("w-3 h-3 rounded-full", colors[idx % colors.length])}></span>
-                      <span className="text-sm font-semibold text-muted-foreground group-hover:text-foreground transition-colors">{cat}</span>
+                  <div key={cat} className="flex justify-between items-center p-3 rounded-2xl border border-border/5 bg-muted/20 group hover:bg-muted/40 transition-all">
+                    <div className="flex items-center gap-3">
+                      <div className={cn("w-2.5 h-2.5 rounded-full shadow-lg", colors[idx % colors.length])} />
+                      <span className="text-xs font-black text-muted-foreground group-hover:text-foreground transition-colors uppercase tracking-wider">{cat}</span>
                     </div>
-                    <span className="font-bold text-foreground">%{pct}</span>
-                  </li>
+                    <div className="flex items-center gap-3">
+                      <span className="text-[10px] font-black text-primary bg-primary/10 px-2 py-0.5 rounded-full">%{pct}</span>
+                      <span className="text-xs font-black text-foreground">{formatAmount(amt)}</span>
+                    </div>
+                  </div>
                 );
               })}
               {Object.keys(expenseCategoryMap).length === 0 && (
-                <li className="text-sm text-muted-foreground text-center opacity-70">Henüz harcama yok.</li>
+                <div className="flex flex-col items-center justify-center p-8 text-center opacity-30">
+                  <Sparkles className="h-8 w-8 mb-4 text-primary" />
+                  <p className="text-[10px] font-black uppercase tracking-widest">Kayıtlı Veri Yok</p>
+                </div>
               )}
-            </ul>
-          </div>
-        </div>
+            </div>
+          </Card>
+        </motion.div>
       </div>
 
-      {/* Recent Transactions List */}
-      <section className="bg-card rounded-2xl shadow-ambient-low border border-border/20 overflow-hidden mb-12 animate-in fade-in slide-in-from-bottom-8 duration-700">
-        <div className="p-8 border-b border-border/20 flex justify-between items-center">
-          <h3 className="text-xl font-heading font-bold text-foreground">Tüm İşlemler</h3>
-          <Select value={filterCategory} onValueChange={(val: any) => setFilterCategory(val || "Tümü")}>
-            <SelectTrigger className="w-[180px] bg-muted border-border/30 rounded-xl">
-              <SelectValue placeholder="Kategori Filtresi" />
-            </SelectTrigger>
-            <SelectContent className="rounded-xl bg-card">
-              {["Tümü", ...Array.from(new Set(recentTransactions.map(t => t.category)))].map(cat => (
-                <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+      {/* Transactions Table Section */}
+      <motion.section 
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        className="space-y-6"
+      >
+        <div className="flex flex-col md:flex-row justify-between md:items-center gap-6">
+          <div className="space-y-1">
+            <h3 className="text-2xl font-heading font-black text-primary tracking-tight flex items-center gap-3">
+              <Calendar className="h-6 w-6" /> İşlem Geçmişi
+            </h3>
+            <p className="text-xs text-muted-foreground font-bold opacity-60 uppercase tracking-widest px-1">Tüm Finansal Hareketler</p>
+          </div>
+          
+          <div className="flex gap-3">
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
+              <Input 
+                placeholder="İşlemlerde ara..." 
+                className="h-12 pl-11 pr-4 rounded-[18px] bg-card/60 border-border/20 w-64 text-xs font-bold"
+              />
+            </div>
+            <Select value={filterCategory} onValueChange={(val: any) => setFilterCategory(val || "Tümü")}>
+              <SelectTrigger className="w-[200px] h-12 bg-card/60 border-border/20 rounded-[18px] font-black text-[10px] uppercase tracking-widest">
+                <SelectValue placeholder="Kategori Filtresi" />
+              </SelectTrigger>
+              <SelectContent className="rounded-2xl bg-card/95 backdrop-blur-xl font-bold border-border/20 shadow-ambient-high">
+                {["Tümü", ...Array.from(new Set(recentTransactions.map(t => t.category)))].map(cat => (
+                  <SelectItem key={cat} value={cat} className="rounded-xl m-1">{cat}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="bg-muted">
-                <th className="px-8 py-5 text-[11px] font-bold text-muted-foreground uppercase tracking-widest">İşlem</th>
-                <th className="px-8 py-5 text-[11px] font-bold text-muted-foreground uppercase tracking-widest">Kategori</th>
-                <th className="px-8 py-5 text-[11px] font-bold text-muted-foreground uppercase tracking-widest">Tarih</th>
-                <th className="px-8 py-5 text-[11px] font-bold text-muted-foreground uppercase tracking-widest text-right">Tutar</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border/20">
-              {recentTransactions.filter(t => filterCategory === "Tümü" || t.category === filterCategory).map((tx) => {
-                const isIncome = tx.type === 'income';
-                let Icon = isIncome ? Wallet : Receipt;
-                
-                if (!isIncome) {
-                  const cat = tx.category.toLowerCase();
-                  if (cat.includes('market') || cat.includes('alışveriş')) Icon = ShoppingCart;
-                  else if (cat.includes('yemek') || cat.includes('restoran') || cat.includes('gıda')) Icon = Utensils;
-                  else if (cat.includes('ulaşım') || cat.includes('benzin') || cat.includes('araba')) Icon = Car;
-                  else if (cat.includes('kira') || cat.includes('konut') || cat.includes('ev')) Icon = Home;
-                }
 
-                return (
-                  <tr key={tx.id} className="hover:bg-muted/80 transition-colors group">
-                    <td className="px-8 py-6">
-                      <div className="flex items-center gap-4">
-                        <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm", isIncome ? "bg-primary/10 text-primary/80" : "bg-primary/10 text-primary")}>
-                          <Icon className="w-5 h-5" />
-                        </div>
-                        <span className="font-bold text-foreground">{tx.description || tx.category}</span>
-                      </div>
-                    </td>
-                    <td className="px-8 py-6">
-                      <span className={cn("px-3 py-1.5 rounded-full text-[12px] font-bold shadow-sm", isIncome ? "bg-primary/10 text-primary/80" : "bg-border/30 text-muted-foreground")}>
-                        {tx.category}
-                      </span>
-                    </td>
-                    <td className="px-8 py-6 text-[13px] text-muted-foreground font-semibold">
-                      {new Date(tx.createdAt).toLocaleDateString('tr-TR', { day: '2-digit', month: 'short', year: 'numeric' })}
-                    </td>
-                    <td className="px-8 py-6 text-right">
-                      <p className={cn("font-bold text-lg", isIncome ? "text-primary/80" : "text-primary")}>
-                        {isIncome ? '+' : '-'} {formatAmount(tx.amount)}
-                      </p>
-                      {tx.currency && tx.currency !== "TRY" && (
-                        <p className="text-[11px] text-muted-foreground font-semibold">
-                          (Orijinal: {tx.originalAmount?.toLocaleString()} {tx.currency})
-                        </p>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-              {recentTransactions.filter(t => filterCategory === "Tümü" || t.category === filterCategory).length === 0 && (
-                <tr>
-                  <td colSpan={4} className="px-8 py-12 text-center text-muted-foreground opacity-70">
-                    Henüz işlem kaydınız bulunmuyor.
-                  </td>
+        <Card className="border-border/20 shadow-ambient-high rounded-[40px] overflow-hidden bg-card/30 backdrop-blur-xl">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="bg-muted/50 border-b border-border/10">
+                  <th className="px-10 py-6 text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Detay</th>
+                  <th className="px-10 py-6 text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Kategori</th>
+                  <th className="px-10 py-6 text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Zamanlama</th>
+                  <th className="px-10 py-6 text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] text-right">Miktar</th>
                 </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </section>
+              </thead>
+              <tbody className="divide-y divide-border/10">
+                {recentTransactions.filter(t => filterCategory === "Tümü" || t.category === filterCategory).map((tx, idx) => {
+                  const isInc = tx.type === 'income';
+                  let Icon = isInc ? Wallet : Receipt;
+                  
+                  const cat = tx.category.toLowerCase();
+                  if (cat.includes('market')) Icon = ShoppingCart;
+                  else if (cat.includes('yemek')) Icon = Utensils;
+                  else if (cat.includes('ulaşım')) Icon = Car;
+                  else if (cat.includes('kira')) Icon = Home;
+
+                  return (
+                    <motion.tr 
+                      key={tx.id} 
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: idx * 0.05 }}
+                      className="hover:bg-muted/30 transition-all group"
+                    >
+                      <td className="px-10 py-8">
+                        <div className="flex items-center gap-5">
+                          <div className={cn(
+                            "w-14 h-14 rounded-2xl flex items-center justify-center shadow-inner group-hover:scale-105 transition-all duration-300",
+                            isInc ? "bg-emerald-500/10 text-emerald-500" : "bg-rose-500/10 text-rose-500"
+                          )}>
+                            <Icon className="w-6 h-6" />
+                          </div>
+                          <div>
+                            <p className="font-black text-foreground group-hover:text-primary transition-colors">{tx.description || tx.category}</p>
+                            <p className="text-[10px] font-bold text-muted-foreground opacity-60 uppercase tracking-widest mt-1">ID: {tx.id.substring(0, 8)}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-10 py-8">
+                        <span className={cn(
+                          "px-4 py-2 rounded-xl text-[10px] font-black shadow-sm border uppercase tracking-widest",
+                          isInc ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : "bg-muted/50 text-muted-foreground border-border/20"
+                        )}>
+                          {tx.category}
+                        </span>
+                      </td>
+                      <td className="px-10 py-8">
+                        <div className="flex flex-col">
+                          <span className="text-xs font-black text-foreground uppercase">
+                            {new Date(tx.createdAt).toLocaleDateString('tr-TR', { day: '2-digit', month: 'long' })}
+                          </span>
+                          <span className="text-[10px] font-bold text-muted-foreground opacity-50 uppercase tracking-widest mt-0.5">
+                            {new Date(tx.createdAt).getFullYear()}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-10 py-8 text-right">
+                        <p className={cn("text-xl font-black tracking-tight", isInc ? "text-emerald-500" : "text-rose-500")}>
+                          {isInc ? '+' : '-'} {formatAmount(tx.amount)}
+                        </p>
+                        {tx.currency && tx.currency !== "TRY" && (
+                          <div className="flex items-center justify-end gap-1.5 mt-1 text-[10px] font-black text-muted-foreground opacity-60 uppercase tracking-tighter">
+                            <span>{tx.originalAmount?.toLocaleString()}</span>
+                            <span>{tx.currency}</span>
+                            <span>@{tx.fxRate?.toFixed(2)}</span>
+                          </div>
+                        )}
+                      </td>
+                    </motion.tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          {recentTransactions.filter(t => filterCategory === "Tümü" || t.category === filterCategory).length === 0 && (
+            <div className="py-24 flex flex-col items-center justify-center text-center opacity-20">
+              <Layers className="h-12 w-12 mb-4" />
+              <p className="text-[10px] font-black uppercase tracking-[0.3em]">Filtrelenen veri bulunamadı</p>
+            </div>
+          )}
+        </Card>
+      </motion.section>
     </div>
   );
 }
