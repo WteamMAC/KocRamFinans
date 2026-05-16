@@ -121,7 +121,12 @@ export async function getLivePrices(symbols: string[]): Promise<Map<string, Pric
         "GRAM ALTIN (XAUTRY=X)": gramAltinTry,
         "ALTIN": gramAltinTry,
         "GOLD": gramAltinTry,
+        "GRAM": gramAltinTry,
+        "ONS": goldOunceUsd * usdToTryRate,
         "ONS ALTIN (GC=F)": goldOunceUsd,
+        "GAU/TRY": gramAltinTry,
+        "XAU/TRY": gramAltinTry,
+        "XAU/USD": goldOunceUsd,
         "SI=F": silverOunceUsd,
         "XAGTRY=X": gramGumusTry,
         "GRAM GÜMÜŞ": gramGumusTry,
@@ -176,6 +181,7 @@ export async function getLivePrices(symbols: string[]): Promise<Map<string, Pric
         "GBPTRY=X": gbpToTryRate, "GBP": gbpToTryRate,
         "GC=F": 2950, "XAUTRY=X": gramAltinTry, "GRAM ALTIN": gramAltinTry,
         "ALTIN": gramAltinTry, "GOLD": gramAltinTry, "ONS ALTIN (GC=F)": 2950,
+        "GRAM": gramAltinTry, "ONS": 2950 * usdToTryRate, "GAU/TRY": gramAltinTry, "XAU/TRY": gramAltinTry,
         "SI=F": 32, "XAGTRY=X": gramGumusTry, "GRAM GÜMÜŞ": gramGumusTry, "GÜMÜŞ": gramGumusTry,
         "BZ=F": 75, "BRENT PETROL": brentTry, "BRENT": brentTry,
       };
@@ -192,8 +198,8 @@ export async function getLivePrices(symbols: string[]): Promise<Map<string, Pric
   symbols.forEach(s => {
     const sUpper = s.toUpperCase();
     if (!results.has(sUpper)) {
-      if (sUpper.includes("ALTIN") || sUpper.includes("GOLD") || sUpper.includes("XAU")) {
-        const gaPrice = results.get("XAUTRY=X")?.price || 3450;
+      if (sUpper.includes("ALTIN") || sUpper.includes("GOLD") || sUpper.includes("XAU") || sUpper === "GRAM" || sUpper === "ONS" || sUpper.includes("GAU")) {
+        const gaPrice = sUpper === "ONS" || sUpper.includes("XAU/USD") ? (results.get("GC=F")?.price || 2950) * (results.get("USDTRY=X")?.price || 36.45) : (results.get("XAUTRY=X")?.price || 3450);
         results.set(sUpper, { symbol: s, price: gaPrice, changePercent: 0.2 });
       } else if (sUpper.includes("GÜMÜŞ") || sUpper.includes("GUMUS") || sUpper.includes("SILVER") || sUpper.includes("XAG")) {
         const ggPrice = results.get("XAGTRY=X")?.price || 38;
