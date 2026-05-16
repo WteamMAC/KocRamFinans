@@ -60,15 +60,15 @@ export default function SlidingAuth() {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-0 md:p-6 overflow-hidden relative">
-      <main className="w-full h-screen md:h-[calc(100vh-48px)] max-h-[900px] flex max-w-[1200px] mx-auto bg-card md:rounded-[32px] md:shadow-ambient-high overflow-hidden relative">
+      <main className="w-full h-screen md:h-[calc(100vh-48px)] max-h-[900px] flex max-w-[1200px] mx-auto bg-card md:rounded-[32px] md:shadow-ambient-high overflow-y-auto md:overflow-hidden relative">
         
         {/* Form Container */}
         <motion.div 
           className="absolute inset-y-0 left-0 w-full lg:w-1/2 bg-card z-10 overflow-y-auto"
-          animate={{ x: (isLargeScreen && isLogin) ? "100%" : "0%" }}
+          animate={isLargeScreen ? { x: isLogin ? "100%" : "0%" } : { x: 0 }}
           transition={{ type: "spring", stiffness: 260, damping: 28 }}
         >
-          <div className="min-h-full flex flex-col items-center justify-center p-8 md:p-12">
+          <div className="min-h-full flex flex-col items-center justify-start lg:justify-center p-8 md:p-12">
             <div className="lg:hidden mb-8 text-center">
               <Link href="/" className="flex items-center gap-2 justify-center">
                 <img src="/mascot.png" alt="Logo" className="h-14 w-14 object-contain" />
