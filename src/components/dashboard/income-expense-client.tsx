@@ -73,15 +73,6 @@ export function IncomeExpenseClient({
   const [filterCategory, setFilterCategory] = useState("Tümü");
 
   const { formatAmount, displayCurrency } = useCurrency();
-<<<<<<< HEAD
-=======
-
-  const formatTransactionAmount = (tx: Transaction) => {
-    const cur = (tx.currency || "TRY").toUpperCase();
-    const sym = DISPLAY_CURRENCIES_MAP[cur]?.symbol || cur;
-    return `${(tx.amount || 0).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: tx.amount < 1 ? 4 : 2 })} ${sym}`;
-  };
->>>>>>> 4783a1d623e3c885b4afa4aa69e1d99755ff73cc
 
   const formatTransactionAmount = (tx: Transaction) => {
     const cur = (tx.currency || "TRY").toUpperCase();
