@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { parseISO } from "date-fns";
+import { motion, AnimatePresence } from "framer-motion";
 
 const MIN_AGE = 13;
 function getMaxDate() {
@@ -59,6 +60,7 @@ const schema = z.object({
     type: z.string().min(1, "Varlık türü seçiniz"),
     amount: z.coerce.number().positive("Miktar 0'dan büyük olmalıdır"),
     purchasePrice: z.coerce.number().optional(),
+    quantity: z.coerce.number().optional(),
     symbol: z.string().optional(),
     description: z.string().optional(),
     currency: z.string().optional(),
@@ -146,6 +148,16 @@ const EXPENSE_TYPES = ["Ev Kirası / İpotek", "Faturalar (Elektrik, Su, Doğalg
 const DEBT_TYPES = ["Kredi Kartı", "İhtiyaç Kredisi", "Konut Kredisi", "Taşıt Kredisi", "Elden Borç", "Vergi Borcu", "Diğer"];
 const INVESTMENT_TYPES = ["BIST", "NASDAQ", "CRYPTO", "GOLD", "BES", "FAIZ", "CASH", "Diğer"];
 
+const ASSET_CATEGORIES = [
+  { id: "BIST", title: "BIST Hisse Senedi", emoji: "📈", desc: "Türk borsası hisseleri (THYAO, ASELS...)", fields: ["Sembol", "Hisse Adedi", "Birim Fiyat"] },
+  { id: "NASDAQ", title: "ABD & Yabancı Hisse", emoji: "🗽", desc: "NASDAQ, S&P 500 (AAPL, TSLA...)", fields: ["Sembol", "Hisse Adedi", "Birim Fiyat"] },
+  { id: "CRYPTO", title: "Kripto Varlık", emoji: "₿", desc: "Bitcoin, Ethereum, Solana ve altcoinler", fields: ["Sembol", "Coin Miktarı", "Birim Fiyat"] },
+  { id: "GOLD", title: "Altın & Maden", emoji: "🪙", desc: "Gram altın, çeyrek, külçe vb.", fields: ["Tür / Sembol", "Gram / Adet", "Alış Fiyatı"] },
+  { id: "BES", title: "Bireysel Emeklilik", emoji: "🛡️", desc: "BES ve fon birikimleri", fields: ["Fon / Kurum", "Pay Miktarı", "Birim Fiyat"] },
+  { id: "FAIZ", title: "Vadeli Mevduat", emoji: "🏦", desc: "Vadeli mevduat, faiz ve likit fonlar", fields: ["Kurum Adı", "Miktar / Adet", "Faiz/Getiri %"] },
+  { id: "CASH", title: "Nakit & Döviz", emoji: "💵", desc: "Vadesiz hesap, dolar, euro, elden nakit", fields: ["Döviz Kodu", "Miktar", "Birim Fiyat"] },
+];
+
 const HASHTAGS = [
   { tag: "borsa", label: "Borsa", emoji: "📈" },
   { tag: "kripto", label: "Kripto", emoji: "₿" },
@@ -187,6 +199,17 @@ export function OnboardingForm() {
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
   const [customTagInput, setCustomTagInput] = useState("");
 
+  // Pop-up (Modal) State İçin
+  const [activeAssetModal, setActiveAssetModal] = useState<string | null>(null);
+  const [modalAssetData, setModalAssetData] = useState({
+    symbol: "",
+    amount: "",
+    quantity: "1",
+    purchasePrice: "",
+    currency: "TRY",
+    description: "",
+  });
+
   const form = useForm<F>({
     resolver: zodResolver(schema) as any,
     defaultValues: {
@@ -214,13 +237,13 @@ export function OnboardingForm() {
   useEffect(() => {
     if (selectedCurrency) {
       const curInc = form.getValues("incomes") || [];
-      form.setValue("incomes", curInc.map(i => ({ ...i, currency: i.currency || selectedCurrency })));
+      form.setValue("incomes", curInc.map(i => ({ ...i, currency: selectedCurrency })));
       const curExp = form.getValues("expenses") || [];
-      form.setValue("expenses", curExp.map(e => ({ ...e, currency: e.currency || selectedCurrency })));
+      form.setValue("expenses", curExp.map(e => ({ ...e, currency: selectedCurrency })));
       const curDebt = form.getValues("debts") || [];
-      form.setValue("debts", curDebt.map(d => ({ ...d, currency: d.currency || selectedCurrency })));
+      form.setValue("debts", curDebt.map(d => ({ ...d, currency: selectedCurrency })));
       const curInv = form.getValues("investments") || [];
-      form.setValue("investments", curInv.map(inv => ({ ...inv, currency: inv.currency || selectedCurrency })));
+      form.setValue("investments", curInv.map(inv => ({ ...inv, currency: selectedCurrency })));
     }
   }, [selectedCurrency]);
 
@@ -228,6 +251,41 @@ export function OnboardingForm() {
     form.setValue("gender", v, { shouldValidate: true });
     setGenderAnim(true);
     setTimeout(() => setGenderAnim(false), 600);
+  };
+
+  const handleOpenAssetModal = (type: string) => {
+    setActiveAssetModal(type);
+    setModalAssetData({
+      symbol: "",
+      amount: "",
+      quantity: "1",
+      purchasePrice: "",
+      currency: selectedCurrency || "TRY",
+      description: "",
+    });
+  };
+
+  const handleSaveAssetModal = (e: React.FormEvent) => {
+    e.preventDefault();
+    const amountVal = parseFloat(modalAssetData.amount) || 0;
+    if (amountVal <= 0) {
+      alert("Lütfen 0'dan büyük bir toplam tutar giriniz.");
+      return;
+    }
+
+    const typeObj = ASSET_CATEGORIES.find(c => c.id === activeAssetModal);
+    const typeName = typeObj?.id || activeAssetModal || "Diğer";
+
+    investmentsField.append({
+      type: typeName,
+      symbol: modalAssetData.symbol ? modalAssetData.symbol.toUpperCase().trim() : undefined,
+      amount: amountVal,
+      quantity: parseFloat(modalAssetData.quantity) || 1,
+      purchasePrice: parseFloat(modalAssetData.purchasePrice) || amountVal,
+      currency: modalAssetData.currency || selectedCurrency || "TRY",
+      description: modalAssetData.description || undefined,
+    });
+    setActiveAssetModal(null);
   };
 
   const toggleTag = (tag: string) => {
@@ -279,10 +337,10 @@ export function OnboardingForm() {
       const defaultCur = data.currency || "TRY";
       const cleanData = {
         ...data,
-        incomes: (data.incomes || []).map((i: any) => ({ ...i, currency: i.currency || defaultCur })),
-        expenses: (data.expenses || []).map((e: any) => ({ ...e, currency: e.currency || defaultCur })),
-        debts: (data.debts || []).map((d: any) => ({ ...d, currency: d.currency || defaultCur })),
-        investments: (data.investments || []).map((inv: any) => ({ ...inv, currency: inv.currency || defaultCur })),
+        incomes: (data.incomes || []).map((i: any) => ({ ...i, currency: defaultCur })),
+        expenses: (data.expenses || []).map((e: any) => ({ ...e, currency: defaultCur })),
+        debts: (data.debts || []).map((d: any) => ({ ...d, currency: defaultCur })),
+        investments: (data.investments || []).map((inv: any) => ({ ...inv, currency: defaultCur })),
       };
 
       const result = await completeOnboarding({
@@ -770,83 +828,73 @@ export function OnboardingForm() {
               </div>
             )}
 
-            {/* STEP 6: Varlıklar & Yatırımlar */}
+            {/* STEP 6: Varlıklar & Yatırımlar (Premium Popup Modal Destekli) */}
             {step === 6 && (
-              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs font-extrabold text-[#887364] dark:text-[#dbc2b0]">Yatırımlar & Birikimler</Label>
-                  <Button type="button" size="sm" variant="outline" onClick={() => investmentsField.append({ type: "CASH", amount: 0, purchasePrice: 1, symbol: "", description: "", currency: selectedCurrency || "TRY" })}
-                    className="rounded-xl border-[#8C5000]/30 dark:border-[#ffb874]/30 text-[#8C5000] dark:text-[#ffb874] font-bold hover:bg-[#8C5000]/10">
-                    <Plus className="w-4 h-4 mr-1" /> Varlık Ekle
-                  </Button>
+              <div className="space-y-7 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div>
+                  <Label className="text-xs font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-3 block">
+                    Varlık Türü Seçip Pop-up İle Ekleyin
+                  </Label>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {ASSET_CATEGORIES.map(c => (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => handleOpenAssetModal(c.id)}
+                        className="p-4 rounded-2xl bg-[#faf9f6] dark:bg-[#120d0a] border border-[#dbc2b0]/50 dark:border-[#887364]/40 hover:border-[#8C5000] dark:hover:border-[#ffb874] transition-all duration-300 text-left group flex flex-col justify-between shadow-sm hover:shadow-md hover:scale-[1.02]"
+                      >
+                        <div>
+                          <span className="text-3xl block mb-2 transition-transform group-hover:scale-110 duration-200">{c.emoji}</span>
+                          <span className="text-xs font-black text-[#5a3100] dark:text-[#fbf9f4] block leading-tight">{c.title}</span>
+                        </div>
+                        <span className="text-[10px] text-[#887364] dark:text-[#dbc2b0] mt-2 block line-clamp-2 leading-relaxed">{c.desc}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
+
                 <div className="space-y-4">
+                  <div className="flex items-center justify-between pt-4 border-t border-border/20">
+                    <Label className="text-xs font-extrabold text-[#887364] dark:text-[#dbc2b0]">Eklenen Varlıklarınız</Label>
+                    <span className="text-xs font-black px-3 py-1 rounded-full bg-[#8C5000]/10 text-[#8C5000] dark:bg-[#ffb874]/10 dark:text-[#ffb874]">
+                      {investmentsField.fields.length} Varlık
+                    </span>
+                  </div>
+
                   {investmentsField.fields.length === 0 && (
-                    <div className="text-center py-8 border-2 border-dashed border-[#dbc2b0]/30 rounded-2xl">
-                      <p className="text-xs font-bold text-[#887364]/50">Henüz varlık eklenmedi. Varlığınız yoksa bu adımı geçebilirsiniz.</p>
+                    <div className="text-center py-10 border-2 border-dashed border-[#dbc2b0]/30 rounded-3xl bg-[#faf9f6]/50 dark:bg-[#120d0a]/30">
+                      <p className="text-xs font-bold text-[#887364]/60">Henüz varlık eklenmedi. Yukarıdaki kategorilerden birine tıklayarak ekleyebilirsiniz.</p>
                     </div>
                   )}
-                  {investmentsField.fields.map((item, i) => (
-                    <div key={item.id} className="p-5 rounded-3xl bg-[#faf9f6] dark:bg-[#120d0a] border border-[#dbc2b0]/50 dark:border-[#887364]/40 space-y-4 shadow-sm">
-                      <div className="flex items-center justify-between gap-3">
-                        <Controller
-                          name={`investments.${i}.type`}
-                          control={form.control}
-                          render={({ field }) => (
-                            <Select value={field.value} onValueChange={field.onChange}>
-                              <SelectTrigger className="flex-1 h-12 rounded-2xl bg-white dark:bg-[#1c140e] border-[#dbc2b0]/50 dark:border-[#887364]/40 font-bold text-sm">
-                                <SelectValue placeholder="Varlık türü" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {INVESTMENT_TYPES.map(t => (
-                                  <SelectItem key={t} value={t}>{t}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          )}
-                        />
-                        <Button type="button" variant="ghost" size="icon" onClick={() => investmentsField.remove(i)} className="text-rose-500 hover:bg-rose-500/10 h-12 w-12 rounded-2xl transition-colors">
-                          <Trash2 className="w-5 h-5" />
-                        </Button>
-                      </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                          <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] uppercase tracking-wider mb-1.5 block">Para Birimi & Toplam Değer</Label>
-                          <div className="flex gap-2.5">
-                            <Controller
-                              name={`investments.${i}.currency`}
-                              control={form.control}
-                              render={({ field }) => (
-                                <Select value={field.value || selectedCurrency || "TRY"} onValueChange={field.onChange}>
-                                  <SelectTrigger className="w-[105px] h-12 rounded-2xl bg-white dark:bg-[#1c140e] border-[#dbc2b0]/50 dark:border-[#887364]/40 font-extrabold text-xs">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <div className="px-2 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Ana Birimler</div>
-                                    {MAIN_CURRENCIES.map(c => <SelectItem key={c.code} value={c.code}>{c.flag} {c.code}</SelectItem>)}
-                                    <div className="px-2 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider border-t mt-1 pt-1">Diğer Birimler</div>
-                                    {OTHER_CURRENCIES.map(c => <SelectItem key={c.code} value={c.code}>{c.flag} {c.code}</SelectItem>)}
-                                  </SelectContent>
-                                </Select>
-                              )}
-                            />
-                            <Input type="number" {...form.register(`investments.${i}.amount`, { valueAsNumber: true })} placeholder="0" className="flex-1 h-12 rounded-2xl bg-white dark:bg-[#1c140e] border-[#dbc2b0]/50 dark:border-[#887364]/40 font-black text-foreground text-sm" />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {investmentsField.fields.map((item: any, i) => {
+                      const catObj = ASSET_CATEGORIES.find(c => c.id === item.type);
+                      return (
+                        <div key={item.id} className="p-4 rounded-3xl bg-[#faf9f6] dark:bg-[#120d0a] border border-[#dbc2b0]/50 dark:border-[#887364]/40 flex items-center justify-between gap-3 shadow-sm hover:border-[#8C5000]/40 transition-all">
+                          <div className="flex items-center gap-3">
+                            <div className="h-12 w-12 rounded-2xl bg-white dark:bg-[#1c140e] flex items-center justify-center text-2xl border border-[#dbc2b0]/40 dark:border-[#887364]/40 shrink-0 shadow-sm">
+                              {catObj?.emoji || "🪙"}
+                            </div>
+                            <div>
+                              <div className="text-xs font-black text-foreground flex items-center gap-1.5">
+                                {catObj?.title || item.type}
+                                {item.symbol && <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-[#8C5000]/10 text-[#8C5000] dark:bg-[#ffb874]/10 dark:text-[#ffb874] font-bold uppercase">{item.symbol}</span>}
+                              </div>
+                              <div className="text-[11px] font-extrabold text-[#8C5000] dark:text-[#ffb874] mt-0.5">
+                                {Number(item.amount).toLocaleString("tr-TR", { minimumFractionDigits: 2 })} {item.currency || selectedCurrency || "TRY"}
+                              </div>
+                              {item.description && <div className="text-[10px] text-muted-foreground font-medium mt-0.5">{item.description}</div>}
+                            </div>
                           </div>
-                        </div>
 
-                        <div>
-                          <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] uppercase tracking-wider mb-1.5 block">Sembol (Opsiyonel)</Label>
-                          <Input {...form.register(`investments.${i}.symbol`)} placeholder="Örn: THYAO, BTC" className="h-12 rounded-2xl bg-white dark:bg-[#1c140e] border-[#dbc2b0]/50 dark:border-[#887364]/40 font-bold uppercase text-foreground text-sm" />
+                          <Button type="button" variant="ghost" size="icon" onClick={() => investmentsField.remove(i)} className="text-rose-500 hover:bg-rose-500/10 h-10 w-10 rounded-xl transition-colors shrink-0">
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
                         </div>
-                      </div>
-
-                      <div>
-                        <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] uppercase tracking-wider mb-1.5 block">Açıklama</Label>
-                        <Input {...form.register(`investments.${i}.description`)} placeholder="Banka/Platform" className="h-12 rounded-2xl bg-white dark:bg-[#1c140e] border-[#dbc2b0]/50 dark:border-[#887364]/40 font-medium text-foreground text-sm" />
-                      </div>
-                    </div>
-                  ))}
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
             )}
@@ -935,6 +983,130 @@ export function OnboardingForm() {
             </div>
           </div>
         )}
+
+        {/* Premium Varlık Ekleme Popup Modalı (Framer Motion) */}
+        <AnimatePresence>
+          {activeAssetModal && (
+            <div className="absolute inset-0 z-[110] flex items-center justify-center p-4">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setActiveAssetModal(null)}
+                className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                transition={{ type: "spring", duration: 0.5 }}
+                className="relative w-full max-w-md bg-card border border-[#8C5000]/30 dark:border-[#ffb874]/30 rounded-3xl shadow-2xl p-6 flex flex-col space-y-4 overflow-hidden z-10"
+              >
+                {/* Header */}
+                <div className="flex items-center justify-between border-b border-border/20 pb-4">
+                  <div className="flex items-center gap-3">
+                    <span className="text-3xl">{ASSET_CATEGORIES.find(c => c.id === activeAssetModal)?.emoji}</span>
+                    <div>
+                      <h3 className="text-sm font-black text-[#5a3100] dark:text-[#ffb874]">
+                        {ASSET_CATEGORIES.find(c => c.id === activeAssetModal)?.title}
+                      </h3>
+                      <p className="text-[10px] text-muted-foreground">Varlık detaylarını doldurun</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setActiveAssetModal(null)}
+                    className="h-8 w-8 rounded-full bg-muted/30 flex items-center justify-center hover:bg-rose-500 hover:text-white transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Form fields */}
+                <div className="space-y-4 pt-1">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Sembol / Kod</Label>
+                      <Input
+                        value={modalAssetData.symbol}
+                        onChange={e => setModalAssetData({ ...modalAssetData, symbol: e.target.value })}
+                        placeholder="Örn: THYAO, BTC"
+                        className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] uppercase font-bold"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Para Birimi</Label>
+                      <Select
+                        value={modalAssetData.currency}
+                        onValueChange={(v: any) => setModalAssetData({ ...modalAssetData, currency: String(v) })}
+                      >
+                        <SelectTrigger className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-extrabold text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {MAIN_CURRENCIES.map(c => <SelectItem key={c.code} value={c.code}>{c.flag} {c.code}</SelectItem>)}
+                          {OTHER_CURRENCIES.map(c => <SelectItem key={c.code} value={c.code}>{c.flag} {c.code}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Birim Miktarı / Adet</Label>
+                      <Input
+                        type="number"
+                        value={modalAssetData.quantity}
+                        onChange={e => setModalAssetData({ ...modalAssetData, quantity: e.target.value })}
+                        placeholder="1"
+                        className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-bold"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Toplam Tutar / Değer</Label>
+                      <Input
+                        type="number"
+                        value={modalAssetData.amount}
+                        onChange={e => setModalAssetData({ ...modalAssetData, amount: e.target.value })}
+                        placeholder="0.00"
+                        className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-black text-primary"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Açıklama (Banka/Kurum)</Label>
+                    <Input
+                      value={modalAssetData.description}
+                      onChange={e => setModalAssetData({ ...modalAssetData, description: e.target.value })}
+                      placeholder="Örn: Akbank, Binance, Ziraat"
+                      className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-medium text-xs"
+                    />
+                  </div>
+                </div>
+
+                {/* Footer Buttons */}
+                <div className="flex gap-3 pt-2 border-t border-border/10">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => setActiveAssetModal(null)}
+                    className="flex-1 h-11 rounded-xl font-bold"
+                  >
+                    İptal
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={handleSaveAssetModal}
+                    className="flex-1 h-11 rounded-xl bg-[#8C5000] dark:bg-[#ffb874] text-white dark:text-[#120d0a] font-black shadow-lg shadow-[#8C5000]/25 hover:scale-[1.02] transition-all"
+                  >
+                    Varlığı Ekle
+                  </Button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
 
         {/* Footer */}
         <div className="flex items-center justify-between px-8 py-5 bg-[#fbf9f4] dark:bg-[#120d0a]/60 border-t border-[#8C5000]/10 dark:border-[#ffb874]/15 transition-colors duration-300 rounded-b-3xl">
