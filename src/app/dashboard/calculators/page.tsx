@@ -200,8 +200,8 @@ export default function CalculatorsPage() {
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <Card className="lg:col-span-1 border-border/30 shadow-ambient-medium rounded-[32px] overflow-hidden bg-card h-fit p-0">
-                <CardHeader className="bg-primary/5 border-b border-border/10 h-14 md:h-16 flex flex-row items-center p-0 px-5 md:px-8">
-                  <CardTitle className="text-base md:text-lg m-0 p-0 leading-none">Hesaplama Parametreleri</CardTitle>
+                <CardHeader className="bg-primary/5 border-b border-border/10 h-14 md:h-16 flex items-center justify-center p-0">
+                  <CardTitle className="text-base md:text-lg m-0 p-0 font-bold">Hesaplama Parametreleri</CardTitle>
                 </CardHeader>
                 <CardContent className="p-5 md:p-8 space-y-6 md:space-y-8">
                   <div className="space-y-3">
@@ -310,8 +310,8 @@ export default function CalculatorsPage() {
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <Card className="lg:col-span-1 border-border/30 shadow-ambient-medium rounded-[32px] overflow-hidden bg-card h-fit p-0">
-                <CardHeader className="bg-emerald-500/5 border-b border-border/10 h-14 md:h-16 flex flex-row items-center p-0 px-5 md:px-8">
-                  <CardTitle className="text-base md:text-lg m-0 p-0 leading-none">BES Planı Parametreleri</CardTitle>
+                <CardHeader className="bg-emerald-500/5 border-b border-border/10 h-14 md:h-16 flex items-center justify-center p-0">
+                  <CardTitle className="text-base md:text-lg m-0 p-0 font-bold">BES Planı Parametreleri</CardTitle>
                 </CardHeader>
                 <CardContent className="p-8 space-y-8">
                   <div className="space-y-3">
@@ -443,8 +443,8 @@ export default function CalculatorsPage() {
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <Card className="lg:col-span-1 border-border/30 shadow-ambient-medium rounded-[32px] overflow-hidden bg-card h-fit p-0">
-                <CardHeader className="bg-orange-500/5 border-b border-border/10 h-14 md:h-16 flex flex-row items-center p-0 px-5 md:px-8">
-                  <CardTitle className="text-base md:text-lg m-0 p-0 leading-none">Pozisyon Parametreleri</CardTitle>
+                <CardHeader className="bg-orange-500/5 border-b border-border/10 h-14 md:h-16 flex items-center justify-center p-0">
+                  <CardTitle className="text-base md:text-lg m-0 p-0 font-bold">Pozisyon Parametreleri</CardTitle>
                 </CardHeader>
                 <CardContent className="p-8 space-y-8">
                   <div className="flex p-1 bg-muted rounded-xl gap-1">
