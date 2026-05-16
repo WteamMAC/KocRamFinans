@@ -367,7 +367,7 @@ export function AssetList({
           <Button
             variant="outline"
             onClick={activeTab === "financial" ? handleExportCSV : handleExportFixedCSV}
-            className="rounded-full px-4 py-2 h-12 text-sm font-semibold text-primary border-border/30 hover:bg-primary/5 bg-card shadow-ambient-low"
+            className="rounded-full px-5 h-[52px] text-sm font-semibold text-primary border-border/30 hover:bg-primary/5 bg-card shadow-ambient-low transition-all duration-300"
           >
             <Download className="mr-2 h-4 w-4" />
             Dışa Aktar
@@ -376,7 +376,7 @@ export function AssetList({
             variant="outline"
             onClick={handleRefresh}
             disabled={isRefreshing}
-            className="rounded-full px-4 py-2 h-12 text-sm font-semibold text-primary border-border/30 hover:bg-primary/5 bg-card shadow-ambient-low"
+            className="rounded-full px-5 h-[52px] text-sm font-semibold text-primary border-border/30 hover:bg-primary/5 bg-card shadow-ambient-low transition-all duration-300"
           >
             <RefreshCw className={cn("mr-2 h-4 w-4", isRefreshing && "animate-spin")} />
             Yenile
@@ -384,7 +384,7 @@ export function AssetList({
           <Button
             onClick={() => { setIsAdding(!isAdding); setError(null); }}
             className={cn(
-              "rounded-full px-4 py-2 h-12 text-sm font-semibold shadow-ambient-medium transition-all duration-300",
+              "rounded-full px-6 h-[52px] text-sm font-semibold shadow-ambient-medium transition-all duration-300",
               isAdding ? "bg-muted text-foreground hover:bg-muted/80" : "bg-primary text-primary-foreground hover:bg-primary/90"
             )}
           >
