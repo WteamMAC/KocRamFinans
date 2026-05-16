@@ -7,6 +7,8 @@ import { redirect } from "next/navigation";
 import { IncomeExpenseClient } from "@/components/dashboard/income-expense-client";
 import { getUserCurrencyConfig } from "@/lib/currency-formatter";
 
+import { getLivePrices, normalizeFinancialItemsToTry } from "@/lib/price-service";
+
 export default async function IncomeExpenseHistoryPage() {
   await cookies();
   const { userId } = await auth();
@@ -29,18 +31,22 @@ export default async function IncomeExpenseHistoryPage() {
     return null;
   }
 
+  const livePrices = await getLivePrices([]);
+  const normalizedIncomes = normalizeFinancialItemsToTry(user.incomes, livePrices);
+  const normalizedExpenses = normalizeFinancialItemsToTry(user.expenses, livePrices);
+
   const now = new Date();
   
-  const actualIncome = user.incomes
+  const actualIncome = normalizedIncomes
     .filter(inc => new Date(inc.date || inc.createdAt) <= now)
     .reduce((acc, inc) => acc + inc.amount, 0);
     
-  const actualExpense = user.expenses
+  const actualExpense = normalizedExpenses
     .filter(exp => new Date(exp.date || exp.createdAt) <= now)
     .reduce((acc, exp) => acc + exp.amount, 0);
 
-  const totalIncome = user.incomes.reduce((acc, inc) => acc + inc.amount, 0);
-  const totalExpense = user.expenses.reduce((acc, exp) => acc + exp.amount, 0);
+  const totalIncome = normalizedIncomes.reduce((acc, inc) => acc + inc.amount, 0);
+  const totalExpense = normalizedExpenses.reduce((acc, exp) => acc + exp.amount, 0);
   
   const netBalance = actualIncome - actualExpense;
   const projectedBalance = totalIncome - totalExpense;
@@ -51,7 +57,7 @@ export default async function IncomeExpenseHistoryPage() {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     const monthName = d.toLocaleDateString("tr-TR", { month: "short" });
 
-    const monthlyIncome = user.incomes
+    const monthlyIncome = normalizedIncomes
       .filter((inc) => {
         const dAt = new Date(inc.date || inc.createdAt);
         return (
@@ -61,7 +67,7 @@ export default async function IncomeExpenseHistoryPage() {
       })
       .reduce((acc, inc) => acc + inc.amount, 0);
 
-    const monthlyExpense = user.expenses
+    const monthlyExpense = normalizedExpenses
       .filter((exp) => {
         const dAt = new Date(exp.date || exp.createdAt);
         return (
@@ -79,35 +85,35 @@ export default async function IncomeExpenseHistoryPage() {
   }
 
   const expenseCategoryMap: Record<string, number> = {};
-  user.expenses.forEach((exp) => {
+  normalizedExpenses.forEach((exp) => {
     expenseCategoryMap[exp.type] =
       (expenseCategoryMap[exp.type] || 0) + exp.amount;
   });
 
   const incomeCategoryMap: Record<string, number> = {};
-  user.incomes.forEach((inc) => {
+  normalizedIncomes.forEach((inc) => {
     incomeCategoryMap[inc.type] =
       (incomeCategoryMap[inc.type] || 0) + inc.amount;
   });
 
   const recentTransactions = [
-    ...user.incomes.slice(0, 10).map((inc) => ({
+    ...normalizedIncomes.slice(0, 10).map((inc) => ({
       id: inc.id,
       type: "income" as const,
       category: inc.type,
       description: inc.description || inc.type,
-      amount: inc.amount,
+      amount: inc.rawAmount, // Tabloda orijinal 500 / 1000 görünsün!
       createdAt: inc.date || inc.createdAt,
       currency: inc.currency,
       originalAmount: inc.originalAmount || undefined,
       fxRate: inc.fxRate || undefined,
     })),
-    ...user.expenses.slice(0, 10).map((exp) => ({
+    ...normalizedExpenses.slice(0, 10).map((exp) => ({
       id: exp.id,
       type: "expense" as const,
       category: exp.type,
       description: exp.description || exp.type,
-      amount: exp.amount,
+      amount: exp.rawAmount, // Tabloda orijinal 500 / 1000 görünsün!
       createdAt: exp.date || exp.createdAt,
       currency: exp.currency,
       originalAmount: exp.originalAmount || undefined,
