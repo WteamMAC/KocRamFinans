@@ -382,16 +382,28 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
                       <div className="text-right">
                         <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Birikmiş {isBES ? "Getiri" : "Faiz"}</p>
                         {(() => {
-                          // Basit bir "bugüne kadar ne kazandı" hesabı (createdAt'ten bugüne)
                           const firstCreated = new Date(Math.min(...g.items.map(i => new Date(i.createdAt).getTime())));
-                          const monthsPassed = Math.max(0, (new Date().getFullYear() - firstCreated.getFullYear()) * 12 + (new Date().getMonth() - firstCreated.getMonth()));
-                          const monthlyRate = g.rate / 12 / 100;
-                          const currentVal = g.totalQuantity * Math.pow(1 + monthlyRate, monthsPassed);
-                          const earned = currentVal - g.totalQuantity;
+                          const msPassed = Math.max(0, Date.now() - firstCreated.getTime());
+                          const daysPassed = msPassed / (1000 * 60 * 60 * 24);
+                          let currentVal = g.totalQuantity;
+                          let earned = 0;
+                          if (isBES) {
+                            const annualFundGrowth = 0.45;
+                            const dailyGrowth = annualFundGrowth / 365;
+                            const fundMultiplier = Math.pow(1 + dailyGrowth, daysPassed);
+                            const stateMultiplier = 1 + (g.rate > 0 && g.rate <= 100 ? g.rate / 100 : 0.30);
+                            currentVal = (g.totalQuantity * fundMultiplier) * stateMultiplier;
+                            earned = currentVal - g.totalQuantity;
+                          } else {
+                            const dailyRate = g.rate / 365 / 100;
+                            const multiplier = Math.pow(1 + dailyRate, daysPassed);
+                            currentVal = g.totalQuantity * multiplier;
+                            earned = currentVal - g.totalQuantity;
+                          }
                           return (
                             <>
-                              <p className="font-bold text-lg text-emerald-500">+{Math.round(earned).toLocaleString("tr-TR")} ₺</p>
-                              <p className="text-[9px] text-muted-foreground italic">{monthsPassed} ayda birikti</p>
+                              <p className="font-bold text-lg text-emerald-500">+{earned.toLocaleString("tr-TR", { maximumFractionDigits: 2 })} ₺</p>
+                              <p className="text-[9px] text-muted-foreground italic">{Math.round(daysPassed)} gün canlı birikim {isBES ? "(+%30 Devlet Katkısı)" : ""}</p>
                             </>
                           );
                         })()}

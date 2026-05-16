@@ -15,7 +15,7 @@ import { SmartInsights } from "@/components/dashboard/smart-insights";
 import { FinancialCalendar } from "@/components/dashboard/financial-calendar";
 import { InvestmentProjection } from "@/components/dashboard/investment-projection";
 import { cn } from "@/lib/utils";
-import { getLivePrices, calculatePortfolioMetrics } from "@/lib/price-service";
+import { getLivePrices, calculatePortfolioMetrics, calculateFixedAssetsMetrics } from "@/lib/price-service";
 import { DashboardCards } from "@/components/dashboard/dashboard-cards";
 
 export default async function DashboardPage() {
@@ -44,9 +44,8 @@ export default async function DashboardPage() {
     return null;
   }
 
-  // Kullanıcı Profilinden gelen eski yapılandırma iptal edildi, client side context kullanılıyor.
-
-  let portfolioMetrics = { totalCurrentValue: 0, totalProfit: 0, profitPercent: 0, assets: [] as any[] };
+  let portfolioMetrics = { totalCost: 0, totalCurrentValue: 0, totalProfit: 0, profitPercent: 0, assets: [] as any[] };
+  let fixedMetrics = { totalOriginalCost: 0, totalCurrentValue: 0, totalProfit: 0, totalProfitPercent: 0, assets: [] as any[] };
   let livePrices = new Map();
 
   try {
@@ -58,20 +57,24 @@ export default async function DashboardPage() {
 
     livePrices = await getLivePrices(symbols);
     portfolioMetrics = calculatePortfolioMetrics(user.investments, livePrices, user.incomes);
+    fixedMetrics = calculateFixedAssetsMetrics(user.fixedAssets, livePrices);
   } catch (error) {
     console.error("Dashboard Data Fetch Error:", error);
     portfolioMetrics = calculatePortfolioMetrics(user.investments, new Map(), user.incomes);
+    fixedMetrics = calculateFixedAssetsMetrics(user.fixedAssets, new Map());
   }
 
   const totalIncome = (user.incomes as any[]).reduce((acc: number, inc: any) => acc + inc.amount, 0);
   const totalExpense = (user.expenses as any[]).reduce((acc: number, exp: any) => acc + exp.amount, 0);
   const totalDebt = (user.debts as any[]).reduce((acc: number, debt: any) => acc + debt.amount, 0);
   const totalInvestment = portfolioMetrics.totalCurrentValue;
-  const totalFixedAssets = (user.fixedAssets as any[]).reduce((acc: number, asset: any) => acc + asset.value, 0);
-  const totalProfit = portfolioMetrics.totalProfit;
-  const profitPercent = portfolioMetrics.profitPercent;
+  const totalFixedAssets = fixedMetrics.totalCurrentValue;
+  const totalProfit = portfolioMetrics.totalProfit + fixedMetrics.totalProfit;
+  const profitPercent = (portfolioMetrics.totalCost + fixedMetrics.totalOriginalCost) > 0 
+    ? (totalProfit / (portfolioMetrics.totalCost + fixedMetrics.totalOriginalCost)) * 100 
+    : 0;
   const totalRealizedProfit = (portfolioMetrics as any).totalRealizedProfit || 0;
-  const totalUnrealizedProfit = (portfolioMetrics as any).totalUnrealizedProfit || 0;
+  const totalUnrealizedProfit = ((portfolioMetrics as any).totalUnrealizedProfit || 0) + fixedMetrics.totalProfit;
   const totalDividends = (portfolioMetrics as any).totalDividends || 0;
   
   const netWorth = totalInvestment + (totalIncome - totalExpense) + totalFixedAssets - totalDebt;
@@ -186,7 +189,7 @@ export default async function DashboardPage() {
           <CardContent className="p-4 md:p-8 flex-1">
             <InvestmentSummary 
               investments={portfolioMetrics.assets} 
-              fixedAssets={user.fixedAssets}
+              fixedAssets={fixedMetrics.assets.map(fa => ({ ...fa, value: fa.currentValuation || fa.value }))}
             />
           </CardContent>
         </Card>
@@ -195,7 +198,7 @@ export default async function DashboardPage() {
            <InvestmentProjection 
              currentValue={totalInvestment} 
              investments={portfolioMetrics.assets}
-             fixedAssets={user.fixedAssets}
+             fixedAssets={fixedMetrics.assets.map(fa => ({ ...fa, value: fa.currentValuation || fa.value }))}
              monthlySavings={(totalIncome - totalExpense) > 0 ? (totalIncome - totalExpense) : 0}
            />
         </div>
@@ -207,12 +210,13 @@ export default async function DashboardPage() {
           <CardTitle className="text-xl font-heading font-bold text-foreground flex items-center gap-2">
             <LayoutDashboard className="h-5 w-5 text-accent" /> Sabit Varlık Analizi
           </CardTitle>
-          <div className="bg-primary-foreground/10 px-3 py-1 rounded-full text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-            Taşınmaz & Araçlar
+          <div className="bg-primary-foreground/10 px-3 py-1 rounded-full text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+            Canlı Kur / Endeksleme Aktif
           </div>
         </CardHeader>
         <CardContent className="p-4 md:p-8">
-          <FixedAssetsSummary fixedAssets={user.fixedAssets} />
+          <FixedAssetsSummary fixedAssets={fixedMetrics.assets.map(fa => ({ ...fa, value: fa.currentValuation || fa.value }))} />
         </CardContent>
       </Card>
     </div>

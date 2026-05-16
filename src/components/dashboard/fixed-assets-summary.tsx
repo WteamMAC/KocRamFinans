@@ -4,11 +4,17 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { useEffect, useState } from "react";
 import { useCurrency } from "@/context/currency-context";
 
+import { cn } from "@/lib/utils";
+
 interface FixedAsset {
   id: string;
   name: string;
   type: string;
   value: number;
+  originalValuation?: number;
+  currentValuation?: number;
+  liveProfit?: number;
+  liveProfitPercent?: number;
 }
 
 interface FixedAssetsSummaryProps {
@@ -42,17 +48,20 @@ export function FixedAssetsSummary({ fixedAssets }: FixedAssetsSummaryProps) {
 
   const groupedData = fixedAssets.reduce((acc: any, asset) => {
     const existing = acc.find((item: any) => item.name === asset.type);
-    const val = asset.value;
+    const val = asset.currentValuation || asset.value;
     if (existing) {
       existing.value += val;
-      existing.rawVal += asset.value;
+      existing.rawVal += val;
     } else {
-      acc.push({ name: asset.type, value: val, rawVal: asset.value });
+      acc.push({ name: asset.type, value: val, rawVal: val });
     }
     return acc;
   }, []);
 
-  const totalValue = fixedAssets.reduce((acc, asset) => acc + asset.value, 0);
+  const totalOriginalCost = fixedAssets.reduce((acc, a) => acc + (a.originalValuation || a.value), 0);
+  const totalValue = fixedAssets.reduce((acc, a) => acc + (a.currentValuation || a.value), 0);
+  const totalProfit = totalValue - totalOriginalCost;
+  const totalProfitPercent = totalOriginalCost > 0 ? (totalProfit / totalOriginalCost) * 100 : 0;
 
   if (!isMounted) {
     return <div className="h-[300px] w-full bg-muted animate-pulse rounded-3xl" />;
@@ -99,9 +108,17 @@ export function FixedAssetsSummary({ fixedAssets }: FixedAssetsSummaryProps) {
       </div>
 
       <div className="w-full lg:w-1/2 space-y-4">
-        <div className="bg-primary/5 p-6 rounded-[24px] border border-primary/10 mb-4">
-          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block mb-1">Toplam Sabit Varlık Değeri</span>
-          <span className="text-3xl font-heading font-bold text-primary">{formatAmount(totalValue)}</span>
+        <div className="bg-primary/5 p-6 rounded-[24px] border border-primary/10 mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block mb-1">Canlı Sabit Varlık Değeri</span>
+            <span className="text-3xl font-heading font-bold text-primary">{formatAmount(totalValue)}</span>
+          </div>
+          {Math.abs(totalProfit) > 0.01 && (
+            <div className={cn("px-3 py-2 rounded-xl text-xs font-bold border w-fit text-right shadow-sm", totalProfit >= 0 ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" : "bg-rose-500/10 text-rose-600 border-rose-500/20")}>
+              <span className="text-[9px] block text-muted-foreground uppercase font-semibold">Kur / Endeks Değer Artışı</span>
+              {totalProfit >= 0 ? "+" : ""}{formatAmount(totalProfit)} ({totalProfit >= 0 ? "+" : ""}{totalProfitPercent.toFixed(1)}%)
+            </div>
+          )}
         </div>
 
         <div className="grid gap-2 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">

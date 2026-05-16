@@ -403,15 +403,36 @@ export async function addFixedAsset(data: {
 
     if (!user) throw new Error("Kullanıcı kaydı bulunamadı.");
 
+    let fx = data.fxRate ?? 1.0;
+    const curr = (data.currency || "TRY").toUpperCase();
+    const orig = data.originalAmount ?? Number(data.value);
+    let tryVal = Number(data.value);
+
+    if (curr !== "TRY") {
+      try {
+        const live = await getLivePrices(["USDTRY=X", "EURTRY=X", "GBPTRY=X", "XAUTRY=X"]);
+        if (curr === "USD" && live.get("USDTRY=X")) fx = live.get("USDTRY=X")!.price;
+        else if (curr === "EUR" && live.get("EURTRY=X")) fx = live.get("EURTRY=X")!.price;
+        else if (curr === "GBP" && live.get("GBPTRY=X")) fx = live.get("GBPTRY=X")!.price;
+        else if ((curr === "XAU" || curr === "GOLD") && live.get("XAUTRY=X")) fx = live.get("XAUTRY=X")!.price;
+        
+        tryVal = orig * fx;
+      } catch (err) {
+        console.error("Fixed asset FX fetch error:", err);
+      }
+    } else {
+      tryVal = orig;
+    }
+
     await prisma.fixedAsset.create({
       data: {
         userId: user.id,
         name: data.name,
         type: data.type,
-        value: Number(data.value),
-        currency: data.currency ?? "TRY",
-        originalAmount: data.originalAmount ?? Number(data.value),
-        fxRate: data.fxRate ?? 1.0,
+        value: tryVal,
+        currency: curr,
+        originalAmount: orig,
+        fxRate: fx,
       }
     });
 

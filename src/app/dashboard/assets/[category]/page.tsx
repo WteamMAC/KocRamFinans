@@ -1,7 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
-import { getLivePrices, calculatePortfolioMetrics } from "@/lib/price-service";
+import { getLivePrices, calculatePortfolioMetrics, calculateFixedAssetsMetrics } from "@/lib/price-service";
 import { AssetList } from "@/components/dashboard/asset-list";
 import { BesFaizDetail } from "@/components/dashboard/bes-faiz-detail";
 
@@ -74,6 +74,7 @@ export default async function AssetCategoryPage({ params }: CategoryPageProps) {
   }
 
   let metrics = { totalCurrentValue: 0, totalCost: 0, totalProfit: 0, profitPercent: 0, assets: [] as any[] };
+  let fixedMetrics = { totalOriginalCost: 0, totalCurrentValue: 0, totalProfit: 0, totalProfitPercent: 0, assets: [] as any[] };
 
   try {
     const symbols = Array.from(new Set(
@@ -84,9 +85,11 @@ export default async function AssetCategoryPage({ params }: CategoryPageProps) {
 
     const livePrices = await getLivePrices(symbols);
     metrics = calculatePortfolioMetrics(filteredInvestments, livePrices);
+    fixedMetrics = calculateFixedAssetsMetrics(filteredFixedAssets, livePrices);
   } catch (error) {
     console.error("Category Page Data Fetch Error:", error);
     metrics = calculatePortfolioMetrics(filteredInvestments, new Map());
+    fixedMetrics = calculateFixedAssetsMetrics(filteredFixedAssets, new Map());
   }
 
   const categoryTitles: Record<string, string> = {
@@ -99,9 +102,15 @@ export default async function AssetCategoryPage({ params }: CategoryPageProps) {
 
   return (
     <div className="flex-1 space-y-10 p-8 pt-10 bg-background min-h-screen">
-      <div className="mb-8">
-        <h1 className="text-3xl font-heading font-bold text-primary">{categoryTitles[category] || "Varlık Detayları"}</h1>
-        <p className="text-muted-foreground opacity-70">Seçili varlık kategorisine ait detaylı analiz ve listeleme.</p>
+      <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-heading font-bold text-primary">{categoryTitles[category] || "Varlık Detayları"}</h1>
+          <p className="text-muted-foreground opacity-70">Seçili varlık kategorisine ait detaylı analiz ve listeleme.</p>
+        </div>
+        <div className="bg-primary/10 text-primary border border-primary/20 px-4 py-2 rounded-2xl text-xs font-bold flex items-center gap-2 w-fit">
+          <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+          Canlı Piyasa & Kur Endeksleme Aktif
+        </div>
       </div>
       <AssetList 
         assets={metrics.assets} 
@@ -111,13 +120,15 @@ export default async function AssetCategoryPage({ params }: CategoryPageProps) {
           soldPrice: inv.soldPrice ?? undefined,
           transactionType: inv.transactionType as "BUY" | "SELL"
         }))} 
-        fixedAssets={filteredFixedAssets.map(fa => ({
+        fixedAssets={fixedMetrics.assets.map(fa => ({
           id: fa.id,
           name: fa.name,
           type: fa.type,
-          value: fa.value
+          value: fa.currentValuation || fa.value,
+          liveProfit: fa.liveProfit,
+          liveProfitPercent: fa.liveProfitPercent
         }))}
-        metrics={metrics}
+        metrics={{ ...metrics, fixedMetrics }}
         defaultTab={category === "fixed" ? "fixed" : "financial"}
         hideTabs={true}
       />
