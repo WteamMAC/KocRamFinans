@@ -235,19 +235,6 @@ export function OnboardingForm() {
   const debtsField = useFieldArray({ control: form.control, name: "debts" });
   const investmentsField = useFieldArray({ control: form.control, name: "investments" });
 
-  useEffect(() => {
-    if (selectedCurrency) {
-      const curInc = form.getValues("incomes") || [];
-      form.setValue("incomes", curInc.map(i => ({ ...i, currency: (!i.currency || i.currency === "TRY") ? selectedCurrency : i.currency })));
-      const curExp = form.getValues("expenses") || [];
-      form.setValue("expenses", curExp.map(e => ({ ...e, currency: (!e.currency || e.currency === "TRY") ? selectedCurrency : e.currency })));
-      const curDebt = form.getValues("debts") || [];
-      form.setValue("debts", curDebt.map(d => ({ ...d, currency: (!d.currency || d.currency === "TRY") ? selectedCurrency : d.currency })));
-      const curInv = form.getValues("investments") || [];
-      form.setValue("investments", curInv.map(inv => ({ ...inv, currency: (!inv.currency || inv.currency === "TRY") ? selectedCurrency : inv.currency })));
-    }
-  }, [selectedCurrency]);
-
   const handleGender = (v: F["gender"]) => {
     form.setValue("gender", v, { shouldValidate: true });
     setGenderAnim(true);
