@@ -763,6 +763,7 @@ export function OnboardingForm() {
               </div>
             )}
           </form>
+        </div>
         {/* Global Country Overlay */}
         {selectedRegion && (
           <div className="absolute inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-6 animate-in fade-in duration-300">
