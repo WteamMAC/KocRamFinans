@@ -11,6 +11,9 @@ interface FixedAsset {
   name: string;
   type: string;
   value: number;
+  currency?: string;
+  originalAmount?: number;
+  fxRate?: number;
   originalValuation?: number;
   currentValuation?: number;
   liveProfit?: number;
@@ -32,7 +35,7 @@ const COLORS = [
 
 export function FixedAssetsSummary({ fixedAssets }: FixedAssetsSummaryProps) {
   const [isMounted, setIsMounted] = useState(false);
-  const { formatAmount } = useCurrency();
+  const { formatAmount, displayCurrency } = useCurrency();
 
   useEffect(() => {
     setIsMounted(true);
@@ -63,6 +66,9 @@ export function FixedAssetsSummary({ fixedAssets }: FixedAssetsSummaryProps) {
   const totalProfit = totalValue - totalOriginalCost;
   const totalProfitPercent = totalOriginalCost > 0 ? (totalProfit / totalOriginalCost) * 100 : 0;
 
+  const isAllSameCur = fixedAssets.length > 0 && fixedAssets.every(a => (a.currency || "TRY").toUpperCase() === (displayCurrency || "TRY").toUpperCase());
+  const exactTotalFixedOrig = isAllSameCur ? fixedAssets.reduce((acc, a) => acc + (a.originalAmount || (a.fxRate ? a.value / a.fxRate : a.value)), 0) : undefined;
+
   if (!isMounted) {
     return <div className="h-[300px] w-full bg-muted animate-pulse rounded-3xl" />;
   }
@@ -90,11 +96,12 @@ export function FixedAssetsSummary({ fixedAssets }: FixedAssetsSummaryProps) {
                 if (active && payload && payload.length) {
                   const data = payload[0].payload as any;
                   const percent = ((data.rawVal / totalValue) * 100).toFixed(1);
+                  const exactItemOrig = isAllSameCur ? exactTotalFixedOrig! * (data.rawVal / totalValue) : undefined;
                   return (
                     <div className="bg-card/95 backdrop-blur-md p-4 border border-border/40 rounded-2xl shadow-ambient-high">
                       <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">{data.name}</p>
                       <p className="text-xl font-heading font-bold text-primary">
-                        {formatAmount(data.rawVal)}
+                        {formatAmount(data.rawVal, undefined, exactItemOrig ? { amount: exactItemOrig, currency: displayCurrency } : undefined)}
                       </p>
                       <p className="text-[11px] font-bold text-emerald-500 mt-1">%{percent} Pay</p>
                     </div>
@@ -111,7 +118,9 @@ export function FixedAssetsSummary({ fixedAssets }: FixedAssetsSummaryProps) {
         <div className="bg-primary/5 p-6 rounded-[24px] border border-primary/10 mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block mb-1">Canlı Sabit Varlık Değeri</span>
-            <span className="text-3xl font-heading font-bold text-primary">{formatAmount(totalValue)}</span>
+            <span className="text-3xl font-heading font-bold text-primary">
+              {formatAmount(totalValue, undefined, exactTotalFixedOrig ? { amount: exactTotalFixedOrig, currency: displayCurrency } : undefined)}
+            </span>
           </div>
           {Math.abs(totalProfit) > 0.01 && (
             <div className={cn("px-3 py-2 rounded-xl text-xs font-bold border w-fit text-right shadow-sm", totalProfit >= 0 ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" : "bg-rose-500/10 text-rose-600 border-rose-500/20")}>
@@ -124,6 +133,7 @@ export function FixedAssetsSummary({ fixedAssets }: FixedAssetsSummaryProps) {
         <div className="grid gap-2 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
           {groupedData.map((item: any, index: number) => {
             const percent = ((item.rawVal / totalValue) * 100).toFixed(1);
+            const exactItemOrig = isAllSameCur ? exactTotalFixedOrig! * (item.rawVal / totalValue) : undefined;
             return (
               <div key={index} className="flex items-center justify-between p-3 bg-card border border-border/15 rounded-2xl hover:shadow-ambient-low transition-all">
                 <div className="flex items-center gap-3">
@@ -131,7 +141,9 @@ export function FixedAssetsSummary({ fixedAssets }: FixedAssetsSummaryProps) {
                   <span className="text-xs font-bold text-muted-foreground">{item.name}</span>
                 </div>
                 <div className="flex items-center gap-4">
-                  <span className="text-xs font-bold text-primary">{formatAmount(item.rawVal)}</span>
+                  <span className="text-xs font-bold text-primary">
+                    {formatAmount(item.rawVal, undefined, exactItemOrig ? { amount: exactItemOrig, currency: displayCurrency } : undefined)}
+                  </span>
                   <span className="text-[10px] font-bold text-primary bg-primary/10 dark:bg-primary/20 px-2 py-0.5 rounded-xl border border-primary/15">%{percent}</span>
                 </div>
               </div>

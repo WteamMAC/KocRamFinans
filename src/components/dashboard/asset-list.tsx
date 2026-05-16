@@ -423,10 +423,13 @@ export function AssetList({
               {activeTab === "financial" ? `Toplam Portföy Değeri (${displayCurrency})` : `Toplam Varlık Değeri (${displayCurrency})`}
             </h3>
             <div className="text-4xl font-heading font-bold text-primary mb-4 relative z-10">
-              {activeTab === "financial"
-                ? formatCur(Object.values(groupedAssets).reduce((sum: number, g) => sum + g.totalValue, 0))
-                : formatCur((fixedAssets || []).reduce((sum: number, a) => sum + a.value, 0))
-              }
+              {(() => {
+                const isAllFixedSameCur = (fixedAssets || []).length > 0 && (fixedAssets || []).every(a => (a.currency || "TRY").toUpperCase() === (displayCurrency || "TRY").toUpperCase());
+                const exactTotalFixedOrig = isAllFixedSameCur ? (fixedAssets || []).reduce((sum: number, a) => sum + (a.originalAmount || (a.fxRate ? a.value / a.fxRate : a.value)), 0) : undefined;
+                return activeTab === "financial"
+                  ? formatCur(Object.values(groupedAssets).reduce((sum: number, g) => sum + g.totalValue, 0))
+                  : formatCur((fixedAssets || []).reduce((sum: number, a) => sum + a.value, 0), undefined, exactTotalFixedOrig ? { amount: exactTotalFixedOrig, currency: displayCurrency } : undefined);
+              })()}
             </div>
 
             {activeTab === "financial" ? (
@@ -689,7 +692,7 @@ export function AssetList({
                           <div className="flex items-center gap-4">
                             <div className="text-right">
                               <div className="text-2xl font-heading font-black text-primary">
-                                {formatCur(asset.value)}
+                                {formatCur(asset.value, undefined, { amount: origAmount, currency: fxSymbol })}
                               </div>
                             </div>
                             <Button

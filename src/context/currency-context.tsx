@@ -38,7 +38,7 @@ interface CurrencyContextType {
   displayCurrency: string;
   setDisplayCurrency: (currency: string) => void;
   rates: Record<string, number>;
-  formatAmount: (valInTry: number | null | undefined, customCurrency?: string) => string;
+  formatAmount: (valInTry: number | null | undefined, customCurrency?: string, exactOriginal?: { amount: number; currency: string }) => string;
   isLoading: boolean;
 }
 
@@ -109,10 +109,20 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const formatAmount = (valInTry: number | null | undefined, customCurrency?: string): string => {
+  const formatAmount = (
+    valInTry: number | null | undefined,
+    customCurrency?: string,
+    exactOriginal?: { amount: number; currency: string }
+  ): string => {
     if (valInTry === null || valInTry === undefined || isNaN(valInTry)) return "0.00 ₺";
     
     const targetCur = customCurrency || displayCurrency;
+
+    if (exactOriginal && (exactOriginal.currency || "TRY").toUpperCase() === targetCur.toUpperCase()) {
+      const sym = DISPLAY_CURRENCIES_MAP[targetCur]?.symbol || targetCur;
+      return `${exactOriginal.amount.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: exactOriginal.amount < 1 ? 4 : 2 })} ${sym}`;
+    }
+
     if (targetCur === "TRY") {
       return `${valInTry.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺`;
     }
