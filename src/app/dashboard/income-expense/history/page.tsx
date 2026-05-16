@@ -102,22 +102,24 @@ export default async function IncomeExpenseHistoryPage() {
       type: "income" as const,
       category: inc.type,
       description: inc.description || inc.type,
-      amount: inc.rawAmount, // Tabloda orijinal 500 / 1000 görünsün!
+      amount: inc.rawAmount, // Tabloda orijinal miktar görünsün
       createdAt: inc.date || inc.createdAt,
       currency: inc.currency,
       originalAmount: inc.originalAmount || undefined,
       fxRate: inc.fxRate || undefined,
+      tryAmount: inc.amount,
     })),
     ...normalizedExpenses.slice(0, 10).map((exp) => ({
       id: exp.id,
       type: "expense" as const,
       category: exp.type,
       description: exp.description || exp.type,
-      amount: exp.rawAmount, // Tabloda orijinal 500 / 1000 görünsün!
+      amount: exp.rawAmount, // Tabloda orijinal miktar görünsün
       createdAt: exp.date || exp.createdAt,
       currency: exp.currency,
       originalAmount: exp.originalAmount || undefined,
       fxRate: exp.fxRate || undefined,
+      tryAmount: exp.amount,
     })),
   ]
     .sort(
