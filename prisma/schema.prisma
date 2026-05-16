@@ -310,3 +310,11 @@ model UserBlock {
 
   @@unique([blockerId, blockedId])
 }
+
+model MarketPriceCache {
+  id        String   @id @default(cuid())
+  symbol    String   @unique
+  price     Float
+  changePct Float    @default(0)
+  updatedAt DateTime @default(now())
+}
