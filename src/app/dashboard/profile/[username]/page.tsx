@@ -62,7 +62,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
               <div className="text-lg md:text-2xl font-heading font-bold text-primary truncate">{investorLevel}</div>
               <div className="mt-2 md:mt-3 flex items-center gap-1.5">
                 <div className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse"></div>
-                <span className="text-[10px] md:text-xs font-bold text-muted-foreground opacity-70">Puan: {interactionScore}</span>
+                <span className="text-sm font-bold text-muted-foreground opacity-70">Puan: {interactionScore}</span>
               </div>
             </CardContent>
           </Card>
@@ -76,8 +76,8 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
             </CardHeader>
             <CardContent className="px-4 md:px-6 pb-4 md:pb-6">
               <div className="text-xl md:text-2xl font-heading font-bold text-foreground">{profile.followerCount + profile.followingCount}</div>
-              <div className="mt-2 md:mt-3 text-[10px] md:text-xs font-bold text-emerald-500 flex items-center gap-1">
-                <TrendingUp className="h-3 w-3" />
+              <div className="mt-2 md:mt-3 text-sm font-bold text-emerald-500 flex items-center gap-1.5">
+                <TrendingUp className="h-4 w-4" />
                 Bağlantı
               </div>
             </CardContent>
@@ -92,8 +92,8 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
             </CardHeader>
             <CardContent className="px-4 md:px-6 pb-4 md:pb-6">
               <div className="text-xl md:text-2xl font-heading font-bold text-foreground">{profile.postCount}</div>
-              <div className="mt-2 md:mt-3 text-[10px] md:text-xs font-bold text-indigo-500 flex items-center gap-1">
-                <Activity className="h-3 w-3" />
+              <div className="mt-2 md:mt-3 text-sm font-bold text-indigo-500 flex items-center gap-1.5">
+                <Activity className="h-4 w-4" />
                 İçerik
               </div>
             </CardContent>
@@ -110,8 +110,8 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
               <div className="text-xl md:text-2xl font-heading font-bold text-primary-foreground">
                 {profile.isBanned ? "Ban" : "Aktif"}
               </div>
-              <div className="mt-2 md:mt-3 text-[10px] md:text-xs font-bold text-emerald-400 flex items-center gap-1">
-                {!profile.isBanned && <TrendingUp className="h-3 w-3" />}
+              <div className="mt-2 md:mt-3 text-sm font-bold text-emerald-400 flex items-center gap-1.5">
+                {!profile.isBanned && <TrendingUp className="h-4 w-4" />}
                 Onaylı
               </div>
             </CardContent>
