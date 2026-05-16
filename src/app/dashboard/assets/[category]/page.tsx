@@ -121,9 +121,7 @@ export default async function AssetCategoryPage({ params }: CategoryPageProps) {
           transactionType: inv.transactionType as "BUY" | "SELL"
         }))} 
         fixedAssets={fixedMetrics.assets.map(fa => ({
-          id: fa.id,
-          name: fa.name,
-          type: fa.type,
+          ...fa,
           value: fa.currentValuation || fa.value,
           liveProfit: fa.liveProfit,
           liveProfitPercent: fa.liveProfitPercent
