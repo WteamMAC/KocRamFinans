@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -74,7 +74,7 @@ export function CompactCurrencyCalculator() {
     <motion.div
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="hidden lg:flex items-center gap-3 bg-card/60 backdrop-blur-2xl border border-primary/20 rounded-2xl px-4 h-[52px] shadow-2xl hover:shadow-primary/20 hover:border-primary/40 transition-all duration-500 group relative overflow-hidden min-w-[500px]"
+      className="hidden lg:flex items-center gap-2.5 bg-card/80 backdrop-blur-3xl border border-primary/20 rounded-full px-4 h-[56px] shadow-2xl hover:shadow-primary/20 hover:border-primary/40 transition-all duration-500 group relative overflow-hidden min-w-[540px]"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -85,28 +85,27 @@ export function CompactCurrencyCalculator() {
       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
 
       {/* Icon Container */}
-      <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-primary/10 group-hover:bg-primary/20 transition-all duration-300 mr-2 relative z-10 shadow-inner">
+      <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/15 group-hover:bg-primary/25 transition-all duration-300 shrink-0 relative z-10 shadow-inner border border-primary/20">
         <TrendingUp className="h-4 w-4 text-primary animate-pulse" />
       </div>
 
-      {/* Amount Input Section */}
-      <div className="relative group/input z-10 flex flex-col justify-center min-w-[100px]">
+      {/* Amount Input Section (Pill Kutusu) */}
+      <div className="relative group/input z-10 flex items-center h-10 rounded-full bg-primary/10 hover:bg-primary/15 border border-primary/25 transition-all duration-300 px-4 min-w-[100px] flex-1">
         <Input
           type="number"
           value={amount === 0 ? "" : amount}
           onChange={(e) => setAmount(parseFloat(e.target.value) || 0)}
-          className="w-full h-8 bg-transparent border-none focus-visible:ring-0 text-base font-black p-0 text-center placeholder:opacity-40 transition-all group-hover/input:scale-105"
+          className="w-full h-full bg-transparent border-none focus-visible:ring-0 text-sm font-black p-0 text-center placeholder:opacity-40 text-primary transition-all"
           placeholder="1.00"
         />
-        <div className="h-[2px] w-0 bg-primary group-hover/input:w-full transition-all duration-500 mx-auto rounded-full opacity-50" />
       </div>
 
-      {/* From Currency Select */}
+      {/* From Currency Select (Pill Kutusu) */}
       <Select value={fromCurrency} onValueChange={(val: any) => setFromCurrency(val || "USD")}>
-        <SelectTrigger className="w-[90px] h-9 bg-primary/5 border-none focus:ring-0 text-xs font-black px-3 flex justify-between items-center hover:bg-primary/10 transition-all z-10 rounded-xl">
+        <SelectTrigger className="w-[100px] h-10 bg-primary/10 hover:bg-primary/15 border border-primary/25 focus:ring-0 text-xs font-black px-4 flex justify-between items-center transition-all z-10 rounded-full shadow-inner">
           <SelectValue />
         </SelectTrigger>
-        <SelectContent className="rounded-2xl border-primary/10 bg-card/95 backdrop-blur-2xl shadow-2xl">
+        <SelectContent className="rounded-2xl border-primary/20 bg-card/95 backdrop-blur-2xl shadow-2xl">
           {CURRENCIES.map((c) => (
             <SelectItem key={c.code} value={c.code} className="text-xs font-bold focus:bg-primary/10 rounded-lg m-1">
               <span className="mr-2 text-lg">{c.icon}</span>
@@ -121,17 +120,17 @@ export function CompactCurrencyCalculator() {
         variant="ghost"
         size="icon"
         onClick={handleSwap}
-        className="h-8 w-8 rounded-full hover:bg-primary/15 text-primary/70 hover:text-primary transition-all duration-500 mx-1 z-10 hover:rotate-180"
+        className="h-9 w-9 rounded-full hover:bg-primary/20 text-primary hover:text-primary transition-all duration-500 z-10 hover:rotate-180 shrink-0"
       >
-        <ArrowRightLeft className="h-3.5 w-3.5" />
+        <ArrowRightLeft className="h-4 w-4" />
       </Button>
 
-      {/* To Currency Select */}
+      {/* To Currency Select (Pill Kutusu) */}
       <Select value={toCurrency} onValueChange={(val: any) => setToCurrency(val || "TRY")}>
-        <SelectTrigger className="w-[90px] h-9 bg-primary/5 border-none focus:ring-0 text-xs font-black px-3 flex justify-between items-center hover:bg-primary/10 transition-all z-10 rounded-xl">
+        <SelectTrigger className="w-[100px] h-10 bg-primary/10 hover:bg-primary/15 border border-primary/25 focus:ring-0 text-xs font-black px-4 flex justify-between items-center transition-all z-10 rounded-full shadow-inner">
           <SelectValue />
         </SelectTrigger>
-        <SelectContent className="rounded-2xl border-primary/10 bg-card/95 backdrop-blur-2xl shadow-2xl">
+        <SelectContent className="rounded-2xl border-primary/20 bg-card/95 backdrop-blur-2xl shadow-2xl">
           {CURRENCIES.map((c) => (
             <SelectItem key={c.code} value={c.code} className="text-xs font-bold focus:bg-primary/10 rounded-lg m-1">
               <span className="mr-2 text-lg">{c.icon}</span>
@@ -142,10 +141,10 @@ export function CompactCurrencyCalculator() {
       </Select>
 
       {/* Decorative Separator */}
-      <div className="h-6 w-[1.5px] bg-gradient-to-b from-transparent via-primary/20 to-transparent mx-3 z-10" />
+      <div className="h-7 w-[1.5px] bg-gradient-to-b from-transparent via-primary/30 to-transparent mx-1 z-10 shrink-0" />
 
-      {/* Result Display with Sparkle */}
-      <div className="flex flex-col items-center justify-center min-w-[140px] px-4 py-1.5 bg-primary/5 rounded-2xl z-10 border border-primary/10 group-hover:border-primary/30 transition-all">
+      {/* Result Display (Pill Kutusu) */}
+      <div className="flex items-center justify-center min-w-[140px] h-10 px-4 bg-primary/10 rounded-full z-10 border border-primary/25 group-hover:border-primary/40 shadow-inner transition-all shrink-0">
         <AnimatePresence mode="wait">
           <motion.div
             key={`${result}-${toCurrency}`}
@@ -155,13 +154,13 @@ export function CompactCurrencyCalculator() {
             transition={{ type: "spring", stiffness: 400, damping: 25 }}
             className="flex items-center gap-1.5"
           >
-            <span className="text-base font-black text-primary tracking-tighter drop-shadow-sm">
+            <span className="text-sm font-black text-primary tracking-tighter drop-shadow-sm">
               {result.toLocaleString("tr-TR", {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: result < 1 ? 4 : 2
               })}
             </span>
-            <span className="text-[9px] font-black text-muted-foreground/60 uppercase tracking-widest">
+            <span className="text-[10px] font-extrabold text-primary/70 uppercase tracking-widest ml-0.5">
               {toCurrency}
             </span>
           </motion.div>
@@ -174,13 +173,14 @@ export function CompactCurrencyCalculator() {
         size="icon"
         onClick={handleRefresh}
         disabled={loading || currencyLoading}
-        className="h-9 w-9 rounded-xl hover:bg-primary/15 text-primary/40 hover:text-primary transition-all duration-500 z-10 relative overflow-hidden group/refresh"
+        className="h-10 w-10 rounded-full hover:bg-primary/20 text-primary hover:text-primary transition-all duration-500 z-10 relative overflow-hidden group/refresh shrink-0 border border-primary/20 bg-primary/10 shadow-inner"
       >
         <RefreshCw className={cn("h-4 w-4", (loading || currencyLoading) && "animate-spin")} />
         {(loading || currencyLoading) && (
-          <span className="absolute inset-0 bg-primary/5 animate-pulse" />
+          <span className="absolute inset-0 bg-primary/10 animate-pulse" />
         )}
       </Button>
     </motion.div>
   );
 }
+

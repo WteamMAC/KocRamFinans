@@ -268,14 +268,23 @@ export function OnboardingForm() {
   const onSubmit = async (data: any) => {
     setLoading(true); setDbError(null);
     try {
-      const result = await completeOnboarding({
+      const defaultCur = data.currency || "TRY";
+      const cleanData = {
         ...data,
+        incomes: (data.incomes || []).map((i:any) => ({ ...i, currency: i.currency || defaultCur })),
+        expenses: (data.expenses || []).map((e:any) => ({ ...e, currency: e.currency || defaultCur })),
+        debts: (data.debts || []).map((d:any) => ({ ...d, currency: d.currency || defaultCur })),
+        investments: (data.investments || []).map((inv:any) => ({ ...inv, currency: inv.currency || defaultCur })),
+      };
+
+      const result = await completeOnboarding({
+        ...cleanData,
         familyCount: 1,
         maritalStatus: "Bekar",
         hasChildren: false,
         children: [],
-        debts: data.debts || [],
-        investments: data.investments || [],
+        debts: cleanData.debts || [],
+        investments: cleanData.investments || [],
         fixedAssets: []
       } as any);
 
@@ -479,7 +488,6 @@ export function OnboardingForm() {
                             );
                           })}
                         </div>
-                        {/* Country overlay removed from here and moved higher */}
                       </div>
                     </div>
                   )}/>
@@ -500,14 +508,14 @@ export function OnboardingForm() {
                 </div>
                 <div className="space-y-4">
                   {incomesField.fields.map((item, i) => (
-                    <div key={item.id} className="p-4 rounded-2xl bg-[#faf9f6] dark:bg-[#120d0a] border border-[#dbc2b0]/40 dark:border-[#887364]/40 space-y-3 relative">
+                    <div key={item.id} className="p-5 rounded-3xl bg-[#faf9f6] dark:bg-[#120d0a] border border-[#dbc2b0]/50 dark:border-[#887364]/40 space-y-4 shadow-sm">
                       <div className="flex items-center justify-between gap-3">
                         <Controller
                           name={`incomes.${i}.type`}
                           control={form.control}
                           render={({ field }) => (
                             <Select value={field.value} onValueChange={field.onChange}>
-                              <SelectTrigger className="flex-1 h-11 rounded-xl bg-white dark:bg-[#1c140e]">
+                              <SelectTrigger className="flex-1 h-12 rounded-2xl bg-white dark:bg-[#1c140e] border-[#dbc2b0]/50 dark:border-[#887364]/40 font-bold text-sm">
                                 <SelectValue placeholder="Gelir türü" />
                               </SelectTrigger>
                               <SelectContent>
@@ -519,38 +527,39 @@ export function OnboardingForm() {
                           )}
                         />
                         {incomesField.fields.length > 1 && (
-                           <Button type="button" variant="ghost" size="icon" onClick={()=>incomesField.remove(i)} className="text-rose-500 hover:bg-rose-500/10 h-10 w-10 rounded-xl transition-colors">
-                            <Trash2 className="w-4 h-4" />
+                          <Button type="button" variant="ghost" size="icon" onClick={()=>incomesField.remove(i)} className="text-rose-500 hover:bg-rose-500/10 h-12 w-12 rounded-2xl transition-colors">
+                            <Trash2 className="w-5 h-5" />
                           </Button>
                         )}
                       </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                          <Label className="text-[10px] font-bold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Para Birimi</Label>
-                          <Controller
-                            name={`incomes.${i}.currency`}
-                            control={form.control}
-                            render={({ field }) => (
-                              <Select value={field.value || selectedCurrency || "TRY"} onValueChange={field.onChange}>
-                                <SelectTrigger className="h-11 rounded-xl bg-white dark:bg-[#1c140e] font-extrabold text-xs">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <div className="px-2 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Ana Birimler</div>
-                                  {MAIN_CURRENCIES.map(c => <SelectItem key={c.code} value={c.code}>{c.flag} {c.code}</SelectItem>)}
-                                  <div className="px-2 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider border-t mt-1 pt-1">Diğer Birimler</div>
-                                  {OTHER_CURRENCIES.map(c => <SelectItem key={c.code} value={c.code}>{c.flag} {c.code}</SelectItem>)}
-                                </SelectContent>
-                              </Select>
-                            )}
-                          />
+                          <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] uppercase tracking-wider mb-1.5 block">Para Birimi & Miktar</Label>
+                          <div className="flex gap-2.5">
+                            <Controller
+                              name={`incomes.${i}.currency`}
+                              control={form.control}
+                              render={({ field }) => (
+                                <Select value={field.value || selectedCurrency || "TRY"} onValueChange={field.onChange}>
+                                  <SelectTrigger className="w-[105px] h-12 rounded-2xl bg-white dark:bg-[#1c140e] border-[#dbc2b0]/50 dark:border-[#887364]/40 font-extrabold text-xs">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <div className="px-2 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Ana Birimler</div>
+                                    {MAIN_CURRENCIES.map(c => <SelectItem key={c.code} value={c.code}>{c.flag} {c.code}</SelectItem>)}
+                                    <div className="px-2 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider border-t mt-1 pt-1">Diğer Birimler</div>
+                                    {OTHER_CURRENCIES.map(c => <SelectItem key={c.code} value={c.code}>{c.flag} {c.code}</SelectItem>)}
+                                  </SelectContent>
+                                </Select>
+                              )}
+                            />
+                            <Input type="number" {...form.register(`incomes.${i}.amount`, { valueAsNumber: true })} placeholder="0" className="flex-1 h-12 rounded-2xl bg-white dark:bg-[#1c140e] border-[#dbc2b0]/50 dark:border-[#887364]/40 font-black text-foreground text-sm" />
+                          </div>
                         </div>
+
                         <div>
-                          <Label className="text-[10px] font-bold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Miktar</Label>
-                          <Input type="number" {...form.register(`incomes.${i}.amount`, { valueAsNumber: true })} placeholder="0" className="h-11 rounded-xl bg-white dark:bg-[#1c140e] font-black text-foreground" />
-                        </div>
-                        <div>
-                          <Label className="text-[10px] font-bold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Tarih</Label>
+                          <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] uppercase tracking-wider mb-1.5 block">Tarih</Label>
                           <Controller
                             name={`incomes.${i}.date`}
                             control={form.control}
@@ -559,16 +568,18 @@ export function OnboardingForm() {
                                 date={field.value ? parseISO(field.value) : undefined}
                                 setDate={(d) => field.onChange(d ? d.toISOString().split("T")[0] : "")}
                                 placeholder="Tarih seç"
-                                className="h-11"
+                                className="h-12 rounded-2xl"
                               />
                             )}
                           />
                         </div>
-                        <div>
-                          <Label className="text-[10px] font-bold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Açıklama</Label>
-                          <Input {...form.register(`incomes.${i}.description`)} placeholder="Örn: Kurum / Şirket" className="h-11 rounded-xl bg-white dark:bg-[#1c140e] font-medium text-foreground" />
-                        </div>
                       </div>
+
+                      <div>
+                        <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] uppercase tracking-wider mb-1.5 block">Açıklama</Label>
+                        <Input {...form.register(`incomes.${i}.description`)} placeholder="Örn: Kurum / Şirket" className="h-12 rounded-2xl bg-white dark:bg-[#1c140e] border-[#dbc2b0]/50 dark:border-[#887364]/40 font-medium text-foreground text-sm" />
+                      </div>
+
                       {errors.incomes?.[i]?.amount && (
                         <p className="text-[10px] font-bold text-rose-500/80 mt-1 flex items-center gap-1">
                           <AlertCircle className="h-3 w-3"/> {errors.incomes[i].amount.message}
@@ -592,14 +603,14 @@ export function OnboardingForm() {
                 </div>
                 <div className="space-y-4">
                   {expensesField.fields.map((item, i) => (
-                    <div key={item.id} className="p-4 rounded-2xl bg-[#faf9f6] dark:bg-[#120d0a] border border-[#dbc2b0]/40 dark:border-[#887364]/40 space-y-3 relative">
+                    <div key={item.id} className="p-5 rounded-3xl bg-[#faf9f6] dark:bg-[#120d0a] border border-[#dbc2b0]/50 dark:border-[#887364]/40 space-y-4 shadow-sm">
                       <div className="flex items-center justify-between gap-3">
                         <Controller
                           name={`expenses.${i}.type`}
                           control={form.control}
                           render={({ field }) => (
                             <Select value={field.value} onValueChange={field.onChange}>
-                              <SelectTrigger className="flex-1 h-11 rounded-xl bg-white dark:bg-[#1c140e]">
+                              <SelectTrigger className="flex-1 h-12 rounded-2xl bg-white dark:bg-[#1c140e] border-[#dbc2b0]/50 dark:border-[#887364]/40 font-bold text-sm">
                                 <SelectValue placeholder="Gider türü" />
                               </SelectTrigger>
                               <SelectContent>
@@ -611,38 +622,39 @@ export function OnboardingForm() {
                           )}
                         />
                         {expensesField.fields.length > 1 && (
-                           <Button type="button" variant="ghost" size="icon" onClick={()=>expensesField.remove(i)} className="text-rose-500 hover:bg-rose-500/10 h-10 w-10 rounded-xl transition-colors">
-                            <Trash2 className="w-4 h-4" />
+                          <Button type="button" variant="ghost" size="icon" onClick={()=>expensesField.remove(i)} className="text-rose-500 hover:bg-rose-500/10 h-12 w-12 rounded-2xl transition-colors">
+                            <Trash2 className="w-5 h-5" />
                           </Button>
                         )}
                       </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                          <Label className="text-[10px] font-bold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Para Birimi</Label>
-                          <Controller
-                            name={`expenses.${i}.currency`}
-                            control={form.control}
-                            render={({ field }) => (
-                              <Select value={field.value || selectedCurrency || "TRY"} onValueChange={field.onChange}>
-                                <SelectTrigger className="h-11 rounded-xl bg-white dark:bg-[#1c140e] font-extrabold text-xs">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <div className="px-2 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Ana Birimler</div>
-                                  {MAIN_CURRENCIES.map(c => <SelectItem key={c.code} value={c.code}>{c.flag} {c.code}</SelectItem>)}
-                                  <div className="px-2 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider border-t mt-1 pt-1">Diğer Birimler</div>
-                                  {OTHER_CURRENCIES.map(c => <SelectItem key={c.code} value={c.code}>{c.flag} {c.code}</SelectItem>)}
-                                </SelectContent>
-                              </Select>
-                            )}
-                          />
+                          <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] uppercase tracking-wider mb-1.5 block">Para Birimi & Miktar</Label>
+                          <div className="flex gap-2.5">
+                            <Controller
+                              name={`expenses.${i}.currency`}
+                              control={form.control}
+                              render={({ field }) => (
+                                <Select value={field.value || selectedCurrency || "TRY"} onValueChange={field.onChange}>
+                                  <SelectTrigger className="w-[105px] h-12 rounded-2xl bg-white dark:bg-[#1c140e] border-[#dbc2b0]/50 dark:border-[#887364]/40 font-extrabold text-xs">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <div className="px-2 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Ana Birimler</div>
+                                    {MAIN_CURRENCIES.map(c => <SelectItem key={c.code} value={c.code}>{c.flag} {c.code}</SelectItem>)}
+                                    <div className="px-2 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider border-t mt-1 pt-1">Diğer Birimler</div>
+                                    {OTHER_CURRENCIES.map(c => <SelectItem key={c.code} value={c.code}>{c.flag} {c.code}</SelectItem>)}
+                                  </SelectContent>
+                                </Select>
+                              )}
+                            />
+                            <Input type="number" {...form.register(`expenses.${i}.amount`, { valueAsNumber: true })} placeholder="0" className="flex-1 h-12 rounded-2xl bg-white dark:bg-[#1c140e] border-[#dbc2b0]/50 dark:border-[#887364]/40 font-black text-foreground text-sm" />
+                          </div>
                         </div>
+
                         <div>
-                          <Label className="text-[10px] font-bold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Miktar</Label>
-                          <Input type="number" {...form.register(`expenses.${i}.amount`, { valueAsNumber: true })} placeholder="0" className="h-11 rounded-xl bg-white dark:bg-[#1c140e] font-black text-foreground" />
-                        </div>
-                        <div>
-                          <Label className="text-[10px] font-bold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Tarih</Label>
+                          <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] uppercase tracking-wider mb-1.5 block">Tarih</Label>
                           <Controller
                             name={`expenses.${i}.date`}
                             control={form.control}
@@ -651,16 +663,18 @@ export function OnboardingForm() {
                                 date={field.value ? parseISO(field.value) : undefined}
                                 setDate={(d) => field.onChange(d ? d.toISOString().split("T")[0] : "")}
                                 placeholder="Tarih seç"
-                                className="h-11"
+                                className="h-12 rounded-2xl"
                               />
                             )}
                           />
                         </div>
-                        <div>
-                          <Label className="text-[10px] font-bold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Açıklama</Label>
-                          <Input {...form.register(`expenses.${i}.description`)} placeholder="Örn: Kira / Elektrik" className="h-11 rounded-xl bg-white dark:bg-[#1c140e] font-medium text-foreground" />
-                        </div>
                       </div>
+
+                      <div>
+                        <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] uppercase tracking-wider mb-1.5 block">Açıklama</Label>
+                        <Input {...form.register(`expenses.${i}.description`)} placeholder="Örn: Kira / Elektrik" className="h-12 rounded-2xl bg-white dark:bg-[#1c140e] border-[#dbc2b0]/50 dark:border-[#887364]/40 font-medium text-foreground text-sm" />
+                      </div>
+
                       {errors.expenses?.[i]?.amount && (
                         <p className="text-[10px] font-bold text-rose-500/80 mt-1 flex items-center gap-1">
                           <AlertCircle className="h-3 w-3"/> {errors.expenses[i].amount.message}
@@ -689,14 +703,14 @@ export function OnboardingForm() {
                     </div>
                   )}
                   {debtsField.fields.map((item, i) => (
-                    <div key={item.id} className="p-4 rounded-2xl bg-[#faf9f6] dark:bg-[#120d0a] border border-[#dbc2b0]/40 dark:border-[#887364]/40 space-y-3 relative">
+                    <div key={item.id} className="p-5 rounded-3xl bg-[#faf9f6] dark:bg-[#120d0a] border border-[#dbc2b0]/50 dark:border-[#887364]/40 space-y-4 shadow-sm">
                       <div className="flex items-center justify-between gap-3">
                         <Controller
                           name={`debts.${i}.type`}
                           control={form.control}
                           render={({ field }) => (
                             <Select value={field.value} onValueChange={field.onChange}>
-                              <SelectTrigger className="flex-1 h-11 rounded-xl bg-white dark:bg-[#1c140e]">
+                              <SelectTrigger className="flex-1 h-12 rounded-2xl bg-white dark:bg-[#1c140e] border-[#dbc2b0]/50 dark:border-[#887364]/40 font-bold text-sm">
                                 <SelectValue placeholder="Borç türü" />
                               </SelectTrigger>
                               <SelectContent>
@@ -707,38 +721,39 @@ export function OnboardingForm() {
                             </Select>
                           )}
                         />
-                        <Button type="button" variant="ghost" size="icon" onClick={()=>debtsField.remove(i)} className="text-rose-500 hover:bg-rose-500/10 h-10 w-10 rounded-xl transition-colors">
-                          <Trash2 className="w-4 h-4" />
+                        <Button type="button" variant="ghost" size="icon" onClick={()=>debtsField.remove(i)} className="text-rose-500 hover:bg-rose-500/10 h-12 w-12 rounded-2xl transition-colors">
+                          <Trash2 className="w-5 h-5" />
                         </Button>
                       </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                          <Label className="text-[10px] font-bold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Para Birimi</Label>
-                          <Controller
-                            name={`debts.${i}.currency`}
-                            control={form.control}
-                            render={({ field }) => (
-                              <Select value={field.value || selectedCurrency || "TRY"} onValueChange={field.onChange}>
-                                <SelectTrigger className="h-11 rounded-xl bg-white dark:bg-[#1c140e] font-extrabold text-xs">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <div className="px-2 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Ana Birimler</div>
-                                  {MAIN_CURRENCIES.map(c => <SelectItem key={c.code} value={c.code}>{c.flag} {c.code}</SelectItem>)}
-                                  <div className="px-2 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider border-t mt-1 pt-1">Diğer Birimler</div>
-                                  {OTHER_CURRENCIES.map(c => <SelectItem key={c.code} value={c.code}>{c.flag} {c.code}</SelectItem>)}
-                                </SelectContent>
-                              </Select>
-                            )}
-                          />
+                          <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] uppercase tracking-wider mb-1.5 block">Para Birimi & Toplam Borç</Label>
+                          <div className="flex gap-2.5">
+                            <Controller
+                              name={`debts.${i}.currency`}
+                              control={form.control}
+                              render={({ field }) => (
+                                <Select value={field.value || selectedCurrency || "TRY"} onValueChange={field.onChange}>
+                                  <SelectTrigger className="w-[105px] h-12 rounded-2xl bg-white dark:bg-[#1c140e] border-[#dbc2b0]/50 dark:border-[#887364]/40 font-extrabold text-xs">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <div className="px-2 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Ana Birimler</div>
+                                    {MAIN_CURRENCIES.map(c => <SelectItem key={c.code} value={c.code}>{c.flag} {c.code}</SelectItem>)}
+                                    <div className="px-2 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider border-t mt-1 pt-1">Diğer Birimler</div>
+                                    {OTHER_CURRENCIES.map(c => <SelectItem key={c.code} value={c.code}>{c.flag} {c.code}</SelectItem>)}
+                                  </SelectContent>
+                                </Select>
+                              )}
+                            />
+                            <Input type="number" {...form.register(`debts.${i}.amount`, { valueAsNumber: true })} placeholder="0" className="flex-1 h-12 rounded-2xl bg-white dark:bg-[#1c140e] border-[#dbc2b0]/50 dark:border-[#887364]/40 font-black text-foreground text-sm" />
+                          </div>
                         </div>
+
                         <div>
-                          <Label className="text-[10px] font-bold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Toplam Borç Tutarı</Label>
-                          <Input type="number" {...form.register(`debts.${i}.amount`, { valueAsNumber: true })} placeholder="0" className="h-11 rounded-xl bg-white dark:bg-[#1c140e] font-black text-foreground" />
-                        </div>
-                        <div>
-                          <Label className="text-[10px] font-bold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Kalan Taksit Sayısı</Label>
-                          <Input type="number" {...form.register(`debts.${i}.remainingInstallments`, { valueAsNumber: true })} placeholder="1" className="h-11 rounded-xl bg-white dark:bg-[#1c140e] font-black text-foreground" />
+                          <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] uppercase tracking-wider mb-1.5 block">Kalan Taksit Sayısı</Label>
+                          <Input type="number" {...form.register(`debts.${i}.remainingInstallments`, { valueAsNumber: true })} placeholder="1" className="h-12 rounded-2xl bg-white dark:bg-[#1c140e] border-[#dbc2b0]/50 dark:border-[#887364]/40 font-black text-foreground text-sm" />
                         </div>
                       </div>
                     </div>
@@ -764,14 +779,14 @@ export function OnboardingForm() {
                     </div>
                   )}
                   {investmentsField.fields.map((item, i) => (
-                    <div key={item.id} className="p-4 rounded-2xl bg-[#faf9f6] dark:bg-[#120d0a] border border-[#dbc2b0]/40 dark:border-[#887364]/40 space-y-3 relative">
+                    <div key={item.id} className="p-5 rounded-3xl bg-[#faf9f6] dark:bg-[#120d0a] border border-[#dbc2b0]/50 dark:border-[#887364]/40 space-y-4 shadow-sm">
                       <div className="flex items-center justify-between gap-3">
                         <Controller
                           name={`investments.${i}.type`}
                           control={form.control}
                           render={({ field }) => (
                             <Select value={field.value} onValueChange={field.onChange}>
-                              <SelectTrigger className="flex-1 h-11 rounded-xl bg-white dark:bg-[#1c140e]">
+                              <SelectTrigger className="flex-1 h-12 rounded-2xl bg-white dark:bg-[#1c140e] border-[#dbc2b0]/50 dark:border-[#887364]/40 font-bold text-sm">
                                 <SelectValue placeholder="Varlık türü" />
                               </SelectTrigger>
                               <SelectContent>
@@ -782,44 +797,45 @@ export function OnboardingForm() {
                             </Select>
                           )}
                         />
-                        <Button type="button" variant="ghost" size="icon" onClick={()=>investmentsField.remove(i)} className="text-rose-500 hover:bg-rose-500/10 h-10 w-10 rounded-xl transition-colors">
-                          <Trash2 className="w-4 h-4" />
+                        <Button type="button" variant="ghost" size="icon" onClick={()=>investmentsField.remove(i)} className="text-rose-500 hover:bg-rose-500/10 h-12 w-12 rounded-2xl transition-colors">
+                          <Trash2 className="w-5 h-5" />
                         </Button>
                       </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-                        <div>
-                          <Label className="text-[10px] font-bold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Para Birimi</Label>
-                          <Controller
-                            name={`investments.${i}.currency`}
-                            control={form.control}
-                            render={({ field }) => (
-                              <Select value={field.value || selectedCurrency || "TRY"} onValueChange={field.onChange}>
-                                <SelectTrigger className="h-11 rounded-xl bg-white dark:bg-[#1c140e] font-extrabold text-xs">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <div className="px-2 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Ana Birimler</div>
-                                  {MAIN_CURRENCIES.map(c => <SelectItem key={c.code} value={c.code}>{c.flag} {c.code}</SelectItem>)}
-                                  <div className="px-2 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider border-t mt-1 pt-1">Diğer Birimler</div>
-                                  {OTHER_CURRENCIES.map(c => <SelectItem key={c.code} value={c.code}>{c.flag} {c.code}</SelectItem>)}
-                                </SelectContent>
-                              </Select>
-                            )}
-                          />
-                        </div>
-                        <div>
-                          <Label className="text-[10px] font-bold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Toplam Değer</Label>
-                          <Input type="number" {...form.register(`investments.${i}.amount`, { valueAsNumber: true })} placeholder="0" className="h-11 rounded-xl bg-white dark:bg-[#1c140e] font-black text-foreground" />
-                        </div>
-                        <div>
-                          <Label className="text-[10px] font-bold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Sembol (Opsiyonel)</Label>
-                          <Input {...form.register(`investments.${i}.symbol`)} placeholder="Örn: THYAO, BTC" className="h-11 rounded-xl bg-white dark:bg-[#1c140e] font-bold uppercase text-foreground" />
-                        </div>
-                        <div>
-                          <Label className="text-[10px] font-bold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Açıklama</Label>
-                          <Input {...form.register(`investments.${i}.description`)} placeholder="Banka/Platform" className="h-11 rounded-xl bg-white dark:bg-[#1c140e] font-medium text-foreground" />
 
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] uppercase tracking-wider mb-1.5 block">Para Birimi & Toplam Değer</Label>
+                          <div className="flex gap-2.5">
+                            <Controller
+                              name={`investments.${i}.currency`}
+                              control={form.control}
+                              render={({ field }) => (
+                                <Select value={field.value || selectedCurrency || "TRY"} onValueChange={field.onChange}>
+                                  <SelectTrigger className="w-[105px] h-12 rounded-2xl bg-white dark:bg-[#1c140e] border-[#dbc2b0]/50 dark:border-[#887364]/40 font-extrabold text-xs">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <div className="px-2 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Ana Birimler</div>
+                                    {MAIN_CURRENCIES.map(c => <SelectItem key={c.code} value={c.code}>{c.flag} {c.code}</SelectItem>)}
+                                    <div className="px-2 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider border-t mt-1 pt-1">Diğer Birimler</div>
+                                    {OTHER_CURRENCIES.map(c => <SelectItem key={c.code} value={c.code}>{c.flag} {c.code}</SelectItem>)}
+                                  </SelectContent>
+                                </Select>
+                              )}
+                            />
+                            <Input type="number" {...form.register(`investments.${i}.amount`, { valueAsNumber: true })} placeholder="0" className="flex-1 h-12 rounded-2xl bg-white dark:bg-[#1c140e] border-[#dbc2b0]/50 dark:border-[#887364]/40 font-black text-foreground text-sm" />
+                          </div>
                         </div>
+
+                        <div>
+                          <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] uppercase tracking-wider mb-1.5 block">Sembol (Opsiyonel)</Label>
+                          <Input {...form.register(`investments.${i}.symbol`)} placeholder="Örn: THYAO, BTC" className="h-12 rounded-2xl bg-white dark:bg-[#1c140e] border-[#dbc2b0]/50 dark:border-[#887364]/40 font-bold uppercase text-foreground text-sm" />
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] uppercase tracking-wider mb-1.5 block">Açıklama</Label>
+                        <Input {...form.register(`investments.${i}.description`)} placeholder="Banka/Platform" className="h-12 rounded-2xl bg-white dark:bg-[#1c140e] border-[#dbc2b0]/50 dark:border-[#887364]/40 font-medium text-foreground text-sm" />
                       </div>
                     </div>
                   ))}
