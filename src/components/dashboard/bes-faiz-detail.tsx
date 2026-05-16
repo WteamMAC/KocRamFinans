@@ -278,17 +278,38 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
             </p>
           </div>
         </div>
-        <div className="flex flex-wrap gap-3">
+        <div className="grid grid-cols-2 md:flex md:items-center gap-3 w-full md:w-auto">
           {!isBES && (
-            <Button variant="outline" size="sm" onClick={handleFixOldRecords} disabled={fixLoading} className="rounded-xl border-yellow-500/40 text-yellow-600 hover:bg-yellow-50">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleFixOldRecords}
+              disabled={fixLoading}
+              className="rounded-2xl h-[48px] md:h-[52px] text-xs font-bold border-yellow-500/40 text-yellow-600 hover:bg-yellow-50 transition-all shadow-sm"
+            >
               <RefreshCw className={cn("h-4 w-4 mr-2", fixLoading && "animate-spin")} />
               {fixLoading ? "Düzeltiliyor..." : "Eski Kayıtları Düzelt"}
             </Button>
           )}
-          <Button variant="outline" size="sm" onClick={() => router.refresh()} className="rounded-xl border-border/30">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.refresh()}
+            className={cn(
+              "rounded-2xl h-[48px] md:h-[52px] text-xs font-bold border-border/30 transition-all shadow-sm",
+              isBES && "col-span-1"
+            )}
+          >
             <RefreshCw className="h-4 w-4 mr-2" /> Yenile
           </Button>
-          <Button size="sm" onClick={handleToggleAdd} className="rounded-xl bg-primary">
+          <Button
+            size="sm"
+            onClick={handleToggleAdd}
+            className={cn(
+              "rounded-2xl h-[48px] md:h-[52px] text-xs font-bold bg-primary text-primary-foreground shadow-ambient-medium transition-all",
+              !isBES ? "col-span-2 md:col-span-1" : "col-span-1"
+            )}
+          >
             <Plus className="h-4 w-4 mr-2" /> {isBES ? "BES Hesabı Ekle" : "Mevduat Ekle"}
           </Button>
         </div>
@@ -576,9 +597,9 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
 
           {/* Projection Controls */}
           <Card className="border-border/20 shadow-ambient-low rounded-2xl p-6">
-            <div className={cn("grid gap-4", isBES ? "grid-cols-2 md:grid-cols-3" : "grid-cols-2")}>
-              <div className="space-y-2">
-                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Süre (Yıl)</Label>
+            <div className={cn("grid gap-4 items-end", isBES ? "grid-cols-2 md:grid-cols-3" : "grid-cols-2")}>
+              <div className="space-y-0">
+                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest min-h-[32px] flex items-end mb-2">Süre (Yıl)</Label>
                 <Input
                   type="number"
                   value={projYears}
@@ -588,8 +609,8 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
               </div>
               {isBES ? (
                 <>
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Aylık Ek Ödeme</Label>
+                  <div className="space-y-0">
+                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest min-h-[32px] flex items-end mb-2">Aylık Ek Ödeme</Label>
                     <Input
                       type="number"
                       value={projMonthly || ""}
@@ -598,8 +619,8 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
                       placeholder="0"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Tahmini Yıllık Getiri (%)</Label>
+                  <div className="space-y-0">
+                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest min-h-[32px] flex items-end mb-2">Tahmini Yıllık Getiri (%)</Label>
                     <Input
                       type="number"
                       value={projReturn}
@@ -609,8 +630,8 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
                   </div>
                 </>
               ) : (
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Ağırlıklı Ortalama Faiz (%)</Label>
+                <div className="space-y-0">
+                  <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest min-h-[32px] flex items-end mb-2">Ağırlıklı Ortalama Faiz (%)</Label>
                   <div className="h-11 rounded-xl bg-muted/30 border border-border/20 flex items-center px-4">
                     <span className={cn("font-bold text-lg", accentColor)}>
                       %{(grouped.reduce((s, g) => s + (g.rate * g.totalQuantity), 0) / Math.max(totalPrincipal, 1)).toFixed(2)}
@@ -638,7 +659,7 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
             <div className="h-[300px]">
               {projectionData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={projectionData}>
+                  <AreaChart data={projectionData} margin={{ left: -25, right: 10 }}>
                     <defs>
                       <linearGradient id="colorProj" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor={accentSolid} stopOpacity={0.3} />
@@ -652,7 +673,7 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
                       tickLine={false}
                       tick={{ fontSize: 10 }}
                       tickFormatter={v => new Intl.NumberFormat("tr-TR", { notation: "compact" }).format(v)}
-                      dx={-10}
+                      dx={0}
                     />
                     <Tooltip
                       contentStyle={{ borderRadius: "16px", border: "none", boxShadow: "0 10px 40px -10px rgba(0,0,0,0.1)" }}

@@ -86,33 +86,33 @@ export function IncomeExpenseClient({
   if (!mounted) return null;
 
   return (
-    <div className="space-y-10 pb-20 max-w-[1440px] mx-auto py-6">
+    <div className="space-y-6 md:space-y-10 pb-20 max-w-[1440px] mx-auto p-4 md:py-6">
       {/* Premium Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
         <motion.div 
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="space-y-2"
+          className="space-y-2 w-full md:w-auto"
         >
           <div className="flex items-center gap-3 mb-1">
-            <div className="p-2.5 bg-primary/10 rounded-2xl shadow-inner border border-primary/10">
-              <ArrowRightLeft className="h-6 w-6 text-primary" />
+            <div className="p-2 bg-primary/10 rounded-2xl shadow-inner border border-primary/10 shrink-0">
+              <ArrowRightLeft className="h-5 w-5 md:h-6 md:w-6 text-primary" />
             </div>
-            <h1 className="text-4xl font-heading font-black text-primary tracking-tight">Gelir - Gider Analizi</h1>
+            <h1 className="text-2xl md:text-4xl font-heading font-black text-primary tracking-tight truncate">Gelir - Gider Analizi</h1>
           </div>
-          <p className="text-muted-foreground font-bold opacity-60 text-sm uppercase tracking-[0.2em] px-1">Finansal Akış ve Nakit Yönetimi</p>
+          <p className="text-muted-foreground font-bold opacity-60 text-[10px] md:text-sm uppercase tracking-[0.2em] px-1">Finansal Akış ve Nakit Yönetimi</p>
         </motion.div>
 
         <motion.div 
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="flex flex-wrap gap-3"
+          className="flex gap-3 w-full md:w-auto"
         >
           <Button
             variant="outline"
             onClick={handleRefresh}
             disabled={isRefreshing}
-            className="rounded-2xl h-12 px-6 border-border/20 bg-card/50 backdrop-blur-xl hover:bg-muted/50 transition-all font-black text-xs uppercase tracking-widest"
+            className="rounded-2xl h-12 flex-1 md:flex-none px-6 border-border/20 bg-card/50 backdrop-blur-xl hover:bg-muted/50 transition-all font-black text-xs uppercase tracking-widest"
           >
             <RefreshCw className={cn("mr-2 h-4 w-4", isRefreshing && "animate-spin")} />
             {isRefreshing ? "Yenileniyor..." : "Yenile"}
@@ -121,7 +121,7 @@ export function IncomeExpenseClient({
       </div>
 
       {/* Hero Stats */}
-      <section className="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <section className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-8">
         {[
           { 
             label: "Toplam Gelir", 
@@ -158,18 +158,18 @@ export function IncomeExpenseClient({
             transition={{ delay: i * 0.1 }}
           >
             <Card className={cn(
-              "border-border/20 shadow-ambient-medium rounded-[32px] p-8 relative overflow-hidden bg-card/60 backdrop-blur-xl group hover:shadow-ambient-high transition-all duration-500",
+              "border-border/20 shadow-ambient-medium rounded-[24px] md:rounded-[32px] p-5 md:p-8 relative overflow-hidden bg-card/60 backdrop-blur-xl group hover:shadow-ambient-high transition-all duration-500",
               stat.border
             )}>
               <div className={cn("absolute top-0 right-0 w-32 h-32 rounded-full -mr-12 -mt-12 opacity-40 transition-transform group-hover:scale-110", stat.bg)} />
               <div className="flex items-center justify-between mb-4 relative z-10">
                 <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">{stat.label}</p>
-                <div className={cn("p-3 rounded-2xl shadow-inner", stat.bg, stat.color)}>
-                  <stat.icon className="w-6 h-6" />
+                <div className={cn("p-2.5 rounded-2xl shadow-inner", stat.bg, stat.color)}>
+                  <stat.icon className="w-5 h-5 md:w-6 md:h-6" />
                 </div>
               </div>
-              <p className={cn("text-3xl font-heading font-black tracking-tight", stat.color)}>{formatAmount(stat.val)}</p>
-              <div className="mt-6 flex items-center justify-between">
+              <p className={cn("text-2xl md:text-3xl font-heading font-black tracking-tight", stat.color)}>{formatAmount(stat.val)}</p>
+              <div className="mt-6 flex flex-wrap items-center justify-between gap-2">
                 <span className={cn("px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest", stat.bg, stat.color)}>
                   {stat.msg}
                 </span>
@@ -193,29 +193,29 @@ export function IncomeExpenseClient({
           transition={{ duration: 0.6 }}
           className="xl:col-span-8"
         >
-          <Card className="border-border/20 shadow-ambient-high rounded-[40px] p-10 bg-card/40 backdrop-blur-3xl relative overflow-hidden h-full min-h-[500px]">
+          <Card className="border-border/20 shadow-ambient-high rounded-[32px] md:rounded-[40px] p-6 md:p-10 bg-card/40 backdrop-blur-3xl relative overflow-hidden h-full min-h-[400px] md:min-h-[500px]">
             <div className="absolute top-0 right-0 w-96 h-96 bg-primary/5 rounded-full blur-[100px] -mr-32 -mt-32 pointer-events-none" />
             
-            <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-12 gap-6 relative z-10">
+            <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-8 md:mb-12 gap-6 relative z-10">
               <div className="space-y-1">
-                <h3 className="text-2xl font-heading font-black text-foreground flex items-center gap-3">
-                  <Layers className="h-6 w-6 text-primary" /> Analitik Görünüm
+                <h3 className="text-xl md:text-2xl font-heading font-black text-foreground flex items-center gap-3">
+                  <Layers className="h-5 w-5 md:h-6 md:w-6 text-primary" /> Analitik Görünüm
                 </h3>
-                <p className="text-xs text-muted-foreground font-bold opacity-60 uppercase tracking-widest">Son 6 Aylık Finansal Karşılaştırma</p>
+                <p className="text-[10px] text-muted-foreground font-bold opacity-60 uppercase tracking-widest">Son 6 Aylık Finansal Karşılaştırma</p>
               </div>
-              <div className="flex gap-6">
+              <div className="flex gap-4 md:gap-6">
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-emerald-500/30 border border-emerald-500/50" />
-                  <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Gelir</span>
+                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/30 border border-emerald-500/50" />
+                  <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Gelir</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-primary border border-primary" />
-                  <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Gider</span>
+                  <div className="w-2.5 h-2.5 rounded-full bg-primary border border-primary" />
+                  <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Gider</span>
                 </div>
               </div>
             </div>
 
-            <div className="h-80 flex items-end justify-between gap-4 sm:gap-8 px-4 border-b border-border/10 pb-6 relative z-10">
+            <div className="h-64 md:h-80 flex items-end justify-between gap-2 md:gap-8 px-2 md:px-4 border-b border-border/10 pb-6 relative z-10">
               {monthlyData.every(d => d.income === 0 && d.expense === 0) ? (
                 <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-8">
                   <div className="p-4 bg-muted/30 rounded-full mb-4">
@@ -233,14 +233,14 @@ export function IncomeExpenseClient({
                   const isCurrent = i === monthlyData.length - 1;
 
                   return (
-                    <div key={i} className="flex-1 flex flex-col items-center gap-6 group relative">
-                      <div className="w-full flex gap-1.5 sm:gap-2 items-end h-64 relative">
+                    <div key={i} className="flex-1 flex flex-col items-center gap-4 md:gap-6 group relative">
+                      <div className="w-full flex gap-1 items-end h-48 md:h-64 relative">
                         <motion.div 
                           initial={{ height: 0 }}
                           animate={{ height: `${incHeight}%` }}
                           transition={{ duration: 1, delay: i * 0.1, ease: "circOut" }}
                           className={cn(
-                            "flex-1 rounded-t-2xl transition-all duration-500 relative overflow-hidden group/bar",
+                            "flex-1 rounded-t-lg md:rounded-t-2xl transition-all duration-500 relative overflow-hidden group/bar",
                             isCurrent ? "bg-emerald-500 shadow-[0_-4px_20px_rgba(16,185,129,0.3)]" : "bg-emerald-500/30 group-hover:bg-emerald-500/50"
                           )}
                         >
@@ -251,14 +251,14 @@ export function IncomeExpenseClient({
                           animate={{ height: `${expHeight}%` }}
                           transition={{ duration: 1, delay: i * 0.1 + 0.2, ease: "circOut" }}
                           className={cn(
-                            "flex-1 rounded-t-2xl transition-all duration-500 relative overflow-hidden group/bar",
+                            "flex-1 rounded-t-lg md:rounded-t-2xl transition-all duration-500 relative overflow-hidden group/bar",
                             isCurrent ? "bg-primary shadow-[0_-4px_20px_rgba(189,194,176,0.3)]" : "bg-primary/40 group-hover:bg-primary/60"
                           )}
                         >
                           <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
                         </motion.div>
                         
-                        <div className="absolute -top-16 left-1/2 -translate-x-1/2 bg-card/90 backdrop-blur-xl px-4 py-3 rounded-2xl shadow-ambient-high opacity-0 group-hover:opacity-100 transition-all pointer-events-none z-20 whitespace-nowrap border border-border/20 scale-90 group-hover:scale-100">
+                        <div className="absolute -top-16 left-1/2 -translate-x-1/2 bg-card/90 backdrop-blur-xl px-4 py-3 rounded-2xl shadow-ambient-high opacity-0 group-hover:opacity-100 transition-all pointer-events-none z-20 whitespace-nowrap border border-border/20 scale-90 group-hover:scale-100 hidden md:block">
                           <div className="flex flex-col gap-1.5">
                             <p className="text-[10px] font-black text-muted-foreground uppercase mb-1 border-b border-border/10 pb-1">{d.month}</p>
                             <div className="flex items-center justify-between gap-4">
@@ -273,7 +273,7 @@ export function IncomeExpenseClient({
                         </div>
                       </div>
                       <span className={cn(
-                        "text-[10px] font-black uppercase tracking-widest transition-colors",
+                        "text-[10px] font-black uppercase tracking-widest transition-colors mt-2",
                         isCurrent ? "text-primary" : "text-muted-foreground/60"
                       )}>{d.month}</span>
                     </div>
@@ -291,12 +291,12 @@ export function IncomeExpenseClient({
           transition={{ duration: 0.6, delay: 0.2 }}
           className="xl:col-span-4"
         >
-          <Card className="border-border/20 shadow-ambient-high rounded-[40px] p-10 bg-card/60 backdrop-blur-2xl h-full flex flex-col items-center">
-            <h3 className="text-xl font-heading font-black text-foreground mb-12 self-start flex items-center gap-3">
+          <Card className="border-border/20 shadow-ambient-high rounded-[32px] md:rounded-[40px] p-6 md:p-10 bg-card/60 backdrop-blur-2xl h-full flex flex-col items-center">
+            <h3 className="text-xl font-heading font-black text-foreground mb-8 md:mb-12 self-start flex items-center gap-3">
               <Filter className="h-5 w-5 text-primary" /> Dağılım Analizi
             </h3>
             
-            <div className="relative w-64 h-64 flex items-center justify-center mb-12 group">
+            <div className="relative w-48 h-48 md:w-64 md:h-64 flex items-center justify-center mb-8 md:mb-12 group">
               <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
                 {(() => {
                   const entries = Object.entries(expenseCategoryMap).sort(([,a], [,b]) => (b as number) - (a as number));
@@ -330,25 +330,25 @@ export function IncomeExpenseClient({
                   });
                 })()}
               </svg>
-              <div className="absolute text-center">
+              <div className="absolute text-center px-4">
                 <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest opacity-60 mb-1">Toplam Gider</p>
-                <p className="text-2xl font-heading font-black text-primary tracking-tight">{formatAmount(totalExpense)}</p>
+                <p className="text-xl md:text-2xl font-heading font-black text-primary tracking-tight">{formatAmount(totalExpense)}</p>
               </div>
             </div>
 
-            <div className="w-full space-y-4">
+            <div className="w-full space-y-3 md:space-y-4">
               {Object.entries(expenseCategoryMap).sort(([,a], [,b]) => (b as number) - (a as number)).slice(0, 5).map(([cat, amt], idx) => {
                 const colors = ["bg-primary", "bg-emerald-500", "bg-blue-500", "bg-orange-500", "bg-rose-500"];
                 const pct = totalExpense > 0 ? Math.round((amt / totalExpense) * 100) : 0;
                 return (
-                  <div key={cat} className="flex justify-between items-center p-3 rounded-2xl border border-border/5 bg-muted/20 group hover:bg-muted/40 transition-all">
-                    <div className="flex items-center gap-3">
-                      <div className={cn("w-2.5 h-2.5 rounded-full shadow-lg", colors[idx % colors.length])} />
-                      <span className="text-xs font-black text-muted-foreground group-hover:text-foreground transition-colors uppercase tracking-wider">{cat}</span>
+                  <div key={cat} className="flex justify-between items-center p-2.5 md:p-3 rounded-2xl border border-border/5 bg-muted/20 group hover:bg-muted/40 transition-all">
+                    <div className="flex items-center gap-2.5 md:gap-3">
+                      <div className={cn("w-2 md:w-2.5 h-2 md:h-2.5 rounded-full shadow-lg", colors[idx % colors.length])} />
+                      <span className="text-[10px] md:text-xs font-black text-muted-foreground group-hover:text-foreground transition-colors uppercase tracking-wider truncate max-w-[80px] md:max-w-none">{cat}</span>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 md:gap-3">
                       <span className="text-[10px] font-black text-primary bg-primary/10 px-2 py-0.5 rounded-full">%{pct}</span>
-                      <span className="text-xs font-black text-foreground">{formatAmount(amt)}</span>
+                      <span className="text-[11px] md:text-xs font-black text-foreground">{formatAmount(amt)}</span>
                     </div>
                   </div>
                 );
@@ -364,7 +364,7 @@ export function IncomeExpenseClient({
         </motion.div>
       </div>
 
-      {/* Transactions Table Section */}
+      {/* Transactions Section */}
       <motion.section 
         initial={{ opacity: 0, y: 30 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -373,22 +373,22 @@ export function IncomeExpenseClient({
       >
         <div className="flex flex-col md:flex-row justify-between md:items-center gap-6">
           <div className="space-y-1">
-            <h3 className="text-2xl font-heading font-black text-primary tracking-tight flex items-center gap-3">
-              <Calendar className="h-6 w-6" /> İşlem Geçmişi
+            <h3 className="text-xl md:text-2xl font-heading font-black text-primary tracking-tight flex items-center gap-3">
+              <Calendar className="h-5 w-5 md:h-6 md:w-6" /> İşlem Geçmişi
             </h3>
-            <p className="text-xs text-muted-foreground font-bold opacity-60 uppercase tracking-widest px-1">Tüm Finansal Hareketler</p>
+            <p className="text-[10px] md:text-xs text-muted-foreground font-bold opacity-60 uppercase tracking-widest px-1">Tüm Finansal Hareketler</p>
           </div>
           
-          <div className="flex gap-3">
-            <div className="relative">
+          <div className="flex flex-col md:flex-row gap-3">
+            <div className="relative w-full md:w-64">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
               <Input 
                 placeholder="İşlemlerde ara..." 
-                className="h-12 pl-11 pr-4 rounded-[18px] bg-card/60 border-border/20 w-64 text-xs font-bold"
+                className="h-12 pl-11 pr-4 rounded-[18px] bg-card/60 border-border/20 w-full text-xs font-bold"
               />
             </div>
             <Select value={filterCategory} onValueChange={(val: any) => setFilterCategory(val || "Tümü")}>
-              <SelectTrigger className="w-[200px] h-12 bg-card/60 border-border/20 rounded-[18px] font-black text-[10px] uppercase tracking-widest">
+              <SelectTrigger className="w-full md:w-[200px] h-12 bg-card/60 border-border/20 rounded-[18px] font-black text-[10px] uppercase tracking-widest">
                 <SelectValue placeholder="Kategori Filtresi" />
               </SelectTrigger>
               <SelectContent className="rounded-2xl bg-card/95 backdrop-blur-xl font-bold border-border/20 shadow-ambient-high">
@@ -400,93 +400,135 @@ export function IncomeExpenseClient({
           </div>
         </div>
 
-        <Card className="border-border/20 shadow-ambient-high rounded-[40px] overflow-hidden bg-card/30 backdrop-blur-xl">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="bg-muted/50 border-b border-border/10">
-                  <th className="px-10 py-6 text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Detay</th>
-                  <th className="px-10 py-6 text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Kategori</th>
-                  <th className="px-10 py-6 text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Zamanlama</th>
-                  <th className="px-10 py-6 text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] text-right">Miktar</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/10">
-                {recentTransactions.filter(t => filterCategory === "Tümü" || t.category === filterCategory).map((tx, idx) => {
-                  const isInc = tx.type === 'income';
-                  let Icon = isInc ? Wallet : Receipt;
-                  
-                  const cat = tx.category.toLowerCase();
-                  if (cat.includes('market')) Icon = ShoppingCart;
-                  else if (cat.includes('yemek')) Icon = Utensils;
-                  else if (cat.includes('ulaşım')) Icon = Car;
-                  else if (cat.includes('kira')) Icon = Home;
+        {/* Responsive Transaction View */}
+        <div className="space-y-4">
+          {/* Desktop Table View */}
+          <Card className="hidden md:block border-border/20 shadow-ambient-high rounded-[40px] overflow-hidden bg-card/30 backdrop-blur-xl">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="bg-muted/50 border-b border-border/10">
+                    <th className="px-10 py-6 text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Detay</th>
+                    <th className="px-10 py-6 text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Kategori</th>
+                    <th className="px-10 py-6 text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Zamanlama</th>
+                    <th className="px-10 py-6 text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] text-right">Miktar</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/10">
+                  {recentTransactions.filter(t => filterCategory === "Tümü" || t.category === filterCategory).map((tx, idx) => {
+                    const isInc = tx.type === 'income';
+                    let Icon = isInc ? Wallet : Receipt;
+                    const cat = tx.category.toLowerCase();
+                    if (cat.includes('market')) Icon = ShoppingCart;
+                    else if (cat.includes('yemek')) Icon = Utensils;
+                    else if (cat.includes('ulaşım')) Icon = Car;
+                    else if (cat.includes('kira')) Icon = Home;
 
-                  return (
-                    <motion.tr 
-                      key={tx.id} 
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: idx * 0.05 }}
-                      className="hover:bg-muted/30 transition-all group"
-                    >
-                      <td className="px-10 py-8">
-                        <div className="flex items-center gap-5">
-                          <div className={cn(
-                            "w-14 h-14 rounded-2xl flex items-center justify-center shadow-inner group-hover:scale-105 transition-all duration-300",
-                            isInc ? "bg-emerald-500/10 text-emerald-500" : "bg-rose-500/10 text-rose-500"
+                    return (
+                      <tr key={tx.id} className="hover:bg-muted/30 transition-all group">
+                        <td className="px-10 py-8">
+                          <div className="flex items-center gap-5">
+                            <div className={cn(
+                              "w-14 h-14 rounded-2xl flex items-center justify-center shadow-inner",
+                              isInc ? "bg-emerald-500/10 text-emerald-500" : "bg-rose-500/10 text-rose-500"
+                            )}>
+                              <Icon className="w-6 h-6" />
+                            </div>
+                            <div>
+                              <p className="font-black text-foreground">{tx.description || tx.category}</p>
+                              <p className="text-[10px] font-bold text-muted-foreground opacity-60 uppercase tracking-widest mt-1">ID: {tx.id.substring(0, 8)}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-10 py-8">
+                          <span className={cn(
+                            "px-4 py-2 rounded-xl text-[10px] font-black shadow-sm border uppercase tracking-widest",
+                            isInc ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : "bg-muted/50 text-muted-foreground border-border/20"
                           )}>
-                            <Icon className="w-6 h-6" />
+                            {tx.category}
+                          </span>
+                        </td>
+                        <td className="px-10 py-8">
+                          <div className="flex flex-col">
+                            <span className="text-xs font-black text-foreground uppercase">
+                              {new Date(tx.createdAt).toLocaleDateString('tr-TR', { day: '2-digit', month: 'long' })}
+                            </span>
+                            <span className="text-[10px] font-bold text-muted-foreground opacity-50 uppercase tracking-widest mt-0.5">
+                              {new Date(tx.createdAt).getFullYear()}
+                            </span>
                           </div>
-                          <div>
-                            <p className="font-black text-foreground group-hover:text-primary transition-colors">{tx.description || tx.category}</p>
-                            <p className="text-[10px] font-bold text-muted-foreground opacity-60 uppercase tracking-widest mt-1">ID: {tx.id.substring(0, 8)}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-10 py-8">
+                        </td>
+                        <td className="px-10 py-8 text-right">
+                          <p className={cn("text-xl font-black tracking-tight", isInc ? "text-emerald-500" : "text-rose-500")}>
+                            {isInc ? '+' : '-'} {formatAmount(tx.amount)}
+                          </p>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+
+          {/* Mobile Card View */}
+          <div className="md:hidden space-y-4">
+            {recentTransactions.filter(t => filterCategory === "Tümü" || t.category === filterCategory).map((tx, idx) => {
+              const isInc = tx.type === 'income';
+              let Icon = isInc ? Wallet : Receipt;
+              const cat = tx.category.toLowerCase();
+              if (cat.includes('market')) Icon = ShoppingCart;
+              else if (cat.includes('yemek')) Icon = Utensils;
+              else if (cat.includes('ulaşım')) Icon = Car;
+              else if (cat.includes('kira')) Icon = Home;
+
+              return (
+                <motion.div
+                  key={tx.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.05 }}
+                  className="bg-card/40 backdrop-blur-xl border border-border/20 rounded-3xl p-5 shadow-ambient-low flex items-center justify-between gap-4"
+                >
+                  <div className="flex items-center gap-4 min-w-0">
+                    <div className={cn(
+                      "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-inner",
+                      isInc ? "bg-emerald-500/10 text-emerald-500" : "bg-rose-500/10 text-rose-500"
+                    )}>
+                      <Icon className="w-5 h-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-black text-sm md:text-base text-foreground truncate">{tx.description || tx.category}</p>
+                      <div className="flex items-center gap-2 mt-1.5">
                         <span className={cn(
-                          "px-4 py-2 rounded-xl text-[10px] font-black shadow-sm border uppercase tracking-widest",
-                          isInc ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : "bg-muted/50 text-muted-foreground border-border/20"
+                          "px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border",
+                          isInc ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/10" : "bg-muted/50 text-muted-foreground border-border/10"
                         )}>
                           {tx.category}
                         </span>
-                      </td>
-                      <td className="px-10 py-8">
-                        <div className="flex flex-col">
-                          <span className="text-xs font-black text-foreground uppercase">
-                            {new Date(tx.createdAt).toLocaleDateString('tr-TR', { day: '2-digit', month: 'long' })}
-                          </span>
-                          <span className="text-[10px] font-bold text-muted-foreground opacity-50 uppercase tracking-widest mt-0.5">
-                            {new Date(tx.createdAt).getFullYear()}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-10 py-8 text-right">
-                        <p className={cn("text-xl font-black tracking-tight", isInc ? "text-emerald-500" : "text-rose-500")}>
-                          {isInc ? '+' : '-'} {formatAmount(tx.amount)}
-                        </p>
-                        {tx.currency && tx.currency !== "TRY" && (
-                          <div className="flex items-center justify-end gap-1.5 mt-1 text-[10px] font-black text-muted-foreground opacity-60 uppercase tracking-tighter">
-                            <span>{tx.originalAmount?.toLocaleString()}</span>
-                            <span>{tx.currency}</span>
-                            <span>@{tx.fxRate?.toFixed(2)}</span>
-                          </div>
-                        )}
-                      </td>
-                    </motion.tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                        <span className="text-[10px] font-bold text-muted-foreground opacity-70">
+                          {new Date(tx.createdAt).toLocaleDateString('tr-TR', { day: '2-digit', month: 'short' })}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className={cn("text-base md:text-lg font-black tracking-tight", isInc ? "text-emerald-500" : "text-rose-500")}>
+                      {isInc ? '+' : '-'} {formatAmount(tx.amount)}
+                    </p>
+                  </div>
+                </motion.div>
+              );
+            })}
           </div>
+
           {recentTransactions.filter(t => filterCategory === "Tümü" || t.category === filterCategory).length === 0 && (
-            <div className="py-24 flex flex-col items-center justify-center text-center opacity-20">
-              <Layers className="h-12 w-12 mb-4" />
-              <p className="text-[10px] font-black uppercase tracking-[0.3em]">Filtrelenen veri bulunamadı</p>
+            <div className="py-12 md:py-24 flex flex-col items-center justify-center text-center opacity-20">
+              <Layers className="h-10 w-10 md:h-12 md:w-12 mb-4" />
+              <p className="text-[10px] font-black uppercase tracking-[0.3em]">Veri bulunamadı</p>
             </div>
           )}
-        </Card>
+        </div>
       </motion.section>
     </div>
   );

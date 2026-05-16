@@ -316,18 +316,18 @@ export function ProfileSettingsForm({ initialData }: Props) {
       </div>
 
       {/* Save Bar */}
-      <div className={cn("sticky bottom-6 flex items-center justify-between px-8 py-5 rounded-3xl border backdrop-blur-xl transition-all duration-300 shadow-2xl",
+      <div className={cn("sticky bottom-6 flex flex-col md:flex-row items-center justify-between gap-4 px-4 md:px-8 py-4 md:py-5 rounded-3xl border backdrop-blur-xl transition-all duration-300 shadow-2xl z-50",
         isDirty ? "bg-card border-primary/40 shadow-primary/10" : "bg-muted/80 border-border/30 shadow-none")}>
-        <div>
+        <div className="text-center md:text-left">
           {isDirty
-            ? <p className="text-sm font-black text-primary flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-accent animate-ping" /> Kaydedilmemiş değişiklikler var</p>
+            ? <p className="text-xs md:text-sm font-black text-primary flex items-center justify-center md:justify-start gap-2"><span className="w-2 h-2 rounded-full bg-accent animate-ping" /> Kaydedilmemiş değişiklikler var</p>
             : saved
-              ? <p className="text-sm font-black text-primary flex items-center gap-2"><Check className="w-4 h-4" />Değişiklikler başarıyla kaydedildi!</p>
-              : <p className="text-sm font-bold text-muted-foreground">Değişiklik yapılmadı</p>
+              ? <p className="text-xs md:text-sm font-black text-primary flex items-center justify-center md:justify-start gap-2"><Check className="w-4 h-4" />Değişiklikler başarıyla kaydedildi!</p>
+              : <p className="text-xs md:text-sm font-bold text-muted-foreground">Değişiklik yapılmadı</p>
           }
         </div>
         <Button type="submit" disabled={!isDirty || saving}
-          className={cn("h-12 px-8 rounded-2xl font-extrabold transition-all duration-200 shadow-lg",
+          className={cn("h-12 w-full md:w-auto px-8 rounded-2xl font-extrabold transition-all duration-200 shadow-lg",
             isDirty ? "bg-primary text-primary-foreground shadow-primary/20 hover:scale-[1.03]" : "bg-muted-foreground/20 text-muted-foreground shadow-none cursor-not-allowed")}>
           {saving ? "Kaydediliyor..." : <><Save className="w-5 h-5 mr-2" />Değişiklikleri Kaydet</>}
         </Button>
