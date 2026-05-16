@@ -46,6 +46,19 @@ const schema = z.object({
     description: z.string().optional(),
   })),
   interests: z.array(z.string()).min(1, "En az 1 alan seçiniz"),
+  debts: z.array(z.object({
+    type: z.string().min(1, "Borç türü seçiniz"),
+    amount: z.coerce.number().positive("Miktar 0'dan büyük olmalıdır"),
+    description: z.string().optional(),
+    remainingInstallments: z.coerce.number().optional(),
+  })).optional(),
+  investments: z.array(z.object({
+    type: z.string().min(1, "Varlık türü seçiniz"),
+    amount: z.coerce.number().positive("Miktar 0'dan büyük olmalıdır"),
+    purchasePrice: z.coerce.number().optional(),
+    symbol: z.string().optional(),
+    description: z.string().optional(),
+  })).optional(),
 });
 type F = z.infer<typeof schema>;
 
@@ -118,6 +131,8 @@ const REGIONS: { id:string; label:string; emoji:string; countries:{code:string;l
 
 const INCOME_TYPES = ["Maaş", "Kira Geliri", "Ek İş / Freelance", "Yatırım Temettü", "Diğer"];
 const EXPENSE_TYPES = ["Ev Kirası / İpotek", "Faturalar (Elektrik, Su, Doğalgaz)", "Mutfak & Market", "Ulaşım / Akaryakıt", "Eğitim / Sağlık", "Diğer"];
+const DEBT_TYPES = ["Kredi Kartı", "İhtiyaç Kredisi", "Konut Kredisi", "Taşıt Kredisi", "Elden Borç", "Vergi Borcu", "Diğer"];
+const INVESTMENT_TYPES = ["BIST", "NASDAQ", "CRYPTO", "GOLD", "BES", "FAIZ", "CASH", "Diğer"];
 
 const HASHTAGS = [
   { tag:"borsa",          label:"Borsa",          emoji:"📈" },
@@ -145,7 +160,9 @@ const STEPS = [
   { id:2, icon:Globe,      title:"Bölge & Para Birimi", desc:"Nerede, hangi parayla işlem yapıyorsun?" },
   { id:3, icon:Wallet,     title:"Aylık Gelirler",      desc:"Düzenli kazançlarını ekle" },
   { id:4, icon:CreditCard, title:"Aylık Giderler",      desc:"Sabit harcama ve faturalarını belirle" },
-  { id:5, icon:Hash,       title:"İlgi Alanları",       desc:"Sana en uygun finansal analizler için" },
+  { id:5, icon:AlertCircle, title:"Borçlar & Ödemeler",  desc:"Varsa mevcut borçlarını yönetelim" },
+  { id:6, icon:Plus,       title:"Varlıklar & Yatırım", desc:"Sahip olduğun değerleri ekle" },
+  { id:7, icon:Hash,       title:"İlgi Alanları",       desc:"Sana en uygun finansal analizler için" },
 ];
 
 export function OnboardingForm() {
@@ -164,7 +181,9 @@ export function OnboardingForm() {
       firstName:"", lastName:"", birthDate:"", gender:undefined, currency:"TRY", country:"",
       incomes:  [{ type:"Maaş", amount:0, date:new Date().toISOString().split("T")[0], description:"" }],
       expenses: [{ type:"Ev Kirası / İpotek", amount:0, date:new Date().toISOString().split("T")[0], isRecurring:true, description:"" }],
-      interests: []
+      interests: [],
+      debts: [],
+      investments: []
     },
     mode:"onChange",
   });
@@ -177,6 +196,8 @@ export function OnboardingForm() {
 
   const incomesField = useFieldArray({ control: form.control, name: "incomes" });
   const expensesField = useFieldArray({ control: form.control, name: "expenses" });
+  const debtsField = useFieldArray({ control: form.control, name: "debts" });
+  const investmentsField = useFieldArray({ control: form.control, name: "investments" });
 
   const handleGender = (v: F["gender"]) => {
     form.setValue("gender", v, { shouldValidate:true });
@@ -219,6 +240,8 @@ export function OnboardingForm() {
       ["currency","country"],
       ["incomes"],
       ["expenses"],
+      ["debts"],
+      ["investments"],
     ];
     const ok = await form.trigger(fields[step-1] as any);
     if (ok) setStep(s=>s+1);
@@ -233,8 +256,8 @@ export function OnboardingForm() {
         maritalStatus: "Bekar",
         hasChildren: false,
         children: [],
-        debts: [],
-        investments: [],
+        debts: data.debts || [],
+        investments: data.investments || [],
         fixedAssets: []
       } as any);
 
@@ -256,10 +279,10 @@ export function OnboardingForm() {
 
   return (
     <div className="w-full max-w-xl mx-auto px-4">
-      <div className="bg-card border border-[#8C5000]/20 dark:border-[#ffb874]/20 rounded-3xl shadow-2xl overflow-visible animate-in fade-in zoom-in-95 duration-700 transition-colors duration-300">
+      <div className="bg-card border border-[#8C5000]/20 dark:border-[#ffb874]/20 rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-700 transition-colors duration-300 relative">
 
         {/* Yumuşak Sıcak Turuncu Header */}
-        <div className="relative px-8 pt-8 pb-6 bg-[#fbf9f4] dark:bg-[#120d0a]/60 border-b border-[#8C5000]/15 dark:border-[#ffb874]/15 overflow-hidden transition-colors duration-300">
+        <div className="relative px-8 pt-8 pb-6 bg-[#fbf9f4] dark:bg-[#120d0a]/60 border-b border-[#8C5000]/15 dark:border-[#ffb874]/15 overflow-hidden transition-colors duration-300 rounded-t-3xl">
           <div className="absolute top-0 right-0 w-64 h-64 bg-[#f18d02]/15 dark:bg-[#ffb874]/10 rounded-full blur-3xl pointer-events-none" />
           
           {/* Step indicator dots */}
@@ -285,7 +308,7 @@ export function OnboardingForm() {
         </div>
 
         {/* Content */}
-        <div className="p-8 bg-card transition-colors duration-300">
+        <div className="p-8 bg-card transition-colors duration-300 relative">
           {dbError && (
             <div className="mb-6 p-4 rounded-2xl bg-destructive/10 border border-destructive/20 text-rose-500/80 text-xs font-bold flex items-center gap-2 animate-in fade-in duration-300">
               <AlertCircle className="h-5 w-5 flex-shrink-0 text-rose-500/80" />
@@ -438,49 +461,7 @@ export function OnboardingForm() {
                             );
                           })}
                         </div>
-                        {selectedRegion && (
-                          <div className="absolute inset-0 z-50 flex items-center justify-center p-4">
-                            <div className="absolute inset-0 bg-background/40 backdrop-blur-md rounded-3xl" onClick={() => setSelectedRegion(null)} />
-                            <div className="relative w-full max-h-[85%] bg-card border border-[#8C5000]/20 dark:border-[#ffb874]/20 rounded-3xl shadow-ambient-high overflow-hidden flex flex-col animate-in zoom-in-95 fade-in duration-300">
-                              <div className="px-6 py-4 border-b border-border/10 flex justify-between items-center bg-muted/30">
-                                <div>
-                                  <span className="text-[10px] font-black text-[#8C5000]/60 dark:text-[#ffb874]/60 uppercase tracking-widest block">Ülke Seçimi</span>
-                                  <h3 className="text-sm font-black text-primary">{REGIONS.find(r => r.id === selectedRegion)?.label}</h3>
-                                </div>
-                                <button 
-                                  type="button"
-                                  onClick={() => setSelectedRegion(null)} 
-                                  className="h-8 w-8 rounded-full bg-background/80 flex items-center justify-center hover:bg-rose-50 hover:text-rose-500 transition-colors shadow-sm"
-                                >
-                                  <X className="h-4 w-4" />
-                                </button>
-                              </div>
-                              <div className="p-4 grid grid-cols-2 gap-2.5 overflow-y-auto">
-                                {regionCountries.map(c => {
-                                  const isActive = field.value === c.code;
-                                  return (
-                                    <button 
-                                      key={c.code} 
-                                      type="button" 
-                                      onClick={() => { field.onChange(c.code); setSelectedRegion(null); }}
-                                      className={cn("flex items-center gap-3 p-4 rounded-2xl border text-left transition-all duration-200 group",
-                                        isActive 
-                                          ? "bg-[#8C5000] dark:bg-[#ffb874] text-white dark:text-[#120d0a] border-[#8C5000] dark:border-[#ffb874] shadow-md" 
-                                          : "bg-[#faf9f6] dark:bg-[#120d0a] border-[#dbc2b0]/30 hover:border-[#8C5000]/30 hover:shadow-sm"
-                                      )}
-                                    >
-                                      <span className="text-2xl transition-transform group-hover:scale-110 duration-200">{c.flag}</span>
-                                      <span className="text-xs font-bold leading-tight">{c.label}</span>
-                                    </button>
-                                  );
-                                })}
-                              </div>
-                              <div className="p-4 border-t border-border/10 bg-muted/10">
-                                <p className="text-[10px] text-center text-muted-foreground font-medium">Bölgenizdeki para birimi ve yerel ayarlar otomatik olarak yapılandırılacaktır.</p>
-                              </div>
-                            </div>
-                          </div>
-                        )}
+                        {/* Country overlay removed from here and moved higher */}
                       </div>
                     </div>
                   )}/>
@@ -633,8 +614,122 @@ export function OnboardingForm() {
               </div>
             )}
 
-            {/* STEP 5: İlgi Alanları & Özel Hashtag */}
+            {/* STEP 5: Borçlar */}
             {step===5&&(
+              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-extrabold text-[#887364] dark:text-[#dbc2b0]">Mevcut Borçlar (Kredi, Kart vb.)</Label>
+                  <Button type="button" size="sm" variant="outline" onClick={()=>debtsField.append({type:"Kredi Kartı", amount:0, remainingInstallments:1, description:""})}
+                    className="rounded-xl border-[#8C5000]/30 dark:border-[#ffb874]/30 text-[#8C5000] dark:text-[#ffb874] font-bold hover:bg-[#8C5000]/10">
+                    <Plus className="w-4 h-4 mr-1"/> Borç Ekle
+                  </Button>
+                </div>
+                <div className="space-y-4">
+                  {debtsField.fields.length === 0 && (
+                    <div className="text-center py-8 border-2 border-dashed border-[#dbc2b0]/30 rounded-2xl">
+                      <p className="text-xs font-bold text-[#887364]/50">Henüz borç eklenmedi. Borcunuz yoksa bu adımı geçebilirsiniz.</p>
+                    </div>
+                  )}
+                  {debtsField.fields.map((item, i) => (
+                    <div key={item.id} className="p-4 rounded-2xl bg-[#faf9f6] dark:bg-[#120d0a] border border-[#dbc2b0]/40 dark:border-[#887364]/40 space-y-3 relative">
+                      <div className="flex items-center justify-between gap-3">
+                        <Controller
+                          name={`debts.${i}.type`}
+                          control={form.control}
+                          render={({ field }) => (
+                            <Select value={field.value} onValueChange={field.onChange}>
+                              <SelectTrigger className="flex-1 h-11 rounded-xl bg-white dark:bg-[#1c140e]">
+                                <SelectValue placeholder="Borç türü" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {DEBT_TYPES.map(t => (
+                                  <SelectItem key={t} value={t}>{t}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        />
+                        <Button type="button" variant="ghost" size="icon" onClick={()=>debtsField.remove(i)} className="text-rose-500 hover:bg-rose-500/10 h-10 w-10 rounded-xl transition-colors">
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <Label className="text-[10px] font-bold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Toplam Borç Tutarı ({selectedCurrency})</Label>
+                          <Input type="number" {...form.register(`debts.${i}.amount`, { valueAsNumber: true })} placeholder="0" className="h-11 rounded-xl bg-white dark:bg-[#1c140e] font-black text-foreground" />
+                        </div>
+                        <div>
+                          <Label className="text-[10px] font-bold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Kalan Taksit Sayısı</Label>
+                          <Input type="number" {...form.register(`debts.${i}.remainingInstallments`, { valueAsNumber: true })} placeholder="1" className="h-11 rounded-xl bg-white dark:bg-[#1c140e] font-black text-foreground" />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* STEP 6: Varlıklar & Yatırımlar */}
+            {step===6&&(
+              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-extrabold text-[#887364] dark:text-[#dbc2b0]">Yatırımlar & Birikimler</Label>
+                  <Button type="button" size="sm" variant="outline" onClick={()=>investmentsField.append({type:"CASH", amount:0, purchasePrice:1, symbol:"", description:""})}
+                    className="rounded-xl border-[#8C5000]/30 dark:border-[#ffb874]/30 text-[#8C5000] dark:text-[#ffb874] font-bold hover:bg-[#8C5000]/10">
+                    <Plus className="w-4 h-4 mr-1"/> Varlık Ekle
+                  </Button>
+                </div>
+                <div className="space-y-4">
+                  {investmentsField.fields.length === 0 && (
+                    <div className="text-center py-8 border-2 border-dashed border-[#dbc2b0]/30 rounded-2xl">
+                      <p className="text-xs font-bold text-[#887364]/50">Henüz varlık eklenmedi. Varlığınız yoksa bu adımı geçebilirsiniz.</p>
+                    </div>
+                  )}
+                  {investmentsField.fields.map((item, i) => (
+                    <div key={item.id} className="p-4 rounded-2xl bg-[#faf9f6] dark:bg-[#120d0a] border border-[#dbc2b0]/40 dark:border-[#887364]/40 space-y-3 relative">
+                      <div className="flex items-center justify-between gap-3">
+                        <Controller
+                          name={`investments.${i}.type`}
+                          control={form.control}
+                          render={({ field }) => (
+                            <Select value={field.value} onValueChange={field.onChange}>
+                              <SelectTrigger className="flex-1 h-11 rounded-xl bg-white dark:bg-[#1c140e]">
+                                <SelectValue placeholder="Varlık türü" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {INVESTMENT_TYPES.map(t => (
+                                  <SelectItem key={t} value={t}>{t}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        />
+                        <Button type="button" variant="ghost" size="icon" onClick={()=>investmentsField.remove(i)} className="text-rose-500 hover:bg-rose-500/10 h-10 w-10 rounded-xl transition-colors">
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div>
+                          <Label className="text-[10px] font-bold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Toplam Değer ({selectedCurrency})</Label>
+                          <Input type="number" {...form.register(`investments.${i}.amount`, { valueAsNumber: true })} placeholder="0" className="h-11 rounded-xl bg-white dark:bg-[#1c140e] font-black text-foreground" />
+                        </div>
+                        <div>
+                          <Label className="text-[10px] font-bold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Sembol (Opsiyonel)</Label>
+                          <Input {...form.register(`investments.${i}.symbol`)} placeholder="Örn: THYAO, BTC" className="h-11 rounded-xl bg-white dark:bg-[#1c140e] font-bold uppercase text-foreground" />
+                        </div>
+                        <div>
+                          <Label className="text-[10px] font-bold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Açıklama</Label>
+                          <Input {...form.register(`investments.${i}.description`)} placeholder="Banka/Platform" className="h-11 rounded-xl bg-white dark:bg-[#1c140e] font-medium text-foreground" />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* STEP 7: İlgi Alanları & Özel Hashtag */}
+            {step===7&&(
               <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <p className="text-xs font-bold text-[#887364] dark:text-[#dbc2b0]">Aşağıdaki önerilerden seçebilir veya kendi özel ilgi alanını (Örn: #COIN #BIST) yazıp Boşluk veya Enter tuşuna basabilirsin.</p>
                 
@@ -668,14 +763,61 @@ export function OnboardingForm() {
               </div>
             )}
           </form>
-        </div>
+        {/* Global Country Overlay */}
+        {selectedRegion && (
+          <div className="absolute inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-6 animate-in fade-in duration-300">
+            <div className="absolute inset-0 bg-background/60 backdrop-blur-md" onClick={() => setSelectedRegion(null)} />
+            <div className="relative w-full h-[80%] sm:h-auto sm:max-h-[85%] bg-card border-t sm:border border-[#8C5000]/20 dark:border-[#ffb874]/20 rounded-t-[2.5rem] sm:rounded-3xl shadow-ambient-high overflow-hidden flex flex-col animate-in slide-in-from-bottom-10 sm:zoom-in-95 duration-500">
+              <div className="px-8 py-6 border-b border-border/10 flex justify-between items-center bg-muted/30">
+                <div>
+                  <span className="text-[10px] font-black text-[#8C5000]/60 dark:text-[#ffb874]/60 uppercase tracking-widest block mb-0.5">Ülke Seçimi</span>
+                  <h3 className="text-lg font-black text-[#5a3100] dark:text-[#ffb874]">{REGIONS.find(r => r.id === selectedRegion)?.label}</h3>
+                </div>
+                <button 
+                  type="button"
+                  onClick={() => setSelectedRegion(null)} 
+                  className="h-10 w-10 rounded-full bg-background/80 flex items-center justify-center hover:bg-rose-50 hover:text-rose-500 transition-all shadow-sm active:scale-90"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-3.5 overflow-y-auto min-h-[320px]">
+                {regionCountries.map(c => {
+                  const isActive = form.getValues("country") === c.code;
+                  return (
+                    <button 
+                      key={c.code} 
+                      type="button" 
+                      onClick={() => { form.setValue("country", c.code, { shouldValidate: true }); setSelectedRegion(null); }}
+                      className={cn("flex items-center gap-4 p-5 rounded-2xl border text-left transition-all duration-200 group",
+                        isActive 
+                          ? "bg-[#8C5000] dark:bg-[#ffb874] text-white dark:text-[#120d0a] border-[#8C5000] dark:border-[#ffb874] shadow-md scale-[1.02]" 
+                          : "bg-[#faf9f6] dark:bg-[#120d0a] border-[#dbc2b0]/30 hover:border-[#8C5000]/40 hover:shadow-sm"
+                      )}
+                    >
+                      <span className="text-3xl transition-transform group-hover:scale-110 duration-200">{c.flag}</span>
+                      <div className="flex flex-col">
+                        <span className="text-xs font-black leading-tight">{c.label}</span>
+                        <span className="text-[9px] opacity-60 uppercase font-bold tracking-wider">{c.code}</span>
+                      </div>
+                      {isActive && <Check className="w-4 h-4 ml-auto" />}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="px-8 py-5 border-t border-border/10 bg-muted/10">
+                <p className="text-[10px] text-center text-muted-foreground font-bold tracking-tight">Seçiminiz doğrultusunda finansal raporlar yerelleştirilecektir.</p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Footer */}
-        <div className="flex items-center justify-between px-8 py-5 bg-[#fbf9f4] dark:bg-[#120d0a]/60 border-t border-[#8C5000]/10 dark:border-[#ffb874]/15 transition-colors duration-300">
+        <div className="flex items-center justify-between px-8 py-5 bg-[#fbf9f4] dark:bg-[#120d0a]/60 border-t border-[#8C5000]/10 dark:border-[#ffb874]/15 transition-colors duration-300 rounded-b-3xl">
           <Button type="button" variant="ghost" onClick={()=>setStep(s=>Math.max(s-1,1))} disabled={step===1||loading} className="h-12 px-6 rounded-xl font-bold text-[#5a3100] dark:text-[#dbc2b0] hover:bg-[#dbc2b0]/30">
             <ChevronLeft className="w-4 h-4 mr-1"/> Geri
           </Button>
-          {step<5?(
+          {step<7?(
             <Button type="button" onClick={nextStep} className="h-12 px-8 rounded-xl bg-gradient-to-r from-[#f18d02] to-[#8C5000] dark:from-[#ffb874] dark:to-[#8C5000] text-white dark:text-[#120d0a] font-extrabold sm:font-black shadow-lg shadow-[#8C5000]/25 hover:scale-[1.02] transition-all">
               Devam Et <ChevronRight className="w-5 h-5 ml-1"/>
             </Button>
