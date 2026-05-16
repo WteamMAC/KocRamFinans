@@ -43,6 +43,8 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
 
     const activeDebts = debts.filter(d => d.amount > 0);
     const totalDebt = activeDebts.reduce((sum, d) => sum + d.amount, 0);
+    const maxRemaining = Math.max(...activeDebts.map(d => d.remainingInstallments || 0), 1);
+    const displayCount = Math.min(maxRemaining, 60); // En fazla 5 yıllık ödeme projeksiyonu
 
     // Bu ayki ödeme takibi
     const currentMonthExpected = activeDebts.reduce((sum, d) => {
@@ -168,50 +170,43 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
                             <Clock className="w-5 h-5 text-primary" /> Aylık Ödeme Projeksiyonu
                         </h3>
                         <div className="h-[250px] w-full">
-                            {(() => {
-                                const maxRemaining = Math.max(...activeDebts.map(d => d.remainingInstallments || 0), 1);
-                                const displayCount = Math.min(maxRemaining, 60); // Cap at 5 years
-                                
-                                return (
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <BarChart data={(() => {
-                                            const months = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
-                                            const currentMonth = new Date().getMonth();
-                                            const data = [];
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={(() => {
+                                    const months = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+                                    const currentMonth = new Date().getMonth();
+                                    const data = [];
 
-                                            for (let i = 0; i < displayCount; i++) {
-                                                const mIdx = (currentMonth + i) % 12;
-                                                let total = 0;
-                                                activeDebts.forEach(d => {
-                                                    if (d.remainingInstallments && d.remainingInstallments > i) {
-                                                        total += (d.installmentAmount || (d.amount / d.remainingInstallments));
-                                                    } else if (!d.remainingInstallments && i === 0) {
-                                                        total += d.amount;
-                                                    }
-                                                });
-                                                data.push({ name: months[mIdx], tutar: total });
+                                    for (let i = 0; i < displayCount; i++) {
+                                        const mIdx = (currentMonth + i) % 12;
+                                        let total = 0;
+                                        activeDebts.forEach(d => {
+                                            if (d.remainingInstallments && d.remainingInstallments > i) {
+                                                total += (d.installmentAmount || (d.amount / d.remainingInstallments));
+                                            } else if (!d.remainingInstallments && i === 0) {
+                                                total += d.amount;
                                             }
-                                            return data;
-                                        })()}>
-                                            <defs>
-                                                <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
-                                                    <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.8} />
-                                                    <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.1} />
-                                                </linearGradient>
-                                            </defs>
-                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" opacity={0.1} />
-                                            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10, fontWeight: 'bold' }} />
-                                            <YAxis axisLine={false} tickLine={false} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10, fontWeight: 'bold' }} />
-                                            <Tooltip
-                                                cursor={{ fill: 'hsl(var(--primary)/0.05)', radius: 8 }}
-                                                contentStyle={{ backgroundColor: 'hsl(var(--card))', borderRadius: '16px', border: '1px solid hsl(var(--border)/0.3)', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                                                formatter={(value: any) => [formatAmount(value), "Ödeme"]}
-                                            />
-                                            <Bar dataKey="tutar" fill="url(#barGradient)" radius={[8, 8, 4, 4]} barSize={displayCount > 12 ? 15 : 30} />
-                                        </BarChart>
-                                    </ResponsiveContainer>
-                                );
-                            })()}
+                                        });
+                                        data.push({ name: months[mIdx], tutar: total });
+                                    }
+                                    return data;
+                                })()}>
+                                    <defs>
+                                        <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.8} />
+                                            <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.1} />
+                                        </linearGradient>
+                                    </defs>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" opacity={0.1} />
+                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10, fontWeight: 'bold' }} />
+                                    <YAxis axisLine={false} tickLine={false} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10, fontWeight: 'bold' }} />
+                                    <Tooltip
+                                        cursor={{ fill: 'hsl(var(--primary)/0.05)', radius: 8 }}
+                                        contentStyle={{ backgroundColor: 'hsl(var(--card))', borderRadius: '16px', border: '1px solid hsl(var(--border)/0.3)', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                                        formatter={(value: any) => [formatAmount(value), "Ödeme"]}
+                                    />
+                                    <Bar dataKey="tutar" fill="url(#barGradient)" radius={[8, 8, 4, 4]} barSize={displayCount > 12 ? 15 : 30} />
+                                </BarChart>
+                            </ResponsiveContainer>
                         </div>
                     </Card>
 
