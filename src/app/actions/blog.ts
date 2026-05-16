@@ -144,7 +144,7 @@ export async function createPost(
   await processMentionsAndNotify(content, newPost.id, user.id);
 
   revalidatePath("/dashboard/blog");
-
+  return { id: newPost.id };
 }
 
 
@@ -200,7 +200,7 @@ export async function addComment(postId: string, content: string) {
   const user = await getInternalUser(userId);
   if (!user) throw new Error("User not found");
 
-  await prisma.blogComment.create({
+  const newComment = await prisma.blogComment.create({
     data: { postId, authorId: user.id, content },
   });
 
@@ -223,6 +223,7 @@ export async function addComment(postId: string, content: string) {
   await processMentionsAndNotify(content, postId, user.id);
 
   revalidatePath("/dashboard/blog");
+  return { id: newComment.id };
 }
 
 export async function deleteComment(commentId: string) {
