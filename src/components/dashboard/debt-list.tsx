@@ -142,28 +142,31 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
 
     return (
         <div className="space-y-8 pb-12 max-w-[1440px] mx-auto">
-            <div className="flex justify-between items-center">
-                <div className="bg-card px-6 py-3 rounded-2xl border border-border/30 shadow-sm flex items-center gap-4 animate-in fade-in slide-in-from-left-4 duration-500">
-                    <div className="p-3 bg-rose-500/10 rounded-xl">
-                        <TrendingDown className="w-6 h-6 text-rose-600" />
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
+                <div className="flex flex-wrap items-center gap-4">
+                    <div className="bg-card px-6 py-3 rounded-2xl border border-border/30 shadow-sm flex items-center gap-4 animate-in fade-in slide-in-from-left-4 duration-500">
+                        <div className="p-3 bg-rose-500/10 rounded-xl">
+                            <TrendingDown className="w-6 h-6 text-rose-600" />
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">Toplam Yükümlülük</p>
+                            <p className="text-2xl font-heading font-bold text-primary">{formatAmount(totalDebt)}</p>
+                        </div>
                     </div>
-                    <div>
-                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">Toplam Yükümlülük</p>
-                        <p className="text-2xl font-heading font-bold text-primary">{formatAmount(totalDebt)}</p>
+
+                    <div className="bg-card px-6 py-3 rounded-2xl border border-border/30 shadow-sm flex items-center gap-4 animate-in fade-in slide-in-from-left-4 duration-500 delay-100">
+                        <div className="p-3 bg-primary/10 rounded-xl">
+                            <Clock className="w-6 h-6 text-primary" />
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">Ay Sonu Tahmini Kalan Para</p>
+                            <p className="text-2xl font-heading font-bold text-primary">
+                                {formatAmount(remainingExpected)}
+                            </p>
+                        </div>
                     </div>
                 </div>
 
-                <div className="bg-card px-6 py-3 rounded-2xl border border-border/30 shadow-sm flex items-center gap-4 animate-in fade-in slide-in-from-left-4 duration-500 delay-100">
-                    <div className="p-3 bg-primary/10 rounded-xl">
-                        <Clock className="w-6 h-6 text-primary" />
-                    </div>
-                    <div>
-                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">Ay Sonu Tahmini Kalan Para</p>
-                        <p className="text-2xl font-heading font-bold text-primary">
-                            {formatAmount(remainingExpected)}
-                        </p>
-                    </div>
-                </div>
                 <Button
                     onClick={() => setIsAdding(!isAdding)}
                     className={cn(
@@ -208,16 +211,16 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
                                 })()}>
                                     <defs>
                                         <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.8} />
-                                            <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.1} />
+                                            <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.8} />
+                                            <stop offset="100%" stopColor="var(--primary)" stopOpacity={0.15} />
                                         </linearGradient>
                                     </defs>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" opacity={0.1} />
-                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10, fontWeight: 'bold' }} />
-                                    <YAxis axisLine={false} tickLine={false} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10, fontWeight: 'bold' }} />
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.3} />
+                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: 'var(--muted-foreground)', fontSize: 10, fontWeight: 'bold' }} />
+                                    <YAxis axisLine={false} tickLine={false} tick={{ fill: 'var(--muted-foreground)', fontSize: 10, fontWeight: 'bold' }} />
                                     <Tooltip
-                                        cursor={{ fill: 'hsl(var(--primary)/0.05)', radius: 8 }}
-                                        contentStyle={{ backgroundColor: 'hsl(var(--card))', borderRadius: '16px', border: '1px solid hsl(var(--border)/0.3)', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                                        cursor={{ fill: 'var(--primary)', opacity: 0.05, radius: 8 }}
+                                        contentStyle={{ backgroundColor: 'var(--card)', borderRadius: '16px', border: '1px solid var(--border)', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
                                         formatter={(value: any) => [formatAmount(value), "Ödeme"]}
                                     />
                                     <Bar dataKey="tutar" fill="url(#barGradient)" radius={[8, 8, 4, 4]} barSize={displayCount > 12 ? 15 : 30} />
