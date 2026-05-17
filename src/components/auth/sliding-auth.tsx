@@ -30,10 +30,6 @@ export default function SlidingAuth() {
     return () => window.removeEventListener("resize", checkScreen);
   }, []);
 
-  const toggleAuth = () => {
-    const newPath = isLogin ? "/sign-up" : "/sign-in";
-    router.push(newPath);
-  };
 
   const isTextCorrect = 
     confirmationText.trim().toUpperCase() === "ONAYLADIM" || 
@@ -196,6 +192,10 @@ export default function SlidingAuth() {
                       />
                     </div>
                   </div>
+<<<<<<< HEAD
+=======
+
+>>>>>>> 0ad829e114a2b0c98ec41d8ed9f28e72895252c6
                 </motion.div>
               )}
             </AnimatePresence>
