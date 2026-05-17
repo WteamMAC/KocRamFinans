@@ -560,9 +560,6 @@ export function OnboardingForm() {
       const result = await completeOnboarding({
         ...cleanData,
         familyCount: 1,
-        maritalStatus: "Bekar",
-        hasChildren: false,
-        children: [],
         debts: cleanData.debts || [],
         investments: cleanData.investments || [],
         fixedAssets: []

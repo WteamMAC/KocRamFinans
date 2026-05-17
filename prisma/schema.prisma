@@ -27,10 +27,6 @@ model User {
   country     String?   @default("TR")  // ISO 3166-1 alpha-2 country code
   interests   String[]  // Hashtag'ler: ["kripto", "borsa", "altin", ...]
 
-  maritalStatus String?
-  marriageDate  DateTime?
-  hasChildren   Boolean   @default(false)
-  children      Child[]
 
   incomes     Income[]
   expenses    Expense[]
@@ -80,15 +76,6 @@ model FixedAsset {
   updatedAt   DateTime @updatedAt
 }
 
-model Child {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  birthDate DateTime
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
 
 model SpecialEvent {
   id        String   @id @default(cuid())
@@ -254,7 +241,7 @@ model Community {
   tags        String[] // ["altın", "kripto", "bes", "faiz", "ekonomi", "genel"]
   
   creatorId   String
-  creator     User     @relation("CreatedCommunities", fields: [creatorId], references: [id], onDelete: Cascade)
+  creator     User     @relation("CreatedCommunities", fields: [creatorId], references: [id])
   
   members     CommunityMember[]
   posts       BlogPost[]
