@@ -3,6 +3,7 @@ import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 import type { Content, Part } from "@google/generative-ai";
 import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
+import { revalidatePath } from "next/cache";
 import { MASTER_PROMPT, getFinancialContext } from "@/lib/gemini";
 import { standardizeInvestmentType } from "@/lib/utils";
 import { getLivePrices } from "@/lib/price-service";
@@ -145,12 +146,18 @@ export async function POST(req: Request) {
               type: SchemaType.OBJECT,
               properties: {
                 type: { type: SchemaType.STRING, description: "income, expense, debt, investment" },
-                amount: { type: SchemaType.NUMBER, description: "Tutar" },
-                category: { type: SchemaType.STRING, description: "Kategori (örn: Market, Maaş, BIST)" },
+                amount: { type: SchemaType.NUMBER, description: "Orijinal tutar (kur dönüşümü yapma, olduğu gibi yaz)" },
+                category: { type: SchemaType.STRING, description: "Kategori. Gider için: 'Mutfak & Market', 'Ev Kirası / İpotek', 'Faturalar (Elektrik, Su, Doğalgaz)', 'Ulaşım / Akaryakıt', 'Eğitim / Sağlık', 'Diğer'. Gelir için: 'Maaş', 'Kira Geliri', 'Ek İş / Freelance', 'Yatırım Temettü', 'Diğer'. Borç için: 'Kredi Kartı', 'Banka Kredisi', 'Şahsi Borç', 'Elden Taksit', 'Diğer'. Yatırım için: 'BIST', 'NASDAQ', 'CRYPTO', 'GOLD', 'BES', 'FAIZ', 'CASH', 'Diğer'." },
+                currency: { type: SchemaType.STRING, description: "Para birimi kodu. Kullanıcı 'dolar' veya '$' derse USD, 'euro' veya '€' derse EUR, 'sterlin' derse GBP, belirtmezse TRY yaz." },
+                date: { type: SchemaType.STRING, description: "İşlem tarihi YYYY-MM-DD formatında. Kullanıcı tarih belirtmezse bugünün tarihini yaz." },
                 description: { type: SchemaType.STRING, description: "Açıklama veya Hisse Kodu" },
-                isRecurring: { type: SchemaType.BOOLEAN, description: "Giderin her ay tekrarlanıp tekrarlanmayacağı. Market, fatura gibi harcamalar için false yapın. Varsayılan: false" },
-                quantity: { type: SchemaType.NUMBER, description: "Yatırımlar için miktar" },
-                purchasePrice: { type: SchemaType.NUMBER, description: "Yatırımlar için alış fiyatı" }
+                isRecurring: { type: SchemaType.BOOLEAN, description: "Giderin her ay tekrarlanıp tekrarlanmayacağı. Market, yakıt, tek seferlik harcamalar için false. Sadece kira gibi sabit aylık ödemeler için true. Varsayılan: false" },
+                quantity: { type: SchemaType.NUMBER, description: "Yatırımlar için miktar/adet" },
+                purchasePrice: { type: SchemaType.NUMBER, description: "Yatırımlar için birim alış fiyatı" },
+                interestRate: { type: SchemaType.NUMBER, description: "Borçlar için aylık faiz oranı (%). Belirtilmezse 0 kabul et." },
+                remainingInstallments: { type: SchemaType.NUMBER, description: "Borçlar için kalan taksit sayısı. Tek seferlik borçlar için boş bırak." },
+                paymentDay: { type: SchemaType.NUMBER, description: "Borçlar için taksit ödeme günü (1-31)." },
+                dueDate: { type: SchemaType.STRING, description: "Tek seferlik borçlar için son ödeme tarihi (YYYY-MM-DD)." }
               },
               required: ["type", "amount", "category"]
             }
@@ -277,50 +284,147 @@ export async function POST(req: Request) {
                 if (call.name === "getFinancialHistory") {
                   const cat = String(args.category).toLowerCase();
 
+                  // Fresh DB sorgusu: aynı sohbette eklenen kayıtlar da görünsün
+                  const freshUser = await prisma.user.findUnique({
+                    where: { id: user.id },
+                    include: {
+                      incomes: { orderBy: { createdAt: "desc" }, take: 15 },
+                      expenses: { orderBy: { createdAt: "desc" }, take: 15 },
+                      debts: { orderBy: { createdAt: "desc" }, take: 15 },
+                      investments: { orderBy: { createdAt: "desc" }, take: 15 },
+                    }
+                  });
+
                   const dataMap: Record<string, any> = {
-                    incomes: user.incomes.slice(-10),
-                    expenses: user.expenses.slice(-10),
-                    debts: user.debts.slice(-10),
-                    investments: user.investments.slice(-10)
+                    incomes: freshUser?.incomes || [],
+                    expenses: freshUser?.expenses || [],
+                    debts: freshUser?.debts || [],
+                    investments: freshUser?.investments || []
                   };
 
                   apiResponse = (cat === "all" || cat === "hepsi") ? dataMap : { data: dataMap[cat as keyof typeof dataMap] || dataMap };
                 } else if (call.name === "addFinancialRecord") {
-                  const { type, amount, category, description, quantity, purchasePrice, isRecurring } = args;
+                  const { type, amount, category, description, quantity, purchasePrice, isRecurring,
+                          currency: rawCurrency, date: rawDate,
+                          interestRate, remainingInstallments, paymentDay, dueDate } = args;
 
                   const safeAmount = Number(amount) || 0;
                   if (safeAmount <= 0) throw new Error("Tutar 0'dan büyük olmalıdır.");
 
-                  const baseData = { userId: user.id, amount: safeAmount, description: description || "", type: category };
-
-                  if (type === "income") await prisma.income.create({ data: baseData });
-                  else if (type === "expense") await prisma.expense.create({
-                    data: {
-                      ...baseData,
-                      isRecurring: isRecurring === undefined ? false : Boolean(isRecurring)
+                  // --- Para Birimi & Kur Dönüşümü ---
+                  const currency = (rawCurrency || "TRY").toUpperCase();
+                  const txDate = rawDate ? new Date(rawDate) : new Date();
+                  let fxRate = 1;
+                  if (currency !== "TRY") {
+                    const symbolMap: Record<string, string> = {
+                      USD: "USDTRY=X", EUR: "EURTRY=X", GBP: "GBPTRY=X",
+                      CHF: "CHFTRY=X", JPY: "JPYTRY=X", AED: "AEDTRY=X",
+                      SAR: "SARTRY=X", CAD: "CADTRY=X", AUD: "AUDTRY=X",
+                    };
+                    const sym = symbolMap[currency];
+                    if (sym) {
+                      try {
+                        const prices = await getLivePrices([sym]);
+                        fxRate = prices.get(sym)?.price || 1;
+                      } catch { fxRate = 1; }
                     }
-                  });
-                  else if (type === "debt") await prisma.debt.create({ data: baseData });
-                  else if (type === "investment") {
-                    const q = Number(quantity) > 0 ? Number(quantity) : 1;
-                    const p = Number(purchasePrice) > 0 ? Number(purchasePrice) : (safeAmount > 0 ? safeAmount / q : 0);
-                    const finalAmt = safeAmount > 0 ? safeAmount : (q * p);
+                  }
+                  const amountInTRY = safeAmount * fxRate;
 
+                  if (type === "income") {
+                    await prisma.income.create({
+                      data: {
+                        userId: user.id,
+                        type: category,
+                        amount: amountInTRY,
+                        originalAmount: safeAmount,
+                        currency,
+                        fxRate,
+                        date: txDate,
+                        description: description || "",
+                      }
+                    });
+                  } else if (type === "expense") {
+                    await prisma.expense.create({
+                      data: {
+                        userId: user.id,
+                        type: category,
+                        amount: amountInTRY,
+                        originalAmount: safeAmount,
+                        currency,
+                        fxRate,
+                        date: txDate,
+                        isRecurring: isRecurring === undefined ? false : Boolean(isRecurring),
+                        description: description || "",
+                      }
+                    });
+                  } else if (type === "debt") {
+                    // PMT Faiz Hesabı (dashboard addDebt ile aynı mantık)
+                    const principal = amountInTRY;
+                    const n = remainingInstallments ? Number(remainingInstallments) : 0;
+                    const iRate = interestRate ? Number(interestRate) : 0;
+                    let finalTotal = principal;
+                    let monthlyPayment: number | null = null;
+                    if (iRate > 0 && n > 0) {
+                      const i = iRate / 100;
+                      monthlyPayment = (principal * i * Math.pow(1 + i, n)) / (Math.pow(1 + i, n) - 1);
+                      finalTotal = monthlyPayment * n;
+                    } else if (n > 0) {
+                      monthlyPayment = principal / n;
+                    }
+                    let debtDesc = description || category;
+                    if (dueDate) debtDesc += ` (Son Ödeme: ${new Date(dueDate).toLocaleDateString("tr-TR")})`;
+                    await prisma.debt.create({
+                      data: {
+                        userId: user.id,
+                        type: category,
+                        amount: finalTotal,
+                        principalAmount: principal,
+                        interestRate: iRate || null,
+                        installmentAmount: monthlyPayment,
+                        remainingInstallments: n || null,
+                        paymentDay: paymentDay ? Number(paymentDay) : null,
+                        dueDate: dueDate ? new Date(dueDate) : null,
+                        currency,
+                        originalAmount: safeAmount,
+                        fxRate,
+                        description: debtDesc,
+                      }
+                    });
+                  } else if (type === "investment") {
+                    const q = Number(quantity) > 0 ? Number(quantity) : 1;
+                    const p = Number(purchasePrice) > 0 ? Number(purchasePrice) : (amountInTRY > 0 ? amountInTRY / q : 0);
+                    const finalAmt = amountInTRY > 0 ? amountInTRY : (q * p);
                     await prisma.investment.create({
                       data: {
-                        userId: user.id, type: standardizeInvestmentType(category),
-                        symbol: description || category, quantity: q, purchasePrice: p, amount: finalAmt,
-                        description: description || null, status: "OPEN", transactionType: "BUY",
+                        userId: user.id,
+                        type: standardizeInvestmentType(category),
+                        symbol: description || category,
+                        quantity: q,
+                        purchasePrice: p,
+                        amount: finalAmt,
+                        description: description || null,
+                        status: "OPEN",
+                        transactionType: "BUY",
                       }
                     });
                   }
-                  apiResponse = { success: true, message: "Kayıt başarıyla eklendi." };
+
+                  // Cache'i temizle, dashboard anında güncellensin
+                  revalidatePath("/dashboard");
+                  revalidatePath("/dashboard/income-expense");
+                  revalidatePath("/dashboard/debts");
+
+                  apiResponse = { success: true, message: `Kayıt başarıyla eklendi. (${safeAmount} ${currency}${fxRate !== 1 ? ` ≈ ${amountInTRY.toFixed(2)} TRY` : ""})` };
                 } else if (call.name === "deleteFinancialRecord") {
                   const { type, recordId } = args;
                   if (type === "income") await prisma.income.delete({ where: { id: recordId } });
                   else if (type === "expense") await prisma.expense.delete({ where: { id: recordId } });
                   else if (type === "debt") await prisma.debt.delete({ where: { id: recordId } });
                   else if (type === "investment") await prisma.investment.delete({ where: { id: recordId } });
+                  revalidatePath("/dashboard");
+                  revalidatePath("/dashboard/income-expense");
+                  revalidatePath("/dashboard/debts");
                   apiResponse = { success: true, message: "Kayıt veritabanından kalıcı olarak silindi." };
                 } else if (call.name === "getMarketPrice") {
                   const symbols: string[] = (Array.isArray(args.symbols) ? args.symbols : [args.symbols]) as string[];

@@ -15,15 +15,17 @@ GÖREVLERİN VE KURALLARIN:
         4. KİŞİSEL FİNANS DANIŞMANLIĞI: Mevcut finansal durumu ('getFinancialHistory' ile çekerek) analiz et, tasarruf oranını artıracak ve borç kapatmayı hızlandıracak somut öneriler ver.
         5. DÜZENLİ ÖDEMELER: Harcama eklerken (addFinancialRecord), eğer harcama bir market fişi, yakıt faturası veya tek seferlik bir harcamaysa 'isRecurring' değerini MUTLAKA 'false' yap. Sadece kira gibi her ay kesin olarak aynı tutarda tekrarlanacak ödemeler için 'true' yap. Varsayılan olarak 'false' kabul et.
         6. ÇOK KISA VE ÖZ CEVAPLAR (ÖNEMLİ): Kesinlikle gereğinden fazla detay verme, uzun cümleler kurma. Sadece kullanıcının sorduğu sorunun cevabını doğrudan ve en kısa şekilde (maksimum 1-2 cümle) ver. Gereksiz uzun analizlerden veya açıklamalardan kaçın. Dostane (Koç Ram) ama son derece öz bir dil kullan.
+        7. PARA BİRİMİ KURALI (KRİTİK): Kullanıcı tutarı "dolar", "$" veya "USD" ile ifade ederse addFinancialRecord çağrısında currency="USD" gönder. "euro" veya "€" → EUR, "sterlin" veya "£" → GBP, belirtilmezse TRY. TUTARI KENDİN DÖNÜŞTÜRME — orijinal sayıyı yaz, sistem kuru otomatik uygular. Kullanıcıya onay mesajında hem orijinal tutarı hem TL karşılığını göster.
+        8. TARİH KURALI: Kullanıcı "dün", "geçen hafta", "15'inde" gibi ifadeler kullanırsa bunu YYYY-MM-DD formatında gerçek bir tarihe çevir ve date parametresine yaz. Belirtilmezse bugünün tarihini kullan.
 
 Bugünün Tarihi: {CURRENT_DATE}
 Kullanıcı Özeti: {USER_DATA}
 
-GEÇERLİ KATEGORİLER:
-        - Gelir (income): Maaş, Kira Geliri, Faiz, Diğer.
-        - Gider (expense): Kira, Fatura, Market, Ulaşım, Diğer.
-        - Borç (debt): Kredi Kartı, Banka Kredisi, Diğer.
-        - Yatırım (investment): Altın, Kripto, Hisse Senedi, BIST, NASDAQ, Döviz.
+GEÇERLİ KATEGORİLER (Veritabanıyla birebir eşleşmesi gerekir, lütfen tam olarak bu değerleri kullan):
+        - Gelir (income): "Maaş", "Kira Geliri", "Ek İş / Freelance", "Yatırım Temettü", "Diğer"
+        - Gider (expense): "Mutfak & Market", "Ev Kirası / İpotek", "Faturalar (Elektrik, Su, Doğalgaz)", "Ulaşım / Akaryakıt", "Eğitim / Sağlık", "Diğer"
+        - Borç (debt): "Kredi Kartı", "Banka Kredisi", "Şahsi Borç", "Elden Taksit", "Diğer"
+        - Yatırım (investment): "BIST", "NASDAQ", "CRYPTO", "GOLD", "BES", "FAIZ", "CASH", "Diğer"
 
 UYARI: Yatırım tavsiyesi verirken mutlaka "Yatırım Tavsiyesi Değildir (YTD)" notunu ekle.
 `;
@@ -37,12 +39,32 @@ export async function getFinancialContext(user: any) {
   };
 
   const savingsRate = totals.income > 0 ? (((totals.income - totals.expense) / totals.income) * 100).toFixed(1) : 0;
+  const netBalance = totals.income - totals.expense;
 
-  return `[FİNANSAL ÖZET] 
-  - Toplam Gelir: ${totals.income} TL
-  - Toplam Gider: ${totals.expense} TL
+  const userCurrency = user.currency || "TRY";
+  const userCountry = user.country || "TR";
+
+  // Son eklenen kayıtların para birimlerini özetle
+  const recentCurrencies = [
+    ...new Set([
+      ...(user.incomes?.slice(-5).map((i: any) => i.currency).filter(Boolean) || []),
+      ...(user.expenses?.slice(-5).map((e: any) => e.currency).filter(Boolean) || []),
+    ])
+  ].join(", ") || userCurrency;
+
+  return `[KULLANICI PROFİLİ]
+  - Tercih Para Birimi: ${userCurrency} | Ülke: ${userCountry}
+  - Son İşlemlerde Kullanılan Para Birimleri: ${recentCurrencies}
+  - NOT: Tüm aşağıdaki tutarlar TRY (Türk Lirası) cinsindendir.
+
+[FİNANSAL ÖZET]
+  - Toplam Gelir: ${totals.income.toFixed(2)} TRY
+  - Toplam Gider: ${totals.expense.toFixed(2)} TRY
+  - Net Bakiye: ${netBalance.toFixed(2)} TRY (${netBalance >= 0 ? 'Pozitif' : 'Negatif'})
   - Tasarruf Oranı: %${savingsRate}
-  - Mevcut Borçlar: ${totals.debt} TL
-  - Yatırımlar: ${totals.investment} TL
-  Kullanıcıya bu verilere dayanarak proaktif tavsiyeler ver.`;
+  - Toplam Borç: ${totals.debt.toFixed(2)} TRY
+  - Toplam Yatırım: ${totals.investment.toFixed(2)} TRY
+
+  Kullanıcıya bu verilere dayanarak proaktif ve kişiselleştirilmiş tavsiyeler ver.
+  Kullanıcı farklı para birimi belirtirse addFinancialRecord'da currency parametresini mutlaka set et.`;
 }

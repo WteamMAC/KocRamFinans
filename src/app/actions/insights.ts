@@ -12,14 +12,36 @@ const FALLBACK_MODELS = [
   "gemini-2.0-flash"
 ];
 
+// Ortak yardımcı: Model fallback döngüsü
+async function runWithFallback(prompt: string): Promise<string> {
+  let lastError: any = null;
+  for (const modelName of FALLBACK_MODELS) {
+    try {
+      const model = genAI.getGenerativeModel({ model: modelName });
+      const result = await model.generateContent(prompt);
+      return result.response.text();
+    } catch (err) {
+      lastError = err;
+      console.warn(`[insights] Model failed (${modelName}):`, err);
+    }
+  }
+  throw lastError || new Error("Tüm yapay zeka modelleri başarısız oldu.");
+}
+
 export async function generateSmartInsights(financialData: any) {
   if (!apiKey) {
     return { success: false, error: "API Anahtarı eksik." };
   }
 
   try {
+    const userCurrency = financialData?.userCurrency || financialData?.currency || "TRY";
+    const userCountry = financialData?.userCountry || financialData?.country || "TR";
+
     const prompt = `Sen uzman bir finansal danışmansın. Aşağıdaki kullanıcı verilerini analiz et ve 3 adet kısa, öz ve vurucu "Proaktif Uyarı / Tavsiye" üret. 
 Kullanıcının adı yok, doğrudan "Siz" veya "Harcamalarınız" diye hitap et.
+Kullanıcının tercih para birimi: ${userCurrency} | Ülke: ${userCountry}
+Veritabanındaki tüm tutarlar TRY cinsindendir.
+
 Sadece JSON formatında geçerli bir çıktı ver, Markdown kullanma. JSON şeması:
 [
   { "type": "warning" | "success" | "info", "message": "Kısa ve net mesaj" }
@@ -36,25 +58,7 @@ Kullanıcı Verisi (JSON):
 ${JSON.stringify(financialData)}
 `;
 
-    let result = null;
-    let lastError = null;
-
-    for (const modelName of FALLBACK_MODELS) {
-      try {
-        const model = genAI.getGenerativeModel({ model: modelName });
-        result = await model.generateContent(prompt);
-        break;
-      } catch (err) {
-        lastError = err;
-        console.warn(`[insights] Model failed (${modelName}):`, err);
-      }
-    }
-
-    if (!result) {
-      throw lastError || new Error("Tüm yapay zeka modelleri başarısız oldu.");
-    }
-
-    let responseText = result.response.text();
+    let responseText = await runWithFallback(prompt);
     responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
 
     try {
@@ -76,8 +80,13 @@ export async function predictGrowthRate(portfolioData: any) {
   }
 
   try {
+    const baseCurrency = portfolioData?.baseCurrency || "TRY";
+
     const prompt = `Sen uzman bir finansal analistsin. Aşağıdaki portföy verilerini (yatırımlar, sabit varlıklar ve aylık düzenli tasarruf miktarı) analiz et. 
 Portföydeki spesifik varlıkların (örneğin BTC, AAPL, Altın vs.) gelecek 6 ay içindeki beklenen değer artışlarını tek tek hesapla ve genel portföy büyüme projeksiyonunu buna göre belirle.
+
+Kullanıcının temel para birimi: ${baseCurrency}
+NOT: Tüm tutarlar TRY cinsindendir; yorumlarını da bu bağlamda yap.
     
 Varlıklar ve Nakit Akışı:
 ${JSON.stringify(portfolioData)}
@@ -87,41 +96,23 @@ Lütfen şu kurallara uy:
 2. Bu spesifik varlık tahminlerini harmanlayarak tüm portföy için gerçekçi bir "Aylık Ortalama Büyüme Oranı (monthlyRate)" bul. (Aylık düzenli nakit girişini de hesaba kat).
 3. Yanıtını SADECE aşağıdaki JSON formatında ver:
 {
-  "monthlyRate": 0.042, // Portföyün aylık ortalama büyüme oranı
-  "rationale": "Kısa genel açıklama. Örneğin: 'BTC'deki beklenen ralli ve düzenli yatırımlarınız portföyünüzü güçlendiriyor.'",
+  "monthlyRate": 0.042,
+  "rationale": "Kısa genel açıklama.",
   "confidence": 0.85,
   "assetProjections": [
     {
       "symbol": "BTC",
       "currentValue": 80000,
-      "projectedValue": 115000, // 6 Ay Sonraki Beklenen Değer
+      "projectedValue": 115000,
       "rationale": "Küresel likidite artışı ve arz kısıtından dolayı güçlü yükseliş bekleniyor."
     }
-  ] // Sadece en önemli 3-4 varlık için yap
+  ]
 }
 
 Not: Türkiye piyasası verilerini, küresel piyasaları ve enflasyonist ortamı da değerlendir.
 `;
 
-    let result = null;
-    let lastError = null;
-
-    for (const modelName of FALLBACK_MODELS) {
-      try {
-        const model = genAI.getGenerativeModel({ model: modelName });
-        result = await model.generateContent(prompt);
-        break;
-      } catch (err) {
-        lastError = err;
-        console.warn(`[predictGrowth] Model failed (${modelName}):`, err);
-      }
-    }
-
-    if (!result) {
-      throw lastError || new Error("Tüm yapay zeka modelleri başarısız oldu.");
-    }
-
-    let responseText = result.response.text();
+    let responseText = await runWithFallback(prompt);
     responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
 
     try {

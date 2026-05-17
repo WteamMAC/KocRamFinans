@@ -27,9 +27,15 @@ export async function processReceiptWithAI(base64Image: string, mimeType: string
 Sadece aşağıdaki JSON formatında geçerli bir çıktı ver. JSON içine ASLA YORUM SATIRI (//) EKLEME, SADECE GEÇERLİ BİR JSON OLSUN:
 {
   "amount": 150.50,
-  "category": "Market",
-  "description": "Migros Alışverişi"
-}`;
+  "category": "Mutfak & Market",
+  "description": "Migros Alışverişi",
+  "currency": "TRY",
+  "date": "2025-05-15"
+}
+Kural:
+- category: Bu değerlerden biri olmalı: "Mutfak & Market", "Ev Kirası / İpotek", "Faturalar (Elektrik, Su, Doğalgaz)", "Ulaşım / Akaryakıt", "Eğitim / Sağlık", "Diğer"
+- currency: Fişteki para birimi kodunu yaz (TRY, USD, EUR vb.). Türk fişiyse TRY.
+- date: Fişteki tarihi YYYY-MM-DD formatında yaz. Görsel yoksa veya okunamıyorsa bugünün tarihini yaz.`;
 
     const imageParts = [
       {

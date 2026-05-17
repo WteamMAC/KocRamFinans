@@ -67,7 +67,7 @@ export function InvestmentProjection({ currentValue, investments = [], fixedAsse
     setLoading(true);
     setApiError(false);
     try {
-      const result = await predictGrowthRate({ investments, fixedAssets, monthlySavings });
+      const result = await predictGrowthRate({ investments, fixedAssets, monthlySavings, baseCurrency: "TRY" });
       if (result.success && result.monthlyRate) {
         setMonthlyGrowthRate(1 + result.monthlyRate);
         setRationale(result.rationale);
