@@ -1,15 +1,42 @@
 'use client';
 
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
-import { buttonVariants } from "@/components/ui/button";
-import { Home } from "lucide-react";
+import { buttonVariants, Button } from "@/components/ui/button";
+import { Home, Sun, Moon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTheme } from "next-themes";
 
 export default function ProfileNotFound() {
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const isDark = mounted && theme === "dark";
+
   return (
-    <div className="relative min-h-[calc(100vh-4rem)] md:min-h-screen w-full flex flex-col items-center justify-center overflow-hidden bg-[#F5EDD8] dark:bg-[#120d0a] transition-colors duration-300 text-[#5a3100] dark:text-[#ffb874]">
+    <div className="relative min-h-[calc(100vh-4rem)] md:min-h-screen w-full flex flex-col items-center justify-center overflow-hidden bg-[#F5EDD8] dark:bg-[#120d0a] transition-colors duration-500 text-[#5a3100] dark:text-[#ffb874]">
+      
+      {/* Top right theme button */}
+      {mounted && (
+        <div className="absolute top-6 right-6 z-50">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            className="w-12 h-12 rounded-full bg-white/50 dark:bg-black/40 border border-[#8c5000]/20 dark:border-[#ffb874]/20 shadow-md backdrop-blur-md hover:scale-105 transition-all text-[#5a3100] dark:text-[#ffb874]"
+            aria-label="Tema Değiştir"
+          >
+            {isDark ? <Sun className="w-6 h-6" /> : <Moon className="w-6 h-6" />}
+          </Button>
+        </div>
+      )}
+
       {/* Subtle dot pattern */}
       <div className="absolute inset-0 opacity-[0.08] dark:opacity-[0.12] pointer-events-none"
         style={{
@@ -28,9 +55,9 @@ export default function ProfileNotFound() {
           transition={{ duration: 0.7, ease: "easeOut" }}
           className="w-full md:w-[50%] flex-shrink-0"
         >
-          <div className="relative rounded-3xl overflow-hidden shadow-2xl dark:shadow-[0_0_50px_rgba(255,184,116,0.15)] dark:border dark:border-[#ffb874]/20 transition-all duration-300 bg-[#F5EDD8]">
+          <div className="relative rounded-3xl overflow-hidden shadow-2xl dark:shadow-[0_0_50px_rgba(255,184,116,0.15)] dark:border dark:border-[#ffb874]/20 transition-all duration-500 bg-[#F5EDD8] dark:bg-[#120d0a]">
             <Image
-              src="/cowboy-404.png"
+              src={isDark ? "/cowboy-404-night.png" : "/cowboy-404.png"}
               alt="Kovboy Kayıp Kullanıcı İllüstrasyonu"
               width={800}
               height={800}
@@ -51,7 +78,7 @@ export default function ProfileNotFound() {
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="font-black leading-none mb-3 text-[#5a3100] dark:text-[#ffb874] transition-colors duration-300"
+            className="font-black leading-none mb-3 text-[#5a3100] dark:text-[#ffb874] transition-colors duration-500"
             style={{
               fontSize: "clamp(80px, 12vw, 130px)",
               textShadow: "0 8px 20px rgba(140,80,0,0.2)",
@@ -64,7 +91,7 @@ export default function ProfileNotFound() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4 }}
-            className="text-xl md:text-2xl font-bold mb-2 text-[#5a3100] dark:text-[#fbf9f4] transition-colors duration-300"
+            className="text-xl md:text-2xl font-bold mb-2 text-[#5a3100] dark:text-[#fbf9f4] transition-colors duration-500"
           >
             Kullanıcı Kasabayı Terk Etti
           </motion.p>
@@ -73,7 +100,7 @@ export default function ProfileNotFound() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5 }}
-            className="text-sm md:text-base mb-8 max-w-xs leading-relaxed text-[#887364] dark:text-[#dbc2b0]/80 transition-colors duration-300"
+            className="text-sm md:text-base mb-8 max-w-xs leading-relaxed text-[#887364] dark:text-[#dbc2b0]/80 transition-colors duration-500"
           >
             Aradığınız yatırımcı ya atına atlayıp uzaklaşmış ya da şerifler kurallara uymadığı için hesabını askıya almış.
           </motion.p>
