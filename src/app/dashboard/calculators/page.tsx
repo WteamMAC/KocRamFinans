@@ -5,7 +5,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Calculator, TrendingUp, PiggyBank, Coins, ArrowRight, Sparkles, ZoomOut, Zap, Percent, Info, TrendingDown } from "lucide-react";
+import { Calculator, TrendingUp, PiggyBank, ArrowRight, Sparkles, ZoomOut, Zap, Percent, Info, TrendingDown } from "lucide-react";
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid, ReferenceArea } from "recharts";
 import { cn } from "@/lib/utils";
 import { useCurrency, DISPLAY_CURRENCIES_MAP } from "@/context/currency-context";
@@ -161,7 +161,7 @@ export default function CalculatorsPage() {
       </div>
 
       <div className="w-full space-y-6 md:space-y-8">
-        <div className="bg-muted/50 p-1 rounded-2xl border border-border/20 w-full md:w-fit h-auto grid grid-cols-2 md:flex gap-1 md:gap-1">
+        <div className="bg-muted/50 p-1 rounded-2xl border border-border/20 w-full md:w-fit h-auto grid grid-cols-3 md:flex gap-1 md:gap-1">
           <button 
             onClick={() => setActiveTab("interest")}
             className={cn(
@@ -179,15 +179,6 @@ export default function CalculatorsPage() {
             )}
           >
             <PiggyBank className="h-4 w-4 mr-2" /> BES Planlama
-          </button>
-          <button 
-            onClick={() => setActiveTab("gold")}
-            className={cn(
-              "rounded-xl px-4 md:px-6 py-2.5 md:py-3 text-xs md:text-sm font-bold transition-all flex items-center justify-center whitespace-nowrap w-full",
-              activeTab === "gold" ? "bg-card text-primary shadow-ambient-medium" : "text-muted-foreground hover:bg-muted"
-            )}
-          >
-            <Coins className="h-4 w-4 mr-2" /> Altın Birikimi
           </button>
           <button 
             onClick={() => setActiveTab("leverage")}
@@ -447,14 +438,6 @@ export default function CalculatorsPage() {
               </div>
             </div>
           </div>
-        )}
-
-        {activeTab === "gold" && (
-           <div className="p-20 text-center space-y-4">
-              <Coins className="h-16 w-16 text-amber-500 mx-auto animate-bounce" />
-              <h2 className="text-2xl font-bold text-primary">Altın Birikim Hesaplayıcı Yakında!</h2>
-              <p className="text-muted-foreground">Şu an Mevduat ve BES hesaplayıcılarını kullanabilirsiniz.</p>
-           </div>
         )}
 
         {activeTab === "leverage" && (
