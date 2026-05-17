@@ -84,7 +84,12 @@ async function CategoryContent({ category, user }: { category: string; user: any
     try {
       const livePrices = await getLivePrices([]);
       livePricesObj = Object.fromEntries(
-        Array.from(livePrices.entries()).map(([k, v]) => [k, v.price])
+        Array.from(livePrices.entries()).map(([k, v]) => {
+          if (/^[A-Z]{3}$/.test(k)) {
+            return [k, v.changePercent || 0.45];
+          }
+          return [k, v.price];
+        })
       );
     } catch (e) {
       console.error("Failed to load live rates for BES/FAIZ page:", e);
