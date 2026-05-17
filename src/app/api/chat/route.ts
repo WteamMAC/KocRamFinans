@@ -120,10 +120,13 @@ export async function POST(req: Request) {
     // AI Modelleri Öncelik Sıralaması (Fallback Stratejisi)
     const FALLBACK_MODELS = [
       "gemini-3.1-flash-preview",
-      "gemini-3.1-flash",
       "gemini-2.5-flash",
       "gemini-2.0-flash",
-      "gemini-1.5-flash"
+      "gemini-1.5-flash-latest",
+      "gemini-1.5-flash",
+      "gemini-1.5-pro-latest",
+      "gemini-pro",
+      "gemini-1.0-pro"
     ];
 
     // Tool (Araç) Konfigürasyonunu döngüde yeniden kullanmak üzere ayırıyoruz
