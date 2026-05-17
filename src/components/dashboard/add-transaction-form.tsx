@@ -197,9 +197,9 @@ export function AddTransactionForm({ initialType = "expense" }: AddTransactionFo
           exit={{ opacity: 0, y: -20 }}
           transition={{ duration: 0.4, ease: "circOut" }}
         >
-          <Card className="border-border/30 shadow-ambient-high rounded-[40px] !overflow-visible bg-card/80 backdrop-blur-xl relative">
+          <Card className="border-border/30 shadow-ambient-high rounded-[40px] overflow-hidden bg-card/80 backdrop-blur-xl relative">
             <div className={cn(
-              "absolute inset-x-0 top-0 h-2 rounded-t-[40px]",
+              "absolute inset-x-0 top-0 h-2",
               isIncome ? "bg-emerald-500 shadow-[0_4px_20px_rgba(16,185,129,0.3)]" : "bg-rose-500 shadow-[0_4px_20px_rgba(244,63,94,0.3)]"
             )} />
             
