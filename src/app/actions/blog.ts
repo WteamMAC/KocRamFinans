@@ -331,11 +331,18 @@ export async function getPosts(
     const set = new Set<string>();
     tags.forEach(t => {
       const clean = t.replace("#", "").trim();
-      set.add(clean.toLowerCase());
-      set.add(clean.toUpperCase());
-      set.add(clean[0].toUpperCase() + clean.slice(1).toLowerCase());
-      set.add(`#${clean.toLowerCase()}`);
-      set.add(`#${clean.toUpperCase()}`);
+      const lower = clean.toLowerCase();
+      const upper = clean.toUpperCase();
+      const title = clean.charAt(0).toUpperCase() + clean.slice(1).toLowerCase();
+      
+      const trLower = clean.toLocaleLowerCase("tr-TR");
+      const trUpper = clean.toLocaleUpperCase("tr-TR");
+      const trTitle = clean.charAt(0).toLocaleUpperCase("tr-TR") + clean.slice(1).toLocaleLowerCase("tr-TR");
+
+      [clean, lower, upper, title, trLower, trUpper, trTitle].forEach(val => {
+        set.add(val);
+        set.add(`#${val}`);
+      });
     });
     return Array.from(set);
   };

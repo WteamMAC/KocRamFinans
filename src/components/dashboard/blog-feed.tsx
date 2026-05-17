@@ -1139,12 +1139,17 @@ export function BlogFeed({
   useEffect(() => {
     if (posts.length > 0) {
       setAllDiscoveredTags(prev => {
-        const currentSet = new Set(prev);
+        const currentMap = new Map<string, string>();
+        prev.forEach(t => currentMap.set(t.replace("#", "").toLowerCase(), t.toLowerCase()));
+        
         posts.forEach(p => (p.tags || []).forEach(t => {
-          const formatted = t.startsWith("#") ? t : `#${t}`;
-          currentSet.add(formatted);
+          const normKey = t.replace("#", "").toLowerCase();
+          if (!currentMap.has(normKey)) {
+            const formatted = `#${normKey}`;
+            currentMap.set(normKey, formatted);
+          }
         }));
-        return Array.from(currentSet);
+        return Array.from(currentMap.values());
       });
     }
   }, [posts]);
@@ -1179,9 +1184,10 @@ export function BlogFeed({
         const formatted = defaultInterests.map(i => i.startsWith("#") ? i.toLowerCase() : `#${i.toLowerCase()}`);
         
         setAllDiscoveredTags(existing => {
-          const combined = new Set(existing);
-          formatted.forEach(i => combined.add(i));
-          return Array.from(combined);
+          const currentMap = new Map<string, string>();
+          existing.forEach(t => currentMap.set(t.replace("#", "").toLowerCase(), t.toLowerCase()));
+          formatted.forEach(t => currentMap.set(t.replace("#", "").toLowerCase(), t.toLowerCase()));
+          return Array.from(currentMap.values());
         });
         
         setActiveTags(formatted);
@@ -1193,17 +1199,18 @@ export function BlogFeed({
   };
 
   const handleToggleTag = (tag: string) => {
+    const lowerTag = tag.toLowerCase();
     setActiveTags(prev => {
-      const isSelected = prev.includes(tag);
+      const isSelected = prev.some(t => t.toLowerCase() === lowerTag);
       if (isSelected) {
-        const normTag = tag.replace("#", "").toLowerCase();
+        const normTag = lowerTag.replace("#", "");
         if (tagSearch.toLowerCase().replace("#", "") === normTag) {
           setTagSearch("");
         }
-        return prev.filter(t => t !== tag);
+        return prev.filter(t => t.toLowerCase() !== lowerTag);
       } else {
-        setTagSearch(tag.replace("#", ""));
-        return [...prev, tag];
+        setTagSearch(lowerTag.replace("#", ""));
+        return [...prev, lowerTag];
       }
     });
   };
