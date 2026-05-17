@@ -15,7 +15,7 @@ import { SmartInsights } from "@/components/dashboard/smart-insights";
 import { FinancialCalendar } from "@/components/dashboard/financial-calendar";
 import { InvestmentProjection } from "@/components/dashboard/investment-projection";
 import { cn } from "@/lib/utils";
-import { getLivePrices, calculatePortfolioMetrics, calculateFixedAssetsMetrics, normalizeFinancialItemsToTry } from "@/lib/price-service";
+import { getLivePrices, calculatePortfolioMetrics, calculateFixedAssetsMetrics, normalizeFinancialItemsToTry, getRateForCurrency } from "@/lib/price-service";
 import { DashboardCards } from "@/components/dashboard/dashboard-cards";
 
 import { Suspense } from "react";
@@ -125,15 +125,19 @@ async function DashboardMetrics({ user }: { user: any }) {
   const netWorth = totalInvestment + (totalIncome - totalExpense) + totalFixedAssets - totalDebt;
   const savingsRate = totalIncome > 0 ? ((totalIncome - totalExpense) / totalIncome) * 100 : 0;
 
+  const userCur = (user?.currency || "TRY").toUpperCase();
+  const userRate = getRateForCurrency(userCur, livePrices) || 1;
+
   const financialDataForAI = {
-    totalIncome,
-    totalExpense,
-    totalDebt,
-    totalInvestment,
-    netWorth,
-    savingsRate,
-    recentExpenses: normalizedExpenses.slice(0, 5).map((e: any) => ({ type: e.type, amount: e.amount })),
-    recentIncomes: normalizedIncomes.slice(0, 5).map((i: any) => ({ type: i.type, amount: i.amount }))
+    totalIncome: Number((totalIncome / userRate).toFixed(2)),
+    totalExpense: Number((totalExpense / userRate).toFixed(2)),
+    totalDebt: Number((totalDebt / userRate).toFixed(2)),
+    totalInvestment: Number((totalInvestment / userRate).toFixed(2)),
+    netWorth: Number((netWorth / userRate).toFixed(2)),
+    savingsRate: Number(savingsRate.toFixed(2)),
+    userCurrency: userCur,
+    recentExpenses: normalizedExpenses.slice(0, 5).map((e: any) => ({ type: e.type, amount: Number((e.originalAmount ?? e.rawAmount ?? e.amount).toFixed(2)), currency: e.currency || "TRY" })),
+    recentIncomes: normalizedIncomes.slice(0, 5).map((i: any) => ({ type: i.type, amount: Number((i.originalAmount ?? i.rawAmount ?? i.amount).toFixed(2)), currency: i.currency || "TRY" }))
   };
 
   return (

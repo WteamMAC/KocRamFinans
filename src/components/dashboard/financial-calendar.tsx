@@ -82,6 +82,15 @@ export function FinancialCalendar({ incomes, expenses, debts, specialEvents = []
   const selectedKey = selectedDate ? getDateKey(selectedDate) : null;
   const selectedEvents = selectedKey ? eventsByDate.get(selectedKey) : null;
 
+  const getEventAmount = (item: any) => {
+    const amt = item.originalAmount ?? item.rawAmount ?? item.amount;
+    const cur = item.currency || "TRY";
+    if (isMobile) {
+      return `${new Intl.NumberFormat("tr-TR", { notation: "compact" }).format(amt)} ${cur}`;
+    }
+    return `${new Intl.NumberFormat("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amt)} ${cur}`;
+  };
+
   const handleAddEvent = async () => {
     if (!selectedDate || !newEventTitle.trim()) return;
 
@@ -223,7 +232,7 @@ export function FinancialCalendar({ incomes, expenses, debts, specialEvents = []
                         <span className="font-medium text-foreground truncate">{inc.type}</span>
                       </div>
                       <span className="font-bold text-emerald-600 whitespace-nowrap">
-                        {isMobile ? `+${new Intl.NumberFormat("tr-TR", { notation: "compact" }).format(inc.amount)} ₺` : `+${formatAmount(inc.amount)}`}
+                        +{getEventAmount(inc)}
                       </span>
                     </div>
                   ))}
@@ -234,7 +243,7 @@ export function FinancialCalendar({ incomes, expenses, debts, specialEvents = []
                         <span className="font-medium text-foreground truncate">{exp.type}</span>
                       </div>
                       <span className="font-bold text-rose-600 whitespace-nowrap">
-                        {isMobile ? `-${new Intl.NumberFormat("tr-TR", { notation: "compact" }).format(exp.amount)} ₺` : `-${formatAmount(exp.amount)}`}
+                        -{getEventAmount(exp)}
                       </span>
                     </div>
                   ))}
@@ -245,7 +254,7 @@ export function FinancialCalendar({ incomes, expenses, debts, specialEvents = []
                         <span className="font-medium text-foreground truncate">{debt.type}</span>
                       </div>
                       <span className="font-bold text-orange-600 whitespace-nowrap">
-                        {isMobile ? `-${new Intl.NumberFormat("tr-TR", { notation: "compact" }).format(debt.amount)} ₺` : `-${formatAmount(debt.amount)}`}
+                        -{getEventAmount(debt)}
                       </span>
                     </div>
                   ))}

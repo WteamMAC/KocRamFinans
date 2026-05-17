@@ -194,7 +194,7 @@ export async function POST(req: Request) {
     let activeChat: any = null;
     let initialStreamResponse: any = null;
     let usedModel: string = "";
-    let lastError: any = null;
+    let firstError: any = null;
 
     // Belirlenen modelleri sırasıyla dener, biri çalışırsa döngüden çıkar.
     for (const modelName of FALLBACK_MODELS) {
@@ -215,16 +215,16 @@ export async function POST(req: Request) {
         break; // İlk başarılı modelde döngüden güvenle çıkıyoruz.
       } catch (error: any) {
         console.warn(`[AI-CHAT] Uyarı - Model başarısız (${modelName}):`, error.message);
-        lastError = error;
+        if (!firstError) firstError = error;
         // Hata alınırsa (Limit aşıldı 429 vb.) bir sonraki yedek modele geçmeye devam edecek.
       }
     }
 
     // Eğer hiçbir model yanıt vermediyse sistemi zarifçe kapatıp arayüze bilgi verelim.
     if (!activeChat || !initialStreamResponse) {
-      console.error("[AI-CHAT] Tüm modeller başarısız oldu:", lastError?.message);
+      console.error("[AI-CHAT] Tüm modeller başarısız oldu:", firstError?.message);
       return new Response(JSON.stringify({
-        error: `Asistan şu anda yanıt veremiyor. Hata Detayı: ${lastError?.message || "Bilinmeyen Hata"}`
+        error: `Asistan şu anda yanıt veremiyor. İlk Hata: ${firstError?.message || "Bilinmeyen Hata"}`
       }), { status: 503, headers: { "Content-Type": "application/json" } });
     }
 
