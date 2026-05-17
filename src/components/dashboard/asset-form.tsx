@@ -115,8 +115,8 @@ export function AssetForm({ activeTab, onAdd, onCancel, loading, error, defaultA
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto bg-card/40 backdrop-blur-3xl border border-border/20 shadow-2xl rounded-[32px] overflow-hidden animate-in zoom-in-95 duration-300">
-      <div className="p-6 sm:p-10 flex flex-col justify-between backdrop-blur-3xl">
+    <div className="w-full max-w-2xl mx-auto bg-card border border-border/30 shadow-ambient-high rounded-[32px] overflow-hidden animate-in zoom-in-95 duration-300">
+      <div className="p-6 sm:p-10 flex flex-col justify-between">
         <div>
           {/* Üst Başlık & Kapatma Butonu */}
           <div className="flex justify-between items-center pb-6 mb-8 border-b border-border/10">
@@ -323,7 +323,7 @@ export function AssetForm({ activeTab, onAdd, onCancel, loading, error, defaultA
 
                     {showSearch && searchResults.length > 0 && rect && createPortal(
                       <div
-                        className="fixed z-[9999] bg-card/95 backdrop-blur-2xl border border-primary/20 shadow-2xl rounded-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+                        className="fixed z-[9999] bg-card border border-border/30 shadow-ambient-high rounded-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200"
                         style={{ top: rect.bottom + 8, left: rect.left, width: rect.width }}
                       >
                         {searchResults.map((result, idx) => (
