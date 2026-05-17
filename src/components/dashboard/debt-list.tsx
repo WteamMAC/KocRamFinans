@@ -31,6 +31,8 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
     const [refinanceId, setRefinanceId] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [postponeDebtId, setPostponeDebtId] = useState<string | null>(null);
+    const [updateDayModal, setUpdateDayModal] = useState<{ id: string, paymentDay: number, description: string } | null>(null);
+    const [newPaymentDay, setNewPaymentDay] = useState<string>("");
 
     const handlePostpone = async () => {
         if (!postponeDebtId) return;
@@ -38,6 +40,27 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
         try {
             await postponeDebtInstallment(postponeDebtId);
             setPostponeDebtId(null);
+            router.refresh();
+        } catch (err: any) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleUpdatePaymentDay = async () => {
+        if (!updateDayModal || !newPaymentDay) return;
+        const dayNum = Number(newPaymentDay);
+        if (isNaN(dayNum) || dayNum < 1 || dayNum > 31) {
+            setError("Lütfen 1 ile 31 arasında geçerli bir gün giriniz.");
+            return;
+        }
+        setLoading(true);
+        setError(null);
+        try {
+            await updateDebtPaymentDay(updateDayModal.id, dayNum);
+            setUpdateDayModal(null);
+            setNewPaymentDay("");
             router.refresh();
         } catch (err: any) {
             setError(err.message);
@@ -263,7 +286,7 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
             {isAdding && typeof document !== "undefined" && createPortal(
                 <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
                     <div className="relative w-full max-w-2xl max-h-[96vh] overflow-y-auto no-scrollbar">
-                        <Card className="p-5 sm:p-10 bg-card border-border/30 shadow-ambient-high rounded-[28px] sm:rounded-[32px] border-t-4 border-t-primary backdrop-blur-3xl animate-in zoom-in-95 duration-300">
+                        <Card className="p-5 sm:p-10 bg-card border-border/30 shadow-ambient-high rounded-[28px] sm:rounded-[32px] border-t-4 border-t-primary backdrop-blur-3xl animate-in zoom-in-95 duration-300 !overflow-visible">
                             <div className="flex justify-between items-center pb-3 sm:pb-6 mb-4 sm:mb-8 border-b border-border/10">
                                 <div>
                                     <h3 className="text-lg sm:text-2xl font-heading font-bold text-primary flex items-center gap-2">
@@ -442,20 +465,29 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
                                                 </DropdownMenuItem>
                                                 <DropdownMenuItem
                                                     className="cursor-pointer"
-                                                    onClick={() => {
-                                                        const day = prompt("Yeni ödeme gününü girin (1-31):", debt.paymentDay || "1");
-                                                        if (day) {
-                                                            updateDebtPaymentDay(debt.id, Number(day));
-                                                            router.refresh();
-                                                        }
+                                                    onSelect={() => {
+                                                        setUpdateDayModal({
+                                                            id: debt.id,
+                                                            paymentDay: debt.paymentDay || 1,
+                                                            description: debt.description || `${debt.type} Borcu`
+                                                        });
+                                                        setNewPaymentDay(String(debt.paymentDay || ""));
                                                     }}
                                                 >
                                                     <Calendar className="w-4 h-4 mr-2" /> Ödeme Gününü Değiştir
                                                 </DropdownMenuItem>
                                                 <DropdownMenuItem
                                                     className="cursor-pointer"
-                                                    onSelect={(e) => {
-                                                        e.preventDefault(); // Menü kapanırken state kaybını önlemek için
+                                                    onSelect={() => {
+                                                        const safeDueDate = (() => {
+                                                            if (!debt.dueDate) return "";
+                                                            try {
+                                                                const d = new Date(debt.dueDate);
+                                                                return isNaN(d.getTime()) ? "" : d.toISOString().split('T')[0];
+                                                            } catch {
+                                                                return "";
+                                                            }
+                                                        })();
                                                         setRefinanceId(debt.id);
                                                         setFormData({
                                                             type: debt.type,
@@ -464,14 +496,11 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
                                                             remainingInstallments: debt.remainingInstallments ? String(debt.remainingInstallments) : "",
                                                             interestRate: debt.interestRate ? String(debt.interestRate) : "",
                                                             paymentDay: debt.paymentDay ? String(debt.paymentDay) : "",
-                                                            dueDate: debt.dueDate ? new Date(debt.dueDate).toISOString().split('T')[0] : "",
+                                                            dueDate: safeDueDate,
                                                             description: debt.description || debt.type,
                                                         });
-                                                        setIsAdding(false); // Önce kapatıp
-                                                        setTimeout(() => {
-                                                            setIsAdding(true); // Hemen geri açıyoruz (Fresh state)
-                                                            window.scrollTo({ top: 0, behavior: 'smooth' });
-                                                        }, 50);
+                                                        setIsAdding(true);
+                                                        window.scrollTo({ top: 0, behavior: 'smooth' });
                                                     }}
                                                 >
                                                     <Landmark className="w-4 h-4 mr-2" /> Borcu Yapılandır
@@ -689,6 +718,44 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
                                 <Button variant="ghost" onClick={() => setPostponeDebtId(null)} className="flex-1 h-12 rounded-2xl font-bold hover:bg-muted">Vazgeç</Button>
                                 <Button onClick={handlePostpone} disabled={loading} className="flex-1 h-12 rounded-2xl font-bold bg-rose-500 text-white hover:bg-rose-600 shadow-lg shadow-rose-500/20">
                                     {loading ? "Erteleniyor..." : "Evet, Ertele"}
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
+
+            {/* Update Payment Day Custom Modal */}
+            {updateDayModal && typeof document !== "undefined" && createPortal(
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="bg-card border border-border/20 rounded-[32px] w-full max-w-sm shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+                        <div className="p-8 text-center space-y-6">
+                            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto text-primary animate-pulse">
+                                <Calendar className="h-8 w-8" />
+                            </div>
+                            <div className="space-y-2">
+                                <h3 className="text-lg font-black text-foreground">Ödeme Gününü Değiştir</h3>
+                                <p className="text-xs text-muted-foreground leading-relaxed">
+                                    {updateDayModal.description} için yeni ödeme gününü giriniz (1-31).
+                                </p>
+                            </div>
+                            <div className="space-y-3">
+                                <Input
+                                    type="number"
+                                    min="1"
+                                    max="31"
+                                    value={newPaymentDay}
+                                    onChange={(e) => setNewPaymentDay(e.target.value)}
+                                    className="bg-muted border-border/30 h-12 rounded-xl focus:ring-primary text-center font-bold text-lg"
+                                    placeholder="Gün (1-31)"
+                                />
+                            </div>
+                            {error && <div className="p-3 bg-rose-500/10 text-rose-500 rounded-xl text-xs font-black border border-rose-500/20 uppercase tracking-wider">{error}</div>}
+                            <div className="flex gap-3">
+                                <Button variant="ghost" onClick={() => { setUpdateDayModal(null); setNewPaymentDay(""); setError(null); }} className="flex-1 h-12 rounded-2xl font-bold hover:bg-muted">Vazgeç</Button>
+                                <Button onClick={handleUpdatePaymentDay} disabled={loading || !newPaymentDay} className="flex-1 h-12 rounded-2xl font-bold bg-primary text-white hover:brightness-110 shadow-lg shadow-primary/20">
+                                    {loading ? "Güncelleniyor..." : "Güncelle"}
                                 </Button>
                             </div>
                         </div>
