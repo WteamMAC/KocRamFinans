@@ -263,11 +263,15 @@ export async function getPosts(
   currentInternalUserId?: string, 
   cursor?: string, 
   type: "explore" | "following" | "my-communities" | "community" = "explore",
-  communityId?: string
+  communityId?: string,
+  sortBy: "latest" | "oldest" | "most-liked" | "most-commented" = "latest",
+  timeRange: "all" | "24h" | "7d" | "30d" = "all",
+  interestsFilter?: string[],
+  activeTagsFilter?: string[]
 ) {
   const PAGE_SIZE = 10;
 
-  let whereClause: any = {};
+  let baseWhere: any = {};
 
   if (type === "following" && currentInternalUserId) {
     const userWithInterests = await prisma.user.findUnique({
@@ -282,7 +286,7 @@ export async function getPosts(
     });
     const followingIds = following.map((f) => f.followingId);
 
-    whereClause = {
+    baseWhere = {
       communityId: null,
       OR: [
         { authorId: { in: followingIds } },
@@ -295,9 +299,9 @@ export async function getPosts(
       select: { communityId: true },
     });
     const communityIds = myCommunities.map((c) => c.communityId);
-    whereClause = { communityId: { in: communityIds } };
+    baseWhere = { communityId: { in: communityIds } };
   } else if (type === "community" && communityId) {
-    whereClause = { 
+    baseWhere = { 
       communityId,
       OR: [
         { community: { isPrivate: false } },
@@ -306,12 +310,67 @@ export async function getPosts(
     };
   } else {
     // Keşfet: Genel postlar (topluluk dışı olanlar ve gizli olmayan topluluk postları)
-    whereClause = {
+    baseWhere = {
       OR: [
         { communityId: null },
         { community: { isPrivate: false } }
       ]
     };
+  }
+
+  // Zaman aralığı filtresi
+  let timeFilter: any = {};
+  if (timeRange !== "all") {
+    const now = Date.now();
+    if (timeRange === "24h") timeFilter = { createdAt: { gte: new Date(now - 24 * 60 * 60 * 1000) } };
+    else if (timeRange === "7d") timeFilter = { createdAt: { gte: new Date(now - 7 * 24 * 60 * 60 * 1000) } };
+    else if (timeRange === "30d") timeFilter = { createdAt: { gte: new Date(now - 30 * 24 * 60 * 60 * 1000) } };
+  }
+
+  // İlgi alanları filtresi
+  let interestsWhere: any = {};
+  if (interestsFilter && interestsFilter.length > 0) {
+    interestsWhere = { tags: { hasSome: interestsFilter } };
+  }
+
+  // Çoklu etiket filtresi
+  let tagsWhere: any = {};
+  if (activeTagsFilter && activeTagsFilter.length > 0) {
+    tagsWhere = { tags: { hasSome: activeTagsFilter } };
+  }
+
+  const whereClause = {
+    AND: [
+      baseWhere,
+      timeFilter,
+      interestsWhere,
+      tagsWhere
+    ]
+  };
+
+  // Sıralama (orderBy)
+  let orderClause: any = [
+    { isAnnouncement: "desc" },
+    { createdAt: "desc" }
+  ];
+
+  if (sortBy === "oldest") {
+    orderClause = [
+      { isAnnouncement: "desc" },
+      { createdAt: "asc" }
+    ];
+  } else if (sortBy === "most-liked") {
+    orderClause = [
+      { isAnnouncement: "desc" },
+      { likes: { _count: "desc" } },
+      { createdAt: "desc" }
+    ];
+  } else if (sortBy === "most-commented") {
+    orderClause = [
+      { isAnnouncement: "desc" },
+      { comments: { _count: "desc" } },
+      { createdAt: "desc" }
+    ];
   }
 
   const me = currentInternalUserId ? await prisma.user.findUnique({ where: { id: currentInternalUserId }, select: { role: true } }) : null;
@@ -329,10 +388,7 @@ export async function getPosts(
 
     const posts = await prisma.blogPost.findMany({
       where: whereClause,
-      orderBy: [
-        { isAnnouncement: "desc" },
-        { createdAt: "desc" }
-      ],
+      orderBy: orderClause,
       take: PAGE_SIZE + 1,
       ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
       include: {

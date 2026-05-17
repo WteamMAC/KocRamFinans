@@ -312,20 +312,26 @@ function CreatePostBox({ currentUserId, communityId, communityName, userRole, on
   );
 }
 
-// ─── Filter & Sort Controls (Sol Taraf Mini Bar) ────────────────────────────────
-function FilterAndSortControls({
+// ─── Unified Filter & Tag Bar ───────────────────────────────────────────────
+function UnifiedFilterAndTagBar({
+  availableTags,
+  activeTags,
+  onToggleTag,
+  onClearTags,
   filterCount,
   onToggleFilter,
   sortBy,
   onSelectSort,
-  activeFilterCount,
   onResetFilters
 }: {
+  availableTags: string[];
+  activeTags: string[];
+  onToggleTag: (tag: string) => void;
+  onClearTags: () => void;
   filterCount: number;
   onToggleFilter: () => void;
   sortBy: string;
   onSelectSort: (sort: any) => void;
-  activeFilterCount: number;
   onResetFilters: () => void;
 }) {
   const [isSortOpen, setIsSortOpen] = useState(false);
@@ -337,15 +343,15 @@ function FilterAndSortControls({
   };
 
   return (
-    <div className="flex items-center justify-between gap-3 py-1">
-      <div className="flex items-center gap-2">
+    <div className="relative pt-1 z-30">
+      <div className="flex items-center gap-1.5 overflow-x-auto py-1.5 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent pr-2">
+        {/* 1. Filtrele Butonu */}
         <button 
           onClick={onToggleFilter}
           className={cn(
-            "flex items-center gap-1.5 h-8 px-3 rounded-xl border text-[11px] font-bold transition-all shadow-ambient-low shrink-0",
+            "flex items-center gap-1.5 h-8 px-3 rounded-xl border text-[11px] font-bold transition-all shadow-ambient-low shrink-0 mr-1",
             filterCount > 0 ? "bg-primary text-primary-foreground border-primary shadow-primary/20" : "bg-card text-muted-foreground border-border/30 hover:border-primary/40 hover:text-foreground"
           )}
-          title="Filtre Seçenekleri"
         >
           <Filter className="h-3.5 w-3.5" />
           <span>Filtrele</span>
@@ -356,98 +362,98 @@ function FilterAndSortControls({
           )}
         </button>
 
-        <div className="relative">
+        {/* 2. Sırala Butonu (Portal ile Katman Dışına Çıkarıldı) */}
+        <div className="relative shrink-0 mr-1">
           <button 
             onClick={() => setIsSortOpen(p => !p)}
-            className="flex items-center gap-1.5 h-8 px-3 rounded-xl bg-card border border-border/30 text-[11px] font-bold text-muted-foreground hover:text-foreground transition-all shadow-ambient-low shrink-0"
+            className="flex items-center gap-1.5 h-8 px-3 rounded-xl bg-card border border-border/30 text-[11px] font-bold text-muted-foreground hover:text-foreground transition-all shadow-ambient-low"
           >
             <TrendingUp className="h-3.5 w-3.5 text-primary" />
             <span>{sortLabels[sortBy] || "Sırala"}</span>
             <ChevronDown className="h-3 w-3 opacity-50" />
           </button>
 
-          {isSortOpen && (
-            <div className="absolute left-0 top-full mt-1.5 w-44 bg-card border border-border/30 rounded-2xl shadow-ambient-high overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-150 divide-y divide-border/10">
-              {[
-                { id: "latest", label: "En Yeniler", icon: Clock },
-                { id: "oldest", label: "En Eskiler", icon: Calendar },
-                { id: "most-liked", label: "En Çok Beğenilen", icon: Flame },
-                { id: "most-commented", label: "En Çok Yorum Alan", icon: MessageCircle }
-              ].map(item => {
-                const Icon = item.icon;
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => { onSelectSort(item.id); setIsSortOpen(false); }}
-                    className={cn(
-                      "w-full flex items-center gap-2 px-3 py-2 text-left text-xs font-bold transition-colors",
-                      sortBy === item.id ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                    )}
-                  >
-                    <Icon className="h-3.5 w-3.5 shrink-0" />
-                    <span>{item.label}</span>
-                  </button>
-                );
-              })}
-            </div>
+          {isSortOpen && typeof document !== "undefined" && createPortal(
+            <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setIsSortOpen(false)}>
+              <div className="bg-card border border-primary/20 rounded-3xl w-full max-w-xs shadow-2xl overflow-hidden divide-y divide-border/10 animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+                <div className="p-4 bg-muted/30 flex items-center justify-between border-b border-border/10">
+                  <span className="text-xs font-black uppercase tracking-wider text-primary flex items-center gap-1.5">
+                    <TrendingUp className="h-4 w-4" /> Sıralama Ölçütü
+                  </span>
+                  <button onClick={() => setIsSortOpen(false)} className="text-muted-foreground hover:text-foreground p-1 rounded-full"><X className="h-4 w-4" /></button>
+                </div>
+                {[
+                  { id: "latest", label: "En Yeniler (Önce Yeni)", icon: Clock, desc: "En son paylaşılan gönderiler en üstte yer alır." },
+                  { id: "most-liked", label: "En Çok Beğenilenler", icon: Flame, desc: "Topluluktan en çok beğeni alan popüler içerikler." },
+                  { id: "most-commented", label: "En Çok Yorum Alanlar", icon: MessageCircle, desc: "Üyeler arasında en çok tartışılan konular." },
+                  { id: "oldest", label: "En Eskiler (Önce Eski)", icon: Calendar, desc: "İlk paylaşılan geçmiş gönderilere göz atın." }
+                ].map(item => {
+                  const Icon = item.icon;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => { onSelectSort(item.id); setIsSortOpen(false); }}
+                      className={cn(
+                        "w-full flex items-center gap-3.5 p-4 text-left transition-colors",
+                        sortBy === item.id ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                      )}
+                    >
+                      <div className={cn("p-2.5 rounded-xl shrink-0", sortBy === item.id ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}>
+                        <Icon className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-black text-foreground">{item.label}</p>
+                        <p className="text-[11px] text-muted-foreground/80 mt-0.5">{item.desc}</p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>,
+            document.body
           )}
         </div>
-      </div>
 
-      {activeFilterCount > 0 && (
-        <button 
-          onClick={onResetFilters}
-          className="flex items-center gap-1 text-[11px] font-bold text-rose-500 hover:text-rose-600 transition-colors py-1 px-2.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20"
-        >
-          <RefreshCw className="h-3 w-3" /> Sıfırla
-        </button>
-      )}
-    </div>
-  );
-}
-
-// ─── Tag Filter Bar (Sadece Etiketler) ────────────────────────────────────────
-function TagFilterBar({ 
-  availableTags, 
-  activeTags, 
-  onToggleTag, 
-  onClearTags 
-}: {
-  availableTags: string[];
-  activeTags: string[];
-  onToggleTag: (tag: string) => void;
-  onClearTags: () => void;
-}) {
-  if (availableTags.length === 0) return null;
-
-  return (
-    <div className="flex items-center gap-1.5 overflow-x-auto py-1 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent pr-2">
-      <button 
-        onClick={onClearTags} 
-        className={cn(
-          "text-[11px] font-bold px-3 py-1.5 rounded-full border shrink-0 transition-all duration-200", 
-          activeTags.length === 0 ? "bg-primary text-primary-foreground border-primary" : "bg-muted/40 text-muted-foreground border-border/20 hover:border-primary/40 hover:text-primary"
-        )}
-      >
-        Tümü
-      </button>
-
-      {availableTags.map((tag) => {
-        const isActive = activeTags.includes(tag);
-        return (
+        {/* 3. Varsa Sıfırla Butonu */}
+        {filterCount > 0 && (
           <button 
-            key={tag} 
-            onClick={() => onToggleTag(tag)} 
-            className={cn(
-              "text-[11px] font-bold px-3 py-1.5 rounded-full border shrink-0 transition-all duration-200 flex items-center gap-1.5", 
-              isActive ? "bg-primary text-primary-foreground border-primary scale-[1.02] shadow-sm shadow-primary/20" : "bg-muted/40 text-muted-foreground border-border/20 hover:border-primary/40 hover:text-primary"
-            )}
+            onClick={onResetFilters}
+            className="flex items-center gap-1 h-8 px-2.5 rounded-xl text-[11px] font-bold text-rose-500 bg-rose-500/10 hover:bg-rose-500/20 shrink-0 transition-colors mr-1"
+            title="Filtreleri Sıfırla"
           >
-            <span>{tag}</span>
-            {isActive && <X className="h-3 w-3 ml-0.5 opacity-80" />}
+            <RefreshCw className="h-3 w-3" /> Sıfırla
           </button>
-        );
-      })}
+        )}
+
+        {/* 4. Tümü Butonu */}
+        <button 
+          onClick={onClearTags} 
+          className={cn(
+            "text-[11px] font-bold px-3.5 h-8 rounded-full border shrink-0 transition-all duration-200 flex items-center justify-center", 
+            activeTags.length === 0 ? "bg-primary text-primary-foreground border-primary" : "bg-muted/40 text-muted-foreground border-border/20 hover:border-primary/40 hover:text-primary"
+          )}
+        >
+          Tümü
+        </button>
+
+        {/* 5. Etiketler */}
+        {availableTags.map((tag) => {
+          const isActive = activeTags.includes(tag);
+          return (
+            <button 
+              key={tag} 
+              onClick={() => onToggleTag(tag)} 
+              className={cn(
+                "text-[11px] font-bold px-3 h-8 rounded-full border shrink-0 transition-all duration-200 flex items-center gap-1.5", 
+                isActive ? "bg-primary text-primary-foreground border-primary scale-[1.02] shadow-sm shadow-primary/20" : "bg-muted/40 text-muted-foreground border-border/20 hover:border-primary/40 hover:text-primary"
+              )}
+            >
+              <span>{tag}</span>
+              {isActive && <X className="h-3 w-3 ml-0.5 opacity-80" />}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -1197,6 +1203,24 @@ export function BlogFeed({
     return () => clearInterval(pollInterval);
   }, [currentUserId, feedType, mode, profileId, selectedCommunity]);
 
+  useEffect(() => {
+    if (mode === "profile") return;
+    startLoadMore(async () => {
+      const result = await getPosts(
+        currentUserId, 
+        undefined, 
+        selectedCommunity ? "community" : (feedType as any), 
+        selectedCommunity?.id,
+        sortBy as any,
+        timeRange as any,
+        filterByInterests ? userInterests : undefined,
+        activeTags.length > 0 ? activeTags : undefined
+      );
+      setPosts(result.posts);
+      setNextCursor(result.nextCursor);
+    });
+  }, [sortBy, timeRange, filterByInterests, activeTags, feedType, selectedCommunity, currentUserId, mode, userInterests]);
+
   const switchFeed = (type: "explore" | "following" | "my-communities") => {
     setFeedType(type);
     setSelectedCommunity(null);
@@ -1206,18 +1230,13 @@ export function BlogFeed({
       params.set("tab", type);
       router.replace(`${window.location.pathname}?${params.toString()}`, { scroll: false });
     }
-    startLoadMore(async () => {
-      const result = await getPosts(currentUserId, undefined, type as any);
-      setPosts(result.posts);
-      setNextCursor(result.nextCursor);
-    });
   };
 
   const handleSelectCommunity = (id: string, name: string) => {
     setSelectedCommunity({ id, name });
     startLoadMore(async () => {
       const [postsRes, detailsRes] = await Promise.all([
-        getPosts(currentUserId, undefined, "community", id),
+        getPosts(currentUserId, undefined, "community", id, sortBy as any, timeRange as any, filterByInterests ? userInterests : undefined, activeTags.length > 0 ? activeTags : undefined),
         getCommunityDetails(id)
       ]);
       setPosts(postsRes.posts);
@@ -1230,9 +1249,20 @@ export function BlogFeed({
     if (!nextCursor) return;
     startLoadMore(async () => {
       let result;
-      if (mode === "profile" && profileId) result = await getProfilePosts(profileId, nextCursor);
-      else if (selectedCommunity) result = await getPosts(currentUserId, nextCursor, "community", selectedCommunity.id);
-      else result = await getPosts(currentUserId, nextCursor, feedType as any);
+      if (mode === "profile" && profileId) {
+        result = await getProfilePosts(profileId, nextCursor);
+      } else {
+        result = await getPosts(
+          currentUserId, 
+          nextCursor, 
+          selectedCommunity ? "community" : (feedType as any), 
+          selectedCommunity?.id,
+          sortBy as any,
+          timeRange as any,
+          filterByInterests ? userInterests : undefined,
+          activeTags.length > 0 ? activeTags : undefined
+        );
+      }
       if (result) {
         setPosts((prev) => [...prev, ...result.posts]);
         setNextCursor(result.nextCursor);
@@ -1367,61 +1397,55 @@ export function BlogFeed({
           </div>
 
           {filteredTagsForBar.length > 0 && (
-            <div className="space-y-1.5 pt-1">
-              <FilterAndSortControls 
-                filterCount={activeFilterCount}
-                onToggleFilter={() => setIsFilterPanelOpen(p => !p)}
-                sortBy={sortBy}
-                onSelectSort={setSortBy}
-                activeFilterCount={activeFilterCount + (activeTags.length > 0 ? 1 : 0) + (searchQuery ? 1 : 0)}
-                onResetFilters={() => {
-                  setSortBy("latest");
-                  setTimeRange("all");
-                  setFilterByInterests(false);
-                  setActiveTags([]);
-                  setTagSearch("");
-                  setSearchQuery("");
-                }}
-              />
-
-              <TagFilterBar 
-                availableTags={filteredTagsForBar} 
-                activeTags={activeTags} 
-                onToggleTag={handleToggleTag}
-                onClearTags={() => setActiveTags([])}
-              />
-            </div>
+            <UnifiedFilterAndTagBar 
+              availableTags={filteredTagsForBar} 
+              activeTags={activeTags} 
+              onToggleTag={handleToggleTag}
+              onClearTags={() => setActiveTags([])}
+              filterCount={activeFilterCount}
+              onToggleFilter={() => setIsFilterPanelOpen(p => !p)}
+              sortBy={sortBy}
+              onSelectSort={setSortBy}
+              onResetFilters={() => {
+                setSortBy("latest");
+                setTimeRange("all");
+                setFilterByInterests(false);
+                setActiveTags([]);
+                setTagSearch("");
+                setSearchQuery("");
+              }}
+            />
           )}
 
-          {isFilterPanelOpen && (
-            <>
-              <div className="hidden md:block bg-card/95 backdrop-blur-xl border border-primary/20 rounded-[20px] p-4 shadow-xl shadow-primary/10 max-w-md space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
-                 <div className="flex items-center justify-between border-b border-border/10 pb-2">
+          {isFilterPanelOpen && typeof document !== "undefined" && createPortal(
+            <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setIsFilterPanelOpen(false)}>
+              <div className="bg-card border border-primary/20 rounded-[28px] w-full max-w-md shadow-2xl p-6 space-y-6 animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+                 <div className="flex items-center justify-between border-b border-border/10 pb-3">
                    <span className="text-xs font-black uppercase tracking-wider text-primary flex items-center gap-1.5">
-                     <SlidersHorizontal className="h-3.5 w-3.5" /> Gelişmiş Filtre
+                     <SlidersHorizontal className="h-4 w-4" /> Gelişmiş Filtre
                    </span>
                    <div className="flex items-center gap-2">
                      {activeFilterCount > 0 && (
-                       <button onClick={() => { setTimeRange("all"); setFilterByInterests(false); setTagSearch(""); }} className="text-[10px] font-bold text-rose-500 hover:underline">Sıfırla</button>
+                       <button onClick={() => { setTimeRange("all"); setFilterByInterests(false); setTagSearch(""); }} className="text-[11px] font-bold text-rose-500 hover:underline">Sıfırla</button>
                      )}
-                     <button onClick={() => setIsFilterPanelOpen(false)} className="text-muted-foreground hover:text-foreground p-0.5"><X className="h-3.5 w-3.5" /></button>
+                     <button onClick={() => setIsFilterPanelOpen(false)} className="text-muted-foreground hover:text-foreground p-1.5 rounded-full"><X className="h-4 w-4" /></button>
                    </div>
                  </div>
 
-                 <div className="space-y-2">
-                   <div className="space-y-1">
-                     <label className="text-[10px] font-bold text-muted-foreground uppercase">Zaman Aralığı</label>
-                     <div className="grid grid-cols-4 gap-1.5">
+                 <div className="space-y-5">
+                   <div className="space-y-2">
+                     <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wide">Zaman Aralığı</label>
+                     <div className="grid grid-cols-2 gap-2">
                        {[
-                         { id: "all", label: "Tümü" },
-                         { id: "24h", label: "24 Saat" },
-                         { id: "7d", label: "7 Gün" },
-                         { id: "30d", label: "30 Gün" }
+                         { id: "all", label: "Tüm Zamanlar" },
+                         { id: "24h", label: "Son 24 Saat" },
+                         { id: "7d", label: "Son 7 Gün" },
+                         { id: "30d", label: "Son 30 Gün" }
                        ].map(t => (
                          <button 
                            key={t.id}
                            onClick={() => setTimeRange(t.id as any)}
-                           className={cn("py-1.5 px-2 text-[10px] font-bold rounded-lg border text-center transition-all", timeRange === t.id ? "bg-primary text-primary-foreground border-primary shadow-sm shadow-primary/20" : "bg-muted/30 text-muted-foreground border-border/20 hover:border-primary/40")}
+                           className={cn("py-2.5 px-3 text-xs font-bold rounded-xl border text-center transition-all", timeRange === t.id ? "bg-primary text-primary-foreground border-primary shadow-sm shadow-primary/20" : "bg-muted/30 text-muted-foreground border-border/20 hover:border-primary/40")}
                          >
                            {t.label}
                          </button>
@@ -1429,92 +1453,35 @@ export function BlogFeed({
                      </div>
                    </div>
 
-                   <div className="pt-0.5">
+                   <div className="pt-1">
                      <button 
                        onClick={() => setFilterByInterests(p => !p)} 
-                       className={cn("w-full flex items-center justify-between p-2 rounded-lg border text-left transition-all", filterByInterests ? "bg-primary/10 border-primary shadow-sm" : "bg-muted/20 border-border/20")}
+                       className={cn("w-full flex items-center justify-between p-3.5 rounded-2xl border text-left transition-all", filterByInterests ? "bg-primary/10 border-primary shadow-sm" : "bg-muted/20 border-border/20")}
                      >
-                       <div className="flex items-center gap-2">
-                         <Sparkles className={cn("h-3.5 w-3.5", filterByInterests ? "text-primary" : "text-muted-foreground")} />
+                       <div className="flex items-center gap-2.5">
+                         <Sparkles className={cn("h-4 w-4", filterByInterests ? "text-primary" : "text-muted-foreground")} />
                          <span className="text-xs font-bold text-foreground">Sadece ilgi alanlarımı göster</span>
                        </div>
-                       {filterByInterests ? <CheckSquare className="h-4 w-4 text-primary" /> : <Square className="h-4 w-4 text-muted-foreground" />}
+                       {filterByInterests ? <CheckSquare className="h-5 w-5 text-primary" /> : <Square className="h-5 w-5 text-muted-foreground" />}
                      </button>
                    </div>
 
-                   <div className="space-y-1">
-                     <label className="text-[10px] font-bold text-muted-foreground uppercase">Etiket Ara</label>
+                   <div className="space-y-2">
+                     <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wide">Etiket Ara</label>
                      <div className="relative">
-                       <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground opacity-50" />
-                       <input value={tagSearch} onChange={e => setTagSearch(e.target.value)} placeholder="Etiket yaz..." className="w-full pl-8 pr-6 py-1.5 bg-muted/30 border border-border/20 rounded-lg text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/30" />
-                       {tagSearch && <button onClick={() => setTagSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground"><X className="h-3 w-3" /></button>}
+                       <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground opacity-50" />
+                       <input value={tagSearch} onChange={e => setTagSearch(e.target.value)} placeholder="Etiket yaz..." className="w-full pl-10 pr-8 py-3 bg-muted/30 border border-border/20 rounded-2xl text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
+                       {tagSearch && <button onClick={() => setTagSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"><X className="h-4 w-4" /></button>}
                      </div>
                    </div>
                  </div>
+
+                 <Button onClick={() => setIsFilterPanelOpen(false)} className="w-full h-11 rounded-xl text-xs font-bold bg-primary text-primary-foreground shadow-lg shadow-primary/20">
+                   Filtreleri Uygula
+                 </Button>
               </div>
-
-              {typeof document !== "undefined" && createPortal(
-                <div className="fixed inset-0 z-[9999] flex md:hidden items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-                  <div className="bg-card border border-border/20 rounded-[28px] w-full max-w-xs shadow-2xl p-6 space-y-5 animate-in zoom-in-95 duration-300">
-                     <div className="flex items-center justify-between border-b border-border/10 pb-3">
-                       <span className="text-xs font-black uppercase tracking-wider text-primary flex items-center gap-1.5">
-                         <SlidersHorizontal className="h-3.5 w-3.5" /> Gelişmiş Filtre
-                       </span>
-                       <button onClick={() => setIsFilterPanelOpen(false)} className="text-muted-foreground hover:text-foreground p-1.5 rounded-full"><X className="h-4 w-4" /></button>
-                     </div>
-
-                     <div className="space-y-4">
-                       <div className="space-y-1.5">
-                         <label className="text-[10px] font-bold text-muted-foreground uppercase">Zaman Aralığı</label>
-                         <div className="grid grid-cols-2 gap-2">
-                           {[
-                             { id: "all", label: "Tüm Zamanlar" },
-                             { id: "24h", label: "Son 24 Saat" },
-                             { id: "7d", label: "Son 7 Gün" },
-                             { id: "30d", label: "Son 30 Gün" }
-                           ].map(t => (
-                             <button 
-                               key={t.id}
-                               onClick={() => setTimeRange(t.id as any)}
-                               className={cn("py-2.5 px-3 text-xs font-bold rounded-xl border text-center transition-all", timeRange === t.id ? "bg-primary text-primary-foreground border-primary shadow-sm shadow-primary/20" : "bg-muted/30 text-muted-foreground border-border/20")}
-                             >
-                               {t.label}
-                             </button>
-                           ))}
-                         </div>
-                       </div>
-
-                       <div className="pt-1">
-                         <button 
-                           onClick={() => setFilterByInterests(p => !p)} 
-                           className={cn("w-full flex items-center justify-between p-3.5 rounded-2xl border text-left transition-all", filterByInterests ? "bg-primary/10 border-primary shadow-sm" : "bg-muted/20 border-border/20")}
-                         >
-                           <div className="flex items-center gap-2.5">
-                             <Sparkles className={cn("h-4 w-4", filterByInterests ? "text-primary" : "text-muted-foreground")} />
-                             <span className="text-xs font-bold text-foreground">Sadece ilgi alanlarımı göster</span>
-                           </div>
-                           {filterByInterests ? <CheckSquare className="h-5 w-5 text-primary" /> : <Square className="h-5 w-5 text-muted-foreground" />}
-                         </button>
-                       </div>
-
-                       <div className="space-y-1.5">
-                         <label className="text-[10px] font-bold text-muted-foreground uppercase">Etiket Ara</label>
-                         <div className="relative">
-                           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground opacity-50" />
-                           <input value={tagSearch} onChange={e => setTagSearch(e.target.value)} placeholder="Etiket yaz..." className="w-full pl-10 pr-8 py-3 bg-muted/30 border border-border/20 rounded-2xl text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
-                           {tagSearch && <button onClick={() => setTagSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"><X className="h-4 w-4" /></button>}
-                         </div>
-                       </div>
-                     </div>
-
-                     <Button onClick={() => setIsFilterPanelOpen(false)} className="w-full h-11 rounded-xl text-xs font-bold bg-primary text-primary-foreground shadow-lg shadow-primary/20">
-                       Filtreleri Uygula
-                     </Button>
-                  </div>
-                </div>,
-                document.body
-              )}
-            </>
+            </div>,
+            document.body
           )}
 
           {isBanned ? (
