@@ -9,20 +9,17 @@ import { cn } from "@/lib/utils";
 
 export default function ProfileNotFound() {
   return (
-    <div
-      className="relative min-h-[calc(100vh-4rem)] md:min-h-screen w-full flex flex-col items-center justify-center overflow-hidden"
-      style={{ background: "#F5EDD8" }}
-    >
+    <div className="relative min-h-[calc(100vh-4rem)] md:min-h-screen w-full flex flex-col items-center justify-center overflow-hidden bg-[#F5EDD8] dark:bg-[#120d0a] transition-colors duration-300 text-[#5a3100] dark:text-[#ffb874]">
       {/* Subtle dot pattern */}
-      <div className="absolute inset-0 opacity-[0.08]"
+      <div className="absolute inset-0 opacity-[0.08] dark:opacity-[0.12] pointer-events-none"
         style={{
-          backgroundImage: "radial-gradient(circle, #8C5000 1px, transparent 1px)",
+          backgroundImage: "radial-gradient(circle, currentColor 1px, transparent 1px)",
           backgroundSize: "36px 36px",
         }}
       />
 
       {/* Main layout */}
-      <div className="relative z-10 w-full max-w-6xl mx-auto px-6 flex flex-col md:flex-row items-center justify-center gap-4 md:gap-12 py-8">
+      <div className="relative z-10 w-full max-w-6xl mx-auto px-6 flex flex-col md:flex-row items-center justify-center gap-6 md:gap-12 py-8">
 
         {/* Left: Illustration */}
         <motion.div
@@ -31,14 +28,16 @@ export default function ProfileNotFound() {
           transition={{ duration: 0.7, ease: "easeOut" }}
           className="w-full md:w-[50%] flex-shrink-0"
         >
-          <Image
-            src="/cowboy-404.png"
-            alt="Kovboy Kayıp Kullanıcı İllüstrasyonu"
-            width={800}
-            height={800}
-            className="w-full h-auto rounded-3xl shadow-2xl"
-            priority
-          />
+          <div className="relative rounded-3xl overflow-hidden shadow-2xl dark:shadow-[0_0_50px_rgba(255,184,116,0.15)] dark:border dark:border-[#ffb874]/20 transition-all duration-300 bg-[#F5EDD8]">
+            <Image
+              src="/cowboy-404.png"
+              alt="Kovboy Kayıp Kullanıcı İllüstrasyonu"
+              width={800}
+              height={800}
+              className="w-full h-auto object-contain"
+              priority
+            />
+          </div>
         </motion.div>
 
         {/* Right: Text + Button */}
@@ -52,11 +51,10 @@ export default function ProfileNotFound() {
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="font-black leading-none mb-3"
+            className="font-black leading-none mb-3 text-[#5a3100] dark:text-[#ffb874] transition-colors duration-300"
             style={{
               fontSize: "clamp(80px, 12vw, 130px)",
-              color: "#5a3100",
-              textShadow: "0 4px 0 #C07828, 0 8px 20px rgba(140,80,0,0.2)",
+              textShadow: "0 8px 20px rgba(140,80,0,0.2)",
             }}
           >
             404
@@ -66,7 +64,7 @@ export default function ProfileNotFound() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4 }}
-            className="text-xl md:text-2xl font-bold mb-2 text-[#5a3100]"
+            className="text-xl md:text-2xl font-bold mb-2 text-[#5a3100] dark:text-[#fbf9f4] transition-colors duration-300"
           >
             Kullanıcı Kasabayı Terk Etti
           </motion.p>
@@ -75,7 +73,7 @@ export default function ProfileNotFound() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5 }}
-            className="text-sm md:text-base mb-8 max-w-xs leading-relaxed text-[#887364]"
+            className="text-sm md:text-base mb-8 max-w-xs leading-relaxed text-[#887364] dark:text-[#dbc2b0]/80 transition-colors duration-300"
           >
             Aradığınız yatırımcı ya atına atlayıp uzaklaşmış ya da şerifler kurallara uymadığı için hesabını askıya almış.
           </motion.p>
@@ -103,11 +101,11 @@ export default function ProfileNotFound() {
           </motion.div>
 
           {/* Decorative dots */}
-          <div className="flex gap-2 mt-8 opacity-25">
+          <div className="flex gap-2 mt-8 opacity-25 dark:opacity-40">
             {[...Array(5)].map((_, i) => (
               <div
                 key={i}
-                className="rounded-full bg-[#8C5000]"
+                className="rounded-full bg-[#8C5000] dark:bg-[#ffb874]"
                 style={{
                   width: i === 2 ? 10 : 6,
                   height: i === 2 ? 10 : 6,
