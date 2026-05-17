@@ -110,6 +110,8 @@ export function AssetList({
   const [isAdding, setIsAdding] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [deleteAssetId, setDeleteAssetId] = useState<string | null>(null);
+  const [deleteFixedAssetId, setDeleteFixedAssetId] = useState<string | null>(null);
 
   const [expandedSymbol, setExpandedSymbol] = useState<string | null>(null);
   const [filterQuery, setFilterQuery] = useState("");
@@ -358,10 +360,15 @@ export function AssetList({
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Bu kaydı tamamen silmek istediğinize emin misiniz?")) return;
+    setDeleteAssetId(id);
+  }
+
+  async function confirmDeleteAsset() {
+    if (!deleteAssetId) return;
+    setDeleteAssetId(null);
     setLoading(true);
     try {
-      await deleteAsset(id);
+      await deleteAsset(deleteAssetId);
       await new Promise(r => setTimeout(r, 500));
       router.refresh();
     } catch (err: any) {
@@ -404,10 +411,15 @@ export function AssetList({
   }
 
   async function handleDeleteFixed(id: string) {
-    if (!confirm("Bu sabit varlığı silmek istediğinize emin misiniz?")) return;
+    setDeleteFixedAssetId(id);
+  }
+
+  async function confirmDeleteFixedAsset() {
+    if (!deleteFixedAssetId) return;
+    setDeleteFixedAssetId(null);
     setLoading(true);
     try {
-      await deleteFixedAsset(id);
+      await deleteFixedAsset(deleteFixedAssetId);
       await new Promise(r => setTimeout(r, 500));
       router.refresh();
     } catch (err: any) {
@@ -1009,6 +1021,58 @@ export function AssetList({
                   </div>
                 </button>
               ))}
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Delete Financial Asset Confirmation Modal */}
+      {deleteAssetId && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-card border border-border/20 rounded-[32px] w-full max-w-sm shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+            <div className="p-8 text-center space-y-6">
+              <div className="w-16 h-16 bg-rose-500/10 rounded-full flex items-center justify-center mx-auto text-rose-500 animate-pulse">
+                <Trash2 className="h-8 w-8" />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-lg font-black text-foreground">Varlığı Sil?</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Bu finansal varlık kaydını tamamen silmek istediğinize emin misiniz? Bu işlem geri alınamaz.
+                </p>
+              </div>
+              <div className="flex gap-3">
+                <Button variant="ghost" onClick={() => setDeleteAssetId(null)} className="flex-1 h-12 rounded-2xl font-bold hover:bg-muted">Vazgeç</Button>
+                <Button onClick={confirmDeleteAsset} disabled={loading} className="flex-1 h-12 rounded-2xl font-bold bg-rose-500 text-white hover:bg-rose-600 shadow-lg shadow-rose-500/20">
+                  {loading ? "Siliniyor..." : "Evet, Sil"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Delete Fixed Asset Confirmation Modal */}
+      {deleteFixedAssetId && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-card border border-border/20 rounded-[32px] w-full max-w-sm shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+            <div className="p-8 text-center space-y-6">
+              <div className="w-16 h-16 bg-rose-500/10 rounded-full flex items-center justify-center mx-auto text-rose-500 animate-pulse">
+                <Trash2 className="h-8 w-8" />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-lg font-black text-foreground">Sabit Varlığı Sil?</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Bu sabit varlık kaydını silmek istediğinize emin misiniz? Bu işlem geri alınamaz.
+                </p>
+              </div>
+              <div className="flex gap-3">
+                <Button variant="ghost" onClick={() => setDeleteFixedAssetId(null)} className="flex-1 h-12 rounded-2xl font-bold hover:bg-muted">Vazgeç</Button>
+                <Button onClick={confirmDeleteFixedAsset} disabled={loading} className="flex-1 h-12 rounded-2xl font-bold bg-rose-500 text-white hover:bg-rose-600 shadow-lg shadow-rose-500/20">
+                  {loading ? "Siliniyor..." : "Evet, Sil"}
+                </Button>
+              </div>
             </div>
           </div>
         </div>,

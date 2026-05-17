@@ -54,6 +54,7 @@ export default function CalculatorsPage() {
 
   // --- BES Hesaplama State ---
   const [besData, setBesData] = useState({
+    currentBalance: 50000,
     monthly: 2000,
     contribution: 30, // % Devlet Katkısı
     annualReturn: 25, // % Tahmini Fon Getirisi
@@ -61,12 +62,12 @@ export default function CalculatorsPage() {
   });
 
   const calculateBes = () => {
-    const { monthly, contribution, annualReturn, years } = besData;
+    const { currentBalance, monthly, contribution, annualReturn, years } = besData;
     const monthlyRate = annualReturn / 12 / 100;
     const totalMonths = years * 12;
     
-    let totalPrincipal = 0;
-    let totalWithReturn = 0;
+    let totalPrincipal = currentBalance;
+    let totalWithReturn = currentBalance;
     let govtContribution = 0;
 
     const chartData = [];
@@ -74,9 +75,12 @@ export default function CalculatorsPage() {
     for (let i = 0; i <= totalMonths; i++) {
       if (i > 0) {
         totalPrincipal += monthly;
-        // Basit bileşik faiz formülü
         totalWithReturn = (totalWithReturn + monthly) * (1 + monthlyRate);
-        govtContribution = totalPrincipal * (contribution / 100);
+        
+        // Devlet katkısı her ay yapılan yeni katkı payı üzerinden hesaplanır
+        const monthlyGovtMatch = monthly * (contribution / 100);
+        // Ve devlet katkısı fonunda ayrı olarak birikerek değerlenir
+        govtContribution = (govtContribution + monthlyGovtMatch) * (1 + monthlyRate);
       }
       
       if (i % 12 === 0 || i === totalMonths) {
@@ -314,6 +318,20 @@ export default function CalculatorsPage() {
                   <h3 className="text-base md:text-lg font-bold m-0 p-0">BES Planı Parametreleri</h3>
                 </div>
                 <CardContent className="p-8 space-y-8">
+                  <div className="space-y-3">
+                    <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Güncel Tutar ({curSymbol})</Label>
+                    <div>
+                      <Input 
+                        type="number" 
+                        value={besData.currentBalance || ""} 
+                        onChange={e => setBesData(p => ({...p, currentBalance: Number(e.target.value)}))}
+                        className="h-auto py-3 md:py-4 rounded-xl md:rounded-2xl bg-muted/30 border border-border/50 font-bold text-xl md:text-2xl text-primary transition-all focus-visible:ring-1 focus-visible:ring-primary leading-normal"
+                      />
+                      <div className="text-sm font-bold text-emerald-600 mt-2 ml-2 flex items-center gap-1">
+                        <ArrowRight className="h-3 w-3" /> {besData.currentBalance.toLocaleString("tr-TR")} {curSymbol}
+                      </div>
+                    </div>
+                  </div>
                   <div className="space-y-3">
                     <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Aylık Katkı Payı ({curSymbol})</Label>
                     <div>

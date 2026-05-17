@@ -4,11 +4,12 @@ import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { toggleFollow, toggleUserBan, updateBio, getUserFollowers, getUserFollowing } from "@/app/actions/blog";
 import { cn } from "@/lib/utils";
-import { Users, BookOpen, UserPlus, UserMinus, ShieldAlert, Ban, Pencil, Check, X, Camera, MessageCircle } from "lucide-react";
+import { Users, BookOpen, UserPlus, ShieldAlert, Ban, Pencil, Check, X, MessageCircle } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useUser } from "@clerk/nextjs";
 import { MessageModal } from "./message-modal";
+import { createPortal } from "react-dom";
 
 interface ProfileHeaderProps {
   profile: {
@@ -39,6 +40,12 @@ export function ProfileHeader({ profile, initialIsFollowing, currentUserRole }: 
   const [followList, setFollowList] = useState<any[]>([]);
   const [isLoadingList, setIsLoadingList] = useState(false);
   const [isMessageModalOpen, setIsMessageModalOpen] = useState(false);
+  
+  // Custom confirm & alert state
+  const [showBanModal, setShowBanModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
   const { user } = useUser();
 
   const handleFollow = () => {
@@ -54,12 +61,19 @@ export function ProfileHeader({ profile, initialIsFollowing, currentUserRole }: 
   };
 
   const handleBan = () => {
-    if (!confirm(`Kullanıcıyı ${profile.isBanned ? 'banını kaldırmak' : 'banlamak'} istediğinize emin misiniz?`)) return;
+    setShowBanModal(true);
+  };
+
+  const confirmBan = () => {
+    setShowBanModal(false);
     startTransition(async () => {
       try {
         await toggleUserBan(profile.id);
+        setSuccessMessage(`Kullanıcı başarıyla ${profile.isBanned ? 'aktif edildi' : 'engellendi'}.`);
+        setTimeout(() => setSuccessMessage(null), 4000);
       } catch (error) {
-        alert(error instanceof Error ? error.message : "İşlem başarısız");
+        setErrorMessage(error instanceof Error ? error.message : "İşlem başarısız");
+        setTimeout(() => setErrorMessage(null), 4000);
       }
     });
   };
@@ -69,8 +83,11 @@ export function ProfileHeader({ profile, initialIsFollowing, currentUserRole }: 
       try {
         await updateBio(bioContent);
         setIsEditingBio(false);
+        setSuccessMessage("Biyografi başarıyla güncellendi.");
+        setTimeout(() => setSuccessMessage(null), 4000);
       } catch (error) {
-        alert(error instanceof Error ? error.message : "Hata oluştu");
+        setErrorMessage(error instanceof Error ? error.message : "Hata oluştu");
+        setTimeout(() => setErrorMessage(null), 4000);
       }
     });
   };
@@ -101,11 +118,26 @@ export function ProfileHeader({ profile, initialIsFollowing, currentUserRole }: 
 
   return (
     <div className="relative mb-12">
-      {/* Background Glows Removed */}
+      {/* Success / Error Banners */}
+      {successMessage && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[9999] bg-emerald-500 text-white px-6 py-3 rounded-2xl shadow-xl flex items-center gap-3 animate-in slide-in-from-top-4 duration-500">
+          <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
+            <Check className="h-4 w-4 text-white" />
+          </div>
+          <span className="text-xs font-bold">{successMessage}</span>
+        </div>
+      )}
+
+      {errorMessage && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[9999] bg-rose-500 text-white px-6 py-3 rounded-2xl shadow-xl flex items-center gap-3 animate-in slide-in-from-top-4 duration-500">
+          <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
+            <X className="h-4 w-4 text-white" />
+          </div>
+          <span className="text-xs font-bold">{errorMessage}</span>
+        </div>
+      )}
 
       <div className="bg-card/40 backdrop-blur-xl border border-border/20 rounded-[40px] overflow-hidden shadow-ambient-medium animate-in fade-in slide-in-from-bottom-8 duration-1000">
-        {/* Cover Section Removed */}
-        
         <div className="px-6 md:px-16 pb-10 pt-8 md:pt-12 relative">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 md:gap-8">
             <div className="flex flex-row items-start gap-4 md:gap-8">
@@ -126,7 +158,6 @@ export function ProfileHeader({ profile, initialIsFollowing, currentUserRole }: 
 
               {/* Profile Info */}
               <div className="pb-2 flex flex-col">
-                {/* Name & Tags - Kept within the 80px cover area */}
                 <div className="pt-2 md:pt-2 flex flex-col gap-2 md:gap-2">
                   <div className="flex flex-col md:flex-row md:items-center gap-1.5 md:gap-3">
                     <h1 className="text-2xl md:text-4xl font-black tracking-tight text-foreground leading-tight">
@@ -151,7 +182,6 @@ export function ProfileHeader({ profile, initialIsFollowing, currentUserRole }: 
                   </div>
                 </div>
                 
-                {/* Enhanced Bio Section - Pushed below the name on mobile, side by side with photo */}
                 <div className="mt-3 md:mt-8 max-w-lg min-h-[40px] md:min-h-[60px]">
                   {isEditingBio ? (
                     <div className="flex flex-col gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
@@ -208,8 +238,6 @@ export function ProfileHeader({ profile, initialIsFollowing, currentUserRole }: 
 
             {/* Action Group */}
             <div className="flex flex-row md:flex-col items-center md:items-end gap-3 mt-0 md:mt-0">
-
-               
                <div className="flex items-center gap-3">
                  {currentUserRole === "ADMIN" && !profile.isMe && (
                    <Button
@@ -267,16 +295,15 @@ export function ProfileHeader({ profile, initialIsFollowing, currentUserRole }: 
                  )}
                </div>
             </div>
-            
           </div>
 
-          {/* Stats Bar - Optimized for Mobile Grid */}
+          {/* Stats Bar */}
           <div className="grid grid-cols-3 gap-2 md:flex md:flex-wrap md:items-center md:gap-12 mt-10 pt-10 border-t border-border/10">
             <div className="flex flex-col items-center md:flex-row md:items-center gap-2 md:gap-4 group">
               <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-primary/10 flex items-center justify-center text-primary transition-transform group-hover:scale-110">
                 <BookOpen className="w-4 h-4 md:w-5 md:h-5" />
               </div>
-              <div className="flex flex-col items-center md:items-start">
+              <div className="flex flex-col items-center md:flex-start">
                 <span className="text-lg md:text-xl font-black text-foreground">{profile.postCount}</span>
                 <span className="text-[8px] md:text-[10px] font-black text-muted-foreground uppercase tracking-widest opacity-60">Gönderi</span>
               </div>
@@ -311,6 +338,32 @@ export function ProfileHeader({ profile, initialIsFollowing, currentUserRole }: 
         initialTargetUsername={profile.isMe ? null : profile.username}
         currentUsername={user?.username || ""}
       />
+
+      {/* Custom Ban User Modal */}
+      {showBanModal && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-card border border-border/20 rounded-[32px] w-full max-w-sm shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+            <div className="p-8 text-center space-y-6">
+              <div className="w-16 h-16 bg-rose-500/10 rounded-full flex items-center justify-center mx-auto text-rose-500 animate-pulse">
+                <ShieldAlert className="h-8 w-8" />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-lg font-black text-foreground">
+                  {profile.isBanned ? "Kullanıcı Banını Kaldır?" : "Kullanıcıyı Banla?"}
+                </h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Kullanıcıyı <span className="font-bold text-foreground">{profile.name}</span> {profile.isBanned ? 'banını kaldırmak' : 'banlamak'} istediğinize emin misiniz?
+                </p>
+              </div>
+              <div className="flex gap-3">
+                <Button variant="ghost" onClick={() => setShowBanModal(false)} className="flex-1 h-12 rounded-2xl font-bold hover:bg-muted">Vazgeç</Button>
+                <Button onClick={confirmBan} className="flex-1 h-12 rounded-2xl font-bold bg-rose-500 text-white hover:bg-rose-600 shadow-lg shadow-rose-500/20">Evet, Onayla</Button>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
 
       {/* Modern Follow List Dialog */}
       {(showFollowers || showFollowing) && (

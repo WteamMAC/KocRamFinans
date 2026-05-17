@@ -30,6 +30,21 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
     const [payModal, setPayModal] = useState<{ id: string, amount: number, isClose: boolean, description: string, rawAmount: number, currency?: string, originalAmount?: number, fxRate?: number } | null>(null);
     const [refinanceId, setRefinanceId] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [postponeDebtId, setPostponeDebtId] = useState<string | null>(null);
+
+    const handlePostpone = async () => {
+        if (!postponeDebtId) return;
+        setLoading(true);
+        try {
+            await postponeDebtInstallment(postponeDebtId);
+            setPostponeDebtId(null);
+            router.refresh();
+        } catch (err: any) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const [formData, setFormData] = useState({
         type: "Kredi Kartı",
@@ -418,12 +433,7 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
                                             <DropdownMenuContent align="end" className="rounded-xl font-bold bg-card border-border/30">
                                                 <DropdownMenuItem
                                                     className="text-rose-600 focus:text-rose-600 cursor-pointer"
-                                                    onClick={async () => {
-                                                        if (confirm("Bu ayki taksit ödemesini atlamak/ertelemek istediğinize emin misiniz?")) {
-                                                            await postponeDebtInstallment(debt.id);
-                                                            router.refresh();
-                                                        }
-                                                    }}
+                                                    onClick={() => setPostponeDebtId(debt.id)}
                                                 >
                                                     <FastForward className="w-4 h-4 mr-2" /> Bu Ayı Atla/Ertele
                                                 </DropdownMenuItem>
@@ -656,6 +666,32 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* Postpone Installment Custom Modal */}
+            {postponeDebtId && typeof document !== "undefined" && createPortal(
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="bg-card border border-border/20 rounded-[32px] w-full max-w-sm shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+                        <div className="p-8 text-center space-y-6">
+                            <div className="w-16 h-16 bg-rose-500/10 rounded-full flex items-center justify-center mx-auto text-rose-500 animate-pulse">
+                                <FastForward className="h-8 w-8" />
+                            </div>
+                            <div className="space-y-2">
+                                <h3 className="text-lg font-black text-foreground">Taksiti Ertele?</h3>
+                                <p className="text-xs text-muted-foreground leading-relaxed">
+                                    Bu ayki taksit ödemesini atlamak/ertelemek istediğinize emin misiniz?
+                                </p>
+                            </div>
+                            <div className="flex gap-3">
+                                <Button variant="ghost" onClick={() => setPostponeDebtId(null)} className="flex-1 h-12 rounded-2xl font-bold hover:bg-muted">Vazgeç</Button>
+                                <Button onClick={handlePostpone} disabled={loading} className="flex-1 h-12 rounded-2xl font-bold bg-rose-500 text-white hover:bg-rose-600 shadow-lg shadow-rose-500/20">
+                                    {loading ? "Erteleniyor..." : "Evet, Ertele"}
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                </div>,
+                document.body
             )}
         </div>
     );

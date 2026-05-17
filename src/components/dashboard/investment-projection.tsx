@@ -75,22 +75,22 @@ export function InvestmentProjection({ currentValue, investments = [], fixedAsse
           </CardTitle>
         </CardHeader>
         <CardContent className="p-12 flex-1 flex flex-col items-center justify-center text-center">
-            <div className="w-20 h-20 bg-accent/10 rounded-full flex items-center justify-center mb-6 animate-pulse">
-                <Sparkles className="h-10 w-10 text-accent/50" />
+          <div className="w-20 h-20 bg-accent/10 rounded-full flex items-center justify-center mb-6 animate-pulse">
+            <Sparkles className="h-10 w-10 text-accent/50" />
+          </div>
+          <h3 className="text-xl font-heading font-bold text-primary mb-3">AI Portföyünüzü Bekliyor</h3>
+          <p className="text-sm text-muted-foreground max-w-[340px] mb-8 leading-relaxed">
+            Yapay zekanın 6 aylık servet projeksiyonu hazırlayabilmesi için en az bir yatırım veya sabit varlık eklemiş olmanız gerekir.
+          </p>
+          <div className="p-5 bg-primary/5 border border-primary/10 rounded-[24px] text-left w-full max-w-sm">
+            <div className="flex items-center gap-2 mb-2">
+              <Info className="h-4 w-4 text-primary" />
+              <p className="text-[11px] font-black text-primary uppercase tracking-widest">Nasıl Çalışır?</p>
             </div>
-            <h3 className="text-xl font-heading font-bold text-primary mb-3">AI Portföyünüzü Bekliyor</h3>
-            <p className="text-sm text-muted-foreground max-w-[340px] mb-8 leading-relaxed">
-                Yapay zekanın 6 aylık servet projeksiyonu hazırlayabilmesi için en az bir yatırım veya sabit varlık eklemiş olmanız gerekir.
+            <p className="text-[10px] text-muted-foreground leading-relaxed">
+              Yapay zekamız, eklediğiniz varlıkların geçmiş performansını ve piyasa trendlerini analiz ederek gelecek aylardaki potansiyel büyümenizi simüle eder.
             </p>
-            <div className="p-5 bg-primary/5 border border-primary/10 rounded-[24px] text-left w-full max-w-sm">
-              <div className="flex items-center gap-2 mb-2">
-                <Info className="h-4 w-4 text-primary" />
-                <p className="text-[11px] font-black text-primary uppercase tracking-widest">Nasıl Çalışır?</p>
-              </div>
-              <p className="text-[10px] text-muted-foreground leading-relaxed">
-                Yapay zekamız, eklediğiniz varlıkların geçmiş performansını ve piyasa trendlerini analiz ederek gelecek aylardaki potansiyel büyümenizi simüle eder.
-              </p>
-            </div>
+          </div>
         </CardContent>
       </Card>
     );
@@ -106,13 +106,13 @@ export function InvestmentProjection({ currentValue, investments = [], fixedAsse
           </CardTitle>
         </CardHeader>
         <CardContent className="p-12 flex-1 flex flex-col items-center justify-center text-center space-y-6">
-            <Loader2 className="h-12 w-12 text-primary animate-spin" />
-            <div>
-              <h3 className="text-lg font-heading font-bold text-primary mb-1">Projeksiyon Simüle Ediliyor</h3>
-              <p className="text-xs text-muted-foreground max-w-[280px] leading-relaxed">
-                Yapay zeka varlık performanslarını ve piyasa trendlerini analiz edip 6 aylık servet modelini hesaplıyor...
-              </p>
-            </div>
+          <Loader2 className="h-12 w-12 text-primary animate-spin" />
+          <div>
+            <h3 className="text-lg font-heading font-bold text-primary mb-1">Projeksiyon Simüle Ediliyor</h3>
+            <p className="text-xs text-muted-foreground max-w-[280px] leading-relaxed">
+              Yapay zeka varlık performanslarını ve piyasa trendlerini analiz edip 6 aylık servet modelini hesaplıyor...
+            </p>
+          </div>
         </CardContent>
       </Card>
     );
@@ -128,19 +128,19 @@ export function InvestmentProjection({ currentValue, investments = [], fixedAsse
           </CardTitle>
         </CardHeader>
         <CardContent className="p-8 md:p-12 flex-1 flex flex-col items-center justify-center text-center">
-            <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mb-6 group hover:scale-105 transition-transform duration-300">
-                <Sparkles className="h-10 w-10 text-primary animate-pulse" />
-            </div>
-            <h3 className="text-xl font-heading font-bold text-primary mb-3">Yapay Zeka Portföy Tahmini</h3>
-            <p className="text-sm text-muted-foreground max-w-[380px] mb-8 leading-relaxed">
-                Yatırımlarınızın, sabit varlıklarınızın ve birikimlerinizin yapay zeka ve güncel piyasa trendleri ışığında 6 aylık büyüme projeksiyonunu simüle etmek için analizi başlatın.
-            </p>
-            <Button
-              onClick={fetchAIProjection}
-              className="h-12 px-8 rounded-2xl bg-primary text-primary-foreground font-black text-[10px] uppercase tracking-widest shadow-lg shadow-primary/10 active:scale-95 transition-all"
-            >
-              Tahmin Modelini Çalıştır
-            </Button>
+          <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mb-6 group hover:scale-105 transition-transform duration-300">
+            <Sparkles className="h-10 w-10 text-primary animate-pulse" />
+          </div>
+          <h3 className="text-xl font-heading font-bold text-primary mb-3">Yapay Zeka Portföy Tahmini</h3>
+          <p className="text-sm text-muted-foreground max-w-[380px] mb-8 leading-relaxed">
+            Yatırımlarınızın, sabit varlıklarınızın ve birikimlerinizin yapay zeka ve güncel piyasa trendleri ışığında 6 aylık büyüme projeksiyonunu simüle etmek için analizi başlatın.
+          </p>
+          <Button
+            onClick={fetchAIProjection}
+            className="h-12 px-8 rounded-2xl bg-primary text-primary-foreground font-black text-[10px] uppercase tracking-widest shadow-lg shadow-primary/10 active:scale-95 transition-all"
+          >
+            Tahmin Modelini Çalıştır
+          </Button>
         </CardContent>
       </Card>
     );

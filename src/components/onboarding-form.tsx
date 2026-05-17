@@ -33,7 +33,7 @@ const schema = z.object({
     const d = new Date(v); const max = new Date(getMaxDate());
     return d <= max;
   }, { message: `En az ${MIN_AGE} yaşında olmalısınız` }),
-  gender: z.enum(["male", "female"], { error: "Cinsiyet seçiniz" }).optional(),
+  gender: z.enum(["male", "female"], { error: "Lütfen cinsiyetinizi seçiniz" }),
   currency: z.string().min(1, "Para birimi seçiniz"),
   country: z.string().min(1, "Ülke seçiniz"),
   incomes: z.array(z.object({
@@ -222,7 +222,7 @@ export function OnboardingForm() {
   const form = useForm<F>({
     resolver: zodResolver(schema) as any,
     defaultValues: {
-      firstName: "", lastName: "", birthDate: "", gender: undefined, currency: "TRY", country: "",
+      firstName: "", lastName: "", birthDate: "", gender: undefined as any, currency: "TRY", country: "",
       incomes: [{ type: "Maaş", amount: 0, date: new Date().toISOString().split("T")[0], description: "", currency: "TRY" }],
       expenses: [{ type: "Ev Kirası / İpotek", amount: 0, date: new Date().toISOString().split("T")[0], isRecurring: true, description: "", currency: "TRY" }],
       interests: [],
@@ -464,15 +464,19 @@ export function OnboardingForm() {
           <div className="absolute top-0 right-0 w-64 h-64 bg-[#f18d02]/15 dark:bg-[#ffb874]/10 rounded-full blur-3xl pointer-events-none" />
 
           {/* Step indicator dots */}
-          <div className="relative flex items-center justify-center gap-1 sm:gap-2 mb-6 z-10 py-2 px-1 w-full overflow-visible">
-            {STEPS.map((s, i) => (
+          <div className="relative flex items-center justify-center gap-2 sm:gap-3 mb-6 z-10 py-2 px-1 w-full overflow-visible">
+            {(step <= 4 ? STEPS.slice(0, 4) : STEPS.slice(4, 7)).map((s, i, arr) => (
               <div key={s.id} className="flex items-center shrink-0">
-                <div className={cn("w-6 sm:w-8 h-6 sm:h-8 rounded-full flex items-center justify-center font-bold text-[11px] sm:text-xs transition-all duration-500 shrink-0",
+                <div className={cn("w-8 sm:w-10 h-8 sm:h-10 rounded-full flex items-center justify-center font-bold text-xs sm:text-sm transition-all duration-500 shrink-0",
                   step === s.id ? "bg-[#8C5000] dark:bg-[#ffb874] text-white dark:text-[#120d0a] scale-110 shadow-lg shadow-[#8C5000]/30 dark:shadow-black/50" :
                     step > s.id ? "bg-[#b07d4b] dark:bg-[#ffb874]/80 text-white dark:text-[#120d0a]" : "bg-[#dbc2b0]/30 dark:bg-[#887364]/30 text-[#887364] dark:text-[#dbc2b0]")}>
-                  {step > s.id ? <Check className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> : s.id}
+                  {step > s.id ? <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : s.id}
                 </div>
-                {i < STEPS.length - 1 && <div className={cn("w-1.5 sm:w-8 h-0.5 mx-0.5 sm:mx-1.5 rounded-full transition-all duration-500 shrink-0", step > s.id ? "bg-[#b07d4b] dark:bg-[#ffb874]/80" : "bg-[#dbc2b0]/40 dark:bg-[#887364]/30")} />}
+                {i < arr.length - 1 && (
+                  <div className={cn("w-6 sm:w-14 h-0.5 mx-1 sm:mx-2 rounded-full transition-all duration-500 shrink-0", 
+                    step > s.id ? "bg-[#b07d4b] dark:bg-[#ffb874]/80" : "bg-[#dbc2b0]/40 dark:bg-[#887364]/30"
+                  )} />
+                )}
               </div>
             ))}
           </div>

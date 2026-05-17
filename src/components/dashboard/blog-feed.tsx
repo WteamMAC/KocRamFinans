@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { createPost, toggleLike, addComment, deletePost, deleteComment, getPosts, getProfilePosts, searchUsers } from "@/app/actions/blog";
 import { 
@@ -542,9 +543,15 @@ function PostCard({ post, currentUserId, onTagClick, onCommunityClick, onComment
     startTransition(async () => { await toggleLike(post.id); router.refresh(); });
   };
 
+  const [showDeletePostModal, setShowDeletePostModal] = useState(false);
+
   const handleDelete = () => {
     if (post.id.startsWith("temp-")) return;
-    if (!confirm("Bu paylaşımı silmek istediğinize emin misiniz?")) return;
+    setShowDeletePostModal(true);
+  };
+
+  const confirmDelete = () => {
+    setShowDeletePostModal(false);
     onPostDeleted?.(post.id);
     startTransition(async () => { 
       try {
@@ -635,6 +642,32 @@ function PostCard({ post, currentUserId, onTagClick, onCommunityClick, onComment
         </button>
       </div>
       {showComments && <CommentSection post={post} currentUserId={currentUserId} onTagClick={onTagClick} onCommentAdded={onCommentAdded} onCommentDeleted={onCommentDeleted} onCommentIdUpdate={onCommentIdUpdate} />}
+
+      {/* Delete Post Custom Modal */}
+      {showDeletePostModal && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-card border border-border/20 rounded-[32px] w-full max-w-sm shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+            <div className="p-8 text-center space-y-6">
+              <div className="w-16 h-16 bg-rose-500/10 rounded-full flex items-center justify-center mx-auto text-rose-500 animate-bounce">
+                <Trash2 className="h-8 w-8" />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-lg font-black text-foreground">Gönderiyi Sil?</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Bu paylaşımı silmek istediğinize emin misiniz? Bu işlem geri alınamaz.
+                </p>
+              </div>
+              <div className="flex gap-3">
+                <Button variant="ghost" onClick={() => setShowDeletePostModal(false)} className="flex-1 h-12 rounded-2xl font-bold hover:bg-muted">Vazgeç</Button>
+                <Button onClick={confirmDelete} disabled={isPending} className="flex-1 h-12 rounded-2xl font-bold bg-rose-500 text-white hover:bg-rose-600 shadow-lg shadow-rose-500/20">
+                  {isPending ? "Siliniyor..." : "Evet, Sil"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }
