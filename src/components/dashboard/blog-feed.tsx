@@ -23,7 +23,7 @@ import { CommunityDiscovery } from "./community-discovery";
 import { 
   Heart, MessageCircle, Trash2, Send, X, ChevronDown, 
   Filter, Image as ImageIcon, Plus, Users, LayoutGrid, ArrowLeft, Settings, Check, UserMinus, ShieldAlert, Ban,
-  Edit, Globe, Shield, Tag
+  Edit, Globe, Shield, Tag, SlidersHorizontal, Clock, Flame, Calendar, TrendingUp, CheckSquare, Square, Search, RefreshCw, Sparkles
 } from "lucide-react";
 
 const ALL_TAGS = ["#yatırım", "#kripto", "#hisse", "#tasarruf", "#borç", "#bes", "#faiz", "#altın", "#bütçe"];
@@ -971,6 +971,7 @@ export function BlogFeed({
   mode = "feed",
   profileId,
   initialFeedType = "explore",
+  userInterests = [],
 }: {
   initialPosts: Post[];
   initialNextCursor: string | null;
@@ -980,6 +981,7 @@ export function BlogFeed({
   mode?: "feed" | "profile";
   profileId?: string;
   initialFeedType?: "explore" | "following" | "my-communities";
+  userInterests?: string[];
 }) {
   const router = useRouter();
   const [posts, setPosts] = useState<Post[]>(initialPosts);
@@ -992,6 +994,13 @@ export function BlogFeed({
   const [selectedCommunity, setSelectedCommunity] = useState<{ id: string, name: string } | null>(null);
   const [communityDetails, setCommunityDetails] = useState<any>(null);
   const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
+
+  // Filtre ve Sıralama Stateleri
+  const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
+  const [sortBy, setSortBy] = useState<"latest" | "oldest" | "most-liked" | "most-commented">("latest");
+  const [timeRange, setTimeRange] = useState<"all" | "24h" | "7d" | "30d">("all");
+  const [filterByInterests, setFilterByInterests] = useState(false);
+  const [tagSearch, setTagSearch] = useState("");
 
   const handleCommentAdded = (postId: string, comment: Comment) => {
     setPosts(prev => prev.map(p => {
@@ -1104,10 +1113,66 @@ export function BlogFeed({
   };
 
   const availableTags = [...new Set(posts.flatMap((p) => p.tags))];
+
+  const filteredTagsForBar = tagSearch 
+    ? availableTags.filter(t => t.toLowerCase().includes(tagSearch.toLowerCase().replace("#", "")))
+    : availableTags;
+
+  let activeFilterCount = 0;
+  if (sortBy !== "latest") activeFilterCount++;
+  if (timeRange !== "all") activeFilterCount++;
+  if (filterByInterests) activeFilterCount++;
+  if (activeTag) activeFilterCount++;
+  if (tagSearch) activeFilterCount++;
+
   const filtered = posts.filter((p) => {
     const matchesTag = activeTag ? p.tags.includes(activeTag) : true;
-    const matchesSearch = searchQuery ? p.content.toLowerCase().includes(searchQuery.toLowerCase()) || p.authorName.toLowerCase().includes(searchQuery.toLowerCase()) : true;
-    return matchesTag && matchesSearch;
+    const matchesSearch = searchQuery 
+      ? p.content.toLowerCase().includes(searchQuery.toLowerCase()) || p.authorName.toLowerCase().includes(searchQuery.toLowerCase()) 
+      : true;
+      
+    // Tag Search match
+    const matchesTagSearchInput = tagSearch
+      ? p.tags.some(t => t.toLowerCase().includes(tagSearch.toLowerCase().replace("#", ""))) || p.content.toLowerCase().includes(tagSearch.toLowerCase())
+      : true;
+
+    // Time Range match
+    let matchesTime = true;
+    if (timeRange !== "all") {
+      const now = Date.now();
+      const postTime = new Date(p.createdAt).getTime();
+      if (timeRange === "24h") matchesTime = (now - postTime) <= (24 * 60 * 60 * 1000);
+      else if (timeRange === "7d") matchesTime = (now - postTime) <= (7 * 24 * 60 * 60 * 1000);
+      else if (timeRange === "30d") matchesTime = (now - postTime) <= (30 * 24 * 60 * 60 * 1000);
+    }
+
+    // Filter by Interests match
+    let matchesInterests = true;
+    if (filterByInterests) {
+      const interests = (userInterests && userInterests.length > 0) ? userInterests : ["yatırım", "kripto", "borsa", "hisse", "altın"];
+      const normInterests = interests.map(i => i.toLowerCase().replace("#", ""));
+      matchesInterests = p.tags.some(t => normInterests.includes(t.toLowerCase().replace("#", "")));
+    }
+
+    return matchesTag && matchesSearch && matchesTagSearchInput && matchesTime && matchesInterests;
+  }).sort((a, b) => {
+    if (a.isAnnouncement !== b.isAnnouncement) {
+      return a.isAnnouncement ? -1 : 1;
+    }
+
+    if (sortBy === "latest") {
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    }
+    if (sortBy === "oldest") {
+      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+    }
+    if (sortBy === "most-liked") {
+      return b.likeCount - a.likeCount;
+    }
+    if (sortBy === "most-commented") {
+      return b.comments.length - a.comments.length;
+    }
+    return 0;
   });
 
   return (
@@ -1165,10 +1230,196 @@ export function BlogFeed({
 
       {(feedType !== "my-communities" || selectedCommunity) && (
         <>
-          <div className="relative">
-            <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-            <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder={selectedCommunity ? `${selectedCommunity.name} içinde ara...` : "Gönderi veya kullanıcı ara..."} className="w-full pl-9 pr-4 py-2.5 bg-card border border-border/20 rounded-xl text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all" />
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground opacity-60" />
+              <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder={selectedCommunity ? `${selectedCommunity.name} içinde ara...` : "Gönderi veya kullanıcı ara..."} className="w-full pl-10 pr-4 py-3 bg-card border border-border/20 rounded-[20px] text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 shadow-ambient-low transition-all" />
+              {searchQuery && (
+                <button onClick={() => setSearchQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground">
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+            <button 
+              onClick={() => setIsFilterPanelOpen(p => !p)}
+              className={cn(
+                "relative flex items-center gap-2 h-12 px-5 rounded-[20px] border font-bold text-xs transition-all duration-300 shadow-ambient-low shrink-0",
+                isFilterPanelOpen || activeFilterCount > 0
+                  ? "bg-primary text-primary-foreground border-primary shadow-primary/20 shadow-lg" 
+                  : "bg-card text-muted-foreground border-border/20 hover:border-primary/40 hover:text-foreground"
+              )}
+            >
+              <SlidersHorizontal className="h-4 w-4" />
+              <span className="hidden sm:inline">{isFilterPanelOpen ? "Gizle" : "Filtrele"}</span>
+              {activeFilterCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-[10px] font-black text-white shadow-md animate-scale-in">
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
           </div>
+
+          {isFilterPanelOpen && (
+            <div className="bg-card/95 backdrop-blur-xl border border-primary/20 rounded-[28px] p-6 shadow-2xl shadow-primary/10 space-y-6 animate-in fade-in slide-in-from-top-3 duration-300">
+              <div className="flex items-center justify-between border-b border-border/10 pb-4">
+                <div className="flex items-center gap-2">
+                  <SlidersHorizontal className="h-5 w-5 text-primary" />
+                  <h3 className="text-base font-black text-foreground">Gelişmiş Filtreleme ve Sıralama</h3>
+                </div>
+                {activeFilterCount > 0 && (
+                  <button 
+                    onClick={() => {
+                      setSortBy("latest");
+                      setTimeRange("all");
+                      setFilterByInterests(false);
+                      setActiveTag(null);
+                      setTagSearch("");
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 text-xs font-bold transition-all"
+                  >
+                    <RefreshCw className="h-3 w-3" /> Sıfırla
+                  </button>
+                )}
+              </div>
+
+              {/* 1. Sıralama Seçenekleri */}
+              <div className="space-y-2.5">
+                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                  <TrendingUp className="h-3.5 w-3.5 text-primary" /> Sıralama
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  <button 
+                    onClick={() => setSortBy("latest")}
+                    className={cn(
+                      "flex items-center justify-center gap-2 p-3 rounded-2xl border text-xs font-bold transition-all duration-200",
+                      sortBy === "latest" ? "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20 scale-[1.02]" : "bg-muted/30 border-border/20 text-muted-foreground hover:border-primary/40 hover:text-foreground"
+                    )}
+                  >
+                    <Clock className="h-4 w-4" /> En Yeniler
+                  </button>
+                  <button 
+                    onClick={() => setSortBy("most-liked")}
+                    className={cn(
+                      "flex items-center justify-center gap-2 p-3 rounded-2xl border text-xs font-bold transition-all duration-200",
+                      sortBy === "most-liked" ? "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20 scale-[1.02]" : "bg-muted/30 border-border/20 text-muted-foreground hover:border-primary/40 hover:text-foreground"
+                    )}
+                  >
+                    <Flame className="h-4 w-4" /> En Çok Beğenilen
+                  </button>
+                  <button 
+                    onClick={() => setSortBy("most-commented")}
+                    className={cn(
+                      "flex items-center justify-center gap-2 p-3 rounded-2xl border text-xs font-bold transition-all duration-200",
+                      sortBy === "most-commented" ? "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20 scale-[1.02]" : "bg-muted/30 border-border/20 text-muted-foreground hover:border-primary/40 hover:text-foreground"
+                    )}
+                  >
+                    <MessageCircle className="h-4 w-4" /> Çok Yorum Alan
+                  </button>
+                  <button 
+                    onClick={() => setSortBy("oldest")}
+                    className={cn(
+                      "flex items-center justify-center gap-2 p-3 rounded-2xl border text-xs font-bold transition-all duration-200",
+                      sortBy === "oldest" ? "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20 scale-[1.02]" : "bg-muted/30 border-border/20 text-muted-foreground hover:border-primary/40 hover:text-foreground"
+                    )}
+                  >
+                    <Calendar className="h-4 w-4" /> Önce Eskiler
+                  </button>
+                </div>
+              </div>
+
+              {/* 2. Zaman Aralığı */}
+              <div className="space-y-2.5">
+                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                  <Calendar className="h-3.5 w-3.5 text-primary" /> Zaman Aralığı
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  <button 
+                    onClick={() => setTimeRange("all")}
+                    className={cn(
+                      "py-2.5 px-3 rounded-2xl border text-xs font-bold transition-all text-center",
+                      timeRange === "all" ? "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20 scale-[1.02]" : "bg-muted/30 border-border/20 text-muted-foreground hover:border-primary/40"
+                    )}
+                  >
+                    Tüm Zamanlar
+                  </button>
+                  <button 
+                    onClick={() => setTimeRange("24h")}
+                    className={cn(
+                      "py-2.5 px-3 rounded-2xl border text-xs font-bold transition-all text-center",
+                      timeRange === "24h" ? "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20 scale-[1.02]" : "bg-muted/30 border-border/20 text-muted-foreground hover:border-primary/40"
+                    )}
+                  >
+                    Son 24 Saat
+                  </button>
+                  <button 
+                    onClick={() => setTimeRange("7d")}
+                    className={cn(
+                      "py-2.5 px-3 rounded-2xl border text-xs font-bold transition-all text-center",
+                      timeRange === "7d" ? "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20 scale-[1.02]" : "bg-muted/30 border-border/20 text-muted-foreground hover:border-primary/40"
+                    )}
+                  >
+                    Son 7 Gün
+                  </button>
+                  <button 
+                    onClick={() => setTimeRange("30d")}
+                    className={cn(
+                      "py-2.5 px-3 rounded-2xl border text-xs font-bold transition-all text-center",
+                      timeRange === "30d" ? "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20 scale-[1.02]" : "bg-muted/30 border-border/20 text-muted-foreground hover:border-primary/40"
+                    )}
+                  >
+                    Son 30 Gün
+                  </button>
+                </div>
+              </div>
+
+              {/* 3. İlgi Alanları ve Hızlı Arama */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-border/10">
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                    <Tag className="h-3.5 w-3.5 text-primary" /> İlgi Alanlarım
+                  </label>
+                  <button 
+                    onClick={() => setFilterByInterests(p => !p)}
+                    className={cn(
+                      "w-full flex items-center justify-between p-3.5 rounded-2xl border transition-all duration-200 text-left",
+                      filterByInterests ? "bg-primary/10 border-primary shadow-sm" : "bg-muted/20 border-border/20 hover:border-border/40"
+                    )}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={cn("p-2.5 rounded-xl", filterByInterests ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}>
+                        <Sparkles className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-black text-foreground">Sadece İlgi Alanlarımı Göster</p>
+                        <p className="text-[11px] text-muted-foreground opacity-80 mt-0.5">Senin için en uygun konulara göre filtrelenir.</p>
+                      </div>
+                    </div>
+                    {filterByInterests ? <CheckSquare className="h-5 w-5 text-primary ml-2 shrink-0" /> : <Square className="h-5 w-5 text-muted-foreground ml-2 shrink-0" />}
+                  </button>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                    <Search className="h-3.5 w-3.5 text-primary" /> Etiket Ara veya Yaz
+                  </label>
+                  <div className="relative">
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground opacity-50" />
+                    <input 
+                      value={tagSearch} 
+                      onChange={(e) => setTagSearch(e.target.value)} 
+                      placeholder="Örn: kripto, borsa, altın..." 
+                      className="w-full pl-10 pr-8 py-3 bg-muted/30 border border-border/20 rounded-2xl text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+                    />
+                    {tagSearch && (
+                      <button onClick={() => setTagSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {isBanned ? (
             <div className="bg-rose-500/10 border border-rose-500/20 rounded-[24px] p-6 text-center animate-in fade-in duration-500">
@@ -1187,7 +1438,7 @@ export function BlogFeed({
             />
           )}
           
-          {availableTags.length > 0 && <TagFilterBar availableTags={availableTags} activeTag={activeTag} onSelect={setActiveTag} />}
+          {filteredTagsForBar.length > 0 && <TagFilterBar availableTags={filteredTagsForBar} activeTag={activeTag} onSelect={setActiveTag} />}
 
           {filtered.length === 0 && !isLoadingMore ? (
             <div className="text-center py-16 bg-card border border-dashed border-border/30 rounded-[24px]">
