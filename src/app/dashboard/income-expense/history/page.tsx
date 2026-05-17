@@ -96,7 +96,7 @@ export default async function IncomeExpenseHistoryPage() {
   });
 
   const recentTransactions = [
-    ...normalizedIncomes.slice(0, 10).map((inc) => ({
+    ...normalizedIncomes.map((inc) => ({
       id: inc.id,
       type: "income" as const,
       category: inc.type,
@@ -107,8 +107,10 @@ export default async function IncomeExpenseHistoryPage() {
       originalAmount: inc.originalAmount || undefined,
       fxRate: inc.fxRate || undefined,
       tryAmount: inc.amount,
+      isRecurring: inc.isRecurring,
+      dueDate: inc.dueDate || undefined,
     })),
-    ...normalizedExpenses.slice(0, 10).map((exp) => ({
+    ...normalizedExpenses.map((exp) => ({
       id: exp.id,
       type: "expense" as const,
       category: exp.type,
@@ -119,13 +121,14 @@ export default async function IncomeExpenseHistoryPage() {
       originalAmount: exp.originalAmount || undefined,
       fxRate: exp.fxRate || undefined,
       tryAmount: exp.amount,
+      isRecurring: exp.isRecurring,
+      dueDate: exp.dueDate || undefined,
     })),
   ]
     .sort(
       (a, b) =>
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    )
-    .slice(0, 10);
+    );
 
   const maxMonthly = Math.max(...monthlyData.map((d) => Math.max(d.income, d.expense)), 1);
 
