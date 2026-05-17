@@ -68,7 +68,7 @@ export function InvestmentProjection({ currentValue, investments = [], fixedAsse
   // 1. If user has no data, show standard empty message
   if (!hasData) {
     return (
-      <Card className="bg-card border-border/20 shadow-ambient-medium rounded-[32px] overflow-hidden flex flex-col h-full min-h-[400px]">
+      <Card className="bg-card border-border/20 shadow-ambient-medium rounded-[32px] overflow-hidden flex flex-col h-full min-h-[400px] pt-0">
         <CardHeader className="bg-muted/30 border-b border-border/10 h-20 !flex flex-row items-center px-6 py-0">
           <CardTitle className="text-xl font-heading font-bold text-primary flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-accent" /> AI Gelecek Tahmini
@@ -99,7 +99,7 @@ export function InvestmentProjection({ currentValue, investments = [], fixedAsse
   // 2. Loading state when computing projection
   if (loading) {
     return (
-      <Card className="bg-card border-border/20 shadow-ambient-medium rounded-[32px] overflow-hidden flex flex-col h-full min-h-[400px]">
+      <Card className="bg-card border-border/20 shadow-ambient-medium rounded-[32px] overflow-hidden flex flex-col h-full min-h-[400px] pt-0">
         <CardHeader className="bg-muted/30 border-b border-border/10 h-20 !flex flex-row items-center px-6 py-0">
           <CardTitle className="text-xl font-heading font-bold text-primary flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-accent" /> AI Gelecek Tahmini
@@ -121,7 +121,7 @@ export function InvestmentProjection({ currentValue, investments = [], fixedAsse
   // 3. Not Loaded Yet state (CTA to trigger calculation)
   if (!hasLoaded) {
     return (
-      <Card className="bg-card border-border/20 shadow-ambient-medium rounded-[32px] overflow-hidden flex flex-col h-full min-h-[400px] justify-between">
+      <Card className="bg-card border-border/20 shadow-ambient-medium rounded-[32px] overflow-hidden flex flex-col h-full min-h-[400px] justify-between pt-0">
         <CardHeader className="bg-muted/30 border-b border-border/10 h-20 !flex flex-row items-center px-6 py-0">
           <CardTitle className="text-xl font-heading font-bold text-primary flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-accent animate-pulse" /> AI Gelecek Tahmini
@@ -168,7 +168,7 @@ export function InvestmentProjection({ currentValue, investments = [], fixedAsse
   const growthPercent = ((monthlyGrowthRate - 1) * 100).toFixed(1);
 
   return (
-    <Card className="bg-card border-border/20 shadow-ambient-medium rounded-[32px] overflow-hidden flex flex-col h-full">
+    <Card className="bg-card border-border/20 shadow-ambient-medium rounded-[32px] overflow-hidden flex flex-col h-full pt-0">
       <CardHeader className="bg-muted/30 border-b border-border/10 h-20 !flex flex-row items-center px-6 py-0">
         <CardTitle className="text-xl font-heading font-bold text-primary flex items-center justify-between w-full">
           <div className="flex items-center gap-2">

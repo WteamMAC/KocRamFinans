@@ -192,10 +192,6 @@ export default function SlidingAuth() {
                       />
                     </div>
                   </div>
-<<<<<<< HEAD
-=======
-
->>>>>>> 0ad829e114a2b0c98ec41d8ed9f28e72895252c6
                 </motion.div>
               )}
             </AnimatePresence>
