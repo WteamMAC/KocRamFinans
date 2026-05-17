@@ -100,21 +100,9 @@ export default function SlidingAuth() {
                         formButtonPrimary: "h-12 rounded-xl text-base font-bold bg-gradient-to-r from-[#f18d02] to-[#8C5000] hover:brightness-110 active:scale-95 transition-all text-white shadow-lg shadow-[#8C5000]/20 disabled:opacity-70 disabled:brightness-90",
                         formFieldInput: "h-12 rounded-xl bg-background border-border text-foreground focus:ring-2 focus:ring-[#f18d02]/20",
                         formFieldLabel: "text-foreground",
-                        footer: "hidden",
                       }
                     }}
                   />
-                  <div className="mt-8 text-center">
-                    <p className="text-muted-foreground font-medium">
-                      Henüz hesabınız yok mu?{" "}
-                      <button 
-                        onClick={toggleAuth}
-                        className="text-primary font-bold hover:underline"
-                      >
-                        Kayıt Ol
-                      </button>
-                    </p>
-                  </div>
                 </motion.div>
               ) : (
                 <motion.div 
@@ -203,23 +191,10 @@ export default function SlidingAuth() {
                             formButtonPrimary: "h-12 rounded-xl text-base font-bold bg-gradient-to-r from-[#f18d02] to-[#8C5000] hover:brightness-110 active:scale-95 transition-all text-white shadow-lg shadow-[#8C5000]/20 disabled:opacity-70 disabled:brightness-90",
                             formFieldInput: "h-12 rounded-xl bg-background border-border text-foreground focus:ring-2 focus:ring-[#f18d02]/20",
                             formFieldLabel: "text-foreground",
-                            footer: "hidden",
                           }
                         }}
                       />
                     </div>
-                  </div>
-
-                  <div className="mt-8 text-center">
-                    <p className="text-muted-foreground font-medium">
-                      Zaten hesabınız var mı?{" "}
-                      <button 
-                        onClick={toggleAuth}
-                        className="text-primary font-bold hover:underline"
-                      >
-                        Giriş Yap
-                      </button>
-                    </p>
                   </div>
                 </motion.div>
               )}
