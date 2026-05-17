@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import {
   Trash2, Plus, Shield, Landmark,
   ChevronDown, RefreshCw, Sparkles,
-  Search, CheckCircle2
+  Search, CheckCircle2, X
 } from "lucide-react";
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from "recharts";
 import { cn } from "@/lib/utils";
@@ -82,6 +83,10 @@ export function BesFaizDetail({ type, investments, livePrices }: BesFaizDetailPr
   const [besSearchQuery, setBesSearchQuery] = useState("");
   const [besSearchResults, setBesSearchResults] = useState<any[]>([]);
   const [showBesSearch, setShowBesSearch] = useState(false);
+
+  const [deleteModalState, setDeleteModalState] = useState<{ isOpen: boolean; assetId: string | null }>({ isOpen: false, assetId: null });
+  const [contributionModalState, setContributionModalState] = useState<{ isOpen: boolean; assetId: string | null; symbol: string }>({ isOpen: false, assetId: null, symbol: "" });
+  const [contribAmount, setContribAmount] = useState<number | "">("");
 
   const fundReturns = useMemo(() => {
     return {
@@ -257,12 +262,15 @@ export function BesFaizDetail({ type, investments, livePrices }: BesFaizDetailPr
   const netGain = finalValue - totalPrincipal;
 
   async function handleDelete(id: string) {
-    if (!confirm("Bu kaydı silmek istediğinizden emin misiniz?")) return;
+    setLoading(true);
     try {
       await deleteAsset(id);
+      setDeleteModalState({ isOpen: false, assetId: null });
       router.refresh();
     } catch (err) {
       console.error(err);
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -435,181 +443,194 @@ export function BesFaizDetail({ type, investments, livePrices }: BesFaizDetailPr
         </Card>
       </div>
 
-      {/* Add Form */}
-      {isAdding && (
-        <Card className="border-border/20 shadow-ambient-medium rounded-2xl p-6 animate-in slide-in-from-top-4 duration-300">
-          <CardHeader className="p-0 mb-6">
-            <CardTitle className="text-lg font-heading">
-              {isBES ? "Yeni BES Hesabı" : "Yeni Vadeli Hesap"}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-0 grid grid-cols-1 md:grid-cols-2 gap-5">
-            <div className="space-y-2">
-              <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                {isBES ? "Şirket / Plan Adı" : "Banka / Hesap Adı"}
-              </Label>
-              <Input
-                placeholder={isBES ? "Örn: Agesa, Anadolu Hayat" : "Örn: Garanti TL Vadeli"}
-                value={formData.symbol}
-                onChange={e => setFormData(p => ({ ...p, symbol: e.target.value }))}
-                className="h-12 rounded-xl bg-muted/50 border-border/30"
-              />
-            </div>
-            {isBES && (
-              <>
+      {/* Add Form Modal */}
+      {isAdding && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 md:p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="relative w-full max-w-2xl max-h-[95vh] overflow-y-auto no-scrollbar">
+            <Card className="border-border/20 shadow-ambient-medium rounded-2xl p-6 animate-in zoom-in-95 duration-300 bg-card">
+              <CardHeader className="p-0 mb-6 flex flex-row items-center justify-between">
+                <CardTitle className="text-lg font-heading text-primary">
+                  {isBES ? "Yeni BES Hesabı" : "Yeni Vadeli Hesap"}
+                </CardTitle>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsAdding(false)}
+                  className="h-8 w-8 rounded-full bg-muted/60 hover:bg-rose-50 hover:text-rose-500 text-muted-foreground transition-all shrink-0"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </CardHeader>
+              <CardContent className="p-0 grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div className="space-y-2">
                   <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                    Fon Sınıfı (Varsayılan Getiri Grubu)
+                    {isBES ? "Şirket / Plan Adı" : "Banka / Hesap Adı"}
                   </Label>
-                  <select
-                    value={formData.fundType}
-                    onChange={e => setFormData(p => ({ ...p, fundType: e.target.value }))}
-                    className="w-full h-12 rounded-xl bg-muted/50 border border-border/30 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer font-medium"
-                  >
-                    {BES_FUND_TYPES.map(ft => (
-                      <option key={ft.id} value={ft.id}>{ft.icon} {ft.name}</option>
-                    ))}
-                  </select>
+                  <Input
+                    placeholder={isBES ? "Örn: Agesa, Anadolu Hayat" : "Örn: Garanti TL Vadeli"}
+                    value={formData.symbol}
+                    onChange={e => setFormData(p => ({ ...p, symbol: e.target.value }))}
+                    className="h-12 rounded-xl bg-muted/50 border-border/30"
+                  />
                 </div>
+                {isBES && (
+                  <>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                        Fon Sınıfı (Varsayılan Getiri Grubu)
+                      </Label>
+                      <select
+                        value={formData.fundType}
+                        onChange={e => setFormData(p => ({ ...p, fundType: e.target.value }))}
+                        className="w-full h-12 rounded-xl bg-muted/50 border border-border/30 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer font-medium"
+                      >
+                        {BES_FUND_TYPES.map(ft => (
+                          <option key={ft.id} value={ft.id}>{ft.icon} {ft.name}</option>
+                        ))}
+                      </select>
+                    </div>
 
-                {/* İnternetten Canlı Özel Fon Arama (TEFAS/BIST) */}
-                <div className="space-y-2 md:col-span-2 relative">
-                  <div className="flex justify-between items-center px-1">
-                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                      İnternetten Canlı Özel Fon Seçimi (TEFAS / BIST)
+                    {/* İnternetten Canlı Özel Fon Arama (TEFAS/BIST) */}
+                    <div className="space-y-2 md:col-span-2 relative">
+                      <div className="flex justify-between items-center px-1">
+                        <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                          İnternetten Canlı Özel Fon Seçimi (TEFAS / BIST)
+                        </Label>
+                        <span className="text-[9px] font-bold text-muted-foreground bg-muted px-2 py-0.5 rounded-md uppercase tracking-wider">Opsiyonel</span>
+                      </div>
+                      
+                      <div className="relative">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-primary opacity-50" />
+                        <Input
+                          placeholder="Örn: AEG, ALR, TCD, MAC, AFT..."
+                          value={besSearchQuery}
+                          onChange={(e) => setBesSearchQuery(e.target.value)}
+                          className="pl-12 bg-muted/50 border-border/30 h-12 rounded-xl focus:ring-primary text-sm font-semibold"
+                        />
+                      </div>
+
+                      {/* Arama Sonuçları */}
+                      {showBesSearch && besSearchResults.length > 0 && (
+                        <div className="absolute z-[999] w-full bg-card/95 backdrop-blur-2xl border border-primary/20 shadow-2xl rounded-2xl overflow-hidden mt-1 max-h-48 overflow-y-auto">
+                          {besSearchResults.map((result, idx) => (
+                            <div
+                              key={idx}
+                              className="p-4 hover:bg-primary/5 cursor-pointer border-b border-border/10 last:border-0 transition-colors flex items-center justify-between group text-sm font-semibold"
+                              onClick={() => {
+                                setFormData(p => ({ ...p, fundSymbol: result.symbol }));
+                                setBesSearchQuery(`${result.symbol} - ${result.shortname || result.symbol}`);
+                                setShowBesSearch(false);
+                              }}
+                            >
+                              <div>
+                                <div className="text-xs font-bold text-primary">{result.symbol}</div>
+                                <div className="text-[10px] text-muted-foreground truncate max-w-[320px]">
+                                  {result.shortname || result.symbol}
+                                </div>
+                              </div>
+                              <span className="text-[9px] text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded-full font-bold">
+                                Canlı Fiyat Bağlantısı
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {formData.fundSymbol && (
+                        <div className="flex items-center gap-2 text-xs font-bold text-emerald-500 bg-emerald-500/10 p-3 rounded-2xl border border-emerald-500/20 mt-2 animate-in fade-in duration-200">
+                          <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
+                          <span>Fon Canlı Bağlandı: {formData.fundSymbol}</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setFormData(p => ({ ...p, fundSymbol: "" }));
+                              setBesSearchQuery("");
+                            }}
+                            className="ml-auto hover:text-rose-500 font-extrabold text-[10px] uppercase tracking-wider bg-muted px-2 py-1 rounded-md transition-colors"
+                          >
+                            Bağlantıyı Kaldır
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                    {isBES ? "Güncel Birikiminiz (₺)" : "Güncel Birikiminiz (₺)"}
+                  </Label>
+                  <Input
+                    type="number"
+                    placeholder="0"
+                    value={formData.quantity || ""}
+                    onChange={e => setFormData(p => ({ ...p, quantity: Number(e.target.value) }))}
+                    className="h-12 rounded-xl bg-muted/50 border-border/30"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                    {isBES ? "Devlet Katkı Payı (%)" : "Faiz Oranı (% Yıllık)"}
+                  </Label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    placeholder={isBES ? "30" : "45"}
+                    value={formData.purchasePrice || ""}
+                    onChange={e => setFormData(p => ({ ...p, purchasePrice: Number(e.target.value) }))}
+                    className="h-12 rounded-xl bg-muted/50 border-border/30"
+                  />
+                </div>
+                {isBES && (
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-bold text-primary uppercase tracking-widest">
+                      Aylık Yatırılacak Düzenli Tutar (₺)
                     </Label>
-                    <span className="text-[9px] font-bold text-muted-foreground bg-muted px-2 py-0.5 rounded-md uppercase tracking-wider">Opsiyonel</span>
-                  </div>
-                  
-                  <div className="relative">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-primary opacity-50" />
                     <Input
-                      placeholder="Örn: AEG, ALR, TCD, MAC, AFT..."
-                      value={besSearchQuery}
-                      onChange={(e) => setBesSearchQuery(e.target.value)}
-                      className="pl-12 bg-muted/50 border-border/30 h-12 rounded-xl focus:ring-primary text-sm font-semibold"
+                      type="number"
+                      required
+                      placeholder="Örn: 2500"
+                      value={formData.monthlyContribution || ""}
+                      onChange={e => setFormData(p => ({ ...p, monthlyContribution: Number(e.target.value) }))}
+                      className="h-12 rounded-xl bg-muted/50 border-primary/20"
                     />
                   </div>
-
-                  {/* Arama Sonuçları */}
-                  {showBesSearch && besSearchResults.length > 0 && (
-                    <div className="absolute z-[999] w-full bg-card/95 backdrop-blur-2xl border border-primary/20 shadow-2xl rounded-2xl overflow-hidden mt-1 max-h-48 overflow-y-auto">
-                      {besSearchResults.map((result, idx) => (
-                        <div
-                          key={idx}
-                          className="p-4 hover:bg-primary/5 cursor-pointer border-b border-border/10 last:border-0 transition-colors flex items-center justify-between group text-sm font-semibold"
-                          onClick={() => {
-                            setFormData(p => ({ ...p, fundSymbol: result.symbol }));
-                            setBesSearchQuery(`${result.symbol} - ${result.shortname || result.symbol}`);
-                            setShowBesSearch(false);
-                          }}
-                        >
-                          <div>
-                            <div className="text-xs font-bold text-primary">{result.symbol}</div>
-                            <div className="text-[10px] text-muted-foreground truncate max-w-[320px]">
-                              {result.shortname || result.symbol}
-                            </div>
-                          </div>
-                          <span className="text-[9px] text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded-full font-bold">
-                            Canlı Fiyat Bağlantısı
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {formData.fundSymbol && (
-                    <div className="flex items-center gap-2 text-xs font-bold text-emerald-500 bg-emerald-500/10 p-3 rounded-2xl border border-emerald-500/20 mt-2 animate-in fade-in duration-200">
-                      <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
-                      <span>Fon Canlı Bağlandı: {formData.fundSymbol}</span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setFormData(p => ({ ...p, fundSymbol: "" }));
-                          setBesSearchQuery("");
-                        }}
-                        className="ml-auto hover:text-rose-500 font-extrabold text-[10px] uppercase tracking-wider bg-muted px-2 py-1 rounded-md transition-colors"
-                      >
-                        Bağlantıyı Kaldır
-                      </button>
-                    </div>
-                  )}
+                )}
+                {!isBES && (
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-bold text-primary uppercase tracking-widest">
+                      Vade Süresi (Gün)
+                    </Label>
+                    <Input
+                      type="number"
+                      placeholder="32"
+                      value={formData.maturityPeriod || ""}
+                      onChange={e => setFormData(p => ({ ...p, maturityPeriod: Number(e.target.value) }))}
+                      className="h-12 rounded-xl bg-muted/50 border-primary/20"
+                    />
+                  </div>
+                )}
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                    Açıklama (Opsiyonel)
+                  </Label>
+                  <Input
+                    placeholder={isBES ? "Örn: Aylık katkı payı" : "Örn: 3 aylık vadeli"}
+                    value={formData.description}
+                    onChange={e => setFormData(p => ({ ...p, description: e.target.value }))}
+                    className="h-12 rounded-xl bg-muted/50 border-border/30"
+                  />
                 </div>
-              </>
-            )}
-            <div className="space-y-2">
-              <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                {isBES ? "Güncel Birikiminiz (₺)" : "Güncel Birikiminiz (₺)"}
-              </Label>
-              <Input
-                type="number"
-                placeholder="0"
-                value={formData.quantity || ""}
-                onChange={e => setFormData(p => ({ ...p, quantity: Number(e.target.value) }))}
-                className="h-12 rounded-xl bg-muted/50 border-border/30"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                {isBES ? "Devlet Katkı Payı (%)" : "Faiz Oranı (% Yıllık)"}
-              </Label>
-              <Input
-                type="number"
-                step="0.1"
-                placeholder={isBES ? "30" : "45"}
-                value={formData.purchasePrice || ""}
-                onChange={e => setFormData(p => ({ ...p, purchasePrice: Number(e.target.value) }))}
-                className="h-12 rounded-xl bg-muted/50 border-border/30"
-              />
-            </div>
-            {isBES && (
-              <div className="space-y-2">
-                <Label className="text-[10px] font-bold text-primary uppercase tracking-widest">
-                  Aylık Yatırılacak Düzenli Tutar (₺)
-                </Label>
-                <Input
-                  type="number"
-                  required
-                  placeholder="Örn: 2500"
-                  value={formData.monthlyContribution || ""}
-                  onChange={e => setFormData(p => ({ ...p, monthlyContribution: Number(e.target.value) }))}
-                  className="h-12 rounded-xl bg-primary/5 border-primary/20 focus:ring-primary font-bold"
-                />
-              </div>
-            )}
-            {!isBES && (
-              <div className="space-y-2">
-                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                  Vade Süresi (Gün)
-                </Label>
-                <Input
-                  type="number"
-                  placeholder="Örn: 32"
-                  value={formData.maturityPeriod || ""}
-                  onChange={e => setFormData(p => ({ ...p, maturityPeriod: Number(e.target.value) }))}
-                  className="h-12 rounded-xl bg-muted/50 border-border/30"
-                />
-              </div>
-            )}
-            <div className="space-y-2">
-              <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                Açıklama (Opsiyonel)
-              </Label>
-              <Input
-                placeholder={isBES ? "Örn: Aylık katkı payı" : "Örn: 3 aylık vadeli"}
-                value={formData.description}
-                onChange={e => setFormData(p => ({ ...p, description: e.target.value }))}
-                className="h-12 rounded-xl bg-muted/50 border-border/30"
-              />
-            </div>
-            <div className="md:col-span-2 flex gap-3 justify-end pt-2">
-              <Button variant="outline" onClick={() => setIsAdding(false)} className="rounded-xl">İptal</Button>
-              <Button onClick={handleAdd} disabled={loading} className="rounded-xl bg-primary">
-                {loading ? "Kaydediliyor..." : "Kaydet"}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+                <div className="md:col-span-2 flex gap-3 justify-end pt-2">
+                  <Button variant="outline" onClick={() => setIsAdding(false)} className="rounded-xl">İptal</Button>
+                  <Button onClick={handleAdd} disabled={loading} className="rounded-xl bg-primary">
+                    {loading ? "Kaydediliyor..." : "Kaydet"}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>,
+        document.body
       )}
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
@@ -759,39 +780,22 @@ export function BesFaizDetail({ type, investments, livePrices }: BesFaizDetailPr
                   </div>
                   {isExp && (
                     <div className="border-t border-border/10 bg-muted/30 p-4 space-y-4 animate-in slide-in-from-top-2 duration-300">
-                      {/* Katkı Payı Ekleme Alanı */}
-                      <div className={cn("rounded-2xl p-4 border mb-2", isBES ? "bg-primary/5 border-primary/10" : "bg-yellow-500/5 border-yellow-500/10")}>
-                        <p className={cn("text-[10px] font-bold uppercase tracking-widest mb-3 flex items-center gap-2", isBES ? "text-primary" : "text-yellow-600")}>
-                          <Plus className="h-3 w-3" /> {isBES ? "Aylık Katkı Payı / Ödeme Ekle" : "Vadeye Para Ekle"}
-                        </p>
-                        <div className="flex gap-2">
-                          <div className="relative flex-1">
-                            <span className={cn("absolute left-4 top-1/2 -translate-y-1/2 font-bold", isBES ? "text-primary/40" : "text-yellow-600/40")}>₺</span>
-                            <Input
-                              type="number"
-                              placeholder={isBES ? "Örn: 2500" : "Eklenecek tutar"}
-                              className={cn("h-11 pl-8 rounded-xl bg-card font-bold text-sm", isBES ? "border-primary/20 focus:ring-primary" : "border-yellow-500/20 focus:ring-yellow-500")}
-                              id={`contrib-${g.symbol}`}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") {
-                                  const val = (document.getElementById(`contrib-${g.symbol}`) as HTMLInputElement).value;
-                                  if (val) { handleAddContribution(g.items[0].id, Number(val)); (e.target as HTMLInputElement).value = ""; }
-                                }
-                              }}
-                            />
-                          </div>
-                          <Button
-                            onClick={() => {
-                              const val = (document.getElementById(`contrib-${g.symbol}`) as HTMLInputElement).value;
-                              if (val) { handleAddContribution(g.items[0].id, Number(val)); (document.getElementById(`contrib-${g.symbol}`) as HTMLInputElement).value = ""; }
-                            }}
-                            disabled={loading}
-                            className={cn("h-11 rounded-xl px-6 font-bold shadow-sm transition-all", isBES ? "bg-primary hover:shadow-primary/20" : "bg-yellow-500 text-yellow-950 hover:bg-yellow-600 hover:shadow-yellow-500/20")}
-                          >
-                            {loading ? "..." : "Ekle"}
-                          </Button>
-                        </div>
-                      </div>
+                      {/* Katkı Payı Ekleme Düğmesi */}
+                      <Button
+                        onClick={() => {
+                          setContribAmount("");
+                          setContributionModalState({ isOpen: true, assetId: g.items[0].id, symbol: g.symbol });
+                        }}
+                        className={cn(
+                          "w-full h-12 rounded-xl font-bold transition-all flex items-center justify-center gap-2 mb-2 shadow-sm",
+                          isBES 
+                            ? "bg-primary/10 text-primary border border-primary/20 hover:bg-primary/25" 
+                            : "bg-yellow-500/10 text-yellow-600 border border-yellow-500/20 hover:bg-yellow-500/25"
+                        )}
+                      >
+                        <Plus className="h-4 w-4" />
+                        {isBES ? "Aylık Katkı Payı / Ödeme Ekle" : "Vadeye Para Ekle"}
+                      </Button>
 
                       <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">İşlem Geçmişi / Kayıtlar</p>
                       {g.items.map(item => {
@@ -809,7 +813,7 @@ export function BesFaizDetail({ type, investments, livePrices }: BesFaizDetailPr
                             <Button
                               size="icon"
                               variant="ghost"
-                              onClick={e => { e.stopPropagation(); handleDelete(item.id); }}
+                              onClick={e => { e.stopPropagation(); setDeleteModalState({ isOpen: true, assetId: item.id }); }}
                               className="h-8 w-8 rounded-full text-rose-500 hover:bg-rose-500/10 hover:text-rose-500 opacity-0 group-hover/item:opacity-100 transition-all"
                             >
                               <Trash2 className="h-4 w-4" />
@@ -998,6 +1002,130 @@ export function BesFaizDetail({ type, investments, livePrices }: BesFaizDetailPr
           )}
         </div>
       </div>
+      
+      {/* Silme Onay Modalı (Custom Popup) */}
+      {deleteModalState.isOpen && deleteModalState.assetId && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-card border border-border/20 shadow-2xl rounded-[32px] w-full max-w-md p-6 animate-in zoom-in-95 duration-300 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-rose-500/10 to-transparent rounded-full pointer-events-none" />
+            
+            <div className="flex flex-col items-center text-center space-y-4">
+              <div className="w-14 h-14 bg-rose-500/10 rounded-full flex items-center justify-center text-rose-500 border border-rose-500/20 shadow-inner">
+                <Trash2 className="h-6 w-6" />
+              </div>
+              
+              <div className="space-y-2">
+                <h3 className="text-lg font-heading font-black text-primary">
+                  Yatırım Kaydını Sil
+                </h3>
+                <p className="text-sm text-muted-foreground font-medium px-2">
+                  Bu yatırım kaydını kalıcı olarak silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-8 justify-end">
+              <Button
+                variant="outline"
+                onClick={() => setDeleteModalState({ isOpen: false, assetId: null })}
+                className="rounded-2xl flex-1 h-[48px] font-semibold border-border/30 hover:bg-muted"
+                disabled={loading}
+              >
+                Vazgeç
+              </Button>
+              <Button
+                onClick={() => {
+                  if (deleteModalState.assetId) {
+                    handleDelete(deleteModalState.assetId);
+                  }
+                }}
+                className="rounded-2xl flex-1 h-[48px] font-semibold bg-rose-500 hover:bg-rose-600 text-white shadow-lg shadow-rose-500/20"
+                disabled={loading}
+              >
+                {loading ? "Siliniyor..." : "Evet, Sil"}
+              </Button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Katkı Payı / Para Ekleme Modalı (Custom Popup) */}
+      {contributionModalState.isOpen && contributionModalState.assetId && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-card border border-border/20 shadow-2xl rounded-[32px] w-full max-w-md p-6 animate-in zoom-in-95 duration-300 relative overflow-hidden">
+            <CardHeader className="p-0 mb-6 flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="text-lg font-heading text-primary">
+                  {isBES ? "Aylık Katkı Payı / Ödeme Ekle" : "Vadeli Hesaba Para Ekle"}
+                </CardTitle>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Hesap: <span className="font-bold text-primary">{contributionModalState.symbol}</span>
+                </p>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setContributionModalState({ isOpen: false, assetId: null, symbol: "" })}
+                className="h-8 w-8 rounded-full bg-muted/60 hover:bg-rose-50 hover:text-rose-500 text-muted-foreground transition-all shrink-0"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </CardHeader>
+            
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">
+                  {isBES ? "Ödeme Tutarı (₺)" : "Eklenecek Tutar (₺)"}
+                </Label>
+                <div className="relative">
+                  <span className={cn("absolute left-4 top-1/2 -translate-y-1/2 font-black text-sm", isBES ? "text-primary/40" : "text-yellow-600/40")}>₺</span>
+                  <Input
+                    type="number"
+                    placeholder={isBES ? "Örn: 2500" : "Eklenecek tutar"}
+                    value={contribAmount}
+                    onChange={e => setContribAmount(e.target.value ? Number(e.target.value) : "")}
+                    className="h-12 pl-8 rounded-xl bg-muted/50 border-border/30 font-bold text-sm"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && contribAmount && contribAmount > 0) {
+                        handleAddContribution(contributionModalState.assetId!, Number(contribAmount));
+                        setContributionModalState({ isOpen: false, assetId: null, symbol: "" });
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-8 justify-end">
+              <Button
+                variant="outline"
+                onClick={() => setContributionModalState({ isOpen: false, assetId: null, symbol: "" })}
+                className="rounded-2xl flex-1 h-[48px] font-semibold border-border/30 hover:bg-muted"
+                disabled={loading}
+              >
+                Vazgeç
+              </Button>
+              <Button
+                onClick={() => {
+                  if (contribAmount && contribAmount > 0) {
+                    handleAddContribution(contributionModalState.assetId!, Number(contribAmount));
+                    setContributionModalState({ isOpen: false, assetId: null, symbol: "" });
+                  }
+                }}
+                className={cn(
+                  "rounded-2xl flex-1 h-[48px] font-semibold text-white shadow-lg",
+                  isBES ? "bg-primary hover:bg-primary/95 shadow-primary/20" : "bg-yellow-500 hover:bg-yellow-600 text-yellow-950 shadow-yellow-500/20"
+                )}
+                disabled={loading || !contribAmount || contribAmount <= 0}
+              >
+                {loading ? "Kaydediliyor..." : "Para Ekle"}
+              </Button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }
