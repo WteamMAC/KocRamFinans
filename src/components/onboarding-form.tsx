@@ -156,7 +156,7 @@ const REGIONS: { id: string; label: string; emoji: string; countries: { code: st
 
 const INCOME_TYPES = ["Maaş", "Kira Geliri", "Ek İş / Freelance", "Yatırım Temettü", "Diğer"];
 const EXPENSE_TYPES = ["Ev Kirası / İpotek", "Faturalar (Elektrik, Su, Doğalgaz)", "Mutfak & Market", "Ulaşım / Akaryakıt", "Eğitim / Sağlık", "Diğer"];
-const DEBT_TYPES = ["Kredi Kartı", "İhtiyaç Kredisi", "Konut Kredisi", "Taşıt Kredisi", "Elden Borç", "Vergi Borcu", "Diğer"];
+const DEBT_TYPES = ["Kredi Kartı", "Banka Kredisi", "Şahsi Borç", "Elden Taksit", "Diğer"];
 const INVESTMENT_TYPES = ["BIST", "NASDAQ", "CRYPTO", "GOLD", "BES", "FAIZ", "CASH", "Diğer"];
 
 const ASSET_CATEGORIES = [
@@ -255,11 +255,9 @@ export function OnboardingForm() {
   const [modalDebtData, setModalDebtData] = useState({
     type: "Kredi Kartı",
     amount: "",
-    remainingInstallments: "1",
+    remainingInstallments: "",
     interestRate: "",
     paymentDay: "15",
-    installmentAmount: "",
-    principalAmount: "",
     dueDate: "",
     description: "",
     currency: "TRY"
@@ -406,11 +404,9 @@ export function OnboardingForm() {
     setModalDebtData({
       type: "Kredi Kartı",
       amount: "",
-      remainingInstallments: "1",
+      remainingInstallments: "",
       interestRate: "",
       paymentDay: "15",
-      installmentAmount: "",
-      principalAmount: "",
       dueDate: "",
       description: "",
       currency: selectedCurrency || "TRY"
@@ -463,15 +459,16 @@ export function OnboardingForm() {
       return;
     }
     setModalDebtError("");
+    
+    const isTaksitli = modalDebtData.remainingInstallments && parseInt(modalDebtData.remainingInstallments) > 0;
+    
     debtsField.append({
       type: modalDebtData.type,
       amount: amountVal,
-      remainingInstallments: modalDebtData.remainingInstallments ? parseInt(modalDebtData.remainingInstallments) : undefined,
+      remainingInstallments: isTaksitli ? parseInt(modalDebtData.remainingInstallments) : undefined,
       interestRate: modalDebtData.interestRate ? parseFloat(modalDebtData.interestRate) : undefined,
-      paymentDay: modalDebtData.paymentDay ? parseInt(modalDebtData.paymentDay) : undefined,
-      installmentAmount: modalDebtData.installmentAmount ? parseFloat(modalDebtData.installmentAmount) : undefined,
-      principalAmount: modalDebtData.principalAmount ? parseFloat(modalDebtData.principalAmount) : undefined,
-      dueDate: modalDebtData.dueDate || undefined,
+      paymentDay: isTaksitli && modalDebtData.paymentDay ? parseInt(modalDebtData.paymentDay) : undefined,
+      dueDate: !isTaksitli && modalDebtData.dueDate ? modalDebtData.dueDate : undefined,
       description: modalDebtData.description || undefined,
       currency: modalDebtData.currency || selectedCurrency || "TRY",
     });
@@ -906,13 +903,37 @@ export function OnboardingForm() {
                             <div className="text-xs font-extrabold text-rose-500 mt-1">
                               {Number(item.amount).toLocaleString("tr-TR", { minimumFractionDigits: 2 })} {item.currency || selectedCurrency || "TRY"}
                             </div>
-                            <div className="text-[10px] text-muted-foreground font-semibold mt-1 space-y-0.5">
-                              <div>Taksit: {item.remainingInstallments || 1} Ay {item.interestRate ? `• Faiz: %${item.interestRate}` : ""}{item.paymentDay ? ` • Ödeme: Ayın ${item.paymentDay}. Günü` : ""}</div>
-                              {item.installmentAmount && (
-                                <div className="text-[#8C5000] dark:text-[#ffb874]">Taksit Tutarı: {Number(item.installmentAmount).toLocaleString("tr-TR", { minimumFractionDigits: 2 })} {item.currency}</div>
-                              )}
-                              {item.description && <div className="italic opacity-85">{item.description}</div>}
-                            </div>
+                            {(() => {
+                              const amt = Number(item.amount) || 0;
+                              const n = item.remainingInstallments ? Number(item.remainingInstallments) : 0;
+                              const interest = item.interestRate ? Number(item.interestRate) : 0;
+                              let monthlyEst = 0;
+                              let totalEst = amt;
+                              if (interest > 0 && n > 0) {
+                                const i = interest / 100;
+                                monthlyEst = (amt * i * Math.pow(1 + i, n)) / (Math.pow(1 + i, n) - 1);
+                                totalEst = monthlyEst * n;
+                              } else if (n > 0) {
+                                monthlyEst = amt / n;
+                              }
+                              return (
+                                <div className="text-[10px] text-muted-foreground font-semibold mt-1 space-y-0.5">
+                                  <div>
+                                    {n > 0 ? `Taksit: ${n} Ay` : "Tek Seferlik"} 
+                                    {interest > 0 ? ` • Faiz: %${interest}` : ""}
+                                    {n > 0 && item.paymentDay ? ` • Ödeme: Ayın ${item.paymentDay}. Günü` : ""}
+                                    {!n && item.dueDate ? ` • Son Ödeme: ${new Date(item.dueDate).toLocaleDateString("tr-TR")}` : ""}
+                                  </div>
+                                  {monthlyEst > 0 && (
+                                    <div className="text-[#8C5000] dark:text-[#ffb874]">Est. Taksit Tutarı: {Number(monthlyEst).toLocaleString("tr-TR", { minimumFractionDigits: 2 })} {item.currency || selectedCurrency || "TRY"}</div>
+                                  )}
+                                  {interest > 0 && (
+                                    <div className="text-rose-500">Faizli Toplam: {Number(totalEst).toLocaleString("tr-TR", { minimumFractionDigits: 2 })} {item.currency || selectedCurrency || "TRY"}</div>
+                                  )}
+                                  {item.description && <div className="italic opacity-85 mt-1">{item.description}</div>}
+                                </div>
+                              );
+                            })()}
                           </div>
                         </div>
                         <Button type="button" variant="ghost" size="icon" onClick={() => debtsField.remove(i)} className="text-rose-500 hover:bg-rose-500/10 h-10 w-10 rounded-xl transition-colors shrink-0">
@@ -1662,17 +1683,32 @@ export function OnboardingForm() {
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Kalan Taksit Sayısı</Label>
+                      <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Taksit Sayısı (Opsiyonel)</Label>
                       <Input
                         type="number"
+                        min="1"
                         value={modalDebtData.remainingInstallments}
                         onChange={e => setModalDebtData(prev => ({ ...prev, remainingInstallments: e.target.value }))}
-                        placeholder="1"
+                        placeholder="Örn: 12"
                         className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-black text-sm border-[#dbc2b0]/50 dark:border-[#887364]/40"
                       />
                     </div>
                     <div>
-                      <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Ödeme Günü (1-31)</Label>
+                      <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Aylık Faiz Oranı % (Opsiyonel)</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={modalDebtData.interestRate}
+                        onChange={e => setModalDebtData(prev => ({ ...prev, interestRate: e.target.value }))}
+                        placeholder="Örn: 3.50"
+                        className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-black text-sm border-[#dbc2b0]/50 dark:border-[#887364]/40"
+                      />
+                    </div>
+                  </div>
+
+                  {modalDebtData.remainingInstallments && Number(modalDebtData.remainingInstallments) > 0 ? (
+                    <div>
+                      <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Taksit Ödeme Günü (1-31)</Label>
                       <Input
                         type="number"
                         min="1"
@@ -1683,45 +1719,9 @@ export function OnboardingForm() {
                         className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-black text-sm border-[#dbc2b0]/50 dark:border-[#887364]/40"
                       />
                     </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
+                  ) : (
                     <div>
-                      <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Aylık Faiz Oranı (%)</Label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        value={modalDebtData.interestRate}
-                        onChange={e => setModalDebtData(prev => ({ ...prev, interestRate: e.target.value }))}
-                        placeholder="Örn: 3.50"
-                        className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-black text-sm border-[#dbc2b0]/50 dark:border-[#887364]/40"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Aylık Taksit Tutarı</Label>
-                      <Input
-                        type="number"
-                        value={modalDebtData.installmentAmount}
-                        onChange={e => setModalDebtData(prev => ({ ...prev, installmentAmount: e.target.value }))}
-                        placeholder="0.00"
-                        className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-black text-sm border-[#dbc2b0]/50 dark:border-[#887364]/40"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Ana Para (Başlangıç Tutarı)</Label>
-                      <Input
-                        type="number"
-                        value={modalDebtData.principalAmount}
-                        onChange={e => setModalDebtData(prev => ({ ...prev, principalAmount: e.target.value }))}
-                        placeholder="0.00"
-                        className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-black text-sm border-[#dbc2b0]/50 dark:border-[#887364]/40"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Son Ödeme Tarihi (Taksitsiz ise)</Label>
+                      <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Son Ödeme Tarihi</Label>
                       <DatePicker
                         date={modalDebtData.dueDate ? parseISO(modalDebtData.dueDate) : undefined}
                         setDate={(d) => setModalDebtData(prev => ({ ...prev, dueDate: d ? d.toISOString().split("T")[0] : "" }))}
@@ -1729,14 +1729,14 @@ export function OnboardingForm() {
                         className="h-11 rounded-xl w-full text-xs font-semibold"
                       />
                     </div>
-                  </div>
+                  )}
 
                   <div>
                     <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Açıklama</Label>
                     <Input
                       value={modalDebtData.description}
                       onChange={e => setModalDebtData(prev => ({ ...prev, description: e.target.value }))}
-                      placeholder="Örn: Kredi kartı borcu"
+                      placeholder="Örn: Ev Kredisi"
                       className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-medium text-sm border-[#dbc2b0]/50 dark:border-[#887364]/40"
                     />
                   </div>

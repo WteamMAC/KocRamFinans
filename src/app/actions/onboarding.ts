@@ -232,19 +232,50 @@ export async function completeOnboarding(formData: {
         data: formData.debts.map(d => {
           const cur = d.currency || formData.currency || "TRY";
           const rate = getRate(cur);
-          const amt = Number(d.amount) || 0;
+          
+          // Orijinal girilen tutar (Ana Para olarak kabul edilir, dashboard'daki data.amount gibi)
+          const baseAmt = Number(d.amount) || 0;
+          const principalInTry = baseAmt * rate;
+          
+          let finalTotalAmount = principalInTry;
+          let monthlyInstallment = null;
+          
+          const interest = d.interestRate ? Number(d.interestRate) : undefined;
+          const installments = d.remainingInstallments ? Number(d.remainingInstallments) : undefined;
+          
+          if (interest && installments && installments > 0) {
+            const i = interest / 100;
+            const n = installments;
+            const p = principalInTry;
+            
+            if (i > 0) {
+              monthlyInstallment = (p * i * Math.pow(1 + i, n)) / (Math.pow(1 + i, n) - 1);
+              finalTotalAmount = monthlyInstallment * n;
+            } else {
+              monthlyInstallment = p / n;
+            }
+          } else if (installments && installments > 0) {
+            // Faiz yoksa düz böl
+            monthlyInstallment = principalInTry / installments;
+          }
+          
+          let finalDescription = d.description || d.type;
+          if (d.dueDate) {
+            finalDescription += ` (Son Ödeme: ${new Date(d.dueDate).toLocaleDateString("tr-TR")})`;
+          }
+          
           return {
             type: d.type,
-            amount: amt * rate,
-            principalAmount: d.principalAmount ? Number(d.principalAmount) * rate : amt * rate,
-            interestRate: d.interestRate ? Number(d.interestRate) : null,
-            installmentAmount: d.installmentAmount ? Number(d.installmentAmount) * rate : null,
-            remainingInstallments: d.remainingInstallments ? Number(d.remainingInstallments) : null,
+            amount: finalTotalAmount, // Faizli toplam borç tutarı
+            principalAmount: principalInTry, // Ana para
+            interestRate: interest || null,
+            installmentAmount: monthlyInstallment,
+            remainingInstallments: installments || null,
             paymentDay: d.paymentDay ? Number(d.paymentDay) : null,
             dueDate: d.dueDate ? new Date(d.dueDate) : null,
-            description: d.description,
+            description: finalDescription,
             currency: cur,
-            originalAmount: amt,
+            originalAmount: baseAmt,
             fxRate: rate,
             userId: user!.id,
           };
