@@ -4,7 +4,7 @@ import { useForm, Controller } from "react-hook-form";
 import * as z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { cn } from "@/lib/utils";
-import { Check, ChevronDown, Save, AlertCircle } from "lucide-react";
+import { Check, ChevronDown, Save, AlertCircle, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -114,6 +114,7 @@ export function ProfileSettingsForm({ initialData }: Props) {
   const [saved, setSaved] = useState(false);
   const [showOtherCur, setShowOtherCur] = useState(false);
   const [showCountries, setShowCountries] = useState(false);
+  const [customTagInput, setCustomTagInput] = useState("");
 
   useEffect(() => {
     if (initialData.currency && !sessionStorage.getItem("user_profile_cur_synced")) {
@@ -137,14 +138,42 @@ export function ProfileSettingsForm({ initialData }: Props) {
   });
 
   const { formState: { isDirty, errors } } = form;
-  const interests = form.watch("interests");
+  const interests = form.watch("interests") || [];
   const currency = form.watch("currency");
   const country = form.watch("country");
   const gender = form.watch("gender");
 
   const toggleTag = (tag: string) => {
-    const cur = form.getValues("interests");
-    form.setValue("interests", cur.includes(tag) ? cur.filter(t => t !== tag) : [...cur, tag], { shouldValidate: true, shouldDirty: true });
+    const clean = tag.replace(/^#+/, "").trim().toLowerCase();
+    const cur = form.getValues("interests") || [];
+    const next = cur.includes(clean) ? cur.filter(t => t !== clean) : [...cur, clean];
+    form.setValue("interests", next, { shouldValidate: true, shouldDirty: true });
+  };
+
+  const addCustomTag = () => {
+    const text = customTagInput.trim();
+    if (!text) return;
+
+    const words = text.split(/[\s,]+/);
+    const cur = form.getValues("interests") || [];
+    let newTags = [...cur];
+
+    words.forEach(w => {
+      const clean = w.replace(/^#+/, "").trim().toLowerCase();
+      if (clean && !newTags.includes(clean)) {
+        newTags.push(clean);
+      }
+    });
+
+    form.setValue("interests", newTags, { shouldValidate: true, shouldDirty: true });
+    setCustomTagInput("");
+  };
+
+  const handleCustomTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === " " || e.key === "Enter" || e.key === ",") {
+      e.preventDefault();
+      addCustomTag();
+    }
   };
 
   const onSubmit = async (data: F) => {
@@ -300,8 +329,29 @@ export function ProfileSettingsForm({ initialData }: Props) {
         <h3 className="text-sm font-black text-primary uppercase tracking-widest flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-accent" /> İlgi Alanları
         </h3>
+        <p className="text-xs font-bold text-muted-foreground">
+          Aşağıdaki önerilerden seçebilir veya kendi özel etiketini (Örn: #TR #COIN #BIST) yazıp Boşluk veya Enter tuşuna basabilirsin. Orijinal listede olmayan özel etiketler seçimden çıkarıldığında otomatik silinir.
+        </p>
+
+        {/* Custom Hashtag Input */}
+        <div className="relative flex items-center gap-2">
+          <div className="relative flex-1">
+            <Input
+              value={customTagInput}
+              onChange={e => setCustomTagInput(e.target.value)}
+              onKeyDown={handleCustomTagKeyDown}
+              placeholder="Özel etiket ekle ve Boşluk veya Enter tuşuna bas (Örn: #TR #Kripto #NFT)..."
+              className="h-12 rounded-2xl bg-muted/40 font-bold text-foreground placeholder:text-muted-foreground pr-10 border-border/50 focus:border-primary shadow-sm"
+            />
+            <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-black text-primary">#</span>
+          </div>
+          <Button type="button" onClick={addCustomTag} variant="outline" className="h-12 px-5 rounded-2xl border-primary/30 text-primary hover:bg-primary/10 font-black shadow-sm shrink-0">
+            <Plus className="w-4 h-4 mr-1" /> Ekle
+          </Button>
+        </div>
+
         {errors.interests && <p className="text-[10px] font-bold text-destructive flex items-center gap-1"><AlertCircle className="h-3 w-3" />{errors.interests.message}</p>}
-        <div className="flex flex-wrap gap-2.5">
+        <div className="flex flex-wrap gap-2.5 pt-2">
           {HASHTAGS.map(h => {
             const isA = interests.includes(h.tag);
             return (
@@ -312,6 +362,17 @@ export function ProfileSettingsForm({ initialData }: Props) {
               </button>
             );
           })}
+
+          {/* Orijinal listede olmayan kullanıcının kendi özel etiketleri */}
+          {interests
+            .filter(tag => !HASHTAGS.some(h => h.tag === tag))
+            .map(tag => (
+              <button key={tag} type="button" onClick={() => toggleTag(tag)}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-full border text-xs font-black bg-primary text-primary-foreground border-primary shadow-md scale-105 transition-all duration-200">
+                <span className="text-base">📌</span><span>#{tag.toUpperCase()}</span><Check className="w-3.5 h-3.5" />
+              </button>
+            ))
+          }
         </div>
       </div>
 
