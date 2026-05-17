@@ -76,7 +76,8 @@ export function IncomeExpenseClient({
 
   const formatTransactionAmount = (tx: Transaction) => {
     const cur = (tx.currency || "TRY").toUpperCase();
-    const sym = DISPLAY_CURRENCIES_MAP[cur]?.symbol || cur;
+    const curInfo = DISPLAY_CURRENCIES_MAP[cur];
+    const sym = curInfo ? (cur === displayCurrency ? curInfo.symbol : `${curInfo.symbol} ${cur}`) : cur;
     return `${(tx.amount || 0).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: tx.amount < 1 ? 4 : 2 })} ${sym}`;
   };
 
@@ -471,7 +472,7 @@ export function IncomeExpenseClient({
                           </p>
                           {(!tx.currency || tx.currency.toUpperCase() !== displayCurrency.toUpperCase()) && (
                             <p className="text-[11px] font-bold text-muted-foreground opacity-70 mt-1">
-                              ≈ {isInc ? '+' : '-'} {formatAmount(tx.tryAmount != null ? tx.tryAmount : (tx.amount * (tx.fxRate || 1)))}
+                              ≈ {isInc ? '+' : '-'} {formatAmount(tx.tryAmount != null ? tx.tryAmount : (tx.amount * (tx.fxRate || 1)))} ({displayCurrency})
                             </p>
                           )}
                         </td>
@@ -530,7 +531,7 @@ export function IncomeExpenseClient({
                     </p>
                     {(!tx.currency || tx.currency.toUpperCase() !== displayCurrency.toUpperCase()) && (
                       <p className="text-[10px] font-bold text-muted-foreground opacity-70 mt-0.5">
-                        ≈ {isInc ? '+' : '-'} {formatAmount(tx.tryAmount != null ? tx.tryAmount : (tx.amount * (tx.fxRate || 1)))}
+                        ≈ {isInc ? '+' : '-'} {formatAmount(tx.tryAmount != null ? tx.tryAmount : (tx.amount * (tx.fxRate || 1)))} ({displayCurrency})
                       </p>
                     )}
                   </div>
