@@ -10,6 +10,7 @@ import {
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function SlidingAuth() {
   const pathname = usePathname();
@@ -23,10 +24,10 @@ export default function SlidingAuth() {
   const [confirmationText, setConfirmationText] = useState("");
   const [showErrorAnim, setShowErrorAnim] = useState(false);
 
-  // Sayfa yüklendiğinde localStorage'dan durumu oku (Hydration uyuşmazlığını önlemek için useEffect içinde yapılır)
+  // Sayfa yüklendiğinde sessionStorage'dan durumu oku
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const accepted = localStorage.getItem("test_terms_accepted") === "true";
+      const accepted = sessionStorage.getItem("test_terms_accepted") === "true";
       setIsTermsAccepted(accepted);
     }
   }, []);
@@ -47,7 +48,7 @@ export default function SlidingAuth() {
     if (isTextCorrect) {
       setIsTermsAccepted(true);
       if (typeof window !== "undefined") {
-        localStorage.setItem("test_terms_accepted", "true");
+        sessionStorage.setItem("test_terms_accepted", "true");
       }
       setIsModalOpen(false);
       setConfirmationText("");
@@ -63,13 +64,18 @@ export default function SlidingAuth() {
     } else {
       setIsTermsAccepted(false);
       if (typeof window !== "undefined") {
-        localStorage.removeItem("test_terms_accepted");
+        sessionStorage.removeItem("test_terms_accepted");
       }
     }
   };
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-0 md:p-6 overflow-hidden relative">
+      {/* Top right theme toggle button */}
+      <div className="absolute top-4 right-4 md:top-6 md:right-6 z-[100]">
+        <ThemeToggle />
+      </div>
+
       <main className="w-full h-screen md:h-[calc(100vh-48px)] max-h-[900px] flex max-w-[1200px] mx-auto bg-card md:rounded-[32px] md:shadow-ambient-high overflow-y-auto md:overflow-hidden relative">
         
         {/* Form Container */}
