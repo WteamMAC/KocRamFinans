@@ -1352,17 +1352,21 @@ export function BlogFeed({
   if (tagSearch) activeFilterCount++;
 
   const filtered = posts.filter((p) => {
-    const matchesTag = activeTags.length > 0 ? p.tags.some(t => activeTags.includes(t)) : true;
+    const norm = (s: string) => s.replace("#", "").trim().toLowerCase();
+    const activeNorms = activeTags.map(norm);
+
+    const matchesTag = activeTags.length > 0 
+      ? p.tags.some(t => activeNorms.includes(norm(t))) 
+      : true;
+
     const matchesSearch = searchQuery 
       ? p.content.toLowerCase().includes(searchQuery.toLowerCase()) || p.authorName.toLowerCase().includes(searchQuery.toLowerCase()) 
       : true;
       
-    // Tag Search match
     const matchesTagSearchInput = tagSearch
-      ? p.tags.some(t => t.toLowerCase().includes(tagSearch.toLowerCase().replace("#", ""))) || p.content.toLowerCase().includes(tagSearch.toLowerCase())
+      ? p.tags.some(t => norm(t).includes(norm(tagSearch))) || p.content.toLowerCase().includes(tagSearch.toLowerCase())
       : true;
 
-    // Time Range match
     let matchesTime = true;
     if (timeRange !== "all") {
       const now = Date.now();
@@ -1372,12 +1376,11 @@ export function BlogFeed({
       else if (timeRange === "30d") matchesTime = (now - postTime) <= (30 * 24 * 60 * 60 * 1000);
     }
 
-    // Filter by Interests match
     let matchesInterests = true;
     if (filterByInterests) {
       const interests = (userInterests && userInterests.length > 0) ? userInterests : ["yatırım", "kripto", "borsa", "hisse", "altın"];
-      const normInterests = interests.map(i => i.toLowerCase().replace("#", ""));
-      matchesInterests = p.tags.some(t => normInterests.includes(t.toLowerCase().replace("#", "")));
+      const normInterests = interests.map(norm);
+      matchesInterests = p.tags.some(t => normInterests.includes(norm(t)));
     }
 
     return matchesTag && matchesSearch && matchesTagSearchInput && matchesTime && matchesInterests;

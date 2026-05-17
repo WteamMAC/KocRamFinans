@@ -327,16 +327,29 @@ export async function getPosts(
     else if (timeRange === "30d") timeFilter = { createdAt: { gte: new Date(now - 30 * 24 * 60 * 60 * 1000) } };
   }
 
+  const expandTags = (tags: string[]) => {
+    const set = new Set<string>();
+    tags.forEach(t => {
+      const clean = t.replace("#", "").trim();
+      set.add(clean.toLowerCase());
+      set.add(clean.toUpperCase());
+      set.add(clean[0].toUpperCase() + clean.slice(1).toLowerCase());
+      set.add(`#${clean.toLowerCase()}`);
+      set.add(`#${clean.toUpperCase()}`);
+    });
+    return Array.from(set);
+  };
+
   // İlgi alanları filtresi
   let interestsWhere: any = {};
   if (interestsFilter && interestsFilter.length > 0) {
-    interestsWhere = { tags: { hasSome: interestsFilter } };
+    interestsWhere = { tags: { hasSome: expandTags(interestsFilter) } };
   }
 
   // Çoklu etiket filtresi
   let tagsWhere: any = {};
   if (activeTagsFilter && activeTagsFilter.length > 0) {
-    tagsWhere = { tags: { hasSome: activeTagsFilter } };
+    tagsWhere = { tags: { hasSome: expandTags(activeTagsFilter) } };
   }
 
   const whereClause = {
