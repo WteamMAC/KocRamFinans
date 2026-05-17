@@ -316,3 +316,18 @@ iframe[src*="challenges.cloudflare.com"] {
 .cl-rootBox {
   pointer-events: auto !important;
 }
+
+/* Clerk Sign Up Locked State - Blur form area up to "İleri" button but keep footer clear */
+.signup-locked-state .signup-main-element {
+  filter: blur(2px) !important;
+  opacity: 0.2 !important;
+  pointer-events: none !important;
+  user-select: none !important;
+}
+
+.signup-locked-state .signup-footer-element {
+  filter: none !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  user-select: auto !important;
+}

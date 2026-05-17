@@ -10,6 +10,7 @@ import {
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
+import { cn } from "@/lib/utils";
 
 export default function SlidingAuth() {
   const pathname = usePathname();
@@ -154,7 +155,7 @@ export default function SlidingAuth() {
                   {/* Kayıt Formu Alanı */}
                   <div className="relative w-full">
                     {!isTermsAccepted && (
-                      <div className="absolute inset-0 z-30 backdrop-blur-[8px] bg-background/85 dark:bg-background/85 rounded-2xl flex flex-col items-center justify-center p-8 text-center border border-border shadow-2xl transition-all duration-300">
+                      <div className="absolute inset-x-0 top-0 bottom-[76px] z-30 backdrop-blur-[8px] bg-background/85 dark:bg-background/85 rounded-t-2xl flex flex-col items-center justify-center p-8 text-center border-t border-x border-border shadow-2xl transition-all duration-300">
                         <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center mb-4 shadow-inner">
                           <Lock className="w-8 h-8" />
                         </div>
@@ -172,7 +173,7 @@ export default function SlidingAuth() {
                       </div>
                     )}
                     
-                    <div className={!isTermsAccepted ? "opacity-20 pointer-events-none select-none filter blur-[2px] transition-all duration-300" : "relative z-30 transition-all duration-300 w-full mx-auto"}>
+                    <div className={cn("relative z-30 transition-all duration-300 w-full mx-auto", !isTermsAccepted && "signup-locked-state")}>
                       <SignUp 
                         routing="path"
                         path="/sign-up"
@@ -181,6 +182,8 @@ export default function SlidingAuth() {
                           elements: {
                             rootBox: "w-full",
                             card: "shadow-none border-none p-0 w-full bg-transparent",
+                            main: "signup-main-element transition-all duration-300",
+                            footer: "signup-footer-element transition-all duration-300",
                             headerTitle: "text-3xl font-heading font-bold text-foreground mb-2",
                             headerSubtitle: "text-muted-foreground font-medium mb-8",
                             socialButtonsBlockButton: "rounded-xl border-border/30 hover:bg-muted h-12 text-foreground",
