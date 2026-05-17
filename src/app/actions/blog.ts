@@ -252,12 +252,25 @@ export async function getPosts(
   let whereClause: any = {};
 
   if (type === "following" && currentInternalUserId) {
+    const userWithInterests = await prisma.user.findUnique({
+      where: { id: currentInternalUserId },
+      select: { interests: true },
+    });
+    const userInterests = userWithInterests?.interests || [];
+
     const following = await prisma.follow.findMany({
       where: { followerId: currentInternalUserId },
       select: { followingId: true },
     });
     const followingIds = following.map((f) => f.followingId);
-    whereClause = { authorId: { in: followingIds }, communityId: null };
+
+    whereClause = {
+      communityId: null,
+      OR: [
+        { authorId: { in: followingIds } },
+        ...(userInterests.length > 0 ? [{ tags: { hasSome: userInterests } }] : [])
+      ]
+    };
   } else if (type === "my-communities" && currentInternalUserId) {
     const myCommunities = await prisma.communityMember.findMany({
       where: { userId: currentInternalUserId, status: "ACCEPTED" },
@@ -458,21 +471,25 @@ export async function getUserProfile(username: string) {
 
   if (!user) return null;
 
-  const clerk = await clerkClient();
-  const clerkUser = await clerk.users.getUser(user.clerkUserId);
+  try {
+    const clerk = await clerkClient();
+    const clerkUser = await clerk.users.getUser(user.clerkUserId);
 
-  return {
-    id: user.id,
-    username: user.username,
-    bio: user.bio,
-    name: `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim() || "Kullanıcı",
-    imageUrl: clerkUser.imageUrl,
-    followerCount: user._count.followers,
-    followingCount: user._count.following,
-    postCount: user._count.blogPosts,
-    isMe: (await auth()).userId === user.clerkUserId,
-    isBanned: user.isBanned,
-  };
+    return {
+      id: user.id,
+      username: user.username,
+      bio: user.bio,
+      name: `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim() || "Kullanıcı",
+      imageUrl: clerkUser.imageUrl,
+      followerCount: user._count.followers,
+      followingCount: user._count.following,
+      postCount: user._count.blogPosts,
+      isMe: (await auth()).userId === user.clerkUserId,
+      isBanned: user.isBanned,
+    };
+  } catch (error) {
+    return null;
+  }
 }
 
 export async function updateBio(bio: string) {

@@ -191,6 +191,43 @@
   .text-gradient {
     @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary-container;
   }
+  
+  /* Premium Horizontal Scrollbar Utility */
+  .custom-sidescroll {
+    scrollbar-width: thin !important;
+    scrollbar-color: rgba(140, 80, 0, 0.25) transparent !important;
+  }
+
+  .custom-sidescroll::-webkit-scrollbar {
+    height: 5px !important;
+    display: block !important;
+  }
+
+  .custom-sidescroll::-webkit-scrollbar-track {
+    background: transparent !important;
+  }
+
+  .custom-sidescroll::-webkit-scrollbar-thumb {
+    background: rgba(140, 80, 0, 0.2) !important;
+    border-radius: 9999px !important;
+    transition: background-color 0.2s ease !important;
+  }
+
+  .custom-sidescroll::-webkit-scrollbar-thumb:hover {
+    background: rgba(140, 80, 0, 0.4) !important;
+  }
+
+  .dark .custom-sidescroll {
+    scrollbar-color: rgba(255, 184, 116, 0.25) transparent !important;
+  }
+
+  .dark .custom-sidescroll::-webkit-scrollbar-thumb {
+    background: rgba(255, 184, 116, 0.2) !important;
+  }
+
+  .dark .custom-sidescroll::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 184, 116, 0.4) !important;
+  }
 }
 
 /* Custom Scrollbar for Premium Feel */

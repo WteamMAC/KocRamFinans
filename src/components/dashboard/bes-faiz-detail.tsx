@@ -693,8 +693,13 @@ export function BesFaizDetail({ type, investments, livePrices }: BesFaizDetailPr
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
         {/* Account List */}
-        <div className="xl:col-span-1 space-y-4">
-          <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-widest">Hesaplarım</h3>
+        <div className="xl:col-span-1 space-y-6">
+          <div className="flex items-center gap-3">
+            <div className={cn("p-2 rounded-xl", accentBg)}>
+              <Icon className={cn("h-5 w-5", accentColor)} />
+            </div>
+            <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-widest">Hesaplarım</h3>
+          </div>
           {grouped.length === 0 ? (
             <Card className="border-dashed border-2 border-border/30 rounded-2xl p-12 text-center">
               <Icon className={cn("h-12 w-12 mx-auto mb-4 opacity-30", accentColor)} />

@@ -89,7 +89,7 @@ export function PerformanceChart({ incomes, expenses, investments }: Performance
   if (!hasData) {
     return (
       <>
-        <CardHeader className="bg-muted/30 border-b border-border/10 h-20 !flex flex-row items-center justify-between px-6 py-0">
+        <CardHeader className="bg-muted/30 border-b border-border/10 h-20 !flex flex-row items-center justify-between px-6 !py-0">
           <CardTitle className="text-xl font-heading font-bold text-primary flex items-center gap-2">
             <TrendingUp className="h-5 w-5 text-accent" /> Gelişim Grafiği
           </CardTitle>
@@ -136,7 +136,7 @@ export function PerformanceChart({ incomes, expenses, investments }: Performance
 
   return (
     <>
-      <CardHeader className="bg-muted/30 border-b border-border/10 h-20 !flex flex-row items-center justify-between px-6 py-0">
+      <CardHeader className="bg-muted/30 border-b border-border/10 h-20 !flex flex-row items-center justify-between px-6 !py-0">
         <CardTitle className="text-xl font-heading font-bold text-primary flex items-center gap-2">
           <TrendingUp className="h-5 w-5 text-accent" /> Gelişim Grafiği
         </CardTitle>

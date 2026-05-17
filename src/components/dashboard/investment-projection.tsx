@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { TrendingUp, Sparkles, Loader2, Info, RefreshCw } from "lucide-react";
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis } from "recharts";
@@ -28,6 +28,33 @@ export function InvestmentProjection({ currentValue, investments = [], fixedAsse
   const [hasLoaded, setHasLoaded] = useState(false);
   const [apiError, setApiError] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      if (e.deltaY === 0) return;
+      
+      const isScrollable = el.scrollWidth > el.clientWidth;
+      if (!isScrollable) return;
+
+      const isAtLeft = el.scrollLeft <= 0;
+      const isAtRight = Math.abs(el.scrollWidth - el.clientWidth - el.scrollLeft) < 2;
+
+      if ((e.deltaY < 0 && !isAtLeft) || (e.deltaY > 0 && !isAtRight)) {
+        e.preventDefault();
+        el.scrollTo({
+          left: el.scrollLeft + e.deltaY * 1.5,
+          behavior: "auto"
+        });
+      }
+    };
+
+    el.addEventListener("wheel", handleWheel, { passive: false });
+    return () => el.removeEventListener("wheel", handleWheel);
+  }, [assetProjections]);
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -69,7 +96,7 @@ export function InvestmentProjection({ currentValue, investments = [], fixedAsse
   if (!hasData) {
     return (
       <Card className="bg-card border-border/20 shadow-ambient-medium rounded-[32px] overflow-hidden flex flex-col h-full min-h-[400px] pt-0">
-        <CardHeader className="bg-muted/30 border-b border-border/10 h-20 !flex flex-row items-center px-6 py-0">
+        <CardHeader className="bg-muted/30 border-b border-border/10 h-20 !flex flex-row items-center px-6 !py-0">
           <CardTitle className="text-xl font-heading font-bold text-primary flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-accent" /> AI Gelecek Tahmini
           </CardTitle>
@@ -100,7 +127,7 @@ export function InvestmentProjection({ currentValue, investments = [], fixedAsse
   if (loading) {
     return (
       <Card className="bg-card border-border/20 shadow-ambient-medium rounded-[32px] overflow-hidden flex flex-col h-full min-h-[400px] pt-0">
-        <CardHeader className="bg-muted/30 border-b border-border/10 h-20 !flex flex-row items-center px-6 py-0">
+        <CardHeader className="bg-muted/30 border-b border-border/10 h-20 !flex flex-row items-center px-6 !py-0">
           <CardTitle className="text-xl font-heading font-bold text-primary flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-accent" /> AI Gelecek Tahmini
           </CardTitle>
@@ -122,7 +149,7 @@ export function InvestmentProjection({ currentValue, investments = [], fixedAsse
   if (!hasLoaded) {
     return (
       <Card className="bg-card border-border/20 shadow-ambient-medium rounded-[32px] overflow-hidden flex flex-col h-full min-h-[400px] justify-between pt-0">
-        <CardHeader className="bg-muted/30 border-b border-border/10 h-20 !flex flex-row items-center px-6 py-0">
+        <CardHeader className="bg-muted/30 border-b border-border/10 h-20 !flex flex-row items-center px-6 !py-0">
           <CardTitle className="text-xl font-heading font-bold text-primary flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-accent animate-pulse" /> AI Gelecek Tahmini
           </CardTitle>
@@ -169,7 +196,7 @@ export function InvestmentProjection({ currentValue, investments = [], fixedAsse
 
   return (
     <Card className="bg-card border-border/20 shadow-ambient-medium rounded-[32px] overflow-hidden flex flex-col h-full pt-0">
-      <CardHeader className="bg-muted/30 border-b border-border/10 h-20 !flex flex-row items-center px-6 py-0">
+      <CardHeader className="bg-muted/30 border-b border-border/10 h-20 !flex flex-row items-center px-6 !py-0">
         <CardTitle className="text-xl font-heading font-bold text-primary flex items-center justify-between w-full">
           <div className="flex items-center gap-2">
             <Sparkles className={cn("h-5 w-5", apiError ? "text-rose-500" : "text-accent animate-pulse")} />
@@ -276,7 +303,7 @@ export function InvestmentProjection({ currentValue, investments = [], fixedAsse
         {assetProjections && assetProjections.length > 0 && (
           <div className="mt-4 md:mt-6 border-t border-border/10 pt-4">
             <h4 className="text-[8px] md:text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-3">Varlık Tahminleri</h4>
-            <div className="flex overflow-x-auto space-x-3 pb-2 no-scrollbar">
+            <div ref={scrollRef} className="flex overflow-x-auto space-x-3 pb-3 custom-sidescroll">
               {assetProjections.map((asset, idx) => {
                 const isPositive = asset.projectedValue >= asset.currentValue;
                 const percentChange = (((asset.projectedValue - asset.currentValue) / (asset.currentValue || 1)) * 100) || 0;

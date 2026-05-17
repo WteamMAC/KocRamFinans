@@ -34,6 +34,17 @@ export function ChatAI() {
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef<any>(null);
 
+  useEffect(() => {
+    const handleOpenChat = () => {
+      setIsOpen(true);
+      setIsMinimized(false);
+    };
+    window.addEventListener("open-chat-ai", handleOpenChat);
+    return () => {
+      window.removeEventListener("open-chat-ai", handleOpenChat);
+    };
+  }, []);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInput(e.target.value);
   };

@@ -16,12 +16,10 @@ interface FinancialCalendarProps {
   incomes: any[];
   expenses: any[];
   debts: any[];
-  userChildren?: any[];
-  marriageDate?: Date | null;
   specialEvents?: any[];
 }
 
-export function FinancialCalendar({ incomes, expenses, debts, userChildren = [], marriageDate, specialEvents = [] }: FinancialCalendarProps) {
+export function FinancialCalendar({ incomes, expenses, debts, specialEvents = [] }: FinancialCalendarProps) {
   const { formatAmount } = useCurrency();
   const [currentDate, setCurrentDate] = useState(new Date());
 
@@ -38,19 +36,15 @@ export function FinancialCalendar({ incomes, expenses, debts, userChildren = [],
   const monthEnd = endOfMonth(currentDate);
   const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
-  const eventsByDate = new Map<string, { incomes: any[], expenses: any[], debts: any[], birthdays: any[], anniversary: boolean, specialEvents: any[] }>();
+  const eventsByDate = new Map<string, { incomes: any[], expenses: any[], debts: any[], specialEvents: any[] }>();
 
   const getDateKey = (date: Date) => format(date, "yyyy-MM-dd");
 
-  const addEvent = (dateStr: string, type: 'incomes' | 'expenses' | 'debts' | 'birthdays' | 'anniversary' | 'specialEvents', event: any) => {
+  const addEvent = (dateStr: string, type: 'incomes' | 'expenses' | 'debts' | 'specialEvents', event: any) => {
     if (!eventsByDate.has(dateStr)) {
-      eventsByDate.set(dateStr, { incomes: [], expenses: [], debts: [], birthdays: [], anniversary: false, specialEvents: [] });
+      eventsByDate.set(dateStr, { incomes: [], expenses: [], debts: [], specialEvents: [] });
     }
-    if (type === 'anniversary') {
-      eventsByDate.get(dateStr)!.anniversary = true;
-    } else {
-      (eventsByDate.get(dateStr)![type] as any[]).push(event);
-    }
+    (eventsByDate.get(dateStr)![type] as any[]).push(event);
   };
 
   [...incomes, ...expenses, ...debts].forEach(tx => {
@@ -63,19 +57,6 @@ export function FinancialCalendar({ incomes, expenses, debts, userChildren = [],
     else if (expenses.find(e => e.id === tx.id)) addEvent(key, 'expenses', tx);
     else addEvent(key, 'debts', tx);
   });
-
-  userChildren.forEach(child => {
-    if (!child.birthDate) return;
-    const birthDate = new Date(child.birthDate);
-    const birthdayThisYear = new Date(currentDate.getFullYear(), birthDate.getMonth(), birthDate.getDate());
-    addEvent(getDateKey(birthdayThisYear), 'birthdays', child);
-  });
-
-  if (marriageDate) {
-    const marriageD = new Date(marriageDate);
-    const anniversaryThisYear = new Date(currentDate.getFullYear(), marriageD.getMonth(), marriageD.getDate());
-    addEvent(getDateKey(anniversaryThisYear), 'anniversary', true);
-  }
 
   specialEvents.forEach(evt => {
     const evtDate = new Date(evt.date);
@@ -196,7 +177,6 @@ export function FinancialCalendar({ incomes, expenses, debts, userChildren = [],
                     {events.expenses.length > 0 && <span className={cn("w-1 h-1 md:w-1.5 md:h-1.5 rounded-full bg-rose-500", isSelected && "bg-white")} />}
                     {events.debts.length > 0 && <span className={cn("w-1 h-1 md:w-1.5 md:h-1.5 rounded-full bg-orange-500", isSelected && "bg-white")} />}
                     {events.specialEvents.length > 0 && <span className={cn("w-1 h-1 md:w-1.5 md:h-1.5 rounded-full bg-sky-500", isSelected && "bg-white")} />}
-                    {(events.birthdays.length > 0 || events.anniversary) && <span className={cn("w-1 h-1 md:w-1.5 md:h-1.5 rounded-full bg-pink-500", isSelected && "bg-white")} />}
                   </div>
                 )}
               </button>
@@ -217,7 +197,7 @@ export function FinancialCalendar({ incomes, expenses, debts, userChildren = [],
                 </Button>
               </div>
 
-              {!selectedEvents || (selectedEvents.incomes.length === 0 && selectedEvents.expenses.length === 0 && selectedEvents.debts.length === 0 && selectedEvents.birthdays.length === 0 && !selectedEvents.anniversary && selectedEvents.specialEvents.length === 0) ? (
+              {!selectedEvents || (selectedEvents.incomes.length === 0 && selectedEvents.expenses.length === 0 && selectedEvents.debts.length === 0 && selectedEvents.specialEvents.length === 0) ? (
                 <div className="flex items-center gap-2 text-[10px] md:text-sm text-muted-foreground opacity-70">
                   <Info className="h-3 w-3 md:h-4 md:w-4" />
                   Bu tarihte herhangi bir işlem bulunmuyor.
@@ -269,27 +249,6 @@ export function FinancialCalendar({ incomes, expenses, debts, userChildren = [],
                       </span>
                     </div>
                   ))}
-                  {selectedEvents.birthdays.map((child, i) => {
-                    const age = selectedDate!.getFullYear() - new Date(child.birthDate).getFullYear();
-                    return (
-                      <div key={`bday-${i}`} className="flex justify-between items-center text-xs md:text-sm px-2">
-                        <div className="flex items-center gap-2 overflow-hidden">
-                          <span className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-purple-500 shrink-0" />
-                          <span className="font-medium text-foreground truncate">Doğum Günü {age > 0 ? `(${age}. Yaş)` : ''}</span>
-                        </div>
-                        <span className="font-bold text-purple-600 text-base leading-none">🎂</span>
-                      </div>
-                    );
-                  })}
-                  {selectedEvents.anniversary && (
-                    <div className="flex justify-between items-center text-xs md:text-sm px-2">
-                      <div className="flex items-center gap-2 overflow-hidden">
-                        <span className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-pink-500 shrink-0" />
-                        <span className="font-medium text-foreground truncate">Evlilik Yıl Dönümü</span>
-                      </div>
-                      <span className="font-bold text-pink-600 text-base leading-none">💑</span>
-                    </div>
-                  )}
                 </div>
               )}
             </div>

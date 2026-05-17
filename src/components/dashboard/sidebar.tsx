@@ -30,12 +30,20 @@ import {
   Rss,
   User,
   PlayCircle,
-  Bell
+  Bell,
+  HelpCircle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/dashboard/notification-bell";
 import { MessageBell } from "@/components/dashboard/message-bell";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+
 
 const routes = [
   {
@@ -106,6 +114,12 @@ const routes = [
     color: "text-blue-500",
   },
   {
+    label: "Sık Sorulan Sorular",
+    icon: HelpCircle,
+    href: "/dashboard/faq",
+    color: "text-sky-500",
+  },
+  {
     label: "Bilgileri Düzenle",
     icon: Settings,
     href: "/dashboard/settings",
@@ -124,6 +138,7 @@ interface SidebarProps {
 export function Sidebar({ isCollapsed, onToggle, hideToggle, theme, onToggleTheme }: SidebarProps) {
   const pathname = usePathname();
   const [openSubMenus, setOpenSubMenus] = useState<Record<string, boolean>>({ "Varlıklarım": true });
+
 
   const toggleSubMenu = (label: string) => {
     setOpenSubMenus(prev => ({ ...prev, [label]: !prev[label] }));
@@ -268,6 +283,8 @@ export function Sidebar({ isCollapsed, onToggle, hideToggle, theme, onToggleThem
               {!isCollapsed && <span className="truncate">Turu Tekrar Başlat</span>}
             </div>
           </button>
+
+
         </div>
       </div>
 

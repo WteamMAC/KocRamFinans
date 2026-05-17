@@ -37,7 +37,6 @@ export default async function DashboardPage() {
       debts: true,
       investments: true,
       fixedAssets: true,
-      children: true,
       specialEvents: true,
     } as any,
   }) as any;
@@ -83,7 +82,6 @@ async function DashboardMetrics({ user }: { user: any }) {
   const debts: any[] = Array.isArray(user.debts) ? user.debts : [];
   const investments: any[] = Array.isArray(user.investments) ? user.investments : [];
   const fixedAssets: any[] = Array.isArray(user.fixedAssets) ? user.fixedAssets : [];
-  const children: any[] = Array.isArray(user.children) ? user.children : [];
   const specialEvents: any[] = Array.isArray(user.specialEvents) ? user.specialEvents : [];
 
   let portfolioMetrics = { totalCost: 0, totalCurrentValue: 0, totalProfit: 0, profitPercent: 0, assets: [] as any[] };
@@ -194,7 +192,7 @@ async function DashboardMetrics({ user }: { user: any }) {
         </Card>
         
         <div className="col-span-1 md:col-span-1 lg:col-span-3 h-full w-full">
-          <FinancialCalendar incomes={normalizedIncomes} expenses={normalizedExpenses} debts={normalizedDebts} userChildren={children} marriageDate={user.marriageDate} specialEvents={specialEvents} />
+          <FinancialCalendar incomes={normalizedIncomes} expenses={normalizedExpenses} debts={normalizedDebts} specialEvents={specialEvents} />
         </div>
       </div>
 
