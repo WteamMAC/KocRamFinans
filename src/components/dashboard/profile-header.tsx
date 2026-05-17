@@ -32,6 +32,8 @@ interface ProfileHeaderProps {
 export function ProfileHeader({ profile, initialIsFollowing, currentUserRole }: ProfileHeaderProps) {
   const [isFollowing, setIsFollowing] = useState(initialIsFollowing);
   const [followerCount, setFollowerCount] = useState(profile.followerCount);
+  const [followingCount, setFollowingCount] = useState(profile.followingCount);
+  const [unfollowTarget, setUnfollowTarget] = useState<{ id: string; name: string } | null>(null);
   const [isPending, startTransition] = useTransition();
   
   const [isEditingBio, setIsEditingBio] = useState(false);
@@ -362,7 +364,7 @@ export function ProfileHeader({ profile, initialIsFollowing, currentUserRole }: 
                 <Users className="w-4 h-4 md:w-5 md:h-5" />
               </div>
               <div className="flex flex-col items-center md:items-start text-center md:text-left">
-                <span className="text-lg md:text-xl font-black text-foreground group-hover:text-primary transition-colors">{profile.followingCount}</span>
+                <span className="text-lg md:text-xl font-black text-foreground group-hover:text-primary transition-colors">{followingCount}</span>
                 <span className="text-[8px] md:text-[10px] font-black text-muted-foreground uppercase tracking-widest opacity-60">Takip</span>
               </div>
             </button>
@@ -551,35 +553,101 @@ export function ProfileHeader({ profile, initialIsFollowing, currentUserRole }: 
                   </div>
                 ) : (
                   followList.map((u) => (
-                    <Link 
+                    <div 
                       key={u.id} 
-                      href={`/dashboard/profile/${u.username}`}
-                      onClick={() => { setShowFollowers(false); setShowFollowing(false); }}
                       className="flex items-center justify-between p-4 bg-muted/20 hover:bg-primary/5 rounded-3xl border border-transparent hover:border-primary/10 transition-all group"
                     >
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 relative rounded-2xl overflow-hidden bg-primary/10 flex items-center justify-center shadow-inner">
+                      <Link 
+                        href={`/dashboard/profile/${u.username}`}
+                        onClick={() => { setShowFollowers(false); setShowFollowing(false); }}
+                        className="flex items-center gap-4 flex-grow cursor-pointer"
+                      >
+                        <div className="w-12 h-12 relative rounded-2xl overflow-hidden bg-primary/10 flex items-center justify-center shadow-inner shrink-0">
                           {u.imageUrl ? (
                             <Image src={u.imageUrl} alt={u.name} fill className="object-cover" />
                           ) : (
-                            <span className="text-primary font-black text-lg">{u.name[0]}</span>
+                            <span className="text-primary font-black text-lg shrink-0">{u.name[0]}</span>
                           )}
                         </div>
-                        <div className="flex flex-col">
-                          <span className="text-sm font-black text-foreground group-hover:text-primary transition-colors">{u.name}</span>
-                          <span className="text-[11px] font-bold text-muted-foreground">@{u.username}</span>
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-sm font-black text-foreground group-hover:text-primary transition-colors truncate">{u.name}</span>
+                          <span className="text-[11px] font-bold text-muted-foreground truncate">@{u.username}</span>
                         </div>
-                      </div>
-                      <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all translate-x-2 group-hover:translate-x-0">
-                        <UserPlus className="h-4 w-4 text-primary" />
-                      </div>
-                    </Link>
+                      </Link>
+                      {showFollowing && profile.isMe ? (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            setUnfollowTarget({ id: u.id, name: u.name });
+                          }}
+                          className="h-9 px-4 rounded-xl bg-rose-500/10 hover:bg-rose-500 hover:text-white text-rose-500 font-bold text-[10px] uppercase tracking-wider transition-all shadow-sm active:scale-95 shrink-0"
+                        >
+                          Bırak
+                        </button>
+                      ) : (
+                        <Link 
+                          href={`/dashboard/profile/${u.username}`}
+                          onClick={() => { setShowFollowers(false); setShowFollowing(false); }}
+                          className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all translate-x-2 group-hover:translate-x-0 shrink-0"
+                        >
+                          <UserPlus className="h-4 w-4 text-primary" />
+                        </Link>
+                      )}
+                    </div>
                   ))
                 )}
               </div>
             </div>
           </div>
         </div>
+      )}
+
+      {/* Unfollow Confirmation Modal */}
+      {unfollowTarget && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-card border border-border/20 rounded-[32px] w-full max-w-sm shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+            <div className="p-8 text-center space-y-6">
+              <div className="w-16 h-16 bg-rose-500/10 rounded-full flex items-center justify-center mx-auto text-rose-500 animate-pulse">
+                <UserPlus className="h-8 w-8 rotate-45" />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-lg font-black text-foreground">
+                  Takibi Bırak?
+                </h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  <span className="font-bold text-foreground">{unfollowTarget.name}</span> kullanıcısını takipten çıkarmak istediğinize emin misiniz?
+                </p>
+              </div>
+              <div className="flex gap-3">
+                <Button variant="ghost" onClick={() => setUnfollowTarget(null)} className="flex-1 h-12 rounded-2xl font-bold hover:bg-muted">Vazgeç</Button>
+                <Button 
+                  onClick={async () => {
+                    const targetId = unfollowTarget.id;
+                    setUnfollowTarget(null);
+                    startTransition(async () => {
+                      try {
+                        await toggleFollow(targetId);
+                        setFollowList(prev => prev.filter(item => item.id !== targetId));
+                        setFollowingCount(prev => Math.max(0, prev - 1));
+                        setSuccessMessage("Kullanıcı takipten çıkarıldı.");
+                        setTimeout(() => setSuccessMessage(null), 4000);
+                        router.refresh();
+                      } catch (error) {
+                        setErrorMessage("İşlem başarısız.");
+                        setTimeout(() => setErrorMessage(null), 4000);
+                      }
+                    });
+                  }} 
+                  className="flex-1 h-12 rounded-2xl font-bold bg-rose-500 text-white hover:bg-rose-600 shadow-lg shadow-rose-500/20"
+                >
+                  Evet, Bırak
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
     </div>
   );
