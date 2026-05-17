@@ -23,6 +23,14 @@ export default function SlidingAuth() {
   const [confirmationText, setConfirmationText] = useState("");
   const [showErrorAnim, setShowErrorAnim] = useState(false);
 
+  // Sayfa yüklendiğinde localStorage'dan durumu oku (Hydration uyuşmazlığını önlemek için useEffect içinde yapılır)
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const accepted = localStorage.getItem("test_terms_accepted") === "true";
+      setIsTermsAccepted(accepted);
+    }
+  }, []);
+
   useEffect(() => {
     const checkScreen = () => setIsLargeScreen(window.innerWidth >= 1024);
     checkScreen();
@@ -38,6 +46,9 @@ export default function SlidingAuth() {
   const handleAccept = () => {
     if (isTextCorrect) {
       setIsTermsAccepted(true);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("test_terms_accepted", "true");
+      }
       setIsModalOpen(false);
       setConfirmationText("");
     } else {
@@ -51,6 +62,9 @@ export default function SlidingAuth() {
       setIsModalOpen(true);
     } else {
       setIsTermsAccepted(false);
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("test_terms_accepted");
+      }
     }
   };
 
