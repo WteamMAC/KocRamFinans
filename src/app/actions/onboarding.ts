@@ -196,6 +196,8 @@ export async function completeOnboarding(formData: {
           const amt = Number(inc.amount) || 0;
           return {
             type: inc.type, amount: amt * rate,
+            originalAmount: amt,
+            fxRate: rate,
             date: inc.date ? new Date(inc.date) : new Date(),
             description: inc.description,
             currency: cur,

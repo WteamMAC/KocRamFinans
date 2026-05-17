@@ -1062,7 +1062,7 @@ export function OnboardingForm() {
         {/* Global Country Overlay */}
         {selectedRegion && (
           <div className="absolute inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-6 animate-in fade-in duration-300">
-            <div className="absolute inset-0 bg-[#5a3100]/20 dark:bg-black/70 backdrop-blur-md" onClick={() => setSelectedRegion(null)} />
+            <div className="absolute inset-0 bg-[#5a3100]/20 dark:bg-black/70 backdrop-blur-md rounded-3xl" onClick={() => setSelectedRegion(null)} />
             <div className="relative w-full h-[80%] sm:h-auto sm:max-h-[85%] bg-card border-t sm:border border-[#8C5000]/20 dark:border-[#ffb874]/20 rounded-t-[2.5rem] sm:rounded-3xl shadow-ambient-high overflow-hidden flex flex-col animate-in slide-in-from-bottom-10 sm:zoom-in-95 duration-500">
               <div className="px-8 py-6 border-b border-border/10 flex justify-between items-center bg-muted/30">
                 <div>
@@ -1117,7 +1117,7 @@ export function OnboardingForm() {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 onClick={() => setActiveAssetModal(null)}
-                className="absolute inset-0 bg-[#5a3100]/20 dark:bg-black/70 backdrop-blur-md"
+                className="absolute inset-0 bg-[#5a3100]/20 dark:bg-black/70 backdrop-blur-md rounded-3xl"
               />
               <motion.div
                 initial={{ opacity: 0, scale: 0.9, y: 20 }}
@@ -1353,7 +1353,7 @@ export function OnboardingForm() {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 onClick={() => setShowIncomeModal(false)}
-                className="absolute inset-0 bg-[#5a3100]/20 dark:bg-black/70 backdrop-blur-md"
+                className="absolute inset-0 bg-[#5a3100]/20 dark:bg-black/70 backdrop-blur-md rounded-3xl"
               />
               <motion.div
                 initial={{ opacity: 0, scale: 0.9, y: 20 }}
@@ -1470,7 +1470,7 @@ export function OnboardingForm() {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 onClick={() => setShowExpenseModal(false)}
-                className="absolute inset-0 bg-[#5a3100]/20 dark:bg-black/70 backdrop-blur-md"
+                className="absolute inset-0 bg-[#5a3100]/20 dark:bg-black/70 backdrop-blur-md rounded-3xl"
               />
               <motion.div
                 initial={{ opacity: 0, scale: 0.9, y: 20 }}
@@ -1587,7 +1587,7 @@ export function OnboardingForm() {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 onClick={() => setShowDebtModal(false)}
-                className="absolute inset-0 bg-[#5a3100]/20 dark:bg-black/70 backdrop-blur-md"
+                className="absolute inset-0 bg-[#5a3100]/20 dark:bg-black/70 backdrop-blur-md rounded-3xl"
               />
               <motion.div
                 initial={{ opacity: 0, scale: 0.9, y: 20 }}

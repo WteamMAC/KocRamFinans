@@ -212,7 +212,7 @@ export async function POST(req: Request) {
       } catch (error: any) {
         console.warn(`[AI-CHAT] Uyarı - Model başarısız (${modelName}):`, error.message);
         lastError = error;
-        
+
         // Eğer hata API kotası/limit aşımı ise (429) veya Güvenlik İhlali ise diğer modellere geçmeye gerek yok.
         const msg = error.message?.toLowerCase() || "";
         if (msg.includes("429") || msg.includes("quota") || msg.includes("rate limit")) {
@@ -225,8 +225,6 @@ export async function POST(req: Request) {
             error: "Mesajınız veya finansal içeriğiniz güvenlik politikalarımıza takıldı. Lütfen daha net ve uygun bir dil kullanın."
           }), { status: 400, headers: { "Content-Type": "application/json" } });
         }
-        
-        // Hata alınırsa bir sonraki yedek modele geçmeye devam edecek.
       }
     }
 
