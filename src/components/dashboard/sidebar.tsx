@@ -159,19 +159,19 @@ export function Sidebar({ isCollapsed, onToggle, hideToggle, theme, onToggleThem
         </Button>
       )}
 
-      <div className="px-3 py-2 flex-1 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
-        <Link href="/dashboard" className={cn(
-          "flex items-center mb-10 transition-all duration-300",
-          isCollapsed ? "justify-center" : "px-4"
-        )}>
-          <img src="/mascot.png" alt="Logo" className="h-14 w-14 object-contain" />
-          {!isCollapsed && (
-            <h1 className="text-xl font-heading font-bold text-primary ml-3 truncate">
-              Koç Ram Finans
-            </h1>
-          )}
-        </Link>
+      <Link href="/dashboard" className={cn(
+        "flex items-center transition-all duration-300",
+        isCollapsed ? "justify-center" : "px-7"
+      )}>
+        <img src="/mascot.png" alt="Logo" className="h-14 w-14 object-contain" />
+        {!isCollapsed && (
+          <h1 className="text-xl font-heading font-bold text-primary ml-3 truncate">
+            Koç Ram Finans
+          </h1>
+        )}
+      </Link>
 
+      <div className="px-3 py-2 flex-1 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
         <div className="space-y-1 tour-step-1">
           {routes.map((route) => (
             <div key={route.href} className="space-y-1">

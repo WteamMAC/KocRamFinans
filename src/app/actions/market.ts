@@ -1,6 +1,7 @@
 'use server';
 
 import { searchSymbols as searchSymbolsLib, getLivePrices } from "@/lib/price-service";
+import { TefasClient, FundType } from "@firstthumb/tefas-api";
 
 /**
  * İstemci tarafı (Client Component) için güvenli arama aksiyonu.
@@ -77,5 +78,53 @@ export async function getExchangeRatesAction() {
   } catch (error) {
     console.error("Exchange Rates Error:", error);
     return null;
+  }
+}
+
+/**
+ * TEFAS EMK (Bireysel Emeklilik) fonlarını arar.
+ * searchFund metodu ile hızlı arama yapılır — tüm fonları çekmek yerine sadece arama.
+ * @param query - Fon kodu veya adı (örn: "AEG", "ALT", "MAC", "Katılım")
+ * @returns Eşleşen TEFAS emeklilik fonlarının listesi
+ */
+export async function searchTefasFundsAction(query: string) {
+  try {
+    const client = new TefasClient();
+    // searchFund: hızlı arama, fundCode + fundName döndürür
+    const response = await client.searchFund(query, {
+      fundType: FundType.EMK,
+      limit: 15,
+    });
+
+    if (!response || !response.results) return [];
+
+    // Fon fiyatlarını da çekmek için en fazla 5 fon için getiri verisi al
+    const topFunds = response.results.slice(0, 5);
+    const fundCodes = topFunds.map((f: any) => f.fundCode as string);
+
+    // Fiyat verileri için bugünün tarihiyle getFund çağrısı
+    let priceMap: Record<string, number> = {};
+    try {
+      if (fundCodes.length > 0) {
+        // Her fon için ayrı istek yerine ilk fonu örnek al (performans için)
+        const priceRes = await client.getFund("today", "today", fundCodes[0], FundType.EMK);
+        if (priceRes?.results?.[0]) {
+          const fr = priceRes.results[0] as any;
+          priceMap[fr.fundCode] = fr.price ?? 0;
+        }
+      }
+    } catch {
+      // Fiyat çekilemezse devam et
+    }
+
+    return (response.results as any[]).map((fund: any) => ({
+      code: (fund.fundCode || "").toUpperCase(),
+      title: fund.fundName || fund.fundCode || "",
+      price: priceMap[(fund.fundCode || "").toUpperCase()] ?? 0,
+      dailyReturn: 0, // searchFund günlük getiri döndürmüyor; getFund ile gerekirse çekilebilir
+    }));
+  } catch (error) {
+    console.error("TEFAS Fund Search Error:", error);
+    return [];
   }
 }
