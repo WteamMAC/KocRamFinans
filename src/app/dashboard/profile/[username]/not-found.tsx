@@ -1,17 +1,44 @@
 'use client';
 
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
-import { buttonVariants } from "@/components/ui/button";
-import { Home } from "lucide-react";
+import { buttonVariants, Button } from "@/components/ui/button";
+import { Home, Sun, Moon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTheme } from "next-themes";
 
-export default function NotFound() {
+export default function ProfileNotFound() {
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const isDark = mounted && theme === "dark";
+
   return (
-    <div className="relative min-h-screen w-full flex flex-col items-center justify-center overflow-hidden bg-background text-foreground transition-colors duration-500">
+    <div className="relative min-h-[calc(100vh-4rem)] md:min-h-screen w-full flex flex-col items-center justify-center overflow-hidden bg-background transition-colors duration-500 text-foreground">
+      
+      {/* Top right theme button */}
+      {mounted && (
+        <div className="absolute top-6 right-6 z-50">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            className="w-12 h-12 rounded-full bg-card border border-border/20 shadow-md backdrop-blur-md hover:scale-105 transition-all text-foreground"
+            aria-label="Tema Değiştir"
+          >
+            {isDark ? <Sun className="w-6 h-6" /> : <Moon className="w-6 h-6" />}
+          </Button>
+        </div>
+      )}
+
       {/* Subtle dot pattern */}
-      <div className="absolute inset-0 opacity-[0.08] pointer-events-none"
+      <div className="absolute inset-0 opacity-[0.08] dark:opacity-[0.12] pointer-events-none"
         style={{
           backgroundImage: "radial-gradient(circle, currentColor 1px, transparent 1px)",
           backgroundSize: "36px 36px",
@@ -30,8 +57,8 @@ export default function NotFound() {
         >
           <div className="relative rounded-3xl overflow-hidden border border-border/20 shadow-sm transition-all duration-500">
             <Image
-              src="/fisherman-404.png"
-              alt="Balıkçı 404 illüstrasyonu"
+              src={isDark ? "/cowboy-404-night.png" : "/cowboy-404.png"}
+              alt="Kovboy Kayıp Kullanıcı İllüstrasyonu"
               width={800}
               height={800}
               className="w-full h-auto object-cover rounded-3xl"
@@ -56,7 +83,7 @@ export default function NotFound() {
               fontSize: "clamp(40px, 6vw, 70px)",
             }}
           >
-            Sayfa Yok
+            Kullanıcı Yok
           </motion.h1>
 
           <motion.p
@@ -65,7 +92,7 @@ export default function NotFound() {
             transition={{ delay: 0.4 }}
             className="text-xl md:text-2xl font-bold mb-2 text-foreground transition-colors duration-500"
           >
-            Sayfayı Balıkladık!
+            Kullanıcı Kasabayı Terk Etti
           </motion.p>
 
           <motion.p
@@ -74,7 +101,7 @@ export default function NotFound() {
             transition={{ delay: 0.5 }}
             className="text-sm md:text-base mb-8 max-w-xs leading-relaxed text-muted-foreground transition-colors duration-500"
           >
-            Aradığınız sayfa finansal derinliklerde kaybolmuş. Sizi güvenli sulara geri alalım.
+            Aradığınız yatırımcı ya atına atlayıp uzaklaşmış ya da şerifler kurallara uymadığı için hesabını askıya almış.
           </motion.p>
 
           <motion.div
@@ -95,11 +122,11 @@ export default function NotFound() {
           </motion.div>
 
           {/* Decorative dots */}
-          <div className="flex gap-2 mt-8 opacity-25">
+          <div className="flex gap-2 mt-8 opacity-25 dark:opacity-40">
             {[...Array(5)].map((_, i) => (
               <div
                 key={i}
-                className="rounded-full bg-primary"
+                className="rounded-full bg-[#8C5000] dark:bg-[#ffb874]"
                 style={{
                   width: i === 2 ? 10 : 6,
                   height: i === 2 ? 10 : 6,
