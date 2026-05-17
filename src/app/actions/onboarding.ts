@@ -17,7 +17,18 @@ export async function completeOnboarding(formData: {
   familyCount?: number;
   incomes: { type: string; amount: number; date?: string; description?: string; currency?: string }[];
   expenses: { type: string; amount: number; date?: string; isRecurring: boolean; description?: string; currency?: string }[];
-  debts: { type: string; amount: number; remainingInstallments?: number; description?: string; currency?: string }[];
+  debts: { 
+    type: string; 
+    amount: number; 
+    remainingInstallments?: number; 
+    interestRate?: number;
+    paymentDay?: number;
+    installmentAmount?: number;
+    principalAmount?: number;
+    dueDate?: string;
+    description?: string; 
+    currency?: string;
+  }[];
   investments: {
     type: string; symbol?: string; quantity?: number;
     purchasePrice?: number; amount?: number; currentValuation?: number; description?: string; currency?: string;
@@ -221,9 +232,14 @@ export async function completeOnboarding(formData: {
           const rate = getRate(cur);
           const amt = Number(d.amount) || 0;
           return {
-            type: d.type, amount: amt * rate,
-            principalAmount: amt * rate,
-            remainingInstallments: d.remainingInstallments,
+            type: d.type,
+            amount: amt * rate,
+            principalAmount: d.principalAmount ? Number(d.principalAmount) * rate : amt * rate,
+            interestRate: d.interestRate ? Number(d.interestRate) : null,
+            installmentAmount: d.installmentAmount ? Number(d.installmentAmount) * rate : null,
+            remainingInstallments: d.remainingInstallments ? Number(d.remainingInstallments) : null,
+            paymentDay: d.paymentDay ? Number(d.paymentDay) : null,
+            dueDate: d.dueDate ? new Date(d.dueDate) : null,
             description: d.description,
             currency: cur,
             originalAmount: amt,
