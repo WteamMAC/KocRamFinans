@@ -120,8 +120,10 @@ export async function POST(req: Request) {
     // AI Modelleri Öncelik Sıralaması (Fallback Stratejisi)
     const FALLBACK_MODELS = [
       "gemini-3.1-flash-preview",
-      "gemini-3.1-flash-lite-preview",
-      "gemini-2.5-flash"
+      "gemini-3.1-flash",
+      "gemini-2.5-flash",
+      "gemini-2.0-flash",
+      "gemini-1.5-flash"
     ];
 
     // Tool (Araç) Konfigürasyonunu döngüde yeniden kullanmak üzere ayırıyoruz
@@ -219,7 +221,7 @@ export async function POST(req: Request) {
     if (!activeChat || !initialStreamResponse) {
       console.error("[AI-CHAT] Tüm modeller başarısız oldu:", lastError?.message);
       return new Response(JSON.stringify({
-        error: "Sistem yoğunluğu nedeniyle asistan şu anda yanıt veremiyor. Modellerimiz limitine ulaştı, lütfen birkaç dakika sonra tekrar deneyin."
+        error: `Asistan şu anda yanıt veremiyor. Hata Detayı: ${lastError?.message || "Bilinmeyen Hata"}`
       }), { status: 503, headers: { "Content-Type": "application/json" } });
     }
 
