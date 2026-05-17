@@ -234,3 +234,119 @@ export async function closeDebt(debtId: string, isTransfer: boolean = false) {
   revalidatePath("/dashboard/income-expense");
   revalidatePath("/dashboard");
 }
+
+export async function refinanceDebtWithDetails(data: {
+  oldDebtId: string;
+  payAmount: number; // Eski borca ödenecek tutar (yeni borç para birimi cinsinden)
+  newDebt: {
+    type: string;
+    amount: number; // Yeni borç orijinal tutarı
+    interestRate?: number;
+    remainingInstallments?: number;
+    paymentDay?: number;
+    dueDate?: string;
+    description?: string;
+    currency: string;
+    fxRate: number;
+  };
+  addRemainingAsExpense: boolean;
+}) {
+  const { userId } = await auth();
+  if (!userId) throw new Error("Unauthorized");
+
+  const user = await prisma.user.findUnique({ where: { clerkUserId: userId } });
+  if (!user) throw new Error("User not found");
+
+  const oldDebt = await prisma.debt.findUnique({ where: { id: data.oldDebtId } });
+  if (!oldDebt) throw new Error("Eski borç bulunamadı.");
+
+  // Calculate new debt final total amount and installments
+  let finalNewTotalAmount = data.newDebt.amount * data.newDebt.fxRate;
+  let monthlyInstallment = null;
+
+  if (data.newDebt.interestRate && data.newDebt.remainingInstallments && data.newDebt.remainingInstallments > 0) {
+    const i = data.newDebt.interestRate / 100;
+    const n = data.newDebt.remainingInstallments;
+    const p = data.newDebt.amount * data.newDebt.fxRate;
+    
+    if (i > 0) {
+      monthlyInstallment = (p * i * Math.pow(1 + i, n)) / (Math.pow(1 + i, n) - 1);
+      finalNewTotalAmount = monthlyInstallment * n;
+    } else {
+      monthlyInstallment = p / n;
+    }
+  }
+
+  let finalDescription = data.newDebt.description || data.newDebt.type;
+  if (data.newDebt.dueDate) {
+    finalDescription += ` (Son Ödeme: ${new Date(data.newDebt.dueDate).toLocaleDateString("tr-TR")})`;
+  }
+  finalDescription += " (Yapılandırıldı)";
+
+  // Create the new debt
+  await prisma.debt.create({
+    data: {
+      userId: user.id,
+      type: data.newDebt.type,
+      amount: finalNewTotalAmount,
+      principalAmount: data.newDebt.amount * data.newDebt.fxRate,
+      interestRate: data.newDebt.interestRate,
+      installmentAmount: monthlyInstallment,
+      remainingInstallments: data.newDebt.remainingInstallments,
+      paymentDay: data.newDebt.paymentDay,
+      description: finalDescription,
+      currency: data.newDebt.currency,
+      originalAmount: data.newDebt.amount,
+      fxRate: data.newDebt.fxRate,
+    },
+  });
+
+  // Calculate old debt deduction
+  // Old debt is in its own currency, and payAmount is in the new debt's currency.
+  // We convert payAmount to TRY first, then subtract from old debt's amount (which is in TRY).
+  const payAmountInTry = data.payAmount * data.newDebt.fxRate;
+  const newOldAmount = Math.max(0, oldDebt.amount - payAmountInTry);
+
+  if (newOldAmount <= 0) {
+    await prisma.debt.update({
+      where: { id: data.oldDebtId },
+      data: {
+        amount: 0,
+        remainingInstallments: 0,
+      },
+    });
+  } else {
+    // Pro-rate or just subtract from old debt amount
+    await prisma.debt.update({
+      where: { id: data.oldDebtId },
+      data: {
+        amount: newOldAmount,
+      },
+    });
+  }
+
+  // Create expense for the remaining money from new debt if checked
+  const remainingOriginalAmount = data.newDebt.amount - data.payAmount;
+  if (data.addRemainingAsExpense && remainingOriginalAmount > 0) {
+    await prisma.expense.create({
+      data: {
+        userId: user.id,
+        type: "Diğer",
+        amount: remainingOriginalAmount * data.newDebt.fxRate,
+        isRecurring: false,
+        description: `Yapılandırılan borçtan kalan harcama (${data.newDebt.description || data.newDebt.type}).`,
+        date: new Date(),
+        currency: data.newDebt.currency,
+        originalAmount: remainingOriginalAmount,
+        fxRate: data.newDebt.fxRate,
+      },
+    });
+  }
+
+  revalidatePath("/dashboard/debts");
+  revalidatePath("/dashboard/income-expense");
+  revalidatePath("/dashboard");
+
+  return { success: true };
+}
+

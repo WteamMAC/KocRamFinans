@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { ProfileSettingsForm } from "@/components/profile-settings-form";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { DeleteAccountSection } from "@/components/dashboard/delete-account-section";
 
 export const metadata = {
   title: "Profil Ayarları | Koç Ram Finans",
@@ -53,6 +54,7 @@ export default async function SettingsPage() {
           </p>
         </div>
         <ProfileSettingsForm initialData={initialData} />
+        <DeleteAccountSection />
       </div>
     </div>
   );

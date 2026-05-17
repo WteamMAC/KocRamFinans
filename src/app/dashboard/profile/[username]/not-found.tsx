@@ -1,99 +1,147 @@
 'use client';
 
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
-import { buttonVariants } from "@/components/ui/button";
-import { Home, Compass, ShieldAlert } from "lucide-react";
+import { buttonVariants, Button } from "@/components/ui/button";
+import { Home, Sun, Moon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTheme } from "next-themes";
 
 export default function ProfileNotFound() {
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const isDark = mounted && theme === "dark";
+
   return (
-    <div className="relative min-h-[calc(100vh-4rem)] md:min-h-screen w-full flex flex-col items-center justify-center overflow-hidden p-4 md:p-8"
-      style={{ background: "linear-gradient(180deg, #1f120c 0%, #0f0805 100%)" }}>
+    <div className="relative min-h-[calc(100vh-4rem)] md:min-h-screen w-full flex flex-col items-center justify-center overflow-hidden bg-[#F5EDD8] dark:bg-[#120d0a] transition-colors duration-500 text-[#5a3100] dark:text-[#ffb874]">
       
-      {/* Wild West Dust Background Pattern */}
-      <div className="absolute inset-0 opacity-[0.12]"
+      {/* Top right theme button */}
+      {mounted && (
+        <div className="absolute top-6 right-6 z-50">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            className="w-12 h-12 rounded-full bg-white/50 dark:bg-black/40 border border-[#8c5000]/20 dark:border-[#ffb874]/20 shadow-md backdrop-blur-md hover:scale-105 transition-all text-[#5a3100] dark:text-[#ffb874]"
+            aria-label="Tema Değiştir"
+          >
+            {isDark ? <Sun className="w-6 h-6" /> : <Moon className="w-6 h-6" />}
+          </Button>
+        </div>
+      )}
+
+      {/* Subtle dot pattern */}
+      <div className="absolute inset-0 opacity-[0.08] dark:opacity-[0.12] pointer-events-none"
         style={{
-          backgroundImage: "radial-gradient(circle, #ffb874 1.5px, transparent 1.5px)",
-          backgroundSize: "40px 40px",
+          backgroundImage: "radial-gradient(circle, currentColor 1px, transparent 1px)",
+          backgroundSize: "36px 36px",
         }}
       />
 
-      {/* Glow behind container */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-[#8c5000]/25 blur-[140px] rounded-full pointer-events-none" />
+      {/* Main layout */}
+      <div className="relative z-10 w-full max-w-6xl mx-auto px-6 flex flex-col md:flex-row items-center justify-center gap-6 md:gap-12 py-8">
 
-      {/* Main Wanted Bulletin Card */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: "easeOut" }}
-        className="relative z-10 w-full max-w-4xl bg-[#fdf9f3] dark:bg-[#1a100b] border-4 border-[#8c5000] dark:border-[#d97706] rounded-[36px] shadow-2xl overflow-hidden flex flex-col lg:flex-row items-center p-6 md:p-12 gap-8 md:gap-12 border-opacity-90"
-        style={{ boxShadow: "0 30px 60px -15px rgba(140, 80, 0, 0.5)" }}
-      >
-        {/* Left: Cowboy Image */}
-        <div className="w-full lg:w-1/2 flex justify-center">
-          <div className="relative w-full max-w-[340px] md:max-w-[380px] aspect-square rounded-3xl overflow-hidden border-4 border-[#8c5000]/40 shadow-2xl bg-[#f5edd8] group">
-            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent z-10 pointer-events-none" />
+        {/* Left: Illustration */}
+        <motion.div
+          initial={{ opacity: 0, x: -30 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.7, ease: "easeOut" }}
+          className="w-full md:w-[50%] flex-shrink-0"
+        >
+          <div className="relative rounded-3xl overflow-hidden shadow-2xl dark:shadow-[0_0_50px_rgba(255,184,116,0.15)] dark:border dark:border-[#ffb874]/20 transition-all duration-500 bg-[#F5EDD8] dark:bg-[#120d0a]">
             <Image
-              src="/cowboy-404.png"
+              src={isDark ? "/cowboy-404-night.png" : "/cowboy-404.png"}
               alt="Kovboy Kayıp Kullanıcı İllüstrasyonu"
-              fill
-              className="object-cover group-hover:scale-105 transition-transform duration-500"
+              width={800}
+              height={800}
+              className="w-full h-auto object-contain"
               priority
             />
-            {/* Wanted Stamp */}
-            <div className="absolute top-5 right-5 z-20 bg-red-600 text-white font-black px-4 py-1.5 rounded-full text-xs md:text-sm tracking-widest uppercase shadow-xl transform rotate-12 border-2 border-white animate-pulse">
-              WANTED / KAYIP
-            </div>
           </div>
-        </div>
+        </motion.div>
 
-        {/* Right: Content */}
-        <div className="w-full lg:w-1/2 flex flex-col items-center lg:items-start text-center lg:text-left">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#8c5000]/10 dark:bg-[#ffb874]/10 border border-[#8c5000]/25 text-[#8c5000] dark:text-[#ffb874] text-xs font-black uppercase tracking-wider mb-4">
-            <ShieldAlert className="w-4 h-4 text-red-500" /> Vahşi Batı Bildirisi
-          </div>
+        {/* Right: Text + Button */}
+        <motion.div
+          initial={{ opacity: 0, x: 30 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.7, ease: "easeOut", delay: 0.15 }}
+          className="flex flex-col items-start text-left"
+        >
+          <motion.h1
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="font-black leading-none mb-3 text-[#5a3100] dark:text-[#ffb874] transition-colors duration-500"
+            style={{
+              fontSize: "clamp(80px, 12vw, 130px)",
+              textShadow: "0 8px 20px rgba(140,80,0,0.2)",
+            }}
+          >
+            404
+          </motion.h1>
 
-          <h1 className="text-3xl md:text-5xl font-black font-heading text-[#3a1d00] dark:text-[#fbf9f4] tracking-tight leading-none mb-4">
-            Kullanıcı Diyarı Terk Etti!
-          </h1>
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4 }}
+            className="text-xl md:text-2xl font-bold mb-2 text-[#5a3100] dark:text-[#fbf9f4] transition-colors duration-500"
+          >
+            Kullanıcı Kasabayı Terk Etti
+          </motion.p>
 
-          <p className="text-base md:text-lg font-bold text-[#887364] dark:text-[#dbc2b0] mb-6 leading-relaxed">
-            Aradığınız yatırımcı ya atına atlayıp gün batımına doğru uzaklaştı, ya da şerifler (yöneticiler) kurallara uymadığı için onu hakladı! 🤠🏜️
-          </p>
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            className="text-sm md:text-base mb-8 max-w-xs leading-relaxed text-[#887364] dark:text-[#dbc2b0]/80 transition-colors duration-500"
+          >
+            Aradığınız yatırımcı ya atına atlayıp uzaklaşmış ya da şerifler kurallara uymadığı için hesabını askıya almış.
+          </motion.p>
 
-          <div className="bg-[#8c5000]/5 dark:bg-black/30 border border-[#8c5000]/20 rounded-2xl p-4 mb-8 w-full shadow-inner">
-            <p className="text-xs md:text-sm font-semibold text-[#5a3100] dark:text-[#ffb874] flex items-center gap-2 justify-center lg:justify-start">
-              <span className="text-lg">📌</span> <span><strong className="underline">Şerifin Notu:</strong> Bu kullanıcının hesabı silinmiş, banlanmış veya adı değişmiş olabilir.</span>
-            </p>
-          </div>
-
-          <div className="flex flex-col sm:flex-row items-center gap-3.5 w-full">
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
+          >
             <Link
-              href="/dashboard"
+              href="/"
               className={cn(
                 buttonVariants({ variant: "default" }),
-                "w-full sm:w-auto h-12 px-8 font-black rounded-2xl text-white flex items-center justify-center gap-2 text-base shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl active:scale-95 bg-gradient-to-r from-[#d97706] to-[#8c5000] border-none"
+                "h-12 px-8 font-bold rounded-full text-white flex items-center gap-2.5 text-base shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl active:scale-95"
               )}
+              style={{
+                background: "linear-gradient(135deg, #f18d02 0%, #8c5000 100%)",
+                border: "none",
+                boxShadow: "0 6px 20px rgba(140,80,0,0.35)",
+              }}
             >
-              <Home className="w-5 h-5" />
-              <span>Kasabaya Dön</span>
+              <Home className="w-5 h-5 text-white" />
+              <span className="text-white">Ana Menüye Dön</span>
             </Link>
+          </motion.div>
 
-            <Link
-              href="/dashboard/blog"
-              className={cn(
-                buttonVariants({ variant: "outline" }),
-                "w-full sm:w-auto h-12 px-8 font-black rounded-2xl flex items-center justify-center gap-2 text-base shadow-sm transition-all duration-300 hover:bg-[#8c5000]/10 border-2 border-[#8c5000]/30 text-[#8c5000] dark:text-[#ffb874]"
-              )}
-            >
-              <Compass className="w-5 h-5" />
-              <span>Topluluğu Keşfet</span>
-            </Link>
+          {/* Decorative dots */}
+          <div className="flex gap-2 mt-8 opacity-25 dark:opacity-40">
+            {[...Array(5)].map((_, i) => (
+              <div
+                key={i}
+                className="rounded-full bg-[#8C5000] dark:bg-[#ffb874]"
+                style={{
+                  width: i === 2 ? 10 : 6,
+                  height: i === 2 ? 10 : 6,
+                }}
+              />
+            ))}
           </div>
-        </div>
-      </motion.div>
+        </motion.div>
+      </div>
     </div>
   );
 }
