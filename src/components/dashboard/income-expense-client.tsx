@@ -559,7 +559,7 @@ export function IncomeExpenseClient({
         {/* Responsive Transaction View */}
         <div className="space-y-4">
           {/* Desktop Table View */}
-          <Card className="hidden md:block border-border/20 shadow-ambient-high rounded-[40px] overflow-hidden bg-card/30 backdrop-blur-xl">
+          <Card className="hidden md:block border-border/20 shadow-ambient-high rounded-[40px] overflow-hidden bg-card/30 backdrop-blur-xl pt-0">
             <div className="overflow-x-auto">
               <table className="w-full text-left">
                 <thead>
