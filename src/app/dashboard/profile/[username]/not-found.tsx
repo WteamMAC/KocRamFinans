@@ -20,7 +20,7 @@ export default function ProfileNotFound() {
   const isDark = mounted && theme === "dark";
 
   return (
-    <div className="relative min-h-[calc(100vh-4rem)] md:min-h-screen w-full flex flex-col items-center justify-center overflow-hidden bg-[#F5EDD8] dark:bg-[#120d0a] transition-colors duration-500 text-[#5a3100] dark:text-[#ffb874]">
+    <div className="relative min-h-[calc(100vh-4rem)] md:min-h-screen w-full flex flex-col items-center justify-center overflow-hidden bg-background transition-colors duration-500 text-foreground">
       
       {/* Top right theme button */}
       {mounted && (
@@ -29,7 +29,7 @@ export default function ProfileNotFound() {
             variant="ghost"
             size="icon"
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            className="w-12 h-12 rounded-full bg-white/50 dark:bg-black/40 border border-[#8c5000]/20 dark:border-[#ffb874]/20 shadow-md backdrop-blur-md hover:scale-105 transition-all text-[#5a3100] dark:text-[#ffb874]"
+            className="w-12 h-12 rounded-full bg-card border border-border/20 shadow-md backdrop-blur-md hover:scale-105 transition-all text-foreground"
             aria-label="Tema Değiştir"
           >
             {isDark ? <Sun className="w-6 h-6" /> : <Moon className="w-6 h-6" />}
@@ -55,7 +55,7 @@ export default function ProfileNotFound() {
           transition={{ duration: 0.7, ease: "easeOut" }}
           className="w-full md:w-[50%] flex-shrink-0"
         >
-          <div className="relative rounded-3xl overflow-hidden shadow-2xl dark:shadow-[0_0_50px_rgba(255,184,116,0.15)] transition-all duration-500">
+          <div className="relative rounded-3xl overflow-hidden border border-border/20 shadow-sm transition-all duration-500">
             <Image
               src={isDark ? "/cowboy-404-night.png" : "/cowboy-404.png"}
               alt="Kovboy Kayıp Kullanıcı İllüstrasyonu"
@@ -78,20 +78,19 @@ export default function ProfileNotFound() {
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="font-black leading-none mb-3 text-[#5a3100] dark:text-[#ffb874] transition-colors duration-500"
+            className="font-black leading-tight mb-3 text-primary transition-colors duration-500"
             style={{
-              fontSize: "clamp(80px, 12vw, 130px)",
-              textShadow: "0 8px 20px rgba(140,80,0,0.2)",
+              fontSize: "clamp(40px, 6vw, 70px)",
             }}
           >
-            404
+            Kullanıcı Yok
           </motion.h1>
 
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4 }}
-            className="text-xl md:text-2xl font-bold mb-2 text-[#5a3100] dark:text-[#fbf9f4] transition-colors duration-500"
+            className="text-xl md:text-2xl font-bold mb-2 text-foreground transition-colors duration-500"
           >
             Kullanıcı Kasabayı Terk Etti
           </motion.p>
@@ -100,7 +99,7 @@ export default function ProfileNotFound() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5 }}
-            className="text-sm md:text-base mb-8 max-w-xs leading-relaxed text-[#887364] dark:text-[#dbc2b0]/80 transition-colors duration-500"
+            className="text-sm md:text-base mb-8 max-w-xs leading-relaxed text-muted-foreground transition-colors duration-500"
           >
             Aradığınız yatırımcı ya atına atlayıp uzaklaşmış ya da şerifler kurallara uymadığı için hesabını askıya almış.
           </motion.p>
@@ -114,16 +113,11 @@ export default function ProfileNotFound() {
               href="/"
               className={cn(
                 buttonVariants({ variant: "default" }),
-                "h-12 px-8 font-bold rounded-full text-white flex items-center gap-2.5 text-base shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl active:scale-95"
+                "h-12 px-8 font-bold rounded-full text-primary-foreground flex items-center gap-2.5 text-base transition-all duration-300 hover:opacity-90 active:scale-95 bg-primary"
               )}
-              style={{
-                background: "linear-gradient(135deg, #f18d02 0%, #8c5000 100%)",
-                border: "none",
-                boxShadow: "0 6px 20px rgba(140,80,0,0.35)",
-              }}
             >
-              <Home className="w-5 h-5 text-white" />
-              <span className="text-white">Ana Menüye Dön</span>
+              <Home className="w-5 h-5 text-primary-foreground" />
+              <span>Ana Menüye Dön</span>
             </Link>
           </motion.div>
 
