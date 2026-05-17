@@ -1149,8 +1149,7 @@ export function BlogFeed({
     }
   }, [posts]);
 
-  // Çift Yönlü Senkronizasyon: Kullanıcı Gelişmiş Filtreye etiket yazdığı anda barda otomatik aktif et
-  useEffect(() => {
+  const handleApplyAdvancedFilters = () => {
     if (tagSearch.trim()) {
       const query = tagSearch.trim().toLowerCase();
       const formatted = query.startsWith("#") ? query : `#${query}`;
@@ -1169,7 +1168,8 @@ export function BlogFeed({
         return prev;
       });
     }
-  }, [tagSearch]);
+    setIsFilterPanelOpen(false);
+  };
 
   const handleToggleTag = (tag: string) => {
     setActiveTags(prev => {
@@ -1520,13 +1520,13 @@ export function BlogFeed({
                      <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wide">Etiket Ara</label>
                      <div className="relative">
                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground opacity-50" />
-                       <input value={tagSearch} onChange={e => setTagSearch(e.target.value)} placeholder="Etiket yaz..." className="w-full pl-10 pr-8 py-3 bg-muted/30 border border-border/20 rounded-2xl text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
+                       <input value={tagSearch} onChange={e => setTagSearch(e.target.value)} onKeyDown={e => { if (e.key === "Enter") handleApplyAdvancedFilters(); }} placeholder="Etiket yaz ve Enter'a bas..." className="w-full pl-10 pr-8 py-3 bg-muted/30 border border-border/20 rounded-2xl text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
                        {tagSearch && <button onClick={() => setTagSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"><X className="h-4 w-4" /></button>}
                      </div>
                    </div>
                  </div>
 
-                 <Button onClick={() => setIsFilterPanelOpen(false)} className="w-full h-11 rounded-xl text-xs font-bold bg-primary text-primary-foreground shadow-lg shadow-primary/20">
+                 <Button onClick={handleApplyAdvancedFilters} className="w-full h-11 rounded-xl text-xs font-bold bg-primary text-primary-foreground shadow-lg shadow-primary/20">
                    Filtreleri Uygula
                  </Button>
               </div>
