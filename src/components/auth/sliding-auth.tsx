@@ -30,10 +30,6 @@ export default function SlidingAuth() {
     return () => window.removeEventListener("resize", checkScreen);
   }, []);
 
-  const toggleAuth = () => {
-    const newPath = isLogin ? "/sign-up" : "/sign-in";
-    router.push(newPath);
-  };
 
   const isTextCorrect = 
     confirmationText.trim().toUpperCase() === "ONAYLADIM" || 
@@ -104,17 +100,6 @@ export default function SlidingAuth() {
                       }
                     }}
                   />
-                  <div className="mt-8 text-center">
-                    <p className="text-muted-foreground font-medium">
-                      Henüz hesabınız yok mu?{" "}
-                      <button 
-                        onClick={toggleAuth}
-                        className="text-primary font-bold hover:underline"
-                      >
-                        Kayıt Ol
-                      </button>
-                    </p>
-                  </div>
                 </motion.div>
               ) : (
                 <motion.div 
@@ -210,17 +195,6 @@ export default function SlidingAuth() {
                     </div>
                   </div>
 
-                  <div className="mt-8 text-center">
-                    <p className="text-muted-foreground font-medium">
-                      Zaten hesabınız var mı?{" "}
-                      <button 
-                        onClick={toggleAuth}
-                        className="text-primary font-bold hover:underline"
-                      >
-                        Giriş Yap
-                      </button>
-                    </p>
-                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
