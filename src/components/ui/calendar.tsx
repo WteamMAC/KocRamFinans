@@ -60,15 +60,15 @@ export function Calendar({ selected, onSelect, className }: CalendarProps) {
       <div className="flex items-center justify-between mb-6 px-1">
         <div className="flex items-center gap-1">
           <Select 
-            value={getMonth(currentMonth).toString()}
-            onValueChange={(v) => setCurrentMonth(setMonth(currentMonth, parseInt(v as string)))}
+            value={(getMonth(currentMonth) + 1).toString()}
+            onValueChange={(v) => setCurrentMonth(setMonth(currentMonth, parseInt(v as string) - 1))}
           >
             <SelectTrigger className="h-9 w-[110px] bg-muted/40 border-none px-3 hover:bg-muted/60 transition-all font-black text-xs rounded-xl">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="min-w-[130px] rounded-2xl border-primary/10">
               {months.map((m, i) => (
-                <SelectItem key={m} value={i.toString()} className="text-xs font-bold">{m}</SelectItem>
+                <SelectItem key={m} value={(i + 1).toString()} className="text-xs font-bold">{m}</SelectItem>
               ))}
             </SelectContent>
           </Select>
