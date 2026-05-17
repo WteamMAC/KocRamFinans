@@ -30,12 +30,47 @@ import {
   Rss,
   User,
   PlayCircle,
-  Bell
+  Bell,
+  HelpCircle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/dashboard/notification-bell";
 import { MessageBell } from "@/components/dashboard/message-bell";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+
+const faqs = [
+  {
+    id: "faq-1",
+    question: "Koç Ram Finans Nedir?",
+    answer: "Koç Ram Finans; tüm varlıklarınızı (Kripto, BIST, NASDAQ, Altın, BES, Faiz vb.) tek bir merkezden izlemenizi, gelir-gider dengenizi yönetmenizi ve gelişmiş finansal hesaplayıcılar ile geleceğe yönelik planlama yapmanızı sağlayan kapsamlı bir kişisel finans yönetim platformudur."
+  },
+  {
+    id: "faq-2",
+    question: "Varlık Fiyatları Nasıl Güncellenir?",
+    answer: "Portföyündeki Kripto Para, BIST/NASDAQ hisseleri ve altın fiyatları piyasa koşullarına uygun periyotlarla otomatik olarak güncellenir. Bu sayede yatırımlarınızın güncel durumunu her an canlıya yakın oranlarla takip edebilirsiniz."
+  },
+  {
+    id: "faq-3",
+    question: "Gelir-Gider Takibi Nasıl Yapılır?",
+    answer: "Sol menüdeki 'Gelir - Gider Ekle' seçeneğini kullanarak yeni kayıtlar ekleyebilirsiniz. 'Gelir Gider Göster' sayfasından ise tüm nakit akışınızı tarihsel olarak filtreleyebilir, grafiklerle analiz edebilirsiniz."
+  },
+  {
+    id: "faq-4",
+    question: "BES Projeksiyonu Nasıl Çalışır?",
+    answer: "BES (Bireysel Emeklilik Sistemi) projeksiyon modülü, girdiğiniz aylık katkı payı, fon getiri tahmini ve devlet katkısı oranlarını birleştirerek gelecek tahminleri üretir ve bunu bir büyüme grafiği ile görselleştirir."
+  },
+  {
+    id: "faq-5",
+    question: "Verilerim Güvende mi?",
+    answer: "Verilerinizin gizliliği ve güvenliği birinci önceliğimizdir. Koç Ram Finans, en güncel güvenlik standartları, veri şifreleme ve güvenli kimlik doğrulama altyapısı kullanarak bilgilerinizi korur."
+  }
+];
 
 const routes = [
   {
@@ -106,6 +141,12 @@ const routes = [
     color: "text-blue-500",
   },
   {
+    label: "Sık Sorulan Sorular",
+    icon: HelpCircle,
+    href: "/dashboard/faq",
+    color: "text-sky-500",
+  },
+  {
     label: "Bilgileri Düzenle",
     icon: Settings,
     href: "/dashboard/settings",
@@ -124,6 +165,7 @@ interface SidebarProps {
 export function Sidebar({ isCollapsed, onToggle, hideToggle, theme, onToggleTheme }: SidebarProps) {
   const pathname = usePathname();
   const [openSubMenus, setOpenSubMenus] = useState<Record<string, boolean>>({ "Varlıklarım": true });
+
 
   const toggleSubMenu = (label: string) => {
     setOpenSubMenus(prev => ({ ...prev, [label]: !prev[label] }));
@@ -268,6 +310,37 @@ export function Sidebar({ isCollapsed, onToggle, hideToggle, theme, onToggleThem
               {!isCollapsed && <span className="truncate">Turu Tekrar Başlat</span>}
             </div>
           </button>
+
+          {/* Sık Sorulan Sorular (FAQ) Section */}
+          {!isCollapsed ? (
+            <div className="mt-6 pt-4 border-t border-border/10">
+              <div className="px-3 mb-2 flex items-center gap-2 text-xs font-black uppercase tracking-wider text-muted-foreground/60">
+                <HelpCircle className="h-4 w-4 text-primary" />
+                <span>Sık Sorulan Sorular</span>
+              </div>
+              <div className="space-y-1">
+                {faqs.map((faq) => (
+                  <Link
+                    key={faq.id}
+                    href={`/dashboard/faq?q=${faq.id}`}
+                    className="text-xs text-left w-full group flex p-2.5 font-semibold cursor-pointer rounded-xl transition-all duration-200 text-muted-foreground hover:bg-primary/5 hover:text-primary"
+                  >
+                    <span className="truncate group-hover:translate-x-1 transition-transform">{faq.question}</span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <Link
+              href="/dashboard/faq"
+              className="text-sm group flex p-3 w-full justify-start font-bold cursor-pointer rounded-xl transition-all duration-200 mt-2 text-primary hover:bg-primary/10"
+              title="Sık Sorulan Sorular"
+            >
+              <div className="flex items-center justify-center w-full">
+                <HelpCircle className="h-5 w-5 flex-shrink-0 transition-transform group-hover:scale-110" />
+              </div>
+            </Link>
+          )}
         </div>
       </div>
 

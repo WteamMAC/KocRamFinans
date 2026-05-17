@@ -254,7 +254,7 @@ model Community {
   tags        String[] // ["altın", "kripto", "bes", "faiz", "ekonomi", "genel"]
   
   creatorId   String
-  creator     User     @relation("CreatedCommunities", fields: [creatorId], references: [id])
+  creator     User     @relation("CreatedCommunities", fields: [creatorId], references: [id], onDelete: Cascade)
   
   members     CommunityMember[]
   posts       BlogPost[]

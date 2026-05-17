@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CreditCard, Plus, X, Landmark, TrendingDown, Clock, AlertCircle, Calendar, Settings2, FastForward } from "lucide-react";
-import { addDebt, payDebtInstallment, closeDebt, postponeDebtInstallment, updateDebtPaymentDay } from "@/app/actions/debts";
+import { addDebt, payDebtInstallment, closeDebt, postponeDebtInstallment, updateDebtPaymentDay, refinanceDebtWithDetails } from "@/app/actions/debts";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useCurrency, DISPLAY_CURRENCIES_LIST } from "@/context/currency-context";
@@ -78,6 +78,8 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
         paymentDay: "",
         dueDate: "",
         description: "",
+        payAmount: "",
+        addRemainingAsExpense: false,
     });
 
     const activeDebts = debts.filter(d => d.amount > 0);
@@ -106,27 +108,53 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
         const amountInTry = originalAmount * selectedRate;
 
         try {
-            await addDebt({
-                type: formData.type,
-                amount: amountInTry,
-                interestRate: formData.interestRate ? Number(formData.interestRate) : undefined,
-                remainingInstallments: formData.remainingInstallments ? Number(formData.remainingInstallments) : undefined,
-                paymentDay: formData.paymentDay ? Number(formData.paymentDay) : undefined,
-                dueDate: formData.dueDate || undefined,
-                description: formData.description + (refinanceId ? " (Yapılandırıldı)" : ""),
-                currency: formData.currency,
-                originalAmount: originalAmount,
-                fxRate: selectedRate,
-            });
-
-            // Eğer bir yapılandırma işlemiyse eski borcu kapat (expense oluşturmadan)
             if (refinanceId) {
-                await closeDebt(refinanceId, true);
+                const payAmt = Number(formData.payAmount || 0);
+                await refinanceDebtWithDetails({
+                    oldDebtId: refinanceId,
+                    payAmount: payAmt,
+                    newDebt: {
+                        type: formData.type,
+                        amount: originalAmount,
+                        interestRate: formData.interestRate ? Number(formData.interestRate) : undefined,
+                        remainingInstallments: formData.remainingInstallments ? Number(formData.remainingInstallments) : undefined,
+                        paymentDay: formData.paymentDay ? Number(formData.paymentDay) : undefined,
+                        dueDate: formData.dueDate || undefined,
+                        description: formData.description,
+                        currency: formData.currency,
+                        fxRate: selectedRate,
+                    },
+                    addRemainingAsExpense: formData.addRemainingAsExpense,
+                });
                 setRefinanceId(null);
+            } else {
+                await addDebt({
+                    type: formData.type,
+                    amount: amountInTry,
+                    interestRate: formData.interestRate ? Number(formData.interestRate) : undefined,
+                    remainingInstallments: formData.remainingInstallments ? Number(formData.remainingInstallments) : undefined,
+                    paymentDay: formData.paymentDay ? Number(formData.paymentDay) : undefined,
+                    dueDate: formData.dueDate || undefined,
+                    description: formData.description,
+                    currency: formData.currency,
+                    originalAmount: originalAmount,
+                    fxRate: selectedRate,
+                });
             }
 
             setIsAdding(false);
-            setFormData({ type: "Kredi Kartı", amount: "", currency: "TRY", remainingInstallments: "", interestRate: "", paymentDay: "", dueDate: "", description: "" });
+            setFormData({ 
+                type: "Kredi Kartı", 
+                amount: "", 
+                currency: "TRY", 
+                remainingInstallments: "", 
+                interestRate: "", 
+                paymentDay: "", 
+                dueDate: "", 
+                description: "",
+                payAmount: "",
+                addRemainingAsExpense: false
+            });
             router.refresh();
         } catch (err: any) {
             setError(err.message);
@@ -306,6 +334,23 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
                                     <X className="h-4.5 w-4.5 sm:h-5 sm:w-5" />
                                 </Button>
                             </div>
+                            {refinanceId && (
+                                <div className="p-4 bg-primary/5 border border-primary/20 rounded-2xl mb-6 space-y-2 animate-in fade-in duration-300">
+                                    <p className="text-xs font-black text-primary flex items-center gap-1.5 uppercase tracking-widest">
+                                        <Landmark className="w-4 h-4 text-primary" /> Yapılandırılan Eski Borç Bilgileri
+                                    </p>
+                                    {(() => {
+                                        const oldDebt = debts.find(d => d.id === refinanceId);
+                                        if (!oldDebt) return null;
+                                        return (
+                                            <div className="flex justify-between items-center text-xs font-bold pt-1">
+                                                <span className="text-muted-foreground">{oldDebt.description || `${oldDebt.type} Borcu`}</span>
+                                                <span className="text-foreground text-sm">{formatAmount(oldDebt.amount)}</span>
+                                            </div>
+                                        );
+                                    })()}
+                                </div>
+                            )}
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-6">
                                 <div className="space-y-1.5 sm:space-y-3">
                                     <Label className="text-[9px] sm:text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1 mb-0.5 sm:mb-1.5 block">Borç Türü</Label>
@@ -404,6 +449,72 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
                                         * Borçlar toplam yükümlülük olarak takip edilir, gelirinize dahil edilmez.
                                     </p>
                                 </div>
+                                {refinanceId && (
+                                    <div className="space-y-3 sm:col-span-2 p-5 bg-muted/40 rounded-2xl border border-border/20">
+                                        <Label className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-widest px-1 mb-1 block">
+                                            Eski Borca Ödenecek Miktar ({formData.currency})
+                                        </Label>
+                                        <div className="flex flex-col gap-3">
+                                            <div className="flex gap-2">
+                                                <Input
+                                                    type="number"
+                                                    value={formData.payAmount}
+                                                    onChange={(e) => {
+                                                        const val = e.target.value;
+                                                        setFormData(p => ({ ...p, payAmount: val }));
+                                                    }}
+                                                    className="bg-muted border-border/30 h-10 sm:h-12 rounded-xl focus:ring-primary text-base font-bold flex-1"
+                                                    placeholder="Eski borçtan düşülecek tutarı giriniz"
+                                                />
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    onClick={() => {
+                                                        const oldDebt = debts.find(d => d.id === refinanceId);
+                                                        if (oldDebt) {
+                                                            const rate = rates[formData.currency] || 1;
+                                                            const originalEquivalent = oldDebt.amount / rate;
+                                                            setFormData(p => ({ ...p, payAmount: String(originalEquivalent.toFixed(2)) }));
+                                                        }
+                                                    }}
+                                                    className="h-10 sm:h-12 px-5 rounded-xl font-bold border-primary/20 text-primary hover:bg-primary/5 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                                                >
+                                                    Tamamını Kapat
+                                                </Button>
+                                            </div>
+                                            
+                                            {/* Remaining calculation & expense option */}
+                                            {(() => {
+                                                const newAmt = Number(formData.amount || 0);
+                                                const payAmt = Number(formData.payAmount || 0);
+                                                const remaining = Math.max(0, newAmt - payAmt);
+                                                if (remaining > 0) {
+                                                    return (
+                                                        <div className="space-y-3 pt-2 animate-in fade-in duration-200">
+                                                            <div className="p-4 bg-amber-500/5 rounded-2xl border border-amber-500/10 text-xs font-semibold text-amber-600 leading-relaxed">
+                                                                ⚠️ UYARI: Yeni borçtan kalan tutar olan <strong className="font-extrabold">{remaining.toLocaleString()} {formData.currency}</strong> ile yatırım veya başka bir şey yaptıysanız sisteme eklemeyi unutmayın!
+                                                            </div>
+                                                            <div className="flex items-center gap-3 p-4 bg-muted rounded-2xl border border-border/20 cursor-pointer hover:bg-muted/60 transition-colors"
+                                                                 onClick={() => setFormData(p => ({ ...p, addRemainingAsExpense: !p.addRemainingAsExpense }))}>
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={formData.addRemainingAsExpense}
+                                                                    onChange={() => {}}
+                                                                    className="w-5 h-5 rounded border-border/40 accent-primary shrink-0 cursor-pointer"
+                                                                />
+                                                                <div>
+                                                                    <p className="text-xs font-bold text-foreground">Geri kalan parayı harcama (gider) olarak kaydet</p>
+                                                                    <p className="text-[10px] text-muted-foreground font-medium">Bu tutarı anında gider listenize (Harcama) ekler.</p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                }
+                                                return null;
+                                            })()}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                             {error && <div className="mt-4 p-3 bg-destructive/10 text-destructive rounded-xl text-sm font-medium border border-destructive/20">{error}</div>}
                             <div className="mt-5 pt-4 border-t border-border/5 flex justify-end">
@@ -488,16 +599,19 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
                                                                 return "";
                                                             }
                                                         })();
+                                                        const amountVal = String(debt.amount / (debt.fxRate || 1));
                                                         setRefinanceId(debt.id);
                                                         setFormData({
                                                             type: debt.type,
-                                                            amount: String(debt.amount / (debt.fxRate || 1)),
+                                                            amount: amountVal,
                                                             currency: debt.currency,
                                                             remainingInstallments: debt.remainingInstallments ? String(debt.remainingInstallments) : "",
                                                             interestRate: debt.interestRate ? String(debt.interestRate) : "",
                                                             paymentDay: debt.paymentDay ? String(debt.paymentDay) : "",
                                                             dueDate: safeDueDate,
                                                             description: debt.description || debt.type,
+                                                            payAmount: amountVal,
+                                                            addRemainingAsExpense: false,
                                                         });
                                                         setIsAdding(true);
                                                         window.scrollTo({ top: 0, behavior: 'smooth' });
