@@ -12,7 +12,7 @@ export async function generateSmartInsights(financialData: any) {
   }
 
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-preview" });
 
     const prompt = `Sen uzman bir finansal danışmansın. Aşağıdaki kullanıcı verilerini analiz et ve 3 adet kısa, öz ve vurucu "Proaktif Uyarı / Tavsiye" üret. 
 Kullanıcının adı yok, doğrudan "Siz" veya "Harcamalarınız" diye hitap et.
@@ -55,7 +55,7 @@ export async function predictGrowthRate(portfolioData: any) {
   }
 
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-preview" });
 
     const prompt = `Sen uzman bir finansal analistsin. Aşağıdaki portföy verilerini (yatırımlar, sabit varlıklar ve aylık düzenli tasarruf miktarı) analiz et. 
 Portföydeki spesifik varlıkların (örneğin BTC, AAPL, Altın vs.) gelecek 6 ay içindeki beklenen değer artışlarını tek tek hesapla ve genel portföy büyüme projeksiyonunu buna göre belirle.

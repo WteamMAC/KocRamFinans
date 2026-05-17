@@ -16,7 +16,7 @@ export async function processReceiptWithAI(base64Image: string, mimeType: string
   }
 
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-preview" });
 
     const prompt = `Sen bir kişisel finans asistanısın. Gönderilen fiş veya fatura görüntüsünü analiz et.
 Sadece aşağıdaki JSON formatında geçerli bir çıktı ver. JSON içine ASLA YORUM SATIRI (//) EKLEME, SADECE GEÇERLİ BİR JSON OLSUN:

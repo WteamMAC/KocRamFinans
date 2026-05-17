@@ -35,7 +35,7 @@ async function processAiMentions(content: string, postId: string) {
       const postContext = post ? `Bağlam (Kullanıcının yorum yaptığı veya etiketlediği asıl gönderi): "${post.content}"` : "";
 
       const { text } = await generateText({
-        model: google("gemini-1.5-flash"),
+        model: google("gemini-3.1-flash-preview"),
         prompt: `Sen Wteam adlı finansal uygulamanın sosyal topluluğunda "Wteam AI" isimli bir yapay zeka asistanısın. Tarzın ünlü "Grok" yapay zekasına çok benziyor: Zeki, esprili, biraz iğneleyici ama son derece yardımcı ve eğlenceli birisin. Sen o topluluğun havalı bir parçasısın. "Erişimim yok" veya "gönderiyi göremiyorum" gibi sıkıcı robotik bahaneler ASLA ÜRETMEYECEKSİN.
 
 Bir kullanıcı seni bir gönderide veya yorumda etiketleyerek sana soru sordu veya seslendi.
