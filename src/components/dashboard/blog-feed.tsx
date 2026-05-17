@@ -1171,6 +1171,27 @@ export function BlogFeed({
     setIsFilterPanelOpen(false);
   };
 
+  const handleToggleInterestsFilter = () => {
+    setFilterByInterests(prev => {
+      const nextState = !prev;
+      if (nextState) {
+        const defaultInterests = (userInterests && userInterests.length > 0) ? userInterests : ["#yatırım", "#kripto", "#borsa", "#hisse", "#altın"];
+        const formatted = defaultInterests.map(i => i.startsWith("#") ? i.toLowerCase() : `#${i.toLowerCase()}`);
+        
+        setAllDiscoveredTags(existing => {
+          const combined = new Set(existing);
+          formatted.forEach(i => combined.add(i));
+          return Array.from(combined);
+        });
+        
+        setActiveTags(formatted);
+      } else {
+        setActiveTags([]);
+      }
+      return nextState;
+    });
+  };
+
   const handleToggleTag = (tag: string) => {
     setActiveTags(prev => {
       const isSelected = prev.includes(tag);
@@ -1505,7 +1526,7 @@ export function BlogFeed({
 
                    <div className="pt-1">
                      <button 
-                       onClick={() => setFilterByInterests(p => !p)} 
+                       onClick={handleToggleInterestsFilter} 
                        className={cn("w-full flex items-center justify-between p-3.5 rounded-2xl border text-left transition-all", filterByInterests ? "bg-primary/10 border-primary shadow-sm" : "bg-muted/20 border-border/20")}
                      >
                        <div className="flex items-center gap-2.5">
