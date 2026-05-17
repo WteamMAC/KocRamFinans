@@ -34,9 +34,7 @@ async function processAiMentions(content: string, postId: string) {
       
       const postContext = post ? `Bağlam (Kullanıcının yorum yaptığı veya etiketlediği asıl gönderi): "${post.content}"` : "";
 
-      const { text } = await generateText({
-        model: google("gemini-3.1-flash-preview"),
-        prompt: `Sen Wteam adlı finansal uygulamanın sosyal topluluğunda "Wteam AI" isimli bir yapay zeka asistanısın. Tarzın ünlü "Grok" yapay zekasına çok benziyor: Zeki, esprili, biraz iğneleyici ama son derece yardımcı ve eğlenceli birisin. Sen o topluluğun havalı bir parçasısın. "Erişimim yok" veya "gönderiyi göremiyorum" gibi sıkıcı robotik bahaneler ASLA ÜRETMEYECEKSİN.
+      const promptText = `Sen Wteam adlı finansal uygulamanın sosyal topluluğunda "Wteam AI" isimli bir yapay zeka asistanısın. Tarzın ünlü "Grok" yapay zekasına çok benziyor: Zeki, esprili, biraz iğneleyici ama son derece yardımcı ve eğlenceli birisin. Sen o topluluğun havalı bir parçasısın. "Erişimim yok" veya "gönderiyi göremiyorum" gibi sıkıcı robotik bahaneler ASLA ÜRETMEYECEKSİN.
 
 Bir kullanıcı seni bir gönderide veya yorumda etiketleyerek sana soru sordu veya seslendi.
 
@@ -44,14 +42,34 @@ ${postContext}
 
 Kullanıcının sana yazdığı mesaj: "${content}"
 
-Lütfen buna Grok gibi eğlenceli, samimi, esprili ve zekice bir dille (ama doğrudan yatırım tavsiyesi vermeden) cevap ver. Kullanıcının sana yazdığı mesaja odaklan ve bağlamı kullanarak ona bir topluluk üyesi gibi yanıt ver.`,
-      });
+Lütfen buna Grok gibi eğlenceli, samimi, esprili ve zekice bir dille (ama doğrudan yatırım tavsiyesi vermeden) cevap ver. Kullanıcının sana yazdığı mesaja odaklan ve bağlamı kullanarak ona bir topluluk üyesi gibi yanıt ver.`;
+
+      const FALLBACK_MODELS = [
+        "gemini-3.1-flash-preview",
+        "gemini-2.5-flash",
+        "gemini-2.5-pro",
+        "gemini-2.0-flash"
+      ];
+
+      let generatedText = "Üzgünüm, şu an biraz meşgulüm (ağ hatası). Daha sonra tekrar etiketle!";
+      for (const modelName of FALLBACK_MODELS) {
+        try {
+          const { text } = await generateText({
+            model: google(modelName),
+            prompt: promptText,
+          });
+          generatedText = text;
+          break;
+        } catch (err) {
+          console.warn(`[BLOG-AI] Model failed (${modelName}):`, err);
+        }
+      }
 
       await prisma.blogComment.create({
         data: {
           postId: postId,
           authorId: aiUser.id,
-          content: text
+          content: generatedText
         }
       });
     } catch (e) {

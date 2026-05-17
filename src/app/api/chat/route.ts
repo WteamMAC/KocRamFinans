@@ -145,9 +145,9 @@ export async function POST(req: Request) {
             parameters: {
               type: SchemaType.OBJECT,
               properties: {
-                type: { type: SchemaType.STRING, description: "income, expense, debt, investment" },
+                type: { type: SchemaType.STRING, description: "income, expense, debt, investment, fixedAsset" },
                 amount: { type: SchemaType.NUMBER, description: "Orijinal tutar (kur dönüşümü yapma, olduğu gibi yaz)" },
-                category: { type: SchemaType.STRING, description: "Kategori. Gider için: 'Mutfak & Market', 'Ev Kirası / İpotek', 'Faturalar (Elektrik, Su, Doğalgaz)', 'Ulaşım / Akaryakıt', 'Eğitim / Sağlık', 'Diğer'. Gelir için: 'Maaş', 'Kira Geliri', 'Ek İş / Freelance', 'Yatırım Temettü', 'Diğer'. Borç için: 'Kredi Kartı', 'Banka Kredisi', 'Şahsi Borç', 'Elden Taksit', 'Diğer'. Yatırım için: 'BIST', 'NASDAQ', 'CRYPTO', 'GOLD', 'BES', 'FAIZ', 'CASH', 'Diğer'." },
+                category: { type: SchemaType.STRING, description: "Kategori. Gider için: 'Mutfak & Market', 'Ev Kirası', 'Faturalar', 'Ulaşım', 'Eğitim / Sağlık', 'Diğer'. Gelir için: 'Maaş', 'Kira Geliri', 'Ek İş', 'Temettü', 'Diğer'. Borç için: 'Kredi Kartı', 'Banka Kredisi', 'Şahsi Borç'. Yatırım: 'BIST', 'NASDAQ', 'CRYPTO', 'GOLD', 'BES'. Sabit Varlık (fixedAsset) için: 'RealEstate' (Ev, Arsa), 'Vehicle' (Araba, Motor), 'Electronics' (Telefon, Bilgisayar), 'Other'." },
                 currency: { type: SchemaType.STRING, description: "Para birimi kodu. Kullanıcı 'dolar' veya '$' derse USD, 'euro' veya '€' derse EUR, 'sterlin' derse GBP, belirtmezse TRY yaz." },
                 date: { type: SchemaType.STRING, description: "İşlem tarihi YYYY-MM-DD formatında. Kullanıcı tarih belirtmezse bugünün tarihini yaz." },
                 description: { type: SchemaType.STRING, description: "Açıklama veya Hisse Kodu" },
@@ -160,6 +160,18 @@ export async function POST(req: Request) {
                 dueDate: { type: SchemaType.STRING, description: "Tek seferlik borçlar için son ödeme tarihi (YYYY-MM-DD)." }
               },
               required: ["type", "amount", "category"]
+            }
+          },
+          {
+            name: "payDebt",
+            description: "Kullanıcı bir kredi taksidini veya mevcut bir borcunu ödediğini söylediğinde kullanılır. ÖNEMLİ: Bu aracı kullanmadan önce MUTLAKA 'getFinancialHistory' (category: 'debts') aracı ile borçların listesini çekip ödenen borcun benzersiz 'debtId' değerini bulmalısın.",
+            parameters: {
+              type: SchemaType.OBJECT,
+              properties: {
+                debtId: { type: SchemaType.STRING, description: "Ödemesi yapılan borcun/kredinin veritabanındaki ID'si." },
+                amount: { type: SchemaType.NUMBER, description: "Ödenen miktar. Eğer taksit ödeniyorsa ve miktar belirtilmemişse 0 gönder (sistem otomatik taksit tutarını düşer)." }
+              },
+              required: ["debtId"]
             }
           },
           {
@@ -187,6 +199,55 @@ export async function POST(req: Request) {
                 }
               },
               required: ["symbols"]
+            }
+          },
+          {
+            name: "manageSpecialEvent",
+            description: "Kullanıcının özel günlerini (doğum günü, evlilik yıldönümü, fatura tarihi vb.) yönetir.",
+            parameters: {
+              type: SchemaType.OBJECT,
+              properties: {
+                action: { type: SchemaType.STRING, description: "'add', 'delete' veya 'list' (listelemek için)" },
+                title: { type: SchemaType.STRING, description: "Etkinlik adı (Örn: Eşimin Doğum Günü). Sadece 'add' için." },
+                date: { type: SchemaType.STRING, description: "Tarih YYYY-MM-DD. Sadece 'add' için." },
+                isAnnual: { type: SchemaType.BOOLEAN, description: "Her yıl tekrarlanacak mı? (Örn: Doğum günleri true). Varsayılan: true." },
+                eventId: { type: SchemaType.STRING, description: "Silinecek etkinliğin ID'si. Sadece 'delete' için." }
+              },
+              required: ["action"]
+            }
+          },
+          {
+            name: "updateUserProfile",
+            description: "Kullanıcının profil bilgilerini (isim, biyografi, para birimi, ilgi alanları) günceller.",
+            parameters: {
+              type: SchemaType.OBJECT,
+              properties: {
+                firstName: { type: SchemaType.STRING, description: "Kullanıcının adı" },
+                lastName: { type: SchemaType.STRING, description: "Kullanıcının soyadı" },
+                bio: { type: SchemaType.STRING, description: "Kullanıcının biyografisi veya kişisel hedefi" },
+                currency: { type: SchemaType.STRING, description: "Varsayılan para birimi (TRY, USD, EUR vb.)" },
+                interests: { 
+                  type: SchemaType.ARRAY, 
+                  items: { type: SchemaType.STRING },
+                  description: "İlgi alanları listesi (Örn: ['kripto', 'borsa'])" 
+                }
+              }
+            }
+          },
+          {
+            name: "createCommunityPost",
+            description: "Kullanıcı adına Wteam sosyal topluluğunda herkese açık bir blog/forum gönderisi paylaşır.",
+            parameters: {
+              type: SchemaType.OBJECT,
+              properties: {
+                content: { type: SchemaType.STRING, description: "Gönderinin içeriği (Kısa, ilgi çekici ve samimi bir metin)" },
+                tags: { 
+                  type: SchemaType.ARRAY, 
+                  items: { type: SchemaType.STRING },
+                  description: "Gönderiyle ilgili etiketler (Örn: ['bitcoin', 'yatırım', 'öneri'])" 
+                }
+              },
+              required: ["content", "tags"]
             }
           }
         ]
@@ -292,6 +353,7 @@ export async function POST(req: Request) {
                       expenses: { orderBy: { createdAt: "desc" }, take: 15 },
                       debts: { orderBy: { createdAt: "desc" }, take: 15 },
                       investments: { orderBy: { createdAt: "desc" }, take: 15 },
+                      fixedAssets: { orderBy: { createdAt: "desc" }, take: 15 }
                     }
                   });
 
@@ -299,7 +361,8 @@ export async function POST(req: Request) {
                     incomes: freshUser?.incomes || [],
                     expenses: freshUser?.expenses || [],
                     debts: freshUser?.debts || [],
-                    investments: freshUser?.investments || []
+                    investments: freshUser?.investments || [],
+                    fixedAssets: freshUser?.fixedAssets || []
                   };
 
                   apiResponse = (cat === "all" || cat === "hepsi") ? dataMap : { data: dataMap[cat as keyof typeof dataMap] || dataMap };
@@ -408,28 +471,141 @@ export async function POST(req: Request) {
                         transactionType: "BUY",
                       }
                     });
+                  } else if (type === "fixedAsset") {
+                    await prisma.fixedAsset.create({
+                      data: {
+                        userId: user.id,
+                        name: description || "Sabit Varlık",
+                        type: category, // "RealEstate", "Vehicle", vs.
+                        value: amountInTRY,
+                        currency,
+                        originalAmount: safeAmount,
+                        fxRate
+                      }
+                    });
                   }
 
                   // Cache'i temizle, dashboard anında güncellensin
                   revalidatePath("/dashboard");
                   revalidatePath("/dashboard/income-expense");
                   revalidatePath("/dashboard/debts");
+                  revalidatePath("/dashboard/investments");
+                  revalidatePath("/dashboard/fixed-assets");
 
                   apiResponse = { success: true, message: `Kayıt başarıyla eklendi. (${safeAmount} ${currency}${fxRate !== 1 ? ` ≈ ${amountInTRY.toFixed(2)} TRY` : ""})` };
+                } else if (call.name === "payDebt") {
+                  const { debtId, amount } = args;
+                  const debt = await prisma.debt.findUnique({ where: { id: debtId } });
+                  if (!debt) {
+                    apiResponse = { error: "Belirtilen borç bulunamadı." };
+                  } else {
+                    const payAmount = (amount && Number(amount) > 0) ? Number(amount) : (debt.installmentAmount || debt.amount);
+                    let newRemaining = debt.amount - payAmount;
+                    if (newRemaining < 0) newRemaining = 0;
+                    
+                    let newInstallments = debt.remainingInstallments;
+                    if (newInstallments && newInstallments > 0) {
+                      newInstallments = newInstallments - 1;
+                    }
+
+                    if (newRemaining <= 0) {
+                      await prisma.debt.delete({ where: { id: debt.id } });
+                    } else {
+                      await prisma.debt.update({
+                        where: { id: debt.id },
+                        data: { amount: newRemaining, remainingInstallments: newInstallments }
+                      });
+                    }
+
+                    // Gider tablosuna da işleyelim
+                    await prisma.expense.create({
+                      data: {
+                        userId: user.id,
+                        type: "Banka Kredisi", // Borç Ödemesi
+                        amount: payAmount,
+                        originalAmount: payAmount,
+                        currency: debt.currency,
+                        fxRate: debt.fxRate,
+                        date: new Date(),
+                        isRecurring: false,
+                        description: `${debt.description || debt.type} ödemesi / taksidi`
+                      }
+                    });
+
+                    revalidatePath("/dashboard");
+                    revalidatePath("/dashboard/debts");
+                    revalidatePath("/dashboard/income-expense");
+                    apiResponse = { success: true, message: `Borç başarıyla ödendi ve gidere işlendi. Ödenen: ${payAmount}, Kalan Borç: ${newRemaining}` };
+                  }
                 } else if (call.name === "deleteFinancialRecord") {
                   const { type, recordId } = args;
                   if (type === "income") await prisma.income.delete({ where: { id: recordId } });
                   else if (type === "expense") await prisma.expense.delete({ where: { id: recordId } });
                   else if (type === "debt") await prisma.debt.delete({ where: { id: recordId } });
                   else if (type === "investment") await prisma.investment.delete({ where: { id: recordId } });
+                  else if (type === "fixedAsset") await prisma.fixedAsset.delete({ where: { id: recordId } });
+                  
                   revalidatePath("/dashboard");
                   revalidatePath("/dashboard/income-expense");
                   revalidatePath("/dashboard/debts");
+                  revalidatePath("/dashboard/investments");
+                  revalidatePath("/dashboard/fixed-assets");
                   apiResponse = { success: true, message: "Kayıt veritabanından kalıcı olarak silindi." };
                 } else if (call.name === "getMarketPrice") {
                   const symbols: string[] = (Array.isArray(args.symbols) ? args.symbols : [args.symbols]) as string[];
                   const resultsMap = await getLivePrices(symbols);
                   apiResponse = { data: Object.fromEntries(resultsMap) };
+                } else if (call.name === "manageSpecialEvent") {
+                  const { action, title, date, isAnnual, eventId } = args;
+                  if (action === "add") {
+                    await prisma.specialEvent.create({
+                      data: {
+                        userId: user.id,
+                        title: title || "Özel Gün",
+                        date: date ? new Date(date) : new Date(),
+                        isAnnual: isAnnual === undefined ? true : Boolean(isAnnual)
+                      }
+                    });
+                    apiResponse = { success: true, message: "Özel gün başarıyla eklendi." };
+                  } else if (action === "delete") {
+                    if (eventId) {
+                      await prisma.specialEvent.delete({ where: { id: eventId } });
+                      apiResponse = { success: true, message: "Özel gün silindi." };
+                    } else {
+                      apiResponse = { error: "Silmek için eventId gerekli." };
+                    }
+                  } else if (action === "list") {
+                    const events = await prisma.specialEvent.findMany({ where: { userId: user.id } });
+                    apiResponse = { data: events };
+                  }
+                  revalidatePath("/dashboard/special-events"); // Varsayılan bir sayfa adı, eğer varsa güncellenir
+                } else if (call.name === "updateUserProfile") {
+                  const { firstName, lastName, bio, currency, interests } = args;
+                  const updateData: any = {};
+                  if (firstName) updateData.firstName = firstName;
+                  if (lastName) updateData.lastName = lastName;
+                  if (bio) updateData.bio = bio;
+                  if (currency) updateData.currency = currency;
+                  if (interests && Array.isArray(interests)) updateData.interests = interests;
+                  
+                  await prisma.user.update({
+                    where: { id: user.id },
+                    data: updateData
+                  });
+                  revalidatePath("/dashboard/profile");
+                  apiResponse = { success: true, message: "Profil bilgileri güncellendi." };
+                } else if (call.name === "createCommunityPost") {
+                  const { content, tags } = args;
+                  await prisma.blogPost.create({
+                    data: {
+                      authorId: user.id,
+                      content: content,
+                      tags: Array.isArray(tags) ? tags : [],
+                      isAnnouncement: false
+                    }
+                  });
+                  revalidatePath("/dashboard/blog");
+                  apiResponse = { success: true, message: "Toplulukta başarıyla gönderi paylaşıldı." };
                 }
               } catch (e: any) {
                 console.error(`[TOOL] ❌ Hata:`, e.message);
