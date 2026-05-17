@@ -14,11 +14,6 @@ export async function completeOnboarding(formData: {
   currency?: string;
   country?: string;
   interests?: string[];
-  familyCount: number;
-  maritalStatus?: string;
-  marriageDate?: string;
-  hasChildren?: boolean;
-  children?: { birthDate: string }[];
   incomes: { type: string; amount: number; date?: string; description?: string; currency?: string }[];
   expenses: { type: string; amount: number; date?: string; isRecurring: boolean; description?: string; currency?: string }[];
   debts: { type: string; amount: number; remainingInstallments?: number; description?: string; currency?: string }[];
@@ -129,8 +124,6 @@ export async function completeOnboarding(formData: {
           country: formData.country,
           interests: formData.interests ?? user.interests,
           familyCount: formData.familyCount ?? 1,
-          maritalStatus: formData.maritalStatus ?? "Bekar",
-          hasChildren: formData.hasChildren ?? false,
         }
       });
     } else {
@@ -149,8 +142,6 @@ export async function completeOnboarding(formData: {
           country: formData.country,
           interests: formData.interests ?? [],
           familyCount: formData.familyCount ?? 1,
-          maritalStatus: formData.maritalStatus ?? "Bekar",
-          hasChildren: formData.hasChildren ?? false,
         }
       });
     }
@@ -163,7 +154,6 @@ export async function completeOnboarding(formData: {
     await prisma.debt.deleteMany({ where: { userId: user.id } });
     await prisma.investment.deleteMany({ where: { userId: user.id, status: "OPEN" } });
     await prisma.fixedAsset.deleteMany({ where: { userId: user.id } });
-    await prisma.child.deleteMany({ where: { userId: user.id } });
 
     // Döviz kurlarını getir (Borçlar ve Giderler için çevrim)
     let rates: Record<string, number> = { TRY: 1 };
@@ -243,13 +233,6 @@ export async function completeOnboarding(formData: {
       });
     }
 
-    if ((formData.children ?? []).length > 0) {
-      await prisma.child.createMany({
-        data: (formData.children ?? []).map(c => ({
-          birthDate: new Date(c.birthDate), userId: user!.id,
-        })),
-      });
-    }
 
     if ((formData.investments ?? []).length > 0) {
       await prisma.investment.createMany({

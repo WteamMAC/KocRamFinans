@@ -56,8 +56,17 @@ export async function POST(req: Request) {
 
     if (!user) return new Response("Kullanıcı bulunamadı.", { status: 404 });
 
+    // AI'a giden veri boyutunu sınırlandırarak aşırı yükü ve 503 zaman aşımı hatasını engelliyoruz
+    const optimizedUser = {
+      ...user,
+      incomes: user.incomes.slice(-20),
+      expenses: user.expenses.slice(-30),
+      debts: user.debts.slice(-20),
+      investments: user.investments.slice(-30)
+    };
+
     // Sistem Promptu Hazırlığı
-    const financialContext = await getFinancialContext(user);
+    const financialContext = await getFinancialContext(optimizedUser as any);
     const systemPrompt = MASTER_PROMPT
       .replace("{CURRENT_DATE}", new Date().toLocaleDateString("tr-TR"))
       .replace("{USER_DATA}", financialContext) +

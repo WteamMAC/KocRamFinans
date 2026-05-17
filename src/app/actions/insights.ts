@@ -1,5 +1,7 @@
 "use server";
 
+export const maxDuration = 60;
+
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY;

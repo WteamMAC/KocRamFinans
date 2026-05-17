@@ -20,7 +20,17 @@ export function SmartInsights({ financialData }: SmartInsightsProps) {
     setLoading(true);
     setError(null);
     try {
-      const res = await generateSmartInsights(financialData);
+      // Veri boyutunu sınırlandırarak AI sunucusuna binen aşırı yükü ve 503 zaman aşımını önlüyoruz
+      const optimizedData = financialData ? {
+        ...financialData,
+        incomes: (financialData.incomes || []).slice(0, 25),
+        expenses: (financialData.expenses || []).slice(0, 40),
+        debts: (financialData.debts || []).slice(0, 25),
+        investments: (financialData.investments || []).slice(0, 35),
+        fixedAssets: (financialData.fixedAssets || []).slice(0, 25),
+      } : financialData;
+
+      const res = await generateSmartInsights(optimizedData);
       if (res.success && res.data) {
         setInsights(res.data);
         setHasLoaded(true);
