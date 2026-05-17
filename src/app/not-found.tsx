@@ -1,15 +1,41 @@
 'use client';
 
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
-import { buttonVariants } from "@/components/ui/button";
-import { Home } from "lucide-react";
+import { buttonVariants, Button } from "@/components/ui/button";
+import { Home, Sun, Moon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTheme } from "next-themes";
 
 export default function NotFound() {
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const isDark = mounted && theme === "dark";
+
   return (
     <div className="relative min-h-screen w-full flex flex-col items-center justify-center overflow-hidden bg-background text-foreground transition-colors duration-500">
+      {/* Top right theme button */}
+      {mounted && (
+        <div className="absolute top-6 right-6 z-50">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            className="w-12 h-12 rounded-full bg-card border border-border/20 shadow-md backdrop-blur-md hover:scale-105 transition-all text-foreground"
+            aria-label="Tema Değiştir"
+          >
+            {isDark ? <Sun className="w-6 h-6" /> : <Moon className="w-6 h-6" />}
+          </Button>
+        </div>
+      )}
+
       {/* Subtle dot pattern */}
       <div className="absolute inset-0 opacity-[0.08] pointer-events-none"
         style={{
@@ -30,7 +56,7 @@ export default function NotFound() {
         >
           <div className="relative rounded-3xl overflow-hidden border border-border/20 shadow-sm transition-all duration-500">
             <Image
-              src="/fisherman-404.png"
+              src={isDark ? "/fisherman-404-night.png" : "/fisherman-404.png"}
               alt="Balıkçı 404 illüstrasyonu"
               width={800}
               height={800}
@@ -56,7 +82,7 @@ export default function NotFound() {
               fontSize: "clamp(40px, 6vw, 70px)",
             }}
           >
-            Sayfa Yok
+            404 Not Found
           </motion.h1>
 
           <motion.p
