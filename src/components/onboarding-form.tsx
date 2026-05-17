@@ -57,6 +57,11 @@ const schema = z.object({
     amount: z.coerce.number().positive("Miktar 0'dan büyük olmalıdır"),
     description: z.string().optional(),
     remainingInstallments: z.coerce.number().optional(),
+    interestRate: z.coerce.number().optional(),
+    paymentDay: z.coerce.number().optional(),
+    installmentAmount: z.coerce.number().optional(),
+    principalAmount: z.coerce.number().optional(),
+    dueDate: z.string().optional(),
     currency: z.string().optional(),
   })).optional(),
   investments: z.array(z.object({
@@ -251,6 +256,11 @@ export function OnboardingForm() {
     type: "Kredi Kartı",
     amount: "",
     remainingInstallments: "1",
+    interestRate: "",
+    paymentDay: "15",
+    installmentAmount: "",
+    principalAmount: "",
+    dueDate: "",
     description: "",
     currency: "TRY"
   });
@@ -397,6 +407,11 @@ export function OnboardingForm() {
       type: "Kredi Kartı",
       amount: "",
       remainingInstallments: "1",
+      interestRate: "",
+      paymentDay: "15",
+      installmentAmount: "",
+      principalAmount: "",
+      dueDate: "",
       description: "",
       currency: selectedCurrency || "TRY"
     });
@@ -451,7 +466,12 @@ export function OnboardingForm() {
     debtsField.append({
       type: modalDebtData.type,
       amount: amountVal,
-      remainingInstallments: parseInt(modalDebtData.remainingInstallments) || 1,
+      remainingInstallments: modalDebtData.remainingInstallments ? parseInt(modalDebtData.remainingInstallments) : undefined,
+      interestRate: modalDebtData.interestRate ? parseFloat(modalDebtData.interestRate) : undefined,
+      paymentDay: modalDebtData.paymentDay ? parseInt(modalDebtData.paymentDay) : undefined,
+      installmentAmount: modalDebtData.installmentAmount ? parseFloat(modalDebtData.installmentAmount) : undefined,
+      principalAmount: modalDebtData.principalAmount ? parseFloat(modalDebtData.principalAmount) : undefined,
+      dueDate: modalDebtData.dueDate || undefined,
       description: modalDebtData.description || undefined,
       currency: modalDebtData.currency || selectedCurrency || "TRY",
     });
@@ -886,8 +906,12 @@ export function OnboardingForm() {
                             <div className="text-xs font-extrabold text-rose-500 mt-1">
                               {Number(item.amount).toLocaleString("tr-TR", { minimumFractionDigits: 2 })} {item.currency || selectedCurrency || "TRY"}
                             </div>
-                            <div className="text-[10px] text-muted-foreground font-semibold mt-1">
-                              Taksit: {item.remainingInstallments || 1} Ay {item.description ? `• ${item.description}` : ""}
+                            <div className="text-[10px] text-muted-foreground font-semibold mt-1 space-y-0.5">
+                              <div>Taksit: {item.remainingInstallments || 1} Ay {item.interestRate ? `• Faiz: %${item.interestRate}` : ""}{item.paymentDay ? ` • Ödeme: Ayın ${item.paymentDay}. Günü` : ""}</div>
+                              {item.installmentAmount && (
+                                <div className="text-[#8C5000] dark:text-[#ffb874]">Taksit Tutarı: {Number(item.installmentAmount).toLocaleString("tr-TR", { minimumFractionDigits: 2 })} {item.currency}</div>
+                              )}
+                              {item.description && <div className="italic opacity-85">{item.description}</div>}
                             </div>
                           </div>
                         </div>
@@ -1636,15 +1660,75 @@ export function OnboardingForm() {
                     </div>
                   </div>
 
-                  <div>
-                    <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Kalan Taksit Sayısı</Label>
-                    <Input
-                      type="number"
-                      value={modalDebtData.remainingInstallments}
-                      onChange={e => setModalDebtData(prev => ({ ...prev, remainingInstallments: e.target.value }))}
-                      placeholder="1"
-                      className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-black text-sm border-[#dbc2b0]/50 dark:border-[#887364]/40"
-                    />
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Kalan Taksit Sayısı</Label>
+                      <Input
+                        type="number"
+                        value={modalDebtData.remainingInstallments}
+                        onChange={e => setModalDebtData(prev => ({ ...prev, remainingInstallments: e.target.value }))}
+                        placeholder="1"
+                        className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-black text-sm border-[#dbc2b0]/50 dark:border-[#887364]/40"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Ödeme Günü (1-31)</Label>
+                      <Input
+                        type="number"
+                        min="1"
+                        max="31"
+                        value={modalDebtData.paymentDay}
+                        onChange={e => setModalDebtData(prev => ({ ...prev, paymentDay: e.target.value }))}
+                        placeholder="Örn: 15"
+                        className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-black text-sm border-[#dbc2b0]/50 dark:border-[#887364]/40"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Aylık Faiz Oranı (%)</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={modalDebtData.interestRate}
+                        onChange={e => setModalDebtData(prev => ({ ...prev, interestRate: e.target.value }))}
+                        placeholder="Örn: 3.50"
+                        className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-black text-sm border-[#dbc2b0]/50 dark:border-[#887364]/40"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Aylık Taksit Tutarı</Label>
+                      <Input
+                        type="number"
+                        value={modalDebtData.installmentAmount}
+                        onChange={e => setModalDebtData(prev => ({ ...prev, installmentAmount: e.target.value }))}
+                        placeholder="0.00"
+                        className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-black text-sm border-[#dbc2b0]/50 dark:border-[#887364]/40"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Ana Para (Başlangıç Tutarı)</Label>
+                      <Input
+                        type="number"
+                        value={modalDebtData.principalAmount}
+                        onChange={e => setModalDebtData(prev => ({ ...prev, principalAmount: e.target.value }))}
+                        placeholder="0.00"
+                        className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-black text-sm border-[#dbc2b0]/50 dark:border-[#887364]/40"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Son Ödeme Tarihi (Taksitsiz ise)</Label>
+                      <DatePicker
+                        date={modalDebtData.dueDate ? parseISO(modalDebtData.dueDate) : undefined}
+                        setDate={(d) => setModalDebtData(prev => ({ ...prev, dueDate: d ? d.toISOString().split("T")[0] : "" }))}
+                        placeholder="Seçiniz..."
+                        className="h-11 rounded-xl w-full text-xs font-semibold"
+                      />
+                    </div>
                   </div>
 
                   <div>
