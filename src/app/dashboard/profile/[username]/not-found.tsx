@@ -55,13 +55,13 @@ export default function ProfileNotFound() {
           transition={{ duration: 0.7, ease: "easeOut" }}
           className="w-full md:w-[50%] flex-shrink-0"
         >
-          <div className="relative rounded-3xl overflow-hidden shadow-2xl dark:shadow-[0_0_50px_rgba(255,184,116,0.15)] dark:border dark:border-[#ffb874]/20 transition-all duration-500 bg-[#F5EDD8] dark:bg-[#120d0a]">
+          <div className="relative rounded-3xl overflow-hidden shadow-2xl dark:shadow-[0_0_50px_rgba(255,184,116,0.15)] transition-all duration-500">
             <Image
               src={isDark ? "/cowboy-404-night.png" : "/cowboy-404.png"}
               alt="Kovboy Kayıp Kullanıcı İllüstrasyonu"
               width={800}
               height={800}
-              className="w-full h-auto object-contain"
+              className="w-full h-auto object-cover rounded-3xl"
               priority
             />
           </div>
