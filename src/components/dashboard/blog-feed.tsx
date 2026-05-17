@@ -937,6 +937,7 @@ export function BlogFeed({
   isBanned,
   mode = "feed",
   profileId,
+  initialFeedType = "explore",
 }: {
   initialPosts: Post[];
   initialNextCursor: string | null;
@@ -945,13 +946,15 @@ export function BlogFeed({
   isBanned?: boolean;
   mode?: "feed" | "profile";
   profileId?: string;
+  initialFeedType?: "explore" | "following" | "my-communities";
 }) {
+  const router = useRouter();
   const [posts, setPosts] = useState<Post[]>(initialPosts);
   const [nextCursor, setNextCursor] = useState<string | null>(initialNextCursor);
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoadingMore, startLoadMore] = useTransition();
-  const [feedType, setFeedType] = useState<"explore" | "following" | "my-communities">("explore");
+  const [feedType, setFeedType] = useState<"explore" | "following" | "my-communities">(initialFeedType);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedCommunity, setSelectedCommunity] = useState<{ id: string, name: string } | null>(null);
   const [communityDetails, setCommunityDetails] = useState<any>(null);
@@ -1028,6 +1031,11 @@ export function BlogFeed({
     setFeedType(type);
     setSelectedCommunity(null);
     setCommunityDetails(null);
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      params.set("tab", type);
+      router.replace(`${window.location.pathname}?${params.toString()}`, { scroll: false });
+    }
     startLoadMore(async () => {
       const result = await getPosts(currentUserId, undefined, type as any);
       setPosts(result.posts);

@@ -164,7 +164,7 @@ export function AssetForm({ activeTab, onAdd, onCancel, loading, error, defaultA
                   </div>
                   <div className="space-y-2">
                     <Label className="text-[11px] font-bold text-primary/80 uppercase tracking-wider px-1">
-                      {formData.type === "BES" ? "Güncel Birikiminiz (₺)" : "Güncel Birikiminiz (₺)"}
+                      Güncel Birikiminiz (₺)
                     </Label>
                     <Input
                       type="number"
@@ -176,15 +176,53 @@ export function AssetForm({ activeTab, onAdd, onCancel, loading, error, defaultA
                   </div>
                   <div className="space-y-2">
                     <Label className="text-[11px] font-bold text-primary/80 uppercase tracking-wider px-1">
-                      {formData.type === "BES" ? "Devlet Katkı Payı Oranı (%)" : "Yıllık Faiz Oranı (%)"}
+                      {formData.type === "BES" ? "Devlet Katkı Oranı (%)" : "Yıllık Faiz Oranı (%)"}
                     </Label>
                     <Input
                       type="number"
                       value={formData.purchasePrice === 0 ? "" : formData.purchasePrice}
                       onChange={(e) => handleNumberChange("purchasePrice", e.target.value)}
                       className="bg-muted/50 border-primary/10 h-12 rounded-2xl focus:ring-primary text-sm font-semibold px-4"
+                      placeholder={formData.type === "BES" ? "Örn: 30" : "Örn: 45"}
                     />
                   </div>
+
+                  {formData.type === "BES" && (
+                    <>
+                      <div className="space-y-2">
+                        <Label className="text-[11px] font-bold text-primary/80 uppercase tracking-wider px-1">
+                          Aylık Düzenli Katkı Payı (₺)
+                        </Label>
+                        <Input
+                          type="number"
+                          value={formData.monthlyContribution === 0 ? "" : formData.monthlyContribution}
+                          onChange={(e) => handleNumberChange("monthlyContribution", e.target.value)}
+                          className="bg-muted/50 border-primary/10 h-12 rounded-2xl focus:ring-primary text-sm font-semibold px-4"
+                          placeholder="Örn: 2000"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-[11px] font-bold text-primary/80 uppercase tracking-wider px-1">
+                          Fon Türü (Canlı Getiri İçin)
+                        </Label>
+                        <Select
+                          value={formData.fundType}
+                          onValueChange={(v) => setFormData((p) => ({ ...p, fundType: String(v) }))}
+                        >
+                          <SelectTrigger className="bg-muted/50 border-primary/10 h-12 rounded-2xl focus:ring-primary text-sm font-semibold px-4">
+                            <SelectValue placeholder="Seçiniz..." />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-2xl border-primary/10 font-medium">
+                            <SelectItem value="STANDART">⚖️ Standart / Karma Fon</SelectItem>
+                            <SelectItem value="GOLD">✨ Altın Katılım Fonu</SelectItem>
+                            <SelectItem value="STOCKS">📈 Hisse Yoğun Fon</SelectItem>
+                            <SelectItem value="USD">💵 Döviz Borçlanma Fonu</SelectItem>
+                            <SelectItem value="CONSERVATIVE">🛡️ Muhafazakar (Para Piyasası)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </>
+                  )}
                 </>
               ) : (
                 <>

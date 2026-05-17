@@ -32,9 +32,10 @@ export async function getLivePrices(symbols: string[]): Promise<Map<string, Pric
   const symbolsToFetchFromApi: string[] = [];
   const now = Date.now();
 
-  // Her zaman temel döviz ve emtia paritelerini işleyelim
-  const coreBenchmarks = ["USDTRY=X", "EURTRY=X", "GBPTRY=X", "GC=F", "SI=F", "BZ=F"];
-  const allSymbolsToProcess = Array.from(new Set([...symbols, ...coreBenchmarks]));
+  // Her zaman temel döviz ve emtia paritelerini işleyelim + BES fonları için BIST 100
+  const coreBenchmarks = ["USDTRY=X", "EURTRY=X", "GBPTRY=X", "GC=F", "SI=F", "BZ=F", "XU100.IS"];
+  const virtualSymbols = ["BES_GOLD_RETURN", "BES_STOCKS_RETURN", "BES_USD_RETURN", "BES_STANDART_RETURN", "BES_CONSERVATIVE_RETURN"];
+  const allSymbolsToProcess = Array.from(new Set([...symbols, ...coreBenchmarks, ...virtualSymbols]));
 
   // 1. Veritabanından mevcut önbellekleri çekelim (1 saatten yeniyse API'ye gitme!)
   try {
@@ -68,7 +69,8 @@ export async function getLivePrices(symbols: string[]): Promise<Map<string, Pric
 
   // 2. Eğer API'den çekilmesi gereken (1 saatten eski veya yeni) semboller varsa API isteği yap
   if (symbolsToFetchFromApi.length > 0) {
-    console.log("Fetching live market prices from Yahoo API for:", symbolsToFetchFromApi);
+    const actualApiSymbols = symbolsToFetchFromApi.filter(s => !s.startsWith("BES_") && !s.endsWith("_RETURN"));
+    console.log("Fetching live market prices from Yahoo API for:", actualApiSymbols);
 
     let usdToTryRate = results.get("USDTRY=X")?.price || 36.45;
     let eurToTryRate = results.get("EURTRY=X")?.price || 38.65;
@@ -99,8 +101,11 @@ export async function getLivePrices(symbols: string[]): Promise<Map<string, Pric
     }
 
     try {
-      const quotes = await yahooFinance.quote(symbolsToFetchFromApi);
-      const quotesArray = Array.isArray(quotes) ? quotes : [quotes];
+      let quotesArray: any[] = [];
+      if (actualApiSymbols.length > 0) {
+        const quotes = await yahooFinance.quote(actualApiSymbols);
+        quotesArray = Array.isArray(quotes) ? quotes : [quotes];
+      }
 
       const newMarketData: Array<{ symbol: string; price: number; changePct: number }> = [];
 
@@ -182,6 +187,48 @@ export async function getLivePrices(symbols: string[]): Promise<Map<string, Pric
           });
         } catch(e){}
       }
+
+      // --- BES SANAL FON GETİRİ HESAPLAMALARI ---
+      let goldAnnualChange = 0.25;
+      let usdAnnualChange = 0.20;
+      let stocksAnnualChange = 0.35;
+
+      const goldQuoteObj = quotesArray.find((q: any) => q.symbol === "GC=F");
+      if (goldQuoteObj && goldQuoteObj.fiftyTwoWeekChangePercent != null) {
+        goldAnnualChange = goldQuoteObj.fiftyTwoWeekChangePercent;
+      }
+      
+      const usdQuoteObj = quotesArray.find((q: any) => q.symbol === "USDTRY=X");
+      if (usdQuoteObj && usdQuoteObj.fiftyTwoWeekChangePercent != null) {
+        usdAnnualChange = usdQuoteObj.fiftyTwoWeekChangePercent;
+      }
+
+      const stocksQuoteObj = quotesArray.find((q: any) => q.symbol === "XU100.IS");
+      if (stocksQuoteObj && stocksQuoteObj.fiftyTwoWeekChangePercent != null) {
+        stocksAnnualChange = stocksQuoteObj.fiftyTwoWeekChangePercent;
+      }
+
+      const goldTryAnnualChange = (1 + goldAnnualChange) * (1 + usdAnnualChange) - 1;
+
+      const virtualRates = [
+        { symbol: "BES_GOLD_RETURN", price: goldTryAnnualChange },
+        { symbol: "BES_STOCKS_RETURN", price: stocksAnnualChange },
+        { symbol: "BES_USD_RETURN", price: usdAnnualChange },
+        { symbol: "BES_STANDART_RETURN", price: (stocksAnnualChange * 0.4) + (goldTryAnnualChange * 0.4) + (usdAnnualChange * 0.2) },
+        { symbol: "BES_CONSERVATIVE_RETURN", price: 0.42 }
+      ];
+
+      for (const item of virtualRates) {
+        results.set(item.symbol, { symbol: item.symbol, price: item.price });
+        try {
+          await prisma.marketPriceCache.upsert({
+            where: { symbol: item.symbol },
+            update: { price: item.price, changePct: 0, updatedAt: new Date() },
+            create: { symbol: item.symbol, price: item.price, changePct: 0 }
+          });
+        } catch(e){}
+      }
+
     } catch (apiErr: any) {
       console.error("CRITICAL API Error, relying entirely on Database Cache:", apiErr.message);
     }
@@ -189,7 +236,7 @@ export async function getLivePrices(symbols: string[]): Promise<Map<string, Pric
 
   // 3. Bulunamayan veya hala boş olan semboller için eğer veritabanında eski bir kayıt varsa onu kullan (Hayali sabit rakamlar tamamen kaldırıldı!)
   try {
-    const missingSymbols = symbols.filter(s => !results.has(s.toUpperCase()));
+    const missingSymbols = allSymbolsToProcess.filter(s => !results.has(s.toUpperCase()));
     if (missingSymbols.length > 0) {
       const fallbackDbItems = await prisma.marketPriceCache.findMany({
         where: { symbol: { in: missingSymbols.map(s => s.toUpperCase()) } }
@@ -199,6 +246,21 @@ export async function getLivePrices(symbols: string[]): Promise<Map<string, Pric
       }
     }
   } catch(e){}
+
+  // BES sanal fon getiri oranları için mutlak fallback değerleri set edelim (hiçbir şekilde boş kalmasınlar!)
+  const defaultVirtuals = {
+    "BES_GOLD_RETURN": 0.65,
+    "BES_STOCKS_RETURN": 0.80,
+    "BES_USD_RETURN": 0.35,
+    "BES_STANDART_RETURN": 0.45,
+    "BES_CONSERVATIVE_RETURN": 0.40
+  };
+
+  Object.entries(defaultVirtuals).forEach(([sym, val]) => {
+    if (!results.has(sym)) {
+      results.set(sym, { symbol: sym, price: val });
+    }
+  });
 
   // Hiçbir şekilde verisi bulunamayan sembollere 0 veya hata bilgisi koy
   symbols.forEach(s => {
@@ -313,14 +375,13 @@ export function calculatePortfolioMetrics(investments: any[], livePrices: Map<st
 
           // Fon bazlı yıllık getiri tahmini (Piyasa verilerine göre dinamikleşecek)
           const fundReturns: Record<string, number> = {
-            "STANDART": 0.45,
-            "GOLD": 0.65, // Altın fonları daha yüksek getiri sağlayabilir
-            "STOCKS": 0.80, // Hisse fonları riskli ama yüksek potansiyelli
-            "USD": 0.35, // Döviz bazlı
-            "CONSERVATIVE": 0.40,
+            "STANDART": livePrices.get("BES_STANDART_RETURN")?.price || 0.45,
+            "GOLD": livePrices.get("BES_GOLD_RETURN")?.price || 0.65, 
+            "STOCKS": livePrices.get("BES_STOCKS_RETURN")?.price || 0.80, 
+            "USD": livePrices.get("BES_USD_RETURN")?.price || 0.35, 
+            "CONSERVATIVE": livePrices.get("BES_CONSERVATIVE_RETURN")?.price || 0.40,
           };
 
-          // Eğer canlı fiyatlarda bu fona ait bir ticker varsa, onun changePct'sini kullanabiliriz veya sabit tablodan çekebiliriz
           const annualFundGrowth = fundReturns[fundType] || 0.45;
           const dailyGrowthRate = annualFundGrowth / 365;
           const fundMultiplier = Math.pow(1 + dailyGrowthRate, daysPassed);

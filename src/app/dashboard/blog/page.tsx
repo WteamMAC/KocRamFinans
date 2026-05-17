@@ -4,7 +4,13 @@ import { redirect } from "next/navigation";
 import { getPosts } from "@/app/actions/blog";
 import { BlogFeed } from "@/components/dashboard/blog-feed";
 
-export default async function BlogPage() {
+type SearchParams = Promise<{ [key: string]: string | string[] | undefined }>;
+
+export default async function BlogPage({
+  searchParams,
+}: {
+  searchParams: SearchParams;
+}) {
   const { userId } = await auth();
   if (!userId) redirect("/");
 
@@ -15,7 +21,14 @@ export default async function BlogPage() {
 
   if (!user) redirect("/onboarding");
 
-  const { posts, nextCursor } = await getPosts(user.id);
+  // Read tab parameter for initial state
+  const resolvedParams = await searchParams;
+  const tabParam = typeof resolvedParams.tab === "string" ? resolvedParams.tab : "explore";
+  const initialFeedType = (tabParam === "explore" || tabParam === "following" || tabParam === "my-communities")
+    ? tabParam
+    : "explore";
+
+  const { posts, nextCursor } = await getPosts(user.id, undefined, initialFeedType);
   
   // Takipçi verilerini çek (DB hatasına karşı korumalı)
   let userData = null;
@@ -59,6 +72,7 @@ export default async function BlogPage() {
           currentUserId={user.id} 
           userRole={user.role}
           isBanned={user.isBanned}
+          initialFeedType={initialFeedType}
         />
       </div>
     </div>

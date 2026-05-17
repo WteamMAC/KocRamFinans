@@ -29,6 +29,7 @@ interface InvestmentItem {
 interface BesFaizDetailProps {
   type: "BES" | "FAIZ";
   investments: InvestmentItem[];
+  livePrices?: Record<string, number>;
 }
 
 interface ParsedMeta {
@@ -62,7 +63,7 @@ const BES_FUND_TYPES = [
   { id: "CONSERVATIVE", name: "Muhafazakar (Para Piyasası)", icon: "🛡️", ticker: "FIXED_LOW" },
 ];
 
-export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
+export function BesFaizDetail({ type, investments, livePrices }: BesFaizDetailProps) {
   const router = useRouter();
   const { formatAmount } = useCurrency();
   const [isAdding, setIsAdding] = useState(false);
@@ -72,7 +73,17 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [projYears, setProjYears] = useState(10);
   const [projMonthly, setProjMonthly] = useState(0); // only for BES
-  const [projReturn, setProjReturn] = useState(45);  // only for BES
+  const [projReturn, setProjReturn] = useState(() => Math.round((livePrices?.BES_STANDART_RETURN ?? 0.45) * 100));  // only for BES
+
+  const fundReturns = useMemo(() => {
+    return {
+      "STANDART": livePrices?.BES_STANDART_RETURN ?? 0.45,
+      "GOLD": livePrices?.BES_GOLD_RETURN ?? 0.65,
+      "STOCKS": livePrices?.BES_STOCKS_RETURN ?? 0.80,
+      "USD": livePrices?.BES_USD_RETURN ?? 0.35,
+      "CONSERVATIVE": livePrices?.BES_CONSERVATIVE_RETURN ?? 0.40,
+    };
+  }, [livePrices]);
 
   const [formData, setFormData] = useState({
     symbol: "",
@@ -140,15 +151,7 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
           fundType = meta.fundType || "STANDART";
         } catch(e){}
 
-        const fundReturns: Record<string, number> = {
-          "STANDART": 0.45,
-          "GOLD": 0.65,
-          "STOCKS": 0.80,
-          "USD": 0.35,
-          "CONSERVATIVE": 0.40,
-        };
-
-        const annualFundGrowth = fundReturns[fundType] || 0.45;
+        const annualFundGrowth = fundReturns[fundType as keyof typeof fundReturns] || 0.45;
         const dailyGrowth = annualFundGrowth / 365;
         const fundMultiplier = Math.pow(1 + dailyGrowth, daysPassed);
         const stateMultiplier = 1 + (g.rate > 0 && g.rate <= 100 ? g.rate / 100 : 0.30);
@@ -563,7 +566,7 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
                             <div className="mt-1 space-y-1">
                               <p className="text-[10px] font-black text-emerald-500 uppercase tracking-tighter flex items-center gap-1">
                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                Tahmini Günlük Fon Getirisi: ~{formatAmount((g.totalQuantity * 45) / 365 / 100)}
+                                Tahmini Günlük Fon Getirisi: ~{formatAmount((g.totalQuantity * (fundReturns[parseMeta(g.items[0]).fundType as keyof typeof fundReturns] || 0.45) * 100) / 365 / 100)}
                               </p>
                               {parseMeta(g.items[0]).monthlyContribution > 0 && (
                                 <p className="text-[10px] font-bold text-primary bg-primary/5 px-2 py-0.5 rounded-md inline-block">
@@ -597,15 +600,7 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
                               fundType = meta.fundType || "STANDART";
                             } catch(e){}
 
-                            const fundReturns: Record<string, number> = {
-                              "STANDART": 0.45,
-                              "GOLD": 0.65,
-                              "STOCKS": 0.80,
-                              "USD": 0.35,
-                              "CONSERVATIVE": 0.40,
-                            };
-
-                            const annualFundGrowth = fundReturns[fundType] || 0.45;
+                            const annualFundGrowth = fundReturns[fundType as keyof typeof fundReturns] || 0.45;
                             const dailyGrowth = annualFundGrowth / 365;
                             const fundMultiplier = Math.pow(1 + dailyGrowth, daysPassed);
                             const stateMultiplier = 1 + (g.rate > 0 && g.rate <= 100 ? g.rate / 100 : 0.30);
@@ -629,14 +624,7 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
                         <div>
                           <p className="text-[9px] font-bold text-muted-foreground uppercase">1 Yıl Sonraki Tahmin</p>
                           {(() => {
-                            const fundReturns: Record<string, number> = {
-                              "STANDART": 0.45,
-                              "GOLD": 0.65,
-                              "STOCKS": 0.80,
-                              "USD": 0.35,
-                              "CONSERVATIVE": 0.40,
-                            };
-                            const fr = fundReturns[parseMeta(g.items[0]).fundType || "STANDART"] || 0.45;
+                            const fr = fundReturns[parseMeta(g.items[0]).fundType as keyof typeof fundReturns] || 0.45;
                             return (
                               <p className={cn("font-bold text-xl", accentColor)}>
                                 {formatAmount(isBES
@@ -649,14 +637,7 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
                         <div className="text-right">
                           <p className="text-[9px] font-bold text-emerald-500 uppercase">Yıllık Tahmini Kazanç</p>
                           {(() => {
-                            const fundReturns: Record<string, number> = {
-                              "STANDART": 0.45,
-                              "GOLD": 0.65,
-                              "STOCKS": 0.80,
-                              "USD": 0.35,
-                              "CONSERVATIVE": 0.40,
-                            };
-                            const fr = fundReturns[parseMeta(g.items[0]).fundType || "STANDART"] || 0.45;
+                            const fr = fundReturns[parseMeta(g.items[0]).fundType as keyof typeof fundReturns] || 0.45;
                             return (
                               <p className="font-bold text-emerald-500">
                                 +{formatAmount(isBES
