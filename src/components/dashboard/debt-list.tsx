@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -153,7 +154,7 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
                     className={cn(
                         "rounded-2xl px-8 h-12 font-black text-xs uppercase tracking-widest transition-all shadow-lg active:scale-95",
                         isAdding 
-                            ? "bg-rose-500/10 text-rose-600 hover:bg-rose-500/20 shadow-rose-500/10" 
+                            ? "bg-muted text-foreground hover:bg-muted/80 shadow-none" 
                             : "bg-primary text-primary-foreground hover:brightness-110 shadow-primary/20"
                     )}
                 >
@@ -212,7 +213,7 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
 
                     <Card className="p-8 bg-card border-border/30 shadow-ambient-medium rounded-[32px] flex flex-col">
                         <h3 className="text-lg font-bold text-foreground mb-6 flex items-center gap-2">
-                            <AlertCircle className="w-5 h-5 text-rose-500" /> Borç Dağılımı
+                            <AlertCircle className="w-5 h-5 text-primary" /> Borç Dağılımı
                         </h3>
                         <div className="flex-1 flex flex-col justify-center">
                             <div className="space-y-4">
@@ -227,7 +228,7 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
                                             </div>
                                             <div className="h-2 bg-muted rounded-full overflow-hidden">
                                                 <div
-                                                    className={cn("h-full rounded-full", type === "Kredi Kartı" ? "bg-rose-500" : "bg-primary")}
+                                                    className={cn("h-full rounded-full", type === "Kredi Kartı" ? "bg-amber-500" : "bg-primary")}
                                                     style={{ width: `${percentage}%` }}
                                                 />
                                             </div>
@@ -240,130 +241,143 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
                 </div>
             )}
 
-            {/* Add Debt Form */}
-            {isAdding && (
-                <Card className="p-8 bg-card border-border/30 shadow-ambient-high rounded-[32px] animate-in fade-in slide-in-from-top-4 duration-500 mb-8 border-t-4 border-t-primary">
-                    <div className="flex justify-between items-center mb-8">
-                        <h3 className="text-xl font-heading font-bold text-primary flex items-center gap-2">
-                            {refinanceId ? <Landmark className="w-6 h-6" /> : <Plus className="w-6 h-6" />}
-                            {refinanceId ? "Borç Yapılandırma" : "Yeni Borç Ekle"}
-                        </h3>
-                        {refinanceId && (
-                            <span className="text-xs font-bold text-muted-foreground bg-muted px-3 py-1 rounded-full uppercase tracking-tighter">
-                                Mevcut borç kapatılıp yenisi eklenecek
-                            </span>
-                        )}
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                        <div className="space-y-3">
-                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1 mb-1.5 block">Borç Türü</Label>
-                            <Select value={formData.type} onValueChange={(v) => setFormData((p) => ({ ...p, type: String(v ?? "") }))}>
-                                <SelectTrigger className="bg-muted border-border/30 h-12 rounded-xl focus:ring-destructive font-bold">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent className="rounded-xl border-border/30 bg-card font-bold">
-                                    <SelectItem value="Kredi Kartı">Kredi Kartı</SelectItem>
-                                    <SelectItem value="Banka Kredisi">Banka Kredisi</SelectItem>
-                                    <SelectItem value="Şahsi Borç">Şahsi Borç</SelectItem>
-                                    <SelectItem value="Elden Taksit">Elden Taksit</SelectItem>
-                                    <SelectItem value="Diğer">Diğer</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="space-y-3">
-                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1 mb-1.5 block">Toplam Tutar</Label>
-                            <div className="flex gap-2">
-                                <Input
-                                    type="number"
-                                    value={formData.amount}
-                                    onChange={(e) => setFormData(p => ({ ...p, amount: e.target.value }))}
-                                    className="bg-muted border-border/30 h-12 rounded-xl focus:ring-destructive text-lg font-bold flex-1"
-                                    placeholder="0.00"
-                                />
-                                <Select value={formData.currency} onValueChange={(v) => setFormData(p => ({ ...p, currency: String(v) }))}>
-                                    <SelectTrigger className="bg-muted border-border/30 h-12 rounded-xl w-[110px] font-bold">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent className="rounded-xl bg-card font-bold">
-                                        {DISPLAY_CURRENCIES_LIST.map(c => (
-                                            <SelectItem key={c.code} value={c.code}>
-                                                {c.flag} {c.code}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+            {/* Add Debt Form Modal */}
+            {isAdding && typeof document !== "undefined" && createPortal(
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 md:p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="relative w-full max-w-2xl max-h-[95vh] overflow-y-auto no-scrollbar">
+                        <Card className="p-8 sm:p-10 bg-card border-border/30 shadow-ambient-high rounded-[32px] border-t-4 border-t-primary backdrop-blur-3xl animate-in zoom-in-95 duration-300">
+                            <div className="flex justify-between items-center pb-6 mb-8 border-b border-border/10">
+                                <div>
+                                    <h3 className="text-xl sm:text-2xl font-heading font-bold text-primary flex items-center gap-2">
+                                        {refinanceId ? <Landmark className="w-6 h-6" /> : <Plus className="w-6 h-6" />}
+                                        {refinanceId ? "Borç Yapılandırma" : "Yeni Borç Ekle"}
+                                    </h3>
+                                    <p className="text-xs text-muted-foreground mt-1 font-medium">
+                                        {refinanceId ? "Mevcut borç kapatılıp yenisi eklenecek." : "Yükümlülüklerinizi ekleyin ve ödeme planını oluşturun."}
+                                    </p>
+                                </div>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => { setIsAdding(false); setRefinanceId(null); }}
+                                    className="h-10 w-10 rounded-full bg-muted/60 hover:bg-rose-50 hover:text-rose-500 text-muted-foreground transition-all duration-200 shrink-0"
+                                >
+                                    <X className="h-5 w-5" />
+                                </Button>
                             </div>
-                        </div>
-                        <div className="space-y-3">
-                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1 mb-1.5 block">Taksit Sayısı (Opsiyonel)</Label>
-                            <Input
-                                type="number"
-                                min="1"
-                                value={formData.remainingInstallments}
-                                onChange={(e) => setFormData(p => ({ ...p, remainingInstallments: e.target.value }))}
-                                className="bg-muted border-border/30 h-12 rounded-xl focus:ring-destructive font-bold"
-                                placeholder="Örn: 12"
-                            />
-                        </div>
-                        <div className="space-y-3">
-                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1 mb-1.5 block">Aylık Faiz Oranı % (Opsiyonel)</Label>
-                            <Input
-                                type="number"
-                                step="0.01"
-                                value={formData.interestRate}
-                                onChange={(e) => setFormData(p => ({ ...p, interestRate: e.target.value }))}
-                                className="bg-muted border-border/30 h-12 rounded-xl focus:ring-destructive font-bold"
-                                placeholder="Örn: 3.50"
-                            />
-                        </div>
-                        {formData.remainingInstallments && Number(formData.remainingInstallments) > 0 ? (
-                            <div className="space-y-3">
-                                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1 mb-1.5 block">Taksit Ödeme Günü (1-31)</Label>
-                                <Input
-                                    type="number"
-                                    min="1"
-                                    max="31"
-                                    value={formData.paymentDay}
-                                    onChange={(e) => setFormData(p => ({ ...p, paymentDay: e.target.value }))}
-                                    className="bg-muted border-border/30 h-12 rounded-xl focus:ring-destructive font-bold"
-                                    placeholder="Ayın kaçıncı günü?"
-                                />
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                <div className="space-y-3">
+                                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1 mb-1.5 block">Borç Türü</Label>
+                                    <Select value={formData.type} onValueChange={(v) => setFormData((p) => ({ ...p, type: String(v ?? "") }))}>
+                                        <SelectTrigger className="bg-muted border-border/30 h-12 rounded-xl focus:ring-primary font-bold">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent className="rounded-xl border-border/30 bg-card font-bold">
+                                            <SelectItem value="Kredi Kartı">Kredi Kartı</SelectItem>
+                                            <SelectItem value="Banka Kredisi">Banka Kredisi</SelectItem>
+                                            <SelectItem value="Şahsi Borç">Şahsi Borç</SelectItem>
+                                            <SelectItem value="Elden Taksit">Elden Taksit</SelectItem>
+                                            <SelectItem value="Diğer">Diğer</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-3">
+                                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1 mb-1.5 block">Toplam Tutar</Label>
+                                    <div className="flex gap-2">
+                                        <Input
+                                            type="number"
+                                            value={formData.amount}
+                                            onChange={(e) => setFormData(p => ({ ...p, amount: e.target.value }))}
+                                            className="bg-muted border-border/30 h-12 rounded-xl focus:ring-primary text-lg font-bold flex-1"
+                                            placeholder="0.00"
+                                        />
+                                        <Select value={formData.currency} onValueChange={(v) => setFormData(p => ({ ...p, currency: String(v) }))}>
+                                            <SelectTrigger className="bg-muted border-border/30 h-12 rounded-xl w-[110px] font-bold">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent className="rounded-xl bg-card font-bold">
+                                                {DISPLAY_CURRENCIES_LIST.map(c => (
+                                                    <SelectItem key={c.code} value={c.code}>
+                                                        {c.flag} {c.code}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+                                <div className="space-y-3">
+                                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1 mb-1.5 block">Taksit Sayısı (Opsiyonel)</Label>
+                                    <Input
+                                        type="number"
+                                        min="1"
+                                        value={formData.remainingInstallments}
+                                        onChange={(e) => setFormData(p => ({ ...p, remainingInstallments: e.target.value }))}
+                                        className="bg-muted border-border/30 h-12 rounded-xl focus:ring-primary font-bold"
+                                        placeholder="Örn: 12"
+                                    />
+                                </div>
+                                <div className="space-y-3">
+                                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1 mb-1.5 block">Aylık Faiz Oranı % (Opsiyonel)</Label>
+                                    <Input
+                                        type="number"
+                                        step="0.01"
+                                        value={formData.interestRate}
+                                        onChange={(e) => setFormData(p => ({ ...p, interestRate: e.target.value }))}
+                                        className="bg-muted border-border/30 h-12 rounded-xl focus:ring-primary font-bold"
+                                        placeholder="Örn: 3.50"
+                                    />
+                                </div>
+                                {formData.remainingInstallments && Number(formData.remainingInstallments) > 0 ? (
+                                    <div className="space-y-3">
+                                        <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1 mb-1.5 block">Taksit Ödeme Günü (1-31)</Label>
+                                        <Input
+                                            type="number"
+                                            min="1"
+                                            max="31"
+                                            value={formData.paymentDay}
+                                            onChange={(e) => setFormData(p => ({ ...p, paymentDay: e.target.value }))}
+                                            className="bg-muted border-border/30 h-12 rounded-xl focus:ring-primary font-bold"
+                                            placeholder="Ayın kaçıncı günü?"
+                                        />
+                                    </div>
+                                ) : (
+                                    <div className="space-y-3">
+                                        <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1 mb-1.5 block">Son Ödeme Tarihi</Label>
+                                        <DatePicker
+                                            date={formData.dueDate ? parseISO(formData.dueDate) : undefined}
+                                            setDate={(d) => setFormData(p => ({ ...p, dueDate: d ? d.toISOString().split('T')[0] : "" }))}
+                                            placeholder="GG.AA.YYYY"
+                                            className="h-12"
+                                        />
+                                    </div>
+                                )}
+                                <div className="space-y-3 sm:col-span-2">
+                                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1 mb-1.5 block">Açıklama</Label>
+                                    <Input
+                                        value={formData.description}
+                                        onChange={(e) => setFormData(p => ({ ...p, description: e.target.value }))}
+                                        className="bg-muted border-border/30 h-12 rounded-xl focus:ring-primary font-bold"
+                                        placeholder="Örn: Ev Kredisi"
+                                    />
+                                    <p className="text-[10px] text-muted-foreground/60 italic mt-1 px-1">
+                                        * Borçlar toplam yükümlülük olarak takip edilir, gelirinize dahil edilmez.
+                                    </p>
+                                </div>
                             </div>
-                        ) : (
-                            <div className="space-y-3">
-                                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1 mb-1.5 block">Son Ödeme Tarihi</Label>
-                                <DatePicker
-                                    date={formData.dueDate ? parseISO(formData.dueDate) : undefined}
-                                    setDate={(d) => setFormData(p => ({ ...p, dueDate: d ? d.toISOString().split('T')[0] : "" }))}
-                                    placeholder="GG.AA.YYYY"
-                                    className="h-12"
-                                />
+                            {error && <div className="mt-6 p-4 bg-destructive/10 text-destructive rounded-xl text-sm font-medium border border-destructive/20">{error}</div>}
+                            <div className="mt-8 pt-8 border-t border-border/5 flex justify-end">
+                                <Button
+                                    onClick={handleAdd}
+                                    disabled={loading}
+                                    className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-2xl px-10 py-6 h-auto text-base font-black shadow-xl hover:shadow-primary/20 transition-all w-full sm:w-auto"
+                                >
+                                    {loading ? "Kaydediliyor..." : "Borcu Kaydet"}
+                                </Button>
                             </div>
-                        )}
-                        <div className="space-y-3">
-                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1 mb-1.5 block">Açıklama</Label>
-                            <Input
-                                value={formData.description}
-                                onChange={(e) => setFormData(p => ({ ...p, description: e.target.value }))}
-                                className="bg-muted border-border/30 h-12 rounded-xl focus:ring-destructive font-bold"
-                                placeholder="Örn: Ev Kredisi"
-                            />
-                            <p className="text-[10px] text-muted-foreground/60 italic mt-1 px-1">
-                                * Borçlar toplam yükümlülük olarak takip edilir, gelirinize dahil edilmez.
-                            </p>
-                        </div>
+                        </Card>
                     </div>
-                    {error && <div className="mt-6 p-4 bg-destructive/10 text-destructive rounded-xl text-sm font-medium border border-destructive/20">{error}</div>}
-                    <div className="mt-8 flex justify-end">
-                        <Button
-                            onClick={handleAdd}
-                            disabled={loading}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-full px-10 py-6 h-auto text-lg font-bold shadow-ambient-medium"
-                        >
-                            {loading ? "Kaydediliyor..." : "Borcu Kaydet"}
-                        </Button>
-                    </div>
-                </Card>
+                </div>,
+                document.body
             )}
 
             {/* Debt Cards Grid */}
@@ -376,7 +390,7 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
                                 <div className="flex justify-between items-start mb-6">
                                     <div className={cn(
                                         "w-12 h-12 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 shadow-sm",
-                                        debt.type === "Kredi Kartı" ? "bg-rose-500/10 text-rose-600" : "bg-primary/10 text-primary"
+                                        debt.type === "Kredi Kartı" ? "bg-amber-500/10 text-amber-700" : "bg-primary/10 text-primary"
                                     )}>
                                         {debt.type === "Kredi Kartı" ? <CreditCard className="w-6 h-6" /> : <Landmark className="w-6 h-6" />}
                                     </div>
@@ -477,7 +491,7 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
                                         <div className="flex items-center gap-2 text-muted-foreground font-medium">
                                             <TrendingDown className="w-4 h-4 opacity-40" /> Aylık Ödeme (Tahmini)
                                         </div>
-                                        <span className="font-bold text-rose-600">
+                                        <span className="font-bold text-primary">
                                             {formatAmount(debt.installmentAmount || monthlyTry)}
                                         </span>
                                     </div>
@@ -516,7 +530,7 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
                                 <div className="grid grid-cols-2 gap-3 mt-8">
                                     <Button
                                         variant="outline"
-                                        className="rounded-xl border-destructive/20 text-destructive hover:bg-destructive/5 font-bold h-11"
+                                        className="rounded-xl border-primary/20 text-primary hover:bg-primary/5 font-bold h-11"
                                         onClick={() => setPayModal({
                                             id: debt.id,
                                             amount: monthlyTry,
@@ -531,7 +545,7 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
                                         Taksit Öde
                                     </Button>
                                     <Button
-                                        className="rounded-xl bg-destructive hover:bg-destructive/90 text-destructive-foreground font-bold h-11"
+                                        className="rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold h-11 shadow-md shadow-primary/10"
                                         onClick={() => setPayModal({
                                             id: debt.id,
                                             amount: debt.amount,
@@ -553,8 +567,8 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
 
                 {activeDebts.length === 0 && !isAdding && (
                     <div className="col-span-full py-16 flex flex-col items-center justify-center text-center bg-muted/20 border border-dashed rounded-[40px] border-border/50 animate-in fade-in duration-700">
-                        <div className="w-20 h-20 bg-rose-500/10 rounded-full flex items-center justify-center mb-6">
-                            <CreditCard className="w-10 h-10 text-rose-500/40" />
+                        <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mb-6">
+                            <CreditCard className="w-10 h-10 text-primary/40" />
                         </div>
                         <h3 className="text-xl font-heading font-bold text-primary mb-3">Borç ve Yükümlülük Takibi</h3>
                         <p className="text-sm text-muted-foreground max-w-[400px] mb-10 leading-relaxed">
@@ -562,8 +576,8 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
                         </p>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-2xl px-4">
                             <div className="bg-card p-5 rounded-[24px] border border-border/40 text-left shadow-sm">
-                                <p className="text-xs font-black text-rose-500 uppercase tracking-widest mb-1.5 flex items-center gap-2">
-                                  <span className="w-2 h-2 rounded-full bg-rose-500" />
+                                <p className="text-xs font-black text-amber-600 uppercase tracking-widest mb-1.5 flex items-center gap-2">
+                                  <span className="w-2 h-2 rounded-full bg-amber-500" />
                                   Kredi Kartları
                                 </p>
                                 <p className="text-[11px] text-muted-foreground leading-relaxed">Ekstre borçlarınızı ve taksitli alışverişlerinizi kaydedin.</p>
@@ -590,7 +604,7 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
                             </h3>
                             <button 
                                 onClick={() => setPayModal(null)} 
-                                className="h-10 w-10 flex items-center justify-center rounded-full hover:bg-rose-500/10 hover:text-rose-500 text-muted-foreground transition-all"
+                                className="h-10 w-10 flex items-center justify-center rounded-full hover:bg-primary/10 hover:text-primary text-muted-foreground transition-all"
                             >
                                 <X className="w-5 h-5" />
                             </button>
@@ -608,9 +622,9 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
                                     value={payModal.amount}
                                     disabled={payModal.isClose}
                                     onChange={(e) => setPayModal({ ...payModal, amount: Number(e.target.value), rawAmount: Number(e.target.value) })}
-                                    className="bg-muted border-border/30 h-12 rounded-xl focus:ring-red-600 text-lg font-bold"
+                                    className="bg-muted border-border/30 h-12 rounded-xl focus:ring-primary text-lg font-bold"
                                 />
-                                <p className="text-[10px] text-rose-600/70 italic mt-1">
+                                <p className="text-[10px] text-muted-foreground/80 italic mt-1">
                                     * Bu ödeme, gider listenize otomatik olarak eklenecektir.
                                 </p>
                             </div>
@@ -621,7 +635,7 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
                                         type="checkbox"
                                         checked={(payModal as any).isTransfer || false}
                                         onChange={() => { }}
-                                        className="w-5 h-5 rounded border-border/40 accent-destructive"
+                                        className="w-5 h-5 rounded border-border/40 accent-primary"
                                     />
                                     <div>
                                         <p className="text-xs font-bold text-foreground">Borç Transferi / Yapılandırma</p>
@@ -636,7 +650,7 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
                             <Button variant="outline" className="rounded-full px-8 border-border/30 text-muted-foreground" onClick={() => setPayModal(null)}>
                                 Vazgeç
                             </Button>
-                            <Button onClick={handlePay} disabled={loading} className="rounded-full bg-destructive hover:bg-destructive/90 text-destructive-foreground px-10 font-bold shadow-lg shadow-destructive/20">
+                            <Button onClick={handlePay} disabled={loading} className="rounded-full bg-primary hover:bg-primary/90 text-primary-foreground px-10 font-bold shadow-lg shadow-primary/20">
                                 {loading ? "İşleniyor..." : "Ödemeyi Onayla"}
                             </Button>
                         </div>
