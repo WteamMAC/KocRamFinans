@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { 
   HelpCircle, 
   Search, 
@@ -84,10 +85,30 @@ const faqs = [
   }
 ];
 
-export default function FaqPage() {
+function FaqContent() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("all");
   const [expandedFaq, setExpandedFaq] = useState<string | null>("faq-1");
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const q = searchParams.get("q");
+    if (q) {
+      setExpandedFaq(q);
+      const matchedFaq = faqs.find(f => f.id === q);
+      if (matchedFaq) {
+        setActiveCategory(matchedFaq.category);
+      }
+      
+      // Smoothly scroll to the question card
+      setTimeout(() => {
+        const element = document.getElementById(q);
+        if (element) {
+          element.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      }, 100);
+    }
+  }, [searchParams]);
 
   const filteredFaqs = faqs.filter(faq => {
     const matchesSearch = 
@@ -168,8 +189,9 @@ export default function FaqPage() {
               return (
                 <div
                   key={faq.id}
+                  id={faq.id}
                   className={cn(
-                    "rounded-2xl border transition-all duration-300 overflow-hidden bg-card",
+                    "rounded-2xl border transition-all duration-300 overflow-hidden bg-card scroll-mt-24",
                     isOpen
                       ? "border-primary/30 bg-primary/5 shadow-ambient-medium"
                       : "border-border/30 hover:border-border/60 hover:bg-muted/10 shadow-sm"
@@ -246,5 +268,17 @@ export default function FaqPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function FaqPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex-1 flex items-center justify-center min-h-screen text-muted-foreground font-bold bg-background">
+        Yükleniyor...
+      </div>
+    }>
+      <FaqContent />
+    </Suspense>
   );
 }

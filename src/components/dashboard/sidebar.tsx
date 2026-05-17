@@ -141,7 +141,7 @@ const routes = [
     color: "text-blue-500",
   },
   {
-    label: "Yardım & SSS",
+    label: "Sık Sorulan Sorular",
     icon: HelpCircle,
     href: "/dashboard/faq",
     color: "text-sky-500",
@@ -165,13 +165,7 @@ interface SidebarProps {
 export function Sidebar({ isCollapsed, onToggle, hideToggle, theme, onToggleTheme }: SidebarProps) {
   const pathname = usePathname();
   const [openSubMenus, setOpenSubMenus] = useState<Record<string, boolean>>({ "Varlıklarım": true });
-  const [activeFaq, setActiveFaq] = useState<string | null>(null);
-  const [isFaqOpen, setIsFaqOpen] = useState(false);
 
-  const handleFaqClick = (faqId: string) => {
-    setActiveFaq(faqId);
-    setIsFaqOpen(true);
-  };
 
   const toggleSubMenu = (label: string) => {
     setOpenSubMenus(prev => ({ ...prev, [label]: !prev[label] }));
@@ -326,29 +320,26 @@ export function Sidebar({ isCollapsed, onToggle, hideToggle, theme, onToggleThem
               </div>
               <div className="space-y-1">
                 {faqs.map((faq) => (
-                  <button
+                  <Link
                     key={faq.id}
-                    onClick={() => handleFaqClick(faq.id)}
+                    href={`/dashboard/faq?q=${faq.id}`}
                     className="text-xs text-left w-full group flex p-2.5 font-semibold cursor-pointer rounded-xl transition-all duration-200 text-muted-foreground hover:bg-primary/5 hover:text-primary"
                   >
                     <span className="truncate group-hover:translate-x-1 transition-transform">{faq.question}</span>
-                  </button>
+                  </Link>
                 ))}
               </div>
             </div>
           ) : (
-            <button
-              onClick={() => {
-                setActiveFaq(null);
-                setIsFaqOpen(true);
-              }}
+            <Link
+              href="/dashboard/faq"
               className="text-sm group flex p-3 w-full justify-start font-bold cursor-pointer rounded-xl transition-all duration-200 mt-2 text-primary hover:bg-primary/10"
               title="Sık Sorulan Sorular"
             >
               <div className="flex items-center justify-center w-full">
                 <HelpCircle className="h-5 w-5 flex-shrink-0 transition-transform group-hover:scale-110" />
               </div>
-            </button>
+            </Link>
           )}
         </div>
       </div>
@@ -394,72 +385,6 @@ export function Sidebar({ isCollapsed, onToggle, hideToggle, theme, onToggleThem
           )}
         </div>
       </div>
-
-      {/* FAQ Dialog Modal */}
-      <Dialog open={isFaqOpen} onOpenChange={setIsFaqOpen}>
-        <DialogContent className="sm:max-w-xl rounded-[32px] p-0 overflow-hidden border-none shadow-2xl bg-background/95 backdrop-blur-xl">
-          <div className="bg-primary/5 p-6 border-b border-border/10">
-            <DialogHeader>
-              <div className="flex items-center justify-between mb-2">
-                <div className="p-2 bg-primary/10 rounded-2xl">
-                  <HelpCircle className="h-6 w-6 text-primary" />
-                </div>
-              </div>
-              <DialogTitle className="text-2xl font-black text-foreground">Sık Sorulan Sorular</DialogTitle>
-              <p className="text-xs text-muted-foreground mt-1 font-medium">Koç Ram Finans hakkında aklınıza takılabilecek soruların yanıtları.</p>
-            </DialogHeader>
-          </div>
-
-          <div className="max-h-[60vh] overflow-y-auto p-6 space-y-3 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
-            {faqs.map((faq) => {
-              const isOpen = activeFaq === faq.id;
-              return (
-                <div
-                  key={faq.id}
-                  className={cn(
-                    "rounded-2xl border transition-all duration-300 overflow-hidden",
-                    isOpen
-                      ? "bg-primary/5 border-primary/20 shadow-sm"
-                      : "bg-muted/10 border-transparent hover:bg-muted/20"
-                  )}
-                >
-                  <button
-                    onClick={() => setActiveFaq(isOpen ? null : faq.id)}
-                    className="flex w-full items-center justify-between p-4 text-left font-bold text-sm text-foreground focus:outline-none"
-                  >
-                    <span>{faq.question}</span>
-                    <ChevronDown
-                      className={cn(
-                        "h-4 w-4 text-muted-foreground transition-transform duration-300 flex-shrink-0 ml-4",
-                        isOpen && "rotate-180 text-primary"
-                      )}
-                    />
-                  </button>
-                  <div
-                    className={cn(
-                      "transition-all duration-300 ease-in-out overflow-hidden",
-                      isOpen ? "max-h-60 border-t border-border/10" : "max-h-0"
-                    )}
-                  >
-                    <div className="p-4 text-xs text-muted-foreground/90 leading-relaxed font-medium">
-                      {faq.answer}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          <div className="p-4 bg-muted/5 border-t border-border/10 flex justify-center">
-            <button
-              onClick={() => setIsFaqOpen(false)}
-              className="text-xs font-bold text-muted-foreground hover:text-foreground transition-colors px-4 py-2"
-            >
-              Kapat
-            </button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
