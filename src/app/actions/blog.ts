@@ -695,3 +695,34 @@ export async function searchUsers(query: string) {
   
   return users;
 }
+
+export async function updateProfile(data: { bio?: string; username?: string }) {
+  const { userId: clerkUserId } = await auth();
+  if (!clerkUserId) throw new Error("Unauthorized");
+  const user = await getInternalUser(clerkUserId);
+  if (!user) throw new Error("User not found");
+
+  const updateData: { bio?: string; username?: string } = {};
+
+  if (data.bio !== undefined) {
+    if (data.bio.length > 160) throw new Error("Aciklama 160 karakterden uzun olamaz.");
+    updateData.bio = data.bio;
+  }
+
+  if (data.username !== undefined && data.username.trim() !== "") {
+    const clean = data.username.trim().toLowerCase().replace(/[^a-z0-9_]/g, "");
+    if (clean.length < 3) throw new Error("Kullanici adi en az 3 karakter olmalidir.");
+    if (clean.length > 30) throw new Error("Kullanici adi en fazla 30 karakter olabilir.");
+    const existing = await prisma.user.findUnique({ where: { username: clean } });
+    if (existing && existing.id !== user.id) throw new Error("Bu kullanici adi zaten alinmis.");
+    updateData.username = clean;
+  }
+
+  const updated = await prisma.user.update({
+    where: { id: user.id },
+    data: updateData,
+  });
+
+  revalidatePath(`/dashboard/profile/${updated.username}`);
+  return { username: updated.username };
+}

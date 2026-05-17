@@ -78,7 +78,10 @@ export function BesFaizDetail({ type, investments, livePrices }: BesFaizDetailPr
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [projYears, setProjYears] = useState(10);
   const [projMonthly, setProjMonthly] = useState(0); // only for BES
-  const [projReturn, setProjReturn] = useState(() => Math.round((livePrices?.BES_STANDART_RETURN ?? 0.45) * 100));  // only for BES
+  const [projReturn, setProjReturn] = useState(() => {
+    const val = livePrices?.BES_STANDART_RETURN ?? 0.45;
+    return Math.round(val > 2 ? val : val * 100); 
+  });  // only for BES
 
   const [besSearchQuery, setBesSearchQuery] = useState("");
   const [besSearchResults, setBesSearchResults] = useState<any[]>([]);
@@ -89,12 +92,16 @@ export function BesFaizDetail({ type, investments, livePrices }: BesFaizDetailPr
   const [contribAmount, setContribAmount] = useState<number | "">("");
 
   const fundReturns = useMemo(() => {
+    const safeRate = (rate: number | undefined, defaultRate: number) => {
+       const r = rate ?? defaultRate;
+       return r > 2 ? r / 100 : r;
+    };
     return {
-      "STANDART": livePrices?.BES_STANDART_RETURN ?? 0.45,
-      "GOLD": livePrices?.BES_GOLD_RETURN ?? 0.65,
-      "STOCKS": livePrices?.BES_STOCKS_RETURN ?? 0.80,
-      "USD": livePrices?.BES_USD_RETURN ?? 0.35,
-      "CONSERVATIVE": livePrices?.BES_CONSERVATIVE_RETURN ?? 0.40,
+      "STANDART": safeRate(livePrices?.BES_STANDART_RETURN, 0.45),
+      "GOLD": safeRate(livePrices?.BES_GOLD_RETURN, 0.65),
+      "STOCKS": safeRate(livePrices?.BES_STOCKS_RETURN, 0.80),
+      "USD": safeRate(livePrices?.BES_USD_RETURN, 0.35),
+      "CONSERVATIVE": safeRate(livePrices?.BES_CONSERVATIVE_RETURN, 0.40),
     };
   }, [livePrices]);
 
@@ -172,7 +179,8 @@ export function BesFaizDetail({ type, investments, livePrices }: BesFaizDetailPr
       const daysPassed = secondsPassed / (60 * 60 * 24);
 
       if (type === "BES") {
-        // BES: Fon Büyümesi (Seçili fona göre) + Devlet Katkısı (%30 varsayılan)
+        // BES: Sadece Fon Büyümesi canlı değere eklenir. 
+        // Devlet katkısı direkt ana paraya/canlı değere yansıtılmaz (yıllık/ayrı havuzda tutulur).
         let fundType = "STANDART";
         try {
           const meta = parseMeta(g.items[0]);
@@ -182,8 +190,8 @@ export function BesFaizDetail({ type, investments, livePrices }: BesFaizDetailPr
         const annualFundGrowth = fundReturns[fundType as keyof typeof fundReturns] || 0.45;
         const dailyGrowth = annualFundGrowth / 365;
         const fundMultiplier = Math.pow(1 + dailyGrowth, daysPassed);
-        const stateMultiplier = 1 + (g.rate > 0 && g.rate <= 100 ? g.rate / 100 : 0.30);
-        totalVal += (g.totalQuantity * fundMultiplier) * stateMultiplier;
+        // Devlet katkısı hesaplanıyor ama canlı bakiyeye direkt eklenip "net kazanç" gibi gösterilmiyor
+        totalVal += (g.totalQuantity * fundMultiplier);
       } else {
         const secondlyRate = (g.rate / 100) / (365 * 24 * 3600);
         const multiplier = Math.pow(1 + secondlyRate, secondsPassed);
@@ -233,16 +241,25 @@ export function BesFaizDetail({ type, investments, livePrices }: BesFaizDetailPr
       const totalMonths = projYears * 12;
       let totalPrin = grouped.reduce((s, g) => s + g.totalQuantity, 0);
       let totalWithReturn = totalPrin;
-      let totalGovtBalance = totalPrin * (govtRate / 100);
+      
+      // Devlet katkısı hesaplaması ("yıllık eklenir", "ana paraya eklenmez")
+      let pendingGovtContributions = totalPrin * (govtRate / 100); // Başlangıçtaki anaparanın devlet katkısı
+      let totalGovtBalance = pendingGovtContributions;
+
       const data = [];
       for (let i = 0; i <= totalMonths; i++) {
         if (i > 0) {
           const monthlyAdd = projMonthly > 0 ? projMonthly : totalMonthlyContribution;
           totalPrin += monthlyAdd;
-          // Apply returns to BOTH balances
-          // Note: In projection we still use projReturn as a benchmark
+          // Fon (Ana Para) aylık büyür
           totalWithReturn = (totalWithReturn + monthlyAdd) * (1 + monthlyRate);
-          totalGovtBalance = (totalGovtBalance + (monthlyAdd * govtRate / 100)) * (1 + monthlyRate);
+          
+          // Yeni eklenen aylık tutarın devlet katkısı ayrı bir havuzda birikir
+          const newGovtContrib = monthlyAdd * (govtRate / 100);
+          pendingGovtContributions += newGovtContrib;
+          
+          // Devlet katkısı da fonlarda değerlendirilir (Kullanıcının tercihine göre ana paraya eklemiyoruz, ayrı hesaplıyoruz)
+          totalGovtBalance = (totalGovtBalance + newGovtContrib) * (1 + monthlyRate);
         }
         if (i % 12 === 0) {
           const yr = Math.floor(i / 12);
@@ -692,7 +709,7 @@ export function BesFaizDetail({ type, investments, livePrices }: BesFaizDetailPr
                                 return (
                                   <p className="text-[10px] font-black text-emerald-500 uppercase tracking-tighter flex items-center gap-1">
                                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                    Tahmini Günlük Fon Getirisi: ~{formatAmount((g.totalQuantity * fundAnnualGrowth) / 365)}
+                                    Yıllık Fon Büyümesi: ~%{Math.round(fundAnnualGrowth * 100)}
                                   </p>
                                 );
                               })()}
@@ -721,6 +738,7 @@ export function BesFaizDetail({ type, investments, livePrices }: BesFaizDetailPr
                           const daysPassed = secondsPassed / (60 * 60 * 24);
                           let currentVal = g.totalQuantity;
                           let earned = 0;
+                          let stateContributionAmount = 0;
                           if (isBES) {
                             let fundType = "STANDART";
                             try {
@@ -731,9 +749,11 @@ export function BesFaizDetail({ type, investments, livePrices }: BesFaizDetailPr
                             const annualFundGrowth = fundReturns[fundType as keyof typeof fundReturns] || 0.45;
                             const dailyGrowth = annualFundGrowth / 365;
                             const fundMultiplier = Math.pow(1 + dailyGrowth, daysPassed);
-                            const stateMultiplier = 1 + (g.rate > 0 && g.rate <= 100 ? g.rate / 100 : 0.30);
-                            currentVal = (g.totalQuantity * fundMultiplier) * stateMultiplier;
+                            const stateMultiplier = (g.rate > 0 && g.rate <= 100 ? g.rate / 100 : 0.30);
+                            
+                            currentVal = g.totalQuantity * fundMultiplier;
                             earned = currentVal - g.totalQuantity;
+                            stateContributionAmount = g.totalQuantity * stateMultiplier;
                           } else {
                             const secondlyRate = (g.rate / 100) / (365 * 24 * 3600);
                             const multiplier = Math.pow(1 + secondlyRate, secondsPassed);
@@ -743,7 +763,14 @@ export function BesFaizDetail({ type, investments, livePrices }: BesFaizDetailPr
                           return (
                             <>
                               <p className="font-bold text-lg text-emerald-500">+{formatAmount(earned)}</p>
-                              <p className="text-[9px] text-muted-foreground italic">{Math.round(daysPassed)} gün canlı birikim {isBES ? `(+%${g.rate || 30} Devlet Katkısı)` : ""}</p>
+                              <p className="text-[9px] text-muted-foreground italic">
+                                {Math.round(daysPassed)} gün canlı birikim
+                              </p>
+                              {isBES && (
+                                <p className="text-[9px] text-primary/70 font-bold mt-0.5">
+                                  + {formatAmount(stateContributionAmount)} Devlet Katkısı Bekleyen
+                                </p>
+                              )}
                             </>
                           );
                         })()}
@@ -753,10 +780,14 @@ export function BesFaizDetail({ type, investments, livePrices }: BesFaizDetailPr
                           <p className="text-[9px] font-bold text-muted-foreground uppercase">1 Yıl Sonraki Tahmin</p>
                           {(() => {
                             const fr = fundReturns[parseMeta(g.items[0]).fundType as keyof typeof fundReturns] || 0.45;
+                            const govtRate = (g.rate > 0 && g.rate <= 100 ? g.rate / 100 : 0.30);
+                            // Fon büyümesi ayrı, devlet katkısı ayrı
+                            const fundGrowth = g.totalQuantity * (1 + fr);
+                            const govtContrib = g.totalQuantity * govtRate * (1 + fr); // Devlet katkısı da fonlarda değerlenir
                             return (
                               <p className={cn("font-bold text-xl", accentColor)}>
                                 {formatAmount(isBES
-                                  ? (g.totalQuantity * (1 + fr)) * (1 + (g.rate || 30) / 100)
+                                  ? fundGrowth + govtContrib
                                   : g.totalQuantity * Math.pow(1 + g.rate / 12 / 100, 12))}
                               </p>
                             );
@@ -766,10 +797,13 @@ export function BesFaizDetail({ type, investments, livePrices }: BesFaizDetailPr
                           <p className="text-[9px] font-bold text-emerald-500 uppercase">Yıllık Tahmini Kazanç</p>
                           {(() => {
                             const fr = fundReturns[parseMeta(g.items[0]).fundType as keyof typeof fundReturns] || 0.45;
+                            const govtRate = (g.rate > 0 && g.rate <= 100 ? g.rate / 100 : 0.30);
+                            const fundGrowth = g.totalQuantity * (1 + fr);
+                            const govtContrib = g.totalQuantity * govtRate * (1 + fr);
                             return (
                               <p className="font-bold text-emerald-500">
                                 +{formatAmount(isBES
-                                  ? ((g.totalQuantity * (1 + fr) * (1 + (g.rate || 30) / 100)) - g.totalQuantity)
+                                  ? (fundGrowth + govtContrib) - g.totalQuantity
                                   : (g.totalQuantity * (Math.pow(1 + g.rate / 12 / 100, 12) - 1)))}
                               </p>
                             );
@@ -871,8 +905,13 @@ export function BesFaizDetail({ type, investments, livePrices }: BesFaizDetailPr
                     <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest min-h-[32px] flex items-end mb-2">Tahmini Yıllık Getiri (%)</Label>
                     <Input
                       type="number"
+                      min="1"
+                      max="200"
                       value={projReturn}
-                      onChange={e => setProjReturn(Number(e.target.value))}
+                      onChange={e => {
+                        const v = Math.min(200, Math.max(1, Number(e.target.value)));
+                        setProjReturn(v);
+                      }}
                       className="h-11 rounded-xl bg-muted/50 border-border/30 font-bold"
                     />
                   </div>
