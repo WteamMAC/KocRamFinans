@@ -169,6 +169,12 @@ export default function SlidingAuth() {
                           <FileText className="w-4 h-4" />
                           Aydınlatma Metnini İncele
                         </button>
+                        <button
+                          onClick={() => router.push("/sign-in")}
+                          className="mt-3 h-11 px-6 rounded-xl border border-border/80 bg-background/50 hover:bg-muted text-muted-foreground hover:text-foreground font-bold text-xs md:text-sm transition-all active:scale-95 flex items-center gap-2"
+                        >
+                          Giriş Sayfasına Geri Dön
+                        </button>
                       </div>
                     )}
                     
