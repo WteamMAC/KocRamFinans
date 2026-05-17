@@ -43,6 +43,13 @@ export async function addAsset(data: {
     const trimmedSymbol = data.symbol?.trim().toUpperCase() || null;
     const standardizedType = standardizeInvestmentType(data.type);
 
+    let finalCurrency = "TRY";
+    if (standardizedType === "NASDAQ" || standardizedType === "CRYPTO") {
+      finalCurrency = "USD";
+    } else if (standardizedType === "GOLD" && trimmedSymbol && (trimmedSymbol.includes("ONS") || trimmedSymbol.includes("GC=F") || trimmedSymbol.includes("SI=F") || trimmedSymbol.includes("BZ=F"))) {
+      finalCurrency = "USD";
+    }
+
     // Eğer güncel fiyat seçildiyse Yahoo'dan çek
     if (data.useCurrentPrice && trimmedSymbol) {
       try {
@@ -108,6 +115,7 @@ export async function addAsset(data: {
         purchasePrice: finalPrice,
         amount: finalQuantity * finalPrice,
         description: desc,
+        currency: finalCurrency,
         status: "OPEN",
         transactionType: "BUY",
       }

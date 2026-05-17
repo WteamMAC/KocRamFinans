@@ -336,9 +336,20 @@ export function calculatePortfolioMetrics(investments: any[], livePrices: Map<st
           : (inv.purchasePrice || (inv.amount / (inv.quantity || 1)));
 
         // --- SELF-HEALING COST SYNCHRONIZER (Akıllı Geçmiş Veri Onarımı) ---
-        const usdRate = livePrices.get("USDTRY=X")?.price || 36.45;
+        const usdRate = livePrices.get("USDTRY=X")?.price || livePrices.get("USD")?.price || 36.45;
         const tempCurrentVal = (inv.quantity || 1) * currentPrice;
-        if (inv.purchasePrice && inv.purchasePrice > 0 && inv.purchasePrice < (currentPrice / 5)) {
+        
+        const isUsdAsset = inv.type === "NASDAQ" || inv.type === "CRYPTO" || (inv.currency === "USD") || (symUpper && (symUpper.includes("ONS") || symUpper.includes("GC=F") || symUpper.includes("SI=F") || symUpper.includes("BZ=F") || symUpper.includes("USD") || symUpper.includes("USDT")));
+
+        if (isUsdAsset) {
+          let origUnitUsd = inv.purchasePrice || 0;
+          if (origUnitUsd > (currentPrice / 2) && usdRate > 0) {
+            origUnitUsd = origUnitUsd / usdRate;
+          }
+          if (origUnitUsd > 0) {
+            cost = origUnitUsd * (inv.quantity || 1) * usdRate;
+          }
+        } else if (inv.purchasePrice && inv.purchasePrice > 0 && inv.purchasePrice < (currentPrice / 5)) {
           const estimatedCostInTry = inv.purchasePrice * usdRate * (inv.quantity || 1);
           if (Math.abs(estimatedCostInTry - tempCurrentVal) < Math.abs(cost - tempCurrentVal)) {
             cost = estimatedCostInTry;
@@ -408,10 +419,10 @@ export function calculateFixedAssetsMetrics(fixedAssets: any[], livePrices: Map<
   let totalCurrentValue = 0;
 
   const detailedFixedAssets = (fixedAssets || []).map(fa => {
-    const originalAmount = fa.originalAmount || fa.value || 0;
+    const originalAmount = fa.originalAmount != null ? Number(fa.originalAmount) : Number(fa.value || 0);
     const curr = (fa.currency || "TRY").toUpperCase();
     const rate = getRateForCurrency(curr, livePrices);
-    let currentVal = fa.value || 0;
+    let currentVal = Number(fa.value || 0);
 
     if (curr !== "TRY" && curr !== "TL") {
       currentVal = originalAmount * rate;
@@ -423,7 +434,7 @@ export function calculateFixedAssetsMetrics(fixedAssets: any[], livePrices: Map<
       currentVal = originalAmount * multiplier;
     }
 
-    const cost = fa.value || originalAmount;
+    const cost = (curr !== "TRY" && curr !== "TL") ? (originalAmount * rate) : Number(fa.value || originalAmount);
     const profit = currentVal - cost;
 
     totalOriginalCost += cost;
@@ -461,15 +472,15 @@ export function normalizeFinancialItemsToTry(items: any[], livePrices: Map<strin
     const rate = getRateForCurrency(cur, livePrices);
     
     const dbAmount = Number(item.amount) || 0;
-    const origAmt = item.originalAmount != null ? Number(item.originalAmount) : (cur === "TRY" ? dbAmount : dbAmount / (item.fxRate || rate || 1));
-    const tryAmt = item.originalAmount != null ? (origAmt * (item.fxRate && item.fxRate > 0 ? item.fxRate : rate)) : (cur === "TRY" ? dbAmount : dbAmount * rate);
+    const origAmt = item.originalAmount != null ? Number(item.originalAmount) : (cur === "TRY" || cur === "TL" ? dbAmount : dbAmount / (item.fxRate || rate || 1));
+    const tryAmt = (cur === "TRY" || cur === "TL") ? dbAmount : (origAmt * rate);
 
     return {
       ...item,
       originalAmount: origAmt,
       rawAmount: origAmt,
       amount: tryAmt, // TL Karşılığı (Bütün toplama ve grafik işlemleri için)
-      currencyRate: item.fxRate && item.fxRate > 0 ? item.fxRate : rate
+      currencyRate: rate
     };
   });
 }

@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { getExchangeRatesAction } from "@/app/actions/market";
+import { updateProfile } from "@/app/actions/profile";
 
 export interface CurrencyInfo {
   code: string;
@@ -94,18 +95,22 @@ export function CurrencyProvider({ children, initialRates }: { children: React.R
         setIsLoading(false);
       }
     }
-    fetchRates();
+    if (!initialRates) {
+      fetchRates();
+    }
     const interval = setInterval(fetchRates, 60000 * 5); // 5 dakikada bir güncelle
     return () => clearInterval(interval);
-  }, []);
+  }, [initialRates]);
 
   const setDisplayCurrency = (currency: string) => {
     if (!DISPLAY_CURRENCIES_MAP[currency]) return;
     setDisplayCurrencyState(currency);
     try {
       localStorage.setItem("koç_ram_display_currency", currency);
+      document.cookie = `koç_ram_display_currency=${currency}; path=/; max-age=31536000; SameSite=Lax`;
+      updateProfile({ currency }).catch(() => {});
     } catch (err) {
-      console.error("Error saving currency to localStorage:", err);
+      console.error("Error saving currency to localStorage/cookie:", err);
     }
   };
 
