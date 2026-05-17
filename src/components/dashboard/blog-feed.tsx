@@ -312,29 +312,23 @@ function CreatePostBox({ currentUserId, communityId, communityName, userRole, on
   );
 }
 
-// ─── Tag Filter Bar ───────────────────────────────────────────────────
-function TagFilterBar({ 
-  availableTags, 
-  activeTags, 
-  onToggleTag, 
-  onClearTags,
-  onOpenFilter,
+// ─── Filter & Sort Controls (Sol Taraf Mini Bar) ────────────────────────────────
+function FilterAndSortControls({
   filterCount,
+  onToggleFilter,
   sortBy,
-  onSelectSort
+  onSelectSort,
+  activeFilterCount,
+  onResetFilters
 }: {
-  availableTags: string[];
-  activeTags: string[];
-  onToggleTag: (tag: string) => void;
-  onClearTags: () => void;
-  onOpenFilter: () => void;
   filterCount: number;
+  onToggleFilter: () => void;
   sortBy: string;
   onSelectSort: (sort: any) => void;
+  activeFilterCount: number;
+  onResetFilters: () => void;
 }) {
   const [isSortOpen, setIsSortOpen] = useState(false);
-  if (availableTags.length === 0) return null;
-
   const sortLabels: Record<string, string> = {
     "latest": "En Yeniler",
     "oldest": "En Eskiler",
@@ -343,88 +337,117 @@ function TagFilterBar({
   };
 
   return (
-    <div className="flex items-center justify-between gap-2 pt-1 relative z-30">
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent flex-1 pr-2">
+    <div className="flex items-center justify-between gap-3 py-1">
+      <div className="flex items-center gap-2">
         <button 
-          onClick={onOpenFilter} 
+          onClick={onToggleFilter}
           className={cn(
-            "relative flex items-center justify-center p-2 rounded-xl border transition-all shrink-0 mr-1 shadow-ambient-low",
-            filterCount > 0 ? "bg-primary text-primary-foreground border-primary shadow-primary/20" : "bg-card border-border/30 text-muted-foreground hover:border-primary/40 hover:text-primary"
+            "flex items-center gap-1.5 h-8 px-3 rounded-xl border text-[11px] font-bold transition-all shadow-ambient-low shrink-0",
+            filterCount > 0 ? "bg-primary text-primary-foreground border-primary shadow-primary/20" : "bg-card text-muted-foreground border-border/30 hover:border-primary/40 hover:text-foreground"
           )}
           title="Filtre Seçenekleri"
         >
-          <Filter className="h-4 w-4" />
+          <Filter className="h-3.5 w-3.5" />
+          <span>Filtrele</span>
           {filterCount > 0 && (
-            <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[9px] font-black text-white shadow-md">
+            <span className="flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[9px] font-black text-white ml-0.5 shadow-sm">
               {filterCount}
             </span>
           )}
         </button>
 
-        <button 
-          onClick={onClearTags} 
-          className={cn(
-            "text-[11px] font-bold px-3 py-1.5 rounded-full border shrink-0 transition-all duration-200", 
-            activeTags.length === 0 ? "bg-primary text-primary-foreground border-primary" : "bg-muted/40 text-muted-foreground border-border/20 hover:border-primary/40 hover:text-primary"
+        <div className="relative">
+          <button 
+            onClick={() => setIsSortOpen(p => !p)}
+            className="flex items-center gap-1.5 h-8 px-3 rounded-xl bg-card border border-border/30 text-[11px] font-bold text-muted-foreground hover:text-foreground transition-all shadow-ambient-low shrink-0"
+          >
+            <TrendingUp className="h-3.5 w-3.5 text-primary" />
+            <span>{sortLabels[sortBy] || "Sırala"}</span>
+            <ChevronDown className="h-3 w-3 opacity-50" />
+          </button>
+
+          {isSortOpen && (
+            <div className="absolute left-0 top-full mt-1.5 w-44 bg-card border border-border/30 rounded-2xl shadow-ambient-high overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-150 divide-y divide-border/10">
+              {[
+                { id: "latest", label: "En Yeniler", icon: Clock },
+                { id: "oldest", label: "En Eskiler", icon: Calendar },
+                { id: "most-liked", label: "En Çok Beğenilen", icon: Flame },
+                { id: "most-commented", label: "En Çok Yorum Alan", icon: MessageCircle }
+              ].map(item => {
+                const Icon = item.icon;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => { onSelectSort(item.id); setIsSortOpen(false); }}
+                    className={cn(
+                      "w-full flex items-center gap-2 px-3 py-2 text-left text-xs font-bold transition-colors",
+                      sortBy === item.id ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    )}
+                  >
+                    <Icon className="h-3.5 w-3.5 shrink-0" />
+                    <span>{item.label}</span>
+                  </button>
+                );
+              })}
+            </div>
           )}
-        >
-          Tümü
-        </button>
-
-        {availableTags.map((tag) => {
-          const isActive = activeTags.includes(tag);
-          return (
-            <button 
-              key={tag} 
-              onClick={() => onToggleTag(tag)} 
-              className={cn(
-                "text-[11px] font-bold px-3 py-1.5 rounded-full border shrink-0 transition-all duration-200 flex items-center gap-1.5", 
-                isActive ? "bg-primary text-primary-foreground border-primary scale-[1.02] shadow-sm shadow-primary/20" : "bg-muted/40 text-muted-foreground border-border/20 hover:border-primary/40 hover:text-primary"
-              )}
-            >
-              <span>{tag}</span>
-              {isActive && <X className="h-3 w-3 ml-0.5 opacity-80" />}
-            </button>
-          );
-        })}
+        </div>
       </div>
 
-      <div className="relative shrink-0">
+      {activeFilterCount > 0 && (
         <button 
-          onClick={() => setIsSortOpen(p => !p)}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-card border border-border/30 text-[11px] font-bold text-muted-foreground hover:text-foreground transition-all shrink-0 shadow-ambient-low"
+          onClick={onResetFilters}
+          className="flex items-center gap-1 text-[11px] font-bold text-rose-500 hover:text-rose-600 transition-colors py-1 px-2.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20"
         >
-          <TrendingUp className="h-3.5 w-3.5 text-primary" />
-          <span>{sortLabels[sortBy] || "Sırala"}</span>
-          <ChevronDown className="h-3.5 w-3.5 opacity-50" />
+          <RefreshCw className="h-3 w-3" /> Sıfırla
         </button>
+      )}
+    </div>
+  );
+}
 
-        {isSortOpen && (
-          <div className="absolute right-0 top-full mt-2 w-44 bg-card border border-border/30 rounded-2xl shadow-ambient-high overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200 divide-y divide-border/10">
-            {[
-              { id: "latest", label: "En Yeniler", icon: Clock },
-              { id: "oldest", label: "En Eskiler", icon: Calendar },
-              { id: "most-liked", label: "En Çok Beğenilen", icon: Flame },
-              { id: "most-commented", label: "En Çok Yorum Alan", icon: MessageCircle }
-            ].map(item => {
-              const Icon = item.icon;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => { onSelectSort(item.id); setIsSortOpen(false); }}
-                  className={cn(
-                    "w-full flex items-center gap-2.5 px-3.5 py-2.5 text-left text-xs font-bold transition-colors",
-                    sortBy === item.id ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                  )}
-                >
-                  <Icon className="h-3.5 w-3.5 shrink-0" />
-                  <span>{item.label}</span>
-                </button>
-              );
-            })}
-          </div>
+// ─── Tag Filter Bar (Sadece Etiketler) ────────────────────────────────────────
+function TagFilterBar({ 
+  availableTags, 
+  activeTags, 
+  onToggleTag, 
+  onClearTags 
+}: {
+  availableTags: string[];
+  activeTags: string[];
+  onToggleTag: (tag: string) => void;
+  onClearTags: () => void;
+}) {
+  if (availableTags.length === 0) return null;
+
+  return (
+    <div className="flex items-center gap-1.5 overflow-x-auto py-1 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent pr-2">
+      <button 
+        onClick={onClearTags} 
+        className={cn(
+          "text-[11px] font-bold px-3 py-1.5 rounded-full border shrink-0 transition-all duration-200", 
+          activeTags.length === 0 ? "bg-primary text-primary-foreground border-primary" : "bg-muted/40 text-muted-foreground border-border/20 hover:border-primary/40 hover:text-primary"
         )}
-      </div>
+      >
+        Tümü
+      </button>
+
+      {availableTags.map((tag) => {
+        const isActive = activeTags.includes(tag);
+        return (
+          <button 
+            key={tag} 
+            onClick={() => onToggleTag(tag)} 
+            className={cn(
+              "text-[11px] font-bold px-3 py-1.5 rounded-full border shrink-0 transition-all duration-200 flex items-center gap-1.5", 
+              isActive ? "bg-primary text-primary-foreground border-primary scale-[1.02] shadow-sm shadow-primary/20" : "bg-muted/40 text-muted-foreground border-border/20 hover:border-primary/40 hover:text-primary"
+            )}
+          >
+            <span>{tag}</span>
+            {isActive && <X className="h-3 w-3 ml-0.5 opacity-80" />}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -1344,21 +1367,35 @@ export function BlogFeed({
           </div>
 
           {filteredTagsForBar.length > 0 && (
-            <TagFilterBar 
-              availableTags={filteredTagsForBar} 
-              activeTags={activeTags} 
-              onToggleTag={handleToggleTag}
-              onClearTags={() => setActiveTags([])}
-              onOpenFilter={() => setIsFilterPanelOpen(p => !p)}
-              filterCount={activeFilterCount}
-              sortBy={sortBy}
-              onSelectSort={setSortBy}
-            />
+            <div className="space-y-1.5 pt-1">
+              <FilterAndSortControls 
+                filterCount={activeFilterCount}
+                onToggleFilter={() => setIsFilterPanelOpen(p => !p)}
+                sortBy={sortBy}
+                onSelectSort={setSortBy}
+                activeFilterCount={activeFilterCount + (activeTags.length > 0 ? 1 : 0) + (searchQuery ? 1 : 0)}
+                onResetFilters={() => {
+                  setSortBy("latest");
+                  setTimeRange("all");
+                  setFilterByInterests(false);
+                  setActiveTags([]);
+                  setTagSearch("");
+                  setSearchQuery("");
+                }}
+              />
+
+              <TagFilterBar 
+                availableTags={filteredTagsForBar} 
+                activeTags={activeTags} 
+                onToggleTag={handleToggleTag}
+                onClearTags={() => setActiveTags([])}
+              />
+            </div>
           )}
 
           {isFilterPanelOpen && (
             <>
-              <div className="hidden md:block bg-card/95 backdrop-blur-xl border border-primary/20 rounded-[20px] p-4 shadow-xl shadow-primary/10 space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
+              <div className="hidden md:block bg-card/95 backdrop-blur-xl border border-primary/20 rounded-[20px] p-4 shadow-xl shadow-primary/10 max-w-md space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
                  <div className="flex items-center justify-between border-b border-border/10 pb-2">
                    <span className="text-xs font-black uppercase tracking-wider text-primary flex items-center gap-1.5">
                      <SlidersHorizontal className="h-3.5 w-3.5" /> Gelişmiş Filtre
