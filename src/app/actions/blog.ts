@@ -252,12 +252,25 @@ export async function getPosts(
   let whereClause: any = {};
 
   if (type === "following" && currentInternalUserId) {
+    const userWithInterests = await prisma.user.findUnique({
+      where: { id: currentInternalUserId },
+      select: { interests: true },
+    });
+    const userInterests = userWithInterests?.interests || [];
+
     const following = await prisma.follow.findMany({
       where: { followerId: currentInternalUserId },
       select: { followingId: true },
     });
     const followingIds = following.map((f) => f.followingId);
-    whereClause = { authorId: { in: followingIds }, communityId: null };
+
+    whereClause = {
+      communityId: null,
+      OR: [
+        { authorId: { in: followingIds } },
+        ...(userInterests.length > 0 ? [{ tags: { hasSome: userInterests } }] : [])
+      ]
+    };
   } else if (type === "my-communities" && currentInternalUserId) {
     const myCommunities = await prisma.communityMember.findMany({
       where: { userId: currentInternalUserId, status: "ACCEPTED" },
