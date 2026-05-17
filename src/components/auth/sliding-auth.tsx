@@ -155,7 +155,7 @@ export default function SlidingAuth() {
                   {/* Kayıt Formu Alanı */}
                   <div className="relative w-full">
                     {!isTermsAccepted && (
-                      <div className="absolute inset-x-0 top-0 bottom-[82px] z-30 backdrop-blur-[8px] bg-card/90 dark:bg-card/95 rounded-t-2xl flex flex-col items-center justify-center p-8 text-center transition-all duration-300">
+                      <div className="absolute inset-x-0 top-0 bottom-[82px] z-30 max-w-[400px] mx-auto backdrop-blur-[8px] bg-card/90 dark:bg-card/95 rounded-t-2xl flex flex-col items-center justify-center p-8 text-center transition-all duration-300">
                         <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center mb-4 shadow-inner">
                           <Lock className="w-8 h-8" />
                         </div>
