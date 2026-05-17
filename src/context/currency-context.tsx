@@ -94,10 +94,12 @@ export function CurrencyProvider({ children, initialRates }: { children: React.R
         setIsLoading(false);
       }
     }
-    fetchRates();
+    if (!initialRates) {
+      fetchRates();
+    }
     const interval = setInterval(fetchRates, 60000 * 5); // 5 dakikada bir güncelle
     return () => clearInterval(interval);
-  }, []);
+  }, [initialRates]);
 
   const setDisplayCurrency = (currency: string) => {
     if (!DISPLAY_CURRENCIES_MAP[currency]) return;
