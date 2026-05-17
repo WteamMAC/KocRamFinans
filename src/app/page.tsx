@@ -29,6 +29,7 @@ import Image from "next/image";
 import { redirect } from "next/navigation";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
+import { ClearTerms } from "@/components/auth/clear-terms";
 
 const LinkedinIcon = ({ className }: { className?: string }) => (
   <svg 
@@ -55,6 +56,7 @@ export default async function LandingPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground font-sans antialiased selection:bg-accent/30">
+      <ClearTerms />
       <Navbar />
 
       <main>
