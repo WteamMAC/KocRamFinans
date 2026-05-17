@@ -71,13 +71,43 @@ const BES_FUND_TYPES = [
 export function BesFaizDetail({ type, investments, livePrices }: BesFaizDetailProps) {
   const router = useRouter();
   const { formatAmount } = useCurrency();
+
+  // Group by symbol
+  const grouped = useMemo(() => {
+    const acc: Record<string, { symbol: string; totalQuantity: number; totalCost: number; rate: number; originalDescription: string; items: InvestmentItem[] }> = {};
+    for (const inv of investments) {
+      const sym = inv.symbol || "Bilinmiyor";
+      const meta = parseMeta(inv);
+      if (!acc[sym]) {
+        acc[sym] = { symbol: sym, totalQuantity: 0, totalCost: 0, rate: 0, originalDescription: meta.originalDescription, items: [] };
+      }
+      acc[sym].totalQuantity += inv.quantity;
+      acc[sym].totalCost += inv.amount || inv.quantity;
+      acc[sym].items.push(inv);
+    }
+
+    // Calculate final weighted average rate for each group
+    Object.values(acc).forEach(g => {
+      const totalWeight = g.totalQuantity;
+      if (totalWeight > 0) {
+        const weightedSum = g.items.reduce((sum, item) => {
+          const meta = parseMeta(item);
+          return sum + (item.quantity * meta.rate);
+        }, 0);
+        g.rate = weightedSum / totalWeight;
+      }
+    });
+
+    return Object.values(acc);
+  }, [investments]);
+
   const [isAdding, setIsAdding] = useState(false);
   const [loading, setLoading] = useState(false);
   const [fixLoading, setFixLoading] = useState(false);
   const [fixMessage, setFixMessage] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [projYears, setProjYears] = useState(10);
-  const [projMonthly, setProjMonthly] = useState(0); // only for BES
+  const [projMonthly, setProjMonthly] = useState<number | "">(""); // only for BES, supports empty/0 inputs cleanly
   const [projReturn, setProjReturn] = useState(() => {
     const val = livePrices?.BES_STANDART_RETURN ?? 0.45;
     return Math.round(val > 2 ? val : val * 100); 
@@ -147,36 +177,23 @@ export function BesFaizDetail({ type, investments, livePrices }: BesFaizDetailPr
     return () => clearInterval(timer);
   }, []);
 
-  // Group by symbol
-  const grouped = useMemo(() => {
-    const acc: Record<string, { symbol: string; totalQuantity: number; totalCost: number; rate: number; originalDescription: string; items: InvestmentItem[] }> = {};
-    for (const inv of investments) {
-      const sym = inv.symbol || "Bilinmiyor";
-      const meta = parseMeta(inv);
-      if (!acc[sym]) {
-        acc[sym] = { symbol: sym, totalQuantity: 0, totalCost: 0, rate: 0, originalDescription: meta.originalDescription, items: [] };
-      }
-      acc[sym].totalQuantity += inv.quantity;
-      acc[sym].totalCost += inv.amount || inv.quantity;
-      acc[sym].items.push(inv);
-    }
 
-    // Calculate final weighted average rate for each group
-    Object.values(acc).forEach(g => {
-      const totalWeight = g.totalQuantity;
-      if (totalWeight > 0) {
-        const weightedSum = g.items.reduce((sum, item) => {
-          const meta = parseMeta(item);
-          return sum + (item.quantity * meta.rate);
-        }, 0);
-        g.rate = weightedSum / totalWeight;
-      }
-    });
-
-    return Object.values(acc);
-  }, [investments]);
 
   const totalPrincipal = grouped.reduce((s, g) => s + g.totalQuantity, 0);
+
+  const totalMonthlyContribution = useMemo(() => {
+    if (type !== "BES") return 0;
+    return grouped.reduce((s, g) => {
+      const firstItemMeta = g.items.length > 0 ? parseMeta(g.items[0]) : { monthlyContribution: 0 };
+      return s + firstItemMeta.monthlyContribution;
+    }, 0);
+  }, [grouped, type]);
+
+  useEffect(() => {
+    if (type === "BES" && totalMonthlyContribution > 0) {
+      setProjMonthly(totalMonthlyContribution);
+    }
+  }, [totalMonthlyContribution, type]);
 
   // Canlı saniyelik değerleme ve toplam biriken net kazanç
   const liveTotals = useMemo(() => {
@@ -241,11 +258,6 @@ export function BesFaizDetail({ type, investments, livePrices }: BesFaizDetailPr
         faizKazanci: Math.round(total - totalPrin),
       }));
     } else {
-      const totalMonthlyContribution = grouped.reduce((s, g) => {
-        const firstItemMeta = g.items.length > 0 ? parseMeta(g.items[0]) : { monthlyContribution: 0 };
-        return s + firstItemMeta.monthlyContribution;
-      }, 0);
-
       const govtRate = grouped.reduce((s, g) => s + g.rate, 0) / Math.max(grouped.length, 1);
       const monthlyRate = projReturn / 12 / 100;
       const totalMonths = projYears * 12;
@@ -262,7 +274,7 @@ export function BesFaizDetail({ type, investments, livePrices }: BesFaizDetailPr
       const data = [];
       for (let i = 0; i <= totalMonths; i++) {
         if (i > 0) {
-          const monthlyAdd = projMonthly > 0 ? projMonthly : totalMonthlyContribution;
+          const monthlyAdd = projMonthly !== "" ? Number(projMonthly) : totalMonthlyContribution;
           totalPrin += monthlyAdd;
           // Kullanıcı katkı payı anında fona girer ve fon getirisiyle büyür
           totalWithReturn = (totalWithReturn + monthlyAdd) * (1 + monthlyRate);
@@ -291,7 +303,7 @@ export function BesFaizDetail({ type, investments, livePrices }: BesFaizDetailPr
       }
       return data;
     }
-  }, [type, grouped, projYears, projMonthly, projReturn]);
+  }, [type, grouped, projYears, projMonthly, projReturn, totalMonthlyContribution]);
 
   const finalValue = projectionData[projectionData.length - 1]?.toplam || 0;
   const netGain = finalValue - totalPrincipal;
@@ -967,8 +979,8 @@ export function BesFaizDetail({ type, investments, livePrices }: BesFaizDetailPr
                     <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest min-h-[32px] flex items-end mb-2">Aylık Ek Ödeme</Label>
                     <Input
                       type="number"
-                      value={projMonthly || ""}
-                      onChange={e => setProjMonthly(Number(e.target.value))}
+                      value={projMonthly === "" ? "" : projMonthly}
+                      onChange={e => setProjMonthly(e.target.value === "" ? "" : Number(e.target.value))}
                       className="h-11 rounded-xl bg-muted/50 border-border/30 font-bold"
                       placeholder="0"
                     />

@@ -20,13 +20,30 @@ import {
   MessagesSquare,
   ArrowUpRight,
   TrendingDown,
-  Clock
+  Clock,
+  ChevronDown,
+  HelpCircle
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { redirect } from "next/navigation";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
+
+const LinkedinIcon = ({ className }: { className?: string }) => (
+  <svg 
+    className={className} 
+    fill="currentColor" 
+    viewBox="0 0 24 24" 
+    aria-hidden="true"
+  >
+    <path 
+      fillRule="evenodd" 
+      d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.779-1.75-1.75s.784-1.75 1.75-1.75 1.75.779 1.75 1.75-.784 1.75-1.75 1.75zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" 
+      clipRule="evenodd" 
+    />
+  </svg>
+);
 
 export default async function LandingPage() {
   const { userId } = await auth();
@@ -237,6 +254,95 @@ export default async function LandingPage() {
           </div>
         </section>
 
+        {/* FAQ Section */}
+        <section id="sss" className="py-32 bg-background border-t border-border/10 px-6 md:px-8 scroll-mt-20">
+          <div className="max-w-[800px] mx-auto">
+            <div className="text-center max-w-2xl mx-auto mb-16">
+              <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full font-bold text-xs uppercase tracking-widest border border-primary/20 mb-4">
+                <HelpCircle className="h-4 w-4" />
+                <span>Merak Edilenler</span>
+              </div>
+              <h2 className="font-heading text-4xl md:text-5xl text-foreground font-bold tracking-tight mb-6">
+                Sıkça Sorulan Sorular (SSS)
+              </h2>
+              <p className="text-lg text-muted-foreground font-medium opacity-80">
+                Platformumuz ve sunduğumuz finansal çözümler hakkında en çok sorulan soruların yanıtlarını burada bulabilirsiniz.
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <details className="group bg-card border border-border/20 rounded-3xl p-6 [&_summary::-webkit-details-marker]:hidden transition-all duration-300 hover:border-primary/20">
+                <summary className="flex items-center justify-between cursor-pointer focus:outline-none">
+                  <h3 className="font-bold text-lg text-foreground pr-4">
+                    Koç Ram Finans Nedir?
+                  </h3>
+                  <span className="shrink-0 transition-transform duration-300 group-open:rotate-180 p-1.5 bg-primary/5 rounded-xl text-primary">
+                    <ChevronDown className="h-5 w-5" />
+                  </span>
+                </summary>
+                <p className="mt-4 text-muted-foreground leading-relaxed font-medium text-sm border-t border-border/5 pt-4">
+                  Koç Ram Finans; kişisel bütçe yönetiminizi basitleştiren, birikim ve yatırımlarınızı yapay zeka desteğiyle optimize eden, borçlarınızı yapılandırmanıza yardımcı olan ve aktif finans topluluğuyla tecrübe paylaşmanızı sağlayan modern bir finansal asistan ve koçluk platformudur.
+                </p>
+              </details>
+
+              <details className="group bg-card border border-border/20 rounded-3xl p-6 [&_summary::-webkit-details-marker]:hidden transition-all duration-300 hover:border-primary/20">
+                <summary className="flex items-center justify-between cursor-pointer focus:outline-none">
+                  <h3 className="font-bold text-lg text-foreground pr-4">
+                    Hizmetleriniz ücretli mi? Üyelik paketleri nelerdir?
+                  </h3>
+                  <span className="shrink-0 transition-transform duration-300 group-open:rotate-180 p-1.5 bg-primary/5 rounded-xl text-primary">
+                    <ChevronDown className="h-5 w-5" />
+                  </span>
+                </summary>
+                <p className="mt-4 text-muted-foreground leading-relaxed font-medium text-sm border-t border-border/5 pt-4">
+                  Platformumuza kayıt olmak ve temel özellikleri kullanmak tamamen ücretsizdir. Ücretsiz üyelik ile bütçe kaydı, temel harcama analizleri ve sosyal topluluk özelliklerini kullanabilirsiniz. Gelişmiş yapay zeka analizleri, akıllı tavsiye kartları, detaylı gelecek tahminleri ve portföy projeksiyonları gibi Premium özellikler ise abonelik paketimiz dahilinde sunulmaktadır.
+                </p>
+              </details>
+
+              <details className="group bg-card border border-border/20 rounded-3xl p-6 [&_summary::-webkit-details-marker]:hidden transition-all duration-300 hover:border-primary/20">
+                <summary className="flex items-center justify-between cursor-pointer focus:outline-none">
+                  <h3 className="font-bold text-lg text-foreground pr-4">
+                    Yapay Zeka (AI) Gelecek Tahmini nasıl çalışıyor?
+                  </h3>
+                  <span className="shrink-0 transition-transform duration-300 group-open:rotate-180 p-1.5 bg-primary/5 rounded-xl text-primary">
+                    <ChevronDown className="h-5 w-5" />
+                  </span>
+                </summary>
+                <p className="mt-4 text-muted-foreground leading-relaxed font-medium text-sm border-t border-border/5 pt-4">
+                  Eklediğiniz yatırımları, sabit varlıkları ve aylık tasarruf hedeflerinizi piyasa koşulları ve tarihsel veriler ışığında analiz ederiz. Gelişmiş Gemini AI altyapımız, portföyünüzün 6 aylık olası büyüme senaryolarını rasyonel temellere (örneğin BTC halving beklentisi, BIST faiz indirimleri vb.) dayandırarak simüle eder ve size detaylı bir büyüme oranı sunar.
+                </p>
+              </details>
+
+              <details className="group bg-card border border-border/20 rounded-3xl p-6 [&_summary::-webkit-details-marker]:hidden transition-all duration-300 hover:border-primary/20">
+                <summary className="flex items-center justify-between cursor-pointer focus:outline-none">
+                  <h3 className="font-bold text-lg text-foreground pr-4">
+                    Verilerim güvende mi?
+                  </h3>
+                  <span className="shrink-0 transition-transform duration-300 group-open:rotate-180 p-1.5 bg-primary/5 rounded-xl text-primary">
+                    <ChevronDown className="h-5 w-5" />
+                  </span>
+                </summary>
+                <p className="mt-4 text-muted-foreground leading-relaxed font-medium text-sm border-t border-border/5 pt-4">
+                  Evet, güvenliğiniz bizim için en üst düzey önceliktir. Finansal verileriniz ve kişisel bilgileriniz Clerk kimlik doğrulama sistemleri ve en son teknoloji şifreleme yöntemleriyle (SSL/TLS) korunmaktadır. Veritabanlarımız yüksek güvenlikli sunucularda saklanmakta olup, verileriniz hiçbir üçüncü şahısla kesinlikle paylaşılmaz.
+                </p>
+              </details>
+
+              <details className="group bg-card border border-border/20 rounded-3xl p-6 [&_summary::-webkit-details-marker]:hidden transition-all duration-300 hover:border-primary/20">
+                <summary className="flex items-center justify-between cursor-pointer focus:outline-none">
+                  <h3 className="font-bold text-lg text-foreground pr-4">
+                    Borç Yapılandırma modülü ne işe yarar?
+                  </h3>
+                  <span className="shrink-0 transition-transform duration-300 group-open:rotate-180 p-1.5 bg-primary/5 rounded-xl text-primary">
+                    <ChevronDown className="h-5 w-5" />
+                  </span>
+                </summary>
+                <p className="mt-4 text-muted-foreground leading-relaxed font-medium text-sm border-t border-border/5 pt-4">
+                  Birden fazla kredi, kredi kartı veya kişisel borcunuzu tek bir yapılandırma altında birleştirmenize imkan tanır. Kalan borç bakiyesini, ödediğiniz taksitleri ve toplam faiz yükünüzü tek bir ekrandan takip ederek borçlarınızdan çok daha hızlı ve planlı kurtullanızı sağlar.
+                </p>
+              </details>
+            </div>
+          </div>
+        </section>
 
       </main>
 

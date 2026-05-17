@@ -24,7 +24,7 @@ export default function Footer() {
             <Link className="text-secondary-foreground/80 dark:text-foreground/80 hover:text-secondary-foreground dark:hover:text-foreground font-bold transition-colors uppercase tracking-widest text-xs" href="/hakkimizda">Hakkımızda</Link>
             <a className="text-secondary-foreground/80 dark:text-foreground/80 hover:text-secondary-foreground dark:hover:text-foreground font-bold transition-colors uppercase tracking-widest text-xs" href="#">Gizlilik</a>
             <a className="text-secondary-foreground/80 dark:text-foreground/80 hover:text-secondary-foreground dark:hover:text-foreground font-bold transition-colors uppercase tracking-widest text-xs" href="#">İletişim</a>
-            <a className="text-secondary-foreground/80 dark:text-foreground/80 hover:text-secondary-foreground dark:hover:text-foreground font-bold transition-colors uppercase tracking-widest text-xs" href="#">SSS</a>
+            <Link className="text-secondary-foreground/80 dark:text-foreground/80 hover:text-secondary-foreground dark:hover:text-foreground font-bold transition-colors uppercase tracking-widest text-xs" href="/#sss">SSS</Link>
           </nav>
         </div>
         

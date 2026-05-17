@@ -119,14 +119,10 @@ export async function POST(req: Request) {
 
     // AI Modelleri Öncelik Sıralaması (Fallback Stratejisi)
     const FALLBACK_MODELS = [
-      "gemini-3.1-flash-preview",
-      "gemini-2.5-flash",
       "gemini-2.0-flash",
       "gemini-1.5-flash-latest",
       "gemini-1.5-flash",
-      "gemini-1.5-pro-latest",
-      "gemini-pro",
-      "gemini-1.0-pro"
+      "gemini-1.5-pro-latest"
     ];
 
     // Tool (Araç) Konfigürasyonunu döngüde yeniden kullanmak üzere ayırıyoruz
@@ -194,7 +190,7 @@ export async function POST(req: Request) {
     let activeChat: any = null;
     let initialStreamResponse: any = null;
     let usedModel: string = "";
-    let firstError: any = null;
+    let lastError: any = null;
 
     // Belirlenen modelleri sırasıyla dener, biri çalışırsa döngüden çıkar.
     for (const modelName of FALLBACK_MODELS) {
@@ -215,16 +211,28 @@ export async function POST(req: Request) {
         break; // İlk başarılı modelde döngüden güvenle çıkıyoruz.
       } catch (error: any) {
         console.warn(`[AI-CHAT] Uyarı - Model başarısız (${modelName}):`, error.message);
-        if (!firstError) firstError = error;
-        // Hata alınırsa (Limit aşıldı 429 vb.) bir sonraki yedek modele geçmeye devam edecek.
+        lastError = error;
+
+        // Eğer hata API kotası/limit aşımı ise (429) veya Güvenlik İhlali ise diğer modellere geçmeye gerek yok.
+        const msg = error.message?.toLowerCase() || "";
+        if (msg.includes("429") || msg.includes("quota") || msg.includes("rate limit")) {
+          return new Response(JSON.stringify({
+            error: "Yapay zeka asistanı şu anda çok yoğun. Lütfen 1-2 dakika sonra tekrar deneyin."
+          }), { status: 429, headers: { "Content-Type": "application/json" } });
+        }
+        if (msg.includes("safety") || msg.includes("blocked")) {
+          return new Response(JSON.stringify({
+            error: "Mesajınız veya finansal içeriğiniz güvenlik politikalarımıza takıldı. Lütfen daha net ve uygun bir dil kullanın."
+          }), { status: 400, headers: { "Content-Type": "application/json" } });
+        }
       }
     }
 
     // Eğer hiçbir model yanıt vermediyse sistemi zarifçe kapatıp arayüze bilgi verelim.
     if (!activeChat || !initialStreamResponse) {
-      console.error("[AI-CHAT] Tüm modeller başarısız oldu:", firstError?.message);
+      console.error("[AI-CHAT] Tüm modeller başarısız oldu:", lastError?.message);
       return new Response(JSON.stringify({
-        error: `Asistan şu anda yanıt veremiyor. İlk Hata: ${firstError?.message || "Bilinmeyen Hata"}`
+        error: `Asistan şu anda teknik bir sorun yaşıyor. Hata Detayı: ${lastError?.message || "Bilinmeyen Hata"}`
       }), { status: 503, headers: { "Content-Type": "application/json" } });
     }
 
