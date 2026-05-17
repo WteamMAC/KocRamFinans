@@ -55,7 +55,7 @@ export default function NotFound() {
           transition={{ duration: 0.7, ease: "easeOut" }}
           className="w-full md:w-[50%] flex-shrink-0"
         >
-          <div className="relative rounded-3xl overflow-hidden shadow-2xl dark:shadow-[0_0_50px_rgba(255,184,116,0.15)] transition-all duration-500">
+          <div className="relative rounded-3xl overflow-hidden shadow-2xl transition-all duration-500">
             <Image
               src={isDark ? "/fisherman-404-night.png" : "/fisherman-404.png"}
               alt="Balıkçı 404 illüstrasyonu"
