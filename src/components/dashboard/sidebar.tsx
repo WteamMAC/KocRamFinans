@@ -30,12 +30,47 @@ import {
   Rss,
   User,
   PlayCircle,
-  Bell
+  Bell,
+  HelpCircle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/dashboard/notification-bell";
 import { MessageBell } from "@/components/dashboard/message-bell";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+
+const faqs = [
+  {
+    id: "faq-1",
+    question: "Koç Ram Finans Nedir?",
+    answer: "Koç Ram Finans; tüm varlıklarınızı (Kripto, BIST, NASDAQ, Altın, BES, Faiz vb.) tek bir merkezden izlemenizi, gelir-gider dengenizi yönetmenizi ve gelişmiş finansal hesaplayıcılar ile geleceğe yönelik planlama yapmanızı sağlayan kapsamlı bir kişisel finans yönetim platformudur."
+  },
+  {
+    id: "faq-2",
+    question: "Varlık Fiyatları Nasıl Güncellenir?",
+    answer: "Portföyündeki Kripto Para, BIST/NASDAQ hisseleri ve altın fiyatları piyasa koşullarına uygun periyotlarla otomatik olarak güncellenir. Bu sayede yatırımlarınızın güncel durumunu her an canlıya yakın oranlarla takip edebilirsiniz."
+  },
+  {
+    id: "faq-3",
+    question: "Gelir-Gider Takibi Nasıl Yapılır?",
+    answer: "Sol menüdeki 'Gelir - Gider Ekle' seçeneğini kullanarak yeni kayıtlar ekleyebilirsiniz. 'Gelir Gider Göster' sayfasından ise tüm nakit akışınızı tarihsel olarak filtreleyebilir, grafiklerle analiz edebilirsiniz."
+  },
+  {
+    id: "faq-4",
+    question: "BES Projeksiyonu Nasıl Çalışır?",
+    answer: "BES (Bireysel Emeklilik Sistemi) projeksiyon modülü, girdiğiniz aylık katkı payı, fon getiri tahmini ve devlet katkısı oranlarını birleştirerek gelecek tahminleri üretir ve bunu bir büyüme grafiği ile görselleştirir."
+  },
+  {
+    id: "faq-5",
+    question: "Verilerim Güvende mi?",
+    answer: "Verilerinizin gizliliği ve güvenliği birinci önceliğimizdir. Koç Ram Finans, en güncel güvenlik standartları, veri şifreleme ve güvenli kimlik doğrulama altyapısı kullanarak bilgilerinizi korur."
+  }
+];
 
 const routes = [
   {
@@ -106,6 +141,12 @@ const routes = [
     color: "text-blue-500",
   },
   {
+    label: "Yardım & SSS",
+    icon: HelpCircle,
+    href: "/dashboard/faq",
+    color: "text-sky-500",
+  },
+  {
     label: "Bilgileri Düzenle",
     icon: Settings,
     href: "/dashboard/settings",
@@ -124,6 +165,13 @@ interface SidebarProps {
 export function Sidebar({ isCollapsed, onToggle, hideToggle, theme, onToggleTheme }: SidebarProps) {
   const pathname = usePathname();
   const [openSubMenus, setOpenSubMenus] = useState<Record<string, boolean>>({ "Varlıklarım": true });
+  const [activeFaq, setActiveFaq] = useState<string | null>(null);
+  const [isFaqOpen, setIsFaqOpen] = useState(false);
+
+  const handleFaqClick = (faqId: string) => {
+    setActiveFaq(faqId);
+    setIsFaqOpen(true);
+  };
 
   const toggleSubMenu = (label: string) => {
     setOpenSubMenus(prev => ({ ...prev, [label]: !prev[label] }));
@@ -268,6 +316,40 @@ export function Sidebar({ isCollapsed, onToggle, hideToggle, theme, onToggleThem
               {!isCollapsed && <span className="truncate">Turu Tekrar Başlat</span>}
             </div>
           </button>
+
+          {/* Sık Sorulan Sorular (FAQ) Section */}
+          {!isCollapsed ? (
+            <div className="mt-6 pt-4 border-t border-border/10">
+              <div className="px-3 mb-2 flex items-center gap-2 text-xs font-black uppercase tracking-wider text-muted-foreground/60">
+                <HelpCircle className="h-4 w-4 text-primary" />
+                <span>Sık Sorulan Sorular</span>
+              </div>
+              <div className="space-y-1">
+                {faqs.map((faq) => (
+                  <button
+                    key={faq.id}
+                    onClick={() => handleFaqClick(faq.id)}
+                    className="text-xs text-left w-full group flex p-2.5 font-semibold cursor-pointer rounded-xl transition-all duration-200 text-muted-foreground hover:bg-primary/5 hover:text-primary"
+                  >
+                    <span className="truncate group-hover:translate-x-1 transition-transform">{faq.question}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => {
+                setActiveFaq(null);
+                setIsFaqOpen(true);
+              }}
+              className="text-sm group flex p-3 w-full justify-start font-bold cursor-pointer rounded-xl transition-all duration-200 mt-2 text-primary hover:bg-primary/10"
+              title="Sık Sorulan Sorular"
+            >
+              <div className="flex items-center justify-center w-full">
+                <HelpCircle className="h-5 w-5 flex-shrink-0 transition-transform group-hover:scale-110" />
+              </div>
+            </button>
+          )}
         </div>
       </div>
 
@@ -312,6 +394,72 @@ export function Sidebar({ isCollapsed, onToggle, hideToggle, theme, onToggleThem
           )}
         </div>
       </div>
+
+      {/* FAQ Dialog Modal */}
+      <Dialog open={isFaqOpen} onOpenChange={setIsFaqOpen}>
+        <DialogContent className="sm:max-w-xl rounded-[32px] p-0 overflow-hidden border-none shadow-2xl bg-background/95 backdrop-blur-xl">
+          <div className="bg-primary/5 p-6 border-b border-border/10">
+            <DialogHeader>
+              <div className="flex items-center justify-between mb-2">
+                <div className="p-2 bg-primary/10 rounded-2xl">
+                  <HelpCircle className="h-6 w-6 text-primary" />
+                </div>
+              </div>
+              <DialogTitle className="text-2xl font-black text-foreground">Sık Sorulan Sorular</DialogTitle>
+              <p className="text-xs text-muted-foreground mt-1 font-medium">Koç Ram Finans hakkında aklınıza takılabilecek soruların yanıtları.</p>
+            </DialogHeader>
+          </div>
+
+          <div className="max-h-[60vh] overflow-y-auto p-6 space-y-3 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
+            {faqs.map((faq) => {
+              const isOpen = activeFaq === faq.id;
+              return (
+                <div
+                  key={faq.id}
+                  className={cn(
+                    "rounded-2xl border transition-all duration-300 overflow-hidden",
+                    isOpen
+                      ? "bg-primary/5 border-primary/20 shadow-sm"
+                      : "bg-muted/10 border-transparent hover:bg-muted/20"
+                  )}
+                >
+                  <button
+                    onClick={() => setActiveFaq(isOpen ? null : faq.id)}
+                    className="flex w-full items-center justify-between p-4 text-left font-bold text-sm text-foreground focus:outline-none"
+                  >
+                    <span>{faq.question}</span>
+                    <ChevronDown
+                      className={cn(
+                        "h-4 w-4 text-muted-foreground transition-transform duration-300 flex-shrink-0 ml-4",
+                        isOpen && "rotate-180 text-primary"
+                      )}
+                    />
+                  </button>
+                  <div
+                    className={cn(
+                      "transition-all duration-300 ease-in-out overflow-hidden",
+                      isOpen ? "max-h-60 border-t border-border/10" : "max-h-0"
+                    )}
+                  >
+                    <div className="p-4 text-xs text-muted-foreground/90 leading-relaxed font-medium">
+                      {faq.answer}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="p-4 bg-muted/5 border-t border-border/10 flex justify-center">
+            <button
+              onClick={() => setIsFaqOpen(false)}
+              className="text-xs font-bold text-muted-foreground hover:text-foreground transition-colors px-4 py-2"
+            >
+              Kapat
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

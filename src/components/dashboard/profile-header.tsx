@@ -2,14 +2,15 @@
 
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
-import { toggleFollow, toggleUserBan, updateBio, getUserFollowers, getUserFollowing } from "@/app/actions/blog";
+import { toggleFollow, toggleUserBan, updateBio, updateProfile, getUserFollowers, getUserFollowing } from "@/app/actions/blog";
 import { cn } from "@/lib/utils";
-import { Users, BookOpen, UserPlus, ShieldAlert, Ban, Pencil, Check, X, MessageCircle } from "lucide-react";
+import { Users, BookOpen, UserPlus, ShieldAlert, Ban, Pencil, Check, X, MessageCircle, AtSign, Camera } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useUser } from "@clerk/nextjs";
 import { MessageModal } from "./message-modal";
 import { createPortal } from "react-dom";
+import { useRouter } from "next/navigation";
 
 interface ProfileHeaderProps {
   profile: {
@@ -40,13 +41,20 @@ export function ProfileHeader({ profile, initialIsFollowing, currentUserRole }: 
   const [followList, setFollowList] = useState<any[]>([]);
   const [isLoadingList, setIsLoadingList] = useState(false);
   const [isMessageModalOpen, setIsMessageModalOpen] = useState(false);
-  
+
+  // Edit Profile Modal
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editBio, setEditBio] = useState(profile.bio || "");
+  const [editUsername, setEditUsername] = useState(profile.username || "");
+  const [editError, setEditError] = useState<string | null>(null);
+
   // Custom confirm & alert state
   const [showBanModal, setShowBanModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const { user } = useUser();
+  const router = useRouter();
 
   const handleFollow = () => {
     startTransition(async () => {
@@ -88,6 +96,26 @@ export function ProfileHeader({ profile, initialIsFollowing, currentUserRole }: 
       } catch (error) {
         setErrorMessage(error instanceof Error ? error.message : "Hata oluştu");
         setTimeout(() => setErrorMessage(null), 4000);
+      }
+    });
+  };
+
+  const handleUpdateProfile = () => {
+    setEditError(null);
+    startTransition(async () => {
+      try {
+        const result = await updateProfile({ bio: editBio, username: editUsername });
+        setIsEditModalOpen(false);
+        setSuccessMessage("Profil başarıyla güncellendi!");
+        setTimeout(() => setSuccessMessage(null), 4000);
+        // Navigate to new username if changed
+        if (result?.username && result.username !== profile.username) {
+          router.push(`/dashboard/profile/${result.username}`);
+        } else {
+          router.refresh();
+        }
+      } catch (error) {
+        setEditError(error instanceof Error ? error.message : "Güncelleme başarısız.");
       }
     });
   };
@@ -288,8 +316,18 @@ export function ProfileHeader({ profile, initialIsFollowing, currentUserRole }: 
                         <MessageCircle className="h-4 w-4 mr-2" />
                         Mesaj Kutusu
                       </Button>
-                      <Button variant="outline" className="rounded-[20px] px-6 h-12 text-xs font-bold border-border/20 hover:bg-muted/50">
-                         Profili Düzenle
+                      <Button
+                        onClick={() => {
+                          setEditBio(profile.bio || "");
+                          setEditUsername(profile.username || "");
+                          setEditError(null);
+                          setIsEditModalOpen(true);
+                        }}
+                        variant="outline"
+                        className="rounded-[20px] px-6 h-12 text-xs font-bold border-primary/30 text-primary hover:bg-primary/10 hover:border-primary/50 transition-all"
+                      >
+                        <Pencil className="h-4 w-4 mr-2" />
+                        Profili Düzenle
                       </Button>
                     </>
                  )}
@@ -338,6 +376,117 @@ export function ProfileHeader({ profile, initialIsFollowing, currentUserRole }: 
         initialTargetUsername={profile.isMe ? null : profile.username}
         currentUsername={user?.username || ""}
       />
+
+      {/* === Edit Profile Modal === */}
+      {isEditModalOpen && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="relative w-full max-w-lg bg-card border border-border/20 rounded-[32px] shadow-2xl overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-4 duration-300">
+
+            {/* Header */}
+            <div className="p-6 md:p-8 pb-5 border-b border-border/10 flex items-center justify-between bg-gradient-to-b from-primary/5 to-transparent">
+              <div className="flex items-center gap-4">
+                <div className="w-11 h-11 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+                  <Pencil className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-heading font-bold text-foreground">Profili Düzenle</h2>
+                  <p className="text-xs text-muted-foreground mt-0.5">Kullanıcı adı ve biyografinizi güncelleyin.</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsEditModalOpen(false)}
+                className="w-9 h-9 rounded-full bg-muted/50 hover:bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <X className="w-4 w-4" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-6 md:p-8 space-y-5">
+              {/* Avatar preview */}
+              <div className="flex items-center gap-4 p-4 rounded-2xl bg-muted/30 border border-border/10">
+                <div className="w-14 h-14 relative rounded-2xl overflow-hidden bg-primary/10 flex items-center justify-center shrink-0 border-2 border-primary/20">
+                  {profile.imageUrl ? (
+                    <Image src={profile.imageUrl} alt={profile.name} fill className="object-cover" />
+                  ) : (
+                    <span className="text-primary font-black text-xl">{profile.name[0]}</span>
+                  )}
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-foreground">{profile.name}</p>
+                  <p className="text-xs text-muted-foreground">Profil fotoğrafı Clerk üzerinden değiştirilebilir.</p>
+                </div>
+              </div>
+
+              {/* Username field */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Kullanıcı Adı</label>
+                <div className="relative">
+                  <AtSign className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/50" />
+                  <input
+                    type="text"
+                    value={editUsername}
+                    onChange={e => setEditUsername(e.target.value)}
+                    placeholder="kullanici_adi"
+                    maxLength={30}
+                    className="w-full h-12 pl-10 pr-4 rounded-xl bg-muted/50 border border-border/30 text-sm font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                  />
+                </div>
+                <p className="text-[10px] text-muted-foreground pl-1">Sadece harf, rakam ve alt çizgi (_). Min 3, max 30 karakter.</p>
+              </div>
+
+              {/* Bio field */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Biyografi</label>
+                <textarea
+                  value={editBio}
+                  onChange={e => setEditBio(e.target.value)}
+                  placeholder="Kendinizden ve finansal hedeflerinizden bahsedin..."
+                  maxLength={160}
+                  rows={3}
+                  className="w-full px-4 py-3 rounded-xl bg-muted/50 border border-border/30 text-sm text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                />
+                <div className="flex justify-end">
+                  <span className={cn("text-[10px] font-bold", editBio.length > 140 ? "text-amber-500" : "text-muted-foreground/50")}>
+                    {editBio.length} / 160
+                  </span>
+                </div>
+              </div>
+
+              {/* Error message */}
+              {editError && (
+                <div className="flex items-center gap-3 p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-500 text-xs font-bold animate-in slide-in-from-top-2 duration-300">
+                  <X className="w-4 h-4 shrink-0" />
+                  {editError}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 md:px-8 pb-6 md:pb-8 flex items-center justify-end gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setIsEditModalOpen(false)}
+                className="h-11 px-6 rounded-xl font-bold text-sm"
+              >
+                Vazgeç
+              </Button>
+              <Button
+                onClick={handleUpdateProfile}
+                disabled={isPending}
+                className="h-11 px-8 rounded-xl font-bold text-sm bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/20 hover:brightness-110 active:scale-95 transition-all"
+              >
+                {isPending ? (
+                  <span className="flex items-center gap-2"><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Kaydediliyor...</span>
+                ) : (
+                  <span className="flex items-center gap-2"><Check className="w-4 h-4" /> Kaydet</span>
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
 
       {/* Custom Ban User Modal */}
       {showBanModal && typeof document !== "undefined" && createPortal(
