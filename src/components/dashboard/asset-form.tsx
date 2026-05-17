@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { Search, Clock, ArrowUpRight, X, Wallet, Coins, LayoutGrid, Info, CheckCircle2 } from "lucide-react";
 import { searchSymbolsAction } from "@/app/actions/market";
+import { searchTefasFundsAction } from "@/app/actions/market";
 import { cn } from "@/lib/utils";
 
 interface AssetFormProps {
@@ -31,8 +32,9 @@ export function AssetForm({ activeTab, onAdd, onCancel, loading, error, defaultA
   const [showSearch, setShowSearch] = useState(false);
 
   const [besSearchQuery, setBesSearchQuery] = useState("");
-  const [besSearchResults, setBesSearchResults] = useState<any[]>([]);
+  const [besSearchResults, setBesSearchResults] = useState<{ code: string; title: string; price: number; dailyReturn: number }[]>([]);
   const [showBesSearch, setShowBesSearch] = useState(false);
+  const [tefasSearchLoading, setTefasSearchLoading] = useState(false);
 
   const [formData, setFormData] = useState({
     type: defaultAssetType || "BIST",
@@ -90,17 +92,26 @@ export function AssetForm({ activeTab, onAdd, onCancel, loading, error, defaultA
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(async () => {
-      if (besSearchQuery.length >= 2 && !besSearchQuery.includes(" - ")) {
-        const results = await searchSymbolsAction(besSearchQuery, "BIST");
-        setBesSearchResults(results);
-        setShowBesSearch(true);
+      // BES için TEFAS'tan gerçek EMK fonu ara
+      if (formData.type === "BES" && besSearchQuery.length >= 2 && !besSearchQuery.includes(" → ")) {
+        setTefasSearchLoading(true);
+        try {
+          const results = await searchTefasFundsAction(besSearchQuery);
+          setBesSearchResults(results);
+          setShowBesSearch(results.length > 0);
+        } catch {
+          setBesSearchResults([]);
+          setShowBesSearch(false);
+        } finally {
+          setTefasSearchLoading(false);
+        }
       } else {
         setBesSearchResults([]);
         setShowBesSearch(false);
       }
-    }, 300);
+    }, 400);
     return () => clearTimeout(delayDebounceFn);
-  }, [besSearchQuery]);
+  }, [besSearchQuery, formData.type]);
 
   const handleNumberChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value === "" ? 0 : parseFloat(value) }));
@@ -241,56 +252,79 @@ export function AssetForm({ activeTab, onAdd, onCancel, loading, error, defaultA
                         </Select>
                       </div>
 
-                      {/* İnternetten Canlı Özel Fon Arama (TEFAS/BIST) */}
+                      {/* TEFAS Gerçek EMK Fonu Arama */}
                       <div className="space-y-2 sm:col-span-2 relative">
                         <div className="flex justify-between items-center px-1">
                           <Label className="text-[11px] font-bold text-primary/80 uppercase tracking-wider">
-                            İnternetten Canlı Özel Fon Seçimi (TEFAS / BIST)
+                            TEFAS Emeklilik Fonu Seçimi
                           </Label>
-                          <span className="text-[9px] font-bold text-muted-foreground bg-muted px-2 py-0.5 rounded-md uppercase tracking-wider">Opsiyonel</span>
+                          <span className="text-[9px] font-bold text-teal-500 bg-teal-500/10 px-2 py-0.5 rounded-md uppercase tracking-wider border border-teal-500/20">Gerçek Veri</span>
                         </div>
                         
                         <div className="relative">
                           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-primary opacity-50" />
                           <Input
-                            placeholder="Örn: AEG, ALR, TCD, MAC, AFT..."
+                            placeholder="Fon kodu veya adı yazın: AEG, ALR, MAC, Katılım..."
                             value={besSearchQuery}
                             onChange={(e) => setBesSearchQuery(e.target.value)}
                             className="pl-12 bg-muted/50 border-primary/10 h-12 rounded-2xl focus:ring-primary text-sm font-semibold"
                           />
+                          {tefasSearchLoading && (
+                            <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                              <div className="w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                            </div>
+                          )}
                         </div>
+                        <p className="text-[9px] text-muted-foreground px-1">
+                          TEFAS BEFAS platformundaki gerçek emeklilik fonlarında arama yapılıyor.
+                        </p>
 
-                        {/* Arama Sonuçları */}
+                        {/* TEFAS Arama Sonuçları */}
                         {showBesSearch && besSearchResults.length > 0 && (
-                          <div className="absolute z-[999] w-full bg-card/95 backdrop-blur-2xl border border-primary/20 shadow-2xl rounded-2xl overflow-hidden mt-1 max-h-48 overflow-y-auto">
-                            {besSearchResults.map((result, idx) => (
+                          <div className="absolute z-[999] w-full bg-card/95 backdrop-blur-2xl border border-teal-500/20 shadow-2xl rounded-2xl overflow-hidden mt-1 max-h-56 overflow-y-auto">
+                            {besSearchResults.map((fund) => (
                               <div
-                                key={idx}
-                                className="p-4 hover:bg-primary/5 cursor-pointer border-b border-border/10 last:border-0 transition-colors flex items-center justify-between group"
+                                key={fund.code}
+                                className="p-3 hover:bg-teal-500/5 cursor-pointer border-b border-border/10 last:border-0 transition-colors flex items-center justify-between group"
                                 onClick={() => {
-                                  setFormData(p => ({ ...p, fundSymbol: result.symbol }));
-                                  setBesSearchQuery(`${result.symbol} - ${result.shortname || result.symbol}`);
+                                  setFormData(p => ({ ...p, fundSymbol: fund.code }));
+                                  setBesSearchQuery(`${fund.code} → ${fund.title}`);
                                   setShowBesSearch(false);
                                 }}
                               >
-                                <div>
-                                  <div className="text-xs font-bold text-primary">{result.symbol}</div>
-                                  <div className="text-[10px] text-muted-foreground truncate max-w-[320px]">
-                                    {result.shortname || result.symbol}
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs font-black text-teal-500">{fund.code}</span>
+                                    {fund.dailyReturn !== 0 && (
+                                      <span className={cn(
+                                        "text-[9px] font-bold px-1.5 py-0.5 rounded-full",
+                                        fund.dailyReturn >= 0
+                                          ? "text-emerald-600 bg-emerald-500/10"
+                                          : "text-rose-500 bg-rose-500/10"
+                                      )}>
+                                        {fund.dailyReturn >= 0 ? "+" : ""}{fund.dailyReturn.toFixed(2)}%
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="text-[10px] text-muted-foreground truncate">
+                                    {fund.title}
                                   </div>
                                 </div>
-                                <span className="text-[9px] text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded-full font-bold">
-                                  Canlı Fiyat Bağlantısı
-                                </span>
+                                <div className="text-right ml-3 shrink-0">
+                                  <div className="text-xs font-bold text-primary">{fund.price.toFixed(4)} ₺</div>
+                                  <div className="text-[9px] text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full font-bold">
+                                    TEFAS
+                                  </div>
+                                </div>
                               </div>
                             ))}
                           </div>
                         )}
 
                         {formData.fundSymbol && (
-                          <div className="flex items-center gap-2 text-xs font-bold text-emerald-500 bg-emerald-500/10 p-3 rounded-2xl border border-emerald-500/20 mt-2">
-                            <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
-                            <span>Fon Canlı Bağlandı: {formData.fundSymbol}</span>
+                          <div className="flex items-center gap-2 text-xs font-bold text-teal-500 bg-teal-500/10 p-3 rounded-2xl border border-teal-500/20 mt-2">
+                            <CheckCircle2 className="h-4 w-4 shrink-0 text-teal-500" />
+                            <span>TEFAS Fonu Seçildi: <strong>{formData.fundSymbol}</strong></span>
                             <button
                               type="button"
                               onClick={() => {
@@ -299,7 +333,7 @@ export function AssetForm({ activeTab, onAdd, onCancel, loading, error, defaultA
                               }}
                               className="ml-auto hover:text-rose-500 font-extrabold text-[10px] uppercase tracking-wider bg-muted px-2 py-1 rounded-md transition-colors"
                             >
-                              Bağlantıyı Kaldır
+                              Kaldır
                             </button>
                           </div>
                         )}
