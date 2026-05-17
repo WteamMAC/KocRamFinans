@@ -100,7 +100,7 @@ export async function getCommunities(params?: {
   const { userId: clerkUserId } = await auth();
   const internalUser = clerkUserId ? await getInternalUser(clerkUserId) : null;
 
-  let where: any = {};
+  const where: any = {};
   
   if (params?.query) {
     where.OR = [

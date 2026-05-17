@@ -47,7 +47,7 @@ async function translateText(text: string): Promise<string> {
         const res = await fetch('https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=tr&dt=t&q=' + encodeURIComponent(text));
         const json = await res.json();
         return json[0].map((x: any) => x[0]).join('');
-    } catch (e) {
+    } catch (e: any) {
         return text;
     }
 }
@@ -167,7 +167,7 @@ async function fetchFeed(source: { name: string, url: string, isEnglish?: boolea
  */
 async function getEconomicNews(): Promise<NewsItem[]> {
     const allFeeds = await Promise.all(SOURCES.map(source => fetchFeed(source)));
-    let allNews = allFeeds.flat();
+    const allNews = allFeeds.flat();
     
     // Sort by descending timestamp (newest first)
     allNews.sort((a, b) => (b as any).timestamp - (a as any).timestamp);

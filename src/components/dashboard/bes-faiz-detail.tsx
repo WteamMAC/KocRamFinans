@@ -55,7 +55,7 @@ function parseMeta(inv: InvestmentItem): ParsedMeta {
       originalDescription: meta.originalDescription || (typeof inv.description === 'string' && !inv.description.startsWith('{') ? inv.description : ""),
       maturityPeriod: meta.maturityPeriod || 32, // Esk kayıtlar için varsayılan 32 gün
     };
-  } catch {
+  } catch (e: any) {
     return { rate: inv.purchasePrice || 0, monthlyContribution: 0, originalDescription: inv.description || "", maturityPeriod: 32 };
   }
 }
@@ -156,7 +156,7 @@ export function BesFaizDetail({ type, investments, livePrices }: BesFaizDetailPr
           const results = await searchTefasFundsAction(besSearchQuery);
           setBesSearchResults(results);
           setShowBesSearch(results.length > 0);
-        } catch {
+        } catch (e: any) {
           setBesSearchResults([]);
           setShowBesSearch(false);
         } finally {
@@ -212,7 +212,7 @@ export function BesFaizDetail({ type, investments, livePrices }: BesFaizDetailPr
         try {
           const meta = parseMeta(g.items[0]);
           fundType = meta.fundType || "STANDART";
-        } catch(e){}
+        } catch (e: any) {}
 
         const annualFundGrowth = fundReturns[fundType as keyof typeof fundReturns] || 0.45;
         const dailyGrowth = annualFundGrowth / 365;
@@ -800,7 +800,7 @@ export function BesFaizDetail({ type, investments, livePrices }: BesFaizDetailPr
                           if (isBES) {
                             let fundType = "STANDART";
                             const meta = parseMeta(g.items[0]);
-                            try { fundType = meta.fundType || "STANDART"; } catch(e){}
+                            try { fundType = meta.fundType || "STANDART"; } catch (e: any) {}
 
                             const annualFundGrowth = fundReturns[fundType as keyof typeof fundReturns] || 0.45;
                             const dailyGrowth = annualFundGrowth / 365;

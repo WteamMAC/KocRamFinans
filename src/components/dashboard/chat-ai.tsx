@@ -183,7 +183,7 @@ export function ChatAI() {
           let chunkText = "";
           for (const line of lines) {
             if (line.startsWith('0:')) {
-              try { chunkText += JSON.parse(line.substring(2)); } catch (e) { /* Hatalı JSON'u yoksay */ }
+              try { chunkText += JSON.parse(line.substring(2)); } catch (e: any) { /* Hatalı JSON'u yoksay */ }
             }
           }
 
@@ -210,7 +210,7 @@ export function ChatAI() {
         if (parsedError && parsedError.error) {
           displayError = parsedError.error;
         }
-      } catch (e) {
+      } catch (e: any) {
         // Eğer parse edilemezse, düz bir metin hatasıdır.
         displayError = error.message || displayError;
       }

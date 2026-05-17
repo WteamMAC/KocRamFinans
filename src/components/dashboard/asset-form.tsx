@@ -99,7 +99,7 @@ export function AssetForm({ activeTab, onAdd, onCancel, loading, error, defaultA
           const results = await searchTefasFundsAction(besSearchQuery);
           setBesSearchResults(results);
           setShowBesSearch(results.length > 0);
-        } catch {
+        } catch (e: any) {
           setBesSearchResults([]);
           setShowBesSearch(false);
         } finally {

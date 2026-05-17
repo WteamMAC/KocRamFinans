@@ -149,7 +149,7 @@ export function AssetList({
         try {
           const meta = JSON.parse(asset.description || "{}");
           rate = meta.rate || asset.purchasePrice || 0;
-        } catch {
+        } catch (e: any) {
           rate = asset.purchasePrice || 0;
         }
       }
@@ -700,9 +700,9 @@ export function AssetList({
                             <div className="mt-6 pt-6 border-t border-border/10 space-y-4 animate-in slide-in-from-top-2">
                               {group.items.map((item) => {
                                 let meta: any = {};
-                                let isSpecial = group.type === "BES" || group.type === "FAIZ";
+                                const isSpecial = group.type === "BES" || group.type === "FAIZ";
                                 if (isSpecial) {
-                                  try { meta = JSON.parse(item.description as string || "{}"); } catch(e){}
+                                  try { meta = JSON.parse(item.description as string || "{}"); } catch (e: any) {}
                                 }
                                 return (
                                   <div key={item.id} className="flex justify-between items-center p-3 bg-card rounded-xl border border-border/10 shadow-sm">

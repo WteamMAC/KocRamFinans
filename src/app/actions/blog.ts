@@ -72,7 +72,7 @@ Lütfen buna Grok gibi eğlenceli, samimi, esprili ve zekice bir dille (ama doğ
           content: generatedText
         }
       });
-    } catch (e) {
+    } catch (e: any) {
       console.error("AI mention processing error:", e);
     }
   }
