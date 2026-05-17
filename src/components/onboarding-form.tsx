@@ -549,7 +549,7 @@ export function OnboardingForm() {
                       const isActive = selectedGender === g.v;
                       return (
                         <button key={g.v} type="button" onClick={() => handleGender(g.v as F["gender"])}
-                          className={cn("relative p-5 rounded-2xl border transition-all duration-300 overflow-hidden font-bold flex flex-col items-center justify-center",
+                          className={cn("relative h-28 p-5 rounded-2xl border transition-all duration-300 overflow-hidden font-bold flex flex-col items-center justify-center",
                             isActive ? "bg-[#8C5000] dark:bg-[#ffb874] text-white dark:text-[#120d0a] border-[#8C5000] dark:border-[#ffb874] shadow-lg scale-[1.03]" : "bg-[#faf9f6] dark:bg-[#120d0a] border-[#dbc2b0]/40 dark:border-[#887364]/40 text-[#5a3100] dark:text-[#dbc2b0] hover:border-[#8C5000]/40 hover:scale-[1.01] text-xs font-black")}>
                           {isActive && genderAnim && <span className="absolute inset-0 rounded-2xl bg-white/30 dark:bg-black/20 animate-ping" />}
                           <span className="text-3xl block mb-2">{g.emoji}</span>
@@ -576,7 +576,7 @@ export function OnboardingForm() {
                           const isActive = field.value === c.code;
                           return (
                             <button key={c.code} type="button" onClick={() => { field.onChange(c.code); setShowOtherCur(false); }}
-                              className={cn("p-4 rounded-3xl border text-center transition-all duration-200",
+                              className={cn("h-28 flex flex-col items-center justify-center p-4 rounded-3xl border text-center transition-all duration-200 w-full",
                                 isActive ? "bg-[#8C5000] dark:bg-[#ffb874] text-white dark:text-[#120d0a] border-[#8C5000] dark:border-[#ffb874] shadow-xl scale-[1.03]" : "bg-[#faf9f6] dark:bg-[#120d0a] border-[#dbc2b0]/50 dark:border-[#887364]/40 hover:border-[#8C5000]/40")}>
                               <div className="text-2xl mb-1">{c.flag}</div>
                               <div className={cn("text-xl font-black", isActive ? "text-white dark:text-[#120d0a]" : "text-[#5a3100] dark:text-[#fbf9f4]")}>{c.symbol}</div>
@@ -633,7 +633,7 @@ export function OnboardingForm() {
                             return (
                               <button key={r.id} type="button"
                                 onClick={() => { setSelectedRegion(active ? null : r.id); setShowOtherCur(false); }}
-                                className={cn("p-3.5 rounded-2xl border text-center text-xs font-bold transition-all duration-200",
+                                className={cn("h-24 flex flex-col items-center justify-center p-3.5 rounded-2xl border text-center text-xs font-bold transition-all duration-200 w-full",
                                   active || hasSelected ? "bg-[#8C5000] dark:bg-[#ffb874] text-white dark:text-[#120d0a] border-[#8C5000] dark:border-[#ffb874] shadow-md scale-[1.02]" : "bg-[#faf9f6] dark:bg-[#120d0a] border-[#dbc2b0]/40 hover:border-[#8C5000]/30")}>
                                 <div className="text-2xl mb-1">{r.emoji}</div>
                                 <div className={cn("text-xs font-extrabold", active || hasSelected ? "text-white dark:text-[#120d0a]" : "text-[#5a3100] dark:text-[#fbf9f4]")}>
@@ -930,7 +930,7 @@ export function OnboardingForm() {
                         key={c.id}
                         type="button"
                         onClick={() => handleOpenAssetModal(c.id)}
-                        className="p-4 rounded-2xl bg-[#faf9f6] dark:bg-[#120d0a] border border-[#dbc2b0]/50 dark:border-[#887364]/40 hover:border-[#8C5000] dark:hover:border-[#ffb874] transition-all duration-300 text-left group flex flex-col justify-between shadow-sm hover:shadow-md hover:scale-[1.02]"
+                        className="h-36 p-4 rounded-2xl bg-[#faf9f6] dark:bg-[#120d0a] border border-[#dbc2b0]/50 dark:border-[#887364]/40 hover:border-[#8C5000] dark:hover:border-[#ffb874] transition-all duration-300 text-left group flex flex-col justify-between shadow-sm hover:shadow-md hover:scale-[1.02] w-full"
                       >
                         <div>
                           <span className="text-3xl block mb-2 transition-transform group-hover:scale-110 duration-200">{c.emoji}</span>
@@ -1061,7 +1061,7 @@ export function OnboardingForm() {
                       key={c.code}
                       type="button"
                       onClick={() => { form.setValue("country", c.code, { shouldValidate: true }); setSelectedRegion(null); }}
-                      className={cn("flex items-center gap-4 p-5 rounded-2xl border text-left transition-all duration-200 group",
+                      className={cn("h-20 flex items-center gap-4 p-4 rounded-2xl border text-left transition-all duration-200 group w-full",
                         isActive
                           ? "bg-[#8C5000] dark:bg-[#ffb874] text-white dark:text-[#120d0a] border-[#8C5000] dark:border-[#ffb874] shadow-md scale-[1.02]"
                           : "bg-[#faf9f6] dark:bg-[#120d0a] border-[#dbc2b0]/30 hover:border-[#8C5000]/40 hover:shadow-sm"
