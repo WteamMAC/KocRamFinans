@@ -122,20 +122,6 @@ export function BesFaizDetail({ type, investments, livePrices }: BesFaizDetailPr
   const [contributionModalState, setContributionModalState] = useState<{ isOpen: boolean; assetId: string | null; symbol: string }>({ isOpen: false, assetId: null, symbol: "" });
   const [contribAmount, setContribAmount] = useState<number | "">("");
 
-  const totalMonthlyContribution = useMemo(() => {
-    if (type !== "BES") return 0;
-    return grouped.reduce((s, g) => {
-      const firstItemMeta = g.items.length > 0 ? parseMeta(g.items[0]) : { monthlyContribution: 0 };
-      return s + firstItemMeta.monthlyContribution;
-    }, 0);
-  }, [grouped, type]);
-
-  useEffect(() => {
-    if (type === "BES" && totalMonthlyContribution > 0) {
-      setProjMonthly(totalMonthlyContribution);
-    }
-  }, [totalMonthlyContribution, type]);
-
   const fundReturns = useMemo(() => {
     const safeRate = (rate: number | undefined, defaultRate: number) => {
        const r = rate ?? defaultRate;
@@ -194,6 +180,20 @@ export function BesFaizDetail({ type, investments, livePrices }: BesFaizDetailPr
 
 
   const totalPrincipal = grouped.reduce((s, g) => s + g.totalQuantity, 0);
+
+  const totalMonthlyContribution = useMemo(() => {
+    if (type !== "BES") return 0;
+    return grouped.reduce((s, g) => {
+      const firstItemMeta = g.items.length > 0 ? parseMeta(g.items[0]) : { monthlyContribution: 0 };
+      return s + firstItemMeta.monthlyContribution;
+    }, 0);
+  }, [grouped, type]);
+
+  useEffect(() => {
+    if (type === "BES" && totalMonthlyContribution > 0) {
+      setProjMonthly(totalMonthlyContribution);
+    }
+  }, [totalMonthlyContribution, type]);
 
   // Canlı saniyelik değerleme ve toplam biriken net kazanç
   const liveTotals = useMemo(() => {
