@@ -147,6 +147,7 @@ async function CategoryContent({ category, user }: { category: string; user: any
           category === "nasdaq" ? "NASDAQ" :
           category === "gold" ? "GOLD" : undefined
         }
+        userCurrency={user.currency}
       />
     </div>
   );
