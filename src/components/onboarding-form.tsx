@@ -219,12 +219,46 @@ export function OnboardingForm() {
     maturityPeriod: "32",
   });
 
+  // Gelir Modalı State
+  const [showIncomeModal, setShowIncomeModal] = useState(false);
+  const [modalIncomeError, setModalIncomeError] = useState("");
+  const [modalIncomeData, setModalIncomeData] = useState({
+    type: "Maaş",
+    amount: "",
+    date: new Date().toISOString().split("T")[0],
+    description: "",
+    currency: "TRY"
+  });
+
+  // Gider Modalı State
+  const [showExpenseModal, setShowExpenseModal] = useState(false);
+  const [modalExpenseError, setModalExpenseError] = useState("");
+  const [modalExpenseData, setModalExpenseData] = useState({
+    type: "Ev Kirası / İpotek",
+    amount: "",
+    date: new Date().toISOString().split("T")[0],
+    isRecurring: true,
+    description: "",
+    currency: "TRY"
+  });
+
+  // Borç Modalı State
+  const [showDebtModal, setShowDebtModal] = useState(false);
+  const [modalDebtError, setModalDebtError] = useState("");
+  const [modalDebtData, setModalDebtData] = useState({
+    type: "Kredi Kartı",
+    amount: "",
+    remainingInstallments: "1",
+    description: "",
+    currency: "TRY"
+  });
+
   const form = useForm<F>({
     resolver: zodResolver(schema) as any,
     defaultValues: {
       firstName: "", lastName: "", birthDate: "", gender: undefined as any, currency: "TRY", country: "",
-      incomes: [{ type: "Maaş", amount: 0, date: new Date().toISOString().split("T")[0], description: "", currency: "TRY" }],
-      expenses: [{ type: "Ev Kirası / İpotek", amount: 0, date: new Date().toISOString().split("T")[0], isRecurring: true, description: "", currency: "TRY" }],
+      incomes: [],
+      expenses: [],
       interests: [],
       debts: [],
       investments: []
@@ -347,6 +381,97 @@ export function OnboardingForm() {
     });
   };
 
+  const handleOpenIncomeModal = () => {
+    setModalIncomeError("");
+    setModalIncomeData({
+      type: "Maaş",
+      amount: "",
+      date: new Date().toISOString().split("T")[0],
+      description: "",
+      currency: selectedCurrency || "TRY"
+    });
+    setShowIncomeModal(true);
+  };
+
+  const handleOpenExpenseModal = () => {
+    setModalExpenseError("");
+    setModalExpenseData({
+      type: "Ev Kirası / İpotek",
+      amount: "",
+      date: new Date().toISOString().split("T")[0],
+      isRecurring: true,
+      description: "",
+      currency: selectedCurrency || "TRY"
+    });
+    setShowExpenseModal(true);
+  };
+
+  const handleOpenDebtModal = () => {
+    setModalDebtError("");
+    setModalDebtData({
+      type: "Kredi Kartı",
+      amount: "",
+      remainingInstallments: "1",
+      description: "",
+      currency: selectedCurrency || "TRY"
+    });
+    setShowDebtModal(true);
+  };
+
+  const handleSaveIncomeModal = (e: React.FormEvent) => {
+    e.preventDefault();
+    const amountVal = parseFloat(modalIncomeData.amount) || 0;
+    if (amountVal <= 0) {
+      setModalIncomeError("Miktar 0'dan büyük olmalıdır");
+      return;
+    }
+    setModalIncomeError("");
+    incomesField.append({
+      type: modalIncomeData.type,
+      amount: amountVal,
+      date: modalIncomeData.date || new Date().toISOString().split("T")[0],
+      description: modalIncomeData.description || undefined,
+      currency: modalIncomeData.currency || selectedCurrency || "TRY",
+    });
+    setShowIncomeModal(false);
+  };
+
+  const handleSaveExpenseModal = (e: React.FormEvent) => {
+    e.preventDefault();
+    const amountVal = parseFloat(modalExpenseData.amount) || 0;
+    if (amountVal <= 0) {
+      setModalExpenseError("Miktar 0'dan büyük olmalıdır");
+      return;
+    }
+    setModalExpenseError("");
+    expensesField.append({
+      type: modalExpenseData.type,
+      amount: amountVal,
+      date: modalExpenseData.date || new Date().toISOString().split("T")[0],
+      isRecurring: modalExpenseData.isRecurring,
+      description: modalExpenseData.description || undefined,
+      currency: modalExpenseData.currency || selectedCurrency || "TRY",
+    });
+    setShowExpenseModal(false);
+  };
+
+  const handleSaveDebtModal = (e: React.FormEvent) => {
+    e.preventDefault();
+    const amountVal = parseFloat(modalDebtData.amount) || 0;
+    if (amountVal <= 0) {
+      setModalDebtError("Miktar 0'dan büyük olmalıdır");
+      return;
+    }
+    setModalDebtError("");
+    debtsField.append({
+      type: modalDebtData.type,
+      amount: amountVal,
+      remainingInstallments: parseInt(modalDebtData.remainingInstallments) || 1,
+      description: modalDebtData.description || undefined,
+      currency: modalDebtData.currency || selectedCurrency || "TRY",
+    });
+    setShowDebtModal(false);
+  };
 
   const handleSaveAssetModal = (e: React.FormEvent) => {
     e.preventDefault();
@@ -654,94 +779,46 @@ export function OnboardingForm() {
             {/* STEP 3: Aylık Gelirler */}
             {step === 3 && (
               <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between pt-2">
                   <Label className="text-xs font-extrabold text-[#887364] dark:text-[#dbc2b0]">Düzenli Gelir Kaynakları</Label>
-                  <Button type="button" size="sm" variant="outline" onClick={() => incomesField.append({ type: "Maaş", amount: 0, date: new Date().toISOString().split("T")[0], description: "", currency: selectedCurrency || "TRY" })}
+                  <Button type="button" size="sm" variant="outline" onClick={handleOpenIncomeModal}
                     className="rounded-xl border-[#8C5000]/30 dark:border-[#ffb874]/30 text-[#8C5000] dark:text-[#ffb874] font-bold hover:bg-[#8C5000]/10">
                     <Plus className="w-4 h-4 mr-1" /> Gelir Ekle
                   </Button>
                 </div>
                 <div className="space-y-4">
-                  {incomesField.fields.map((item, i) => (
-                    <div key={item.id} className="p-5 rounded-3xl bg-[#faf9f6] dark:bg-[#120d0a] border border-[#dbc2b0]/50 dark:border-[#887364]/40 space-y-4 shadow-sm">
-                      <div className="flex items-center justify-between gap-3">
-                        <Controller
-                          name={`incomes.${i}.type`}
-                          control={form.control}
-                          render={({ field }) => (
-                            <Select value={field.value} onValueChange={field.onChange}>
-                              <SelectTrigger className="flex-1 h-12 rounded-2xl bg-white dark:bg-[#1c140e] border-[#dbc2b0]/50 dark:border-[#887364]/40 font-bold text-sm">
-                                <SelectValue placeholder="Gelir türü" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {INCOME_TYPES.map(t => (
-                                  <SelectItem key={t} value={t}>{t}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          )}
-                        />
-                        {incomesField.fields.length > 1 && (
-                          <Button type="button" variant="ghost" size="icon" onClick={() => incomesField.remove(i)} className="text-rose-500 hover:bg-rose-500/10 h-12 w-12 rounded-2xl transition-colors">
-                            <Trash2 className="w-5 h-5" />
-                          </Button>
-                        )}
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                          <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] uppercase tracking-wider mb-1.5 block">Para Birimi & Miktar</Label>
-                          <div className="flex gap-2.5">
-                            <Controller
-                              name={`incomes.${i}.currency`}
-                              control={form.control}
-                              render={({ field }) => (
-                                <Select value={field.value || selectedCurrency || "TRY"} onValueChange={field.onChange}>
-                                  <SelectTrigger className="w-[105px] h-12 rounded-2xl bg-white dark:bg-[#1c140e] border-[#dbc2b0]/50 dark:border-[#887364]/40 font-extrabold text-xs">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <div className="px-2 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Ana Birimler</div>
-                                    {MAIN_CURRENCIES.map(c => <SelectItem key={c.code} value={c.code}>{c.flag} {c.code}</SelectItem>)}
-                                    <div className="px-2 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider border-t mt-1 pt-1">Diğer Birimler</div>
-                                    {OTHER_CURRENCIES.map(c => <SelectItem key={c.code} value={c.code}>{c.flag} {c.code}</SelectItem>)}
-                                  </SelectContent>
-                                </Select>
-                              )}
-                            />
-                            <Input type="number" {...form.register(`incomes.${i}.amount`, { valueAsNumber: true })} placeholder="0" className="flex-1 h-12 rounded-2xl bg-white dark:bg-[#1c140e] border-[#dbc2b0]/50 dark:border-[#887364]/40 font-black text-foreground text-sm" />
+                  {incomesField.fields.length === 0 && (
+                    <div className="text-center py-10 border-2 border-dashed border-[#dbc2b0]/30 rounded-3xl bg-[#faf9f6]/50 dark:bg-[#120d0a]/30">
+                      <p className="text-xs font-bold text-[#887364]/60">Henüz gelir kaynağı eklenmedi. "Gelir Ekle" butonuna tıklayarak ekleyebilirsiniz.</p>
+                    </div>
+                  )}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {incomesField.fields.map((item: any, i: number) => (
+                      <div key={item.id} className="p-4 rounded-3xl bg-[#faf9f6] dark:bg-[#120d0a] border border-[#dbc2b0]/50 dark:border-[#887364]/40 flex items-center justify-between gap-3 shadow-sm hover:border-[#8C5000]/40 transition-all animate-in fade-in zoom-in-95 duration-300">
+                        <div className="flex items-center gap-3">
+                          <div className="h-12 w-12 rounded-2xl bg-white dark:bg-[#1c140e] flex items-center justify-center text-2xl border border-[#dbc2b0]/40 dark:border-[#887364]/40 shrink-0 shadow-sm">
+                            💰
+                          </div>
+                          <div>
+                            <div className="text-sm font-black text-foreground flex items-center gap-2">
+                              <span className="text-base font-extrabold">{item.type}</span>
+                            </div>
+                            <div className="text-xs font-extrabold text-[#8C5000] dark:text-[#ffb874] mt-1">
+                              {Number(item.amount).toLocaleString("tr-TR", { minimumFractionDigits: 2 })} {item.currency || selectedCurrency || "TRY"}
+                            </div>
+                            {item.description && (
+                              <div className="text-[10px] text-muted-foreground font-semibold mt-1 bg-[#887364]/10 dark:bg-[#dbc2b0]/10 px-2 py-0.5 rounded border border-border/10">
+                                {item.description}
+                              </div>
+                            )}
                           </div>
                         </div>
-
-                        <div>
-                          <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] uppercase tracking-wider mb-1.5 block">Tarih</Label>
-                          <Controller
-                            name={`incomes.${i}.date`}
-                            control={form.control}
-                            render={({ field }) => (
-                              <DatePicker
-                                date={field.value ? parseISO(field.value) : undefined}
-                                setDate={(d) => field.onChange(d ? d.toISOString().split("T")[0] : "")}
-                                placeholder="Tarih seç"
-                                className="h-12 rounded-2xl"
-                              />
-                            )}
-                          />
-                        </div>
+                        <Button type="button" variant="ghost" size="icon" onClick={() => incomesField.remove(i)} className="text-rose-500 hover:bg-rose-500/10 h-10 w-10 rounded-xl transition-colors shrink-0">
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
                       </div>
-
-                      <div>
-                        <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] uppercase tracking-wider mb-1.5 block">Açıklama</Label>
-                        <Input {...form.register(`incomes.${i}.description`)} placeholder="Örn: Kurum / Şirket" className="h-12 rounded-2xl bg-white dark:bg-[#1c140e] border-[#dbc2b0]/50 dark:border-[#887364]/40 font-medium text-foreground text-sm" />
-                      </div>
-
-                      {errors.incomes?.[i]?.amount && (
-                        <p className="text-[10px] font-bold text-rose-500/80 mt-1 flex items-center gap-1">
-                          <AlertCircle className="h-3 w-3" /> {errors.incomes[i].amount.message}
-                        </p>
-                      )}
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               </div>
             )}
@@ -749,94 +826,46 @@ export function OnboardingForm() {
             {/* STEP 4: Aylık Giderler */}
             {step === 4 && (
               <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between pt-2">
                   <Label className="text-xs font-extrabold text-[#887364] dark:text-[#dbc2b0]">Düzenli Giderler</Label>
-                  <Button type="button" size="sm" variant="outline" onClick={() => expensesField.append({ type: "Ev Kirası / İpotek", amount: 0, date: new Date().toISOString().split("T")[0], isRecurring: true, description: "", currency: selectedCurrency || "TRY" })}
+                  <Button type="button" size="sm" variant="outline" onClick={handleOpenExpenseModal}
                     className="rounded-xl border-[#8C5000]/30 dark:border-[#ffb874]/30 text-[#8C5000] dark:text-[#ffb874] font-bold hover:bg-[#8C5000]/10">
                     <Plus className="w-4 h-4 mr-1" /> Gider Ekle
                   </Button>
                 </div>
                 <div className="space-y-4">
-                  {expensesField.fields.map((item, i) => (
-                    <div key={item.id} className="p-5 rounded-3xl bg-[#faf9f6] dark:bg-[#120d0a] border border-[#dbc2b0]/50 dark:border-[#887364]/40 space-y-4 shadow-sm">
-                      <div className="flex items-center justify-between gap-3">
-                        <Controller
-                          name={`expenses.${i}.type`}
-                          control={form.control}
-                          render={({ field }) => (
-                            <Select value={field.value} onValueChange={field.onChange}>
-                              <SelectTrigger className="flex-1 h-12 rounded-2xl bg-white dark:bg-[#1c140e] border-[#dbc2b0]/50 dark:border-[#887364]/40 font-bold text-sm">
-                                <SelectValue placeholder="Gider türü" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {EXPENSE_TYPES.map(t => (
-                                  <SelectItem key={t} value={t}>{t}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          )}
-                        />
-                        {expensesField.fields.length > 1 && (
-                          <Button type="button" variant="ghost" size="icon" onClick={() => expensesField.remove(i)} className="text-rose-500 hover:bg-rose-500/10 h-12 w-12 rounded-2xl transition-colors">
-                            <Trash2 className="w-5 h-5" />
-                          </Button>
-                        )}
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                          <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] uppercase tracking-wider mb-1.5 block">Para Birimi & Miktar</Label>
-                          <div className="flex gap-2.5">
-                            <Controller
-                              name={`expenses.${i}.currency`}
-                              control={form.control}
-                              render={({ field }) => (
-                                <Select value={field.value || selectedCurrency || "TRY"} onValueChange={field.onChange}>
-                                  <SelectTrigger className="w-[105px] h-12 rounded-2xl bg-white dark:bg-[#1c140e] border-[#dbc2b0]/50 dark:border-[#887364]/40 font-extrabold text-xs">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <div className="px-2 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Ana Birimler</div>
-                                    {MAIN_CURRENCIES.map(c => <SelectItem key={c.code} value={c.code}>{c.flag} {c.code}</SelectItem>)}
-                                    <div className="px-2 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider border-t mt-1 pt-1">Diğer Birimler</div>
-                                    {OTHER_CURRENCIES.map(c => <SelectItem key={c.code} value={c.code}>{c.flag} {c.code}</SelectItem>)}
-                                  </SelectContent>
-                                </Select>
-                              )}
-                            />
-                            <Input type="number" {...form.register(`expenses.${i}.amount`, { valueAsNumber: true })} placeholder="0" className="flex-1 h-12 rounded-2xl bg-white dark:bg-[#1c140e] border-[#dbc2b0]/50 dark:border-[#887364]/40 font-black text-foreground text-sm" />
+                  {expensesField.fields.length === 0 && (
+                    <div className="text-center py-10 border-2 border-dashed border-[#dbc2b0]/30 rounded-3xl bg-[#faf9f6]/50 dark:bg-[#120d0a]/30">
+                      <p className="text-xs font-bold text-[#887364]/60">Henüz gider eklenmedi. "Gider Ekle" butonuna tıklayarak ekleyebilirsiniz.</p>
+                    </div>
+                  )}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {expensesField.fields.map((item: any, i: number) => (
+                      <div key={item.id} className="p-4 rounded-3xl bg-[#faf9f6] dark:bg-[#120d0a] border border-[#dbc2b0]/50 dark:border-[#887364]/40 flex items-center justify-between gap-3 shadow-sm hover:border-[#8C5000]/40 transition-all animate-in fade-in zoom-in-95 duration-300">
+                        <div className="flex items-center gap-3">
+                          <div className="h-12 w-12 rounded-2xl bg-white dark:bg-[#1c140e] flex items-center justify-center text-2xl border border-[#dbc2b0]/40 dark:border-[#887364]/40 shrink-0 shadow-sm">
+                            💸
+                          </div>
+                          <div>
+                            <div className="text-sm font-black text-foreground flex items-center gap-2">
+                              <span className="text-base font-extrabold">{item.type}</span>
+                            </div>
+                            <div className="text-xs font-extrabold text-rose-500 mt-1">
+                              {Number(item.amount).toLocaleString("tr-TR", { minimumFractionDigits: 2 })} {item.currency || selectedCurrency || "TRY"}
+                            </div>
+                            {item.description && (
+                              <div className="text-[10px] text-muted-foreground font-semibold mt-1 bg-[#887364]/10 dark:bg-[#dbc2b0]/10 px-2 py-0.5 rounded border border-border/10">
+                                {item.description}
+                              </div>
+                            )}
                           </div>
                         </div>
-
-                        <div>
-                          <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] uppercase tracking-wider mb-1.5 block">Tarih</Label>
-                          <Controller
-                            name={`expenses.${i}.date`}
-                            control={form.control}
-                            render={({ field }) => (
-                              <DatePicker
-                                date={field.value ? parseISO(field.value) : undefined}
-                                setDate={(d) => field.onChange(d ? d.toISOString().split("T")[0] : "")}
-                                placeholder="Tarih seç"
-                                className="h-12 rounded-2xl"
-                              />
-                            )}
-                          />
-                        </div>
+                        <Button type="button" variant="ghost" size="icon" onClick={() => expensesField.remove(i)} className="text-rose-500 hover:bg-rose-500/10 h-10 w-10 rounded-xl transition-colors shrink-0">
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
                       </div>
-
-                      <div>
-                        <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] uppercase tracking-wider mb-1.5 block">Açıklama</Label>
-                        <Input {...form.register(`expenses.${i}.description`)} placeholder="Örn: Kira / Elektrik" className="h-12 rounded-2xl bg-white dark:bg-[#1c140e] border-[#dbc2b0]/50 dark:border-[#887364]/40 font-medium text-foreground text-sm" />
-                      </div>
-
-                      {errors.expenses?.[i]?.amount && (
-                        <p className="text-[10px] font-bold text-rose-500/80 mt-1 flex items-center gap-1">
-                          <AlertCircle className="h-3 w-3" /> {errors.expenses[i].amount.message}
-                        </p>
-                      )}
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               </div>
             )}
@@ -844,75 +873,44 @@ export function OnboardingForm() {
             {/* STEP 5: Borçlar */}
             {step === 5 && (
               <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between pt-2">
                   <Label className="text-xs font-extrabold text-[#887364] dark:text-[#dbc2b0]">Mevcut Borçlar (Kredi, Kart vb.)</Label>
-                  <Button type="button" size="sm" variant="outline" onClick={() => debtsField.append({ type: "Kredi Kartı", amount: 0, remainingInstallments: 1, description: "", currency: selectedCurrency || "TRY" })}
+                  <Button type="button" size="sm" variant="outline" onClick={handleOpenDebtModal}
                     className="rounded-xl border-[#8C5000]/30 dark:border-[#ffb874]/30 text-[#8C5000] dark:text-[#ffb874] font-bold hover:bg-[#8C5000]/10">
                     <Plus className="w-4 h-4 mr-1" /> Borç Ekle
                   </Button>
                 </div>
                 <div className="space-y-4">
                   {debtsField.fields.length === 0 && (
-                    <div className="text-center py-8 border-2 border-dashed border-[#dbc2b0]/30 rounded-2xl">
-                      <p className="text-xs font-bold text-[#887364]/50">Henüz borç eklenmedi. Borcunuz yoksa bu adımı geçebilirsiniz.</p>
+                    <div className="text-center py-10 border-2 border-dashed border-[#dbc2b0]/30 rounded-3xl bg-[#faf9f6]/50 dark:bg-[#120d0a]/30">
+                      <p className="text-xs font-bold text-[#887364]/60">Henüz borç eklenmedi. Borcunuz yoksa bu adımı geçebilirsiniz.</p>
                     </div>
                   )}
-                  {debtsField.fields.map((item, i) => (
-                    <div key={item.id} className="p-5 rounded-3xl bg-[#faf9f6] dark:bg-[#120d0a] border border-[#dbc2b0]/50 dark:border-[#887364]/40 space-y-4 shadow-sm">
-                      <div className="flex items-center justify-between gap-3">
-                        <Controller
-                          name={`debts.${i}.type`}
-                          control={form.control}
-                          render={({ field }) => (
-                            <Select value={field.value} onValueChange={field.onChange}>
-                              <SelectTrigger className="flex-1 h-12 rounded-2xl bg-white dark:bg-[#1c140e] border-[#dbc2b0]/50 dark:border-[#887364]/40 font-bold text-sm">
-                                <SelectValue placeholder="Borç türü" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {DEBT_TYPES.map(t => (
-                                  <SelectItem key={t} value={t}>{t}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          )}
-                        />
-                        <Button type="button" variant="ghost" size="icon" onClick={() => debtsField.remove(i)} className="text-rose-500 hover:bg-rose-500/10 h-12 w-12 rounded-2xl transition-colors">
-                          <Trash2 className="w-5 h-5" />
-                        </Button>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                          <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] uppercase tracking-wider mb-1.5 block">Para Birimi & Toplam Borç</Label>
-                          <div className="flex gap-2.5">
-                            <Controller
-                              name={`debts.${i}.currency`}
-                              control={form.control}
-                              render={({ field }) => (
-                                <Select value={field.value || selectedCurrency || "TRY"} onValueChange={field.onChange}>
-                                  <SelectTrigger className="w-[105px] h-12 rounded-2xl bg-white dark:bg-[#1c140e] border-[#dbc2b0]/50 dark:border-[#887364]/40 font-extrabold text-xs">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <div className="px-2 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Ana Birimler</div>
-                                    {MAIN_CURRENCIES.map(c => <SelectItem key={c.code} value={c.code}>{c.flag} {c.code}</SelectItem>)}
-                                    <div className="px-2 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider border-t mt-1 pt-1">Diğer Birimler</div>
-                                    {OTHER_CURRENCIES.map(c => <SelectItem key={c.code} value={c.code}>{c.flag} {c.code}</SelectItem>)}
-                                  </SelectContent>
-                                </Select>
-                              )}
-                            />
-                            <Input type="number" {...form.register(`debts.${i}.amount`, { valueAsNumber: true })} placeholder="0" className="flex-1 h-12 rounded-2xl bg-white dark:bg-[#1c140e] border-[#dbc2b0]/50 dark:border-[#887364]/40 font-black text-foreground text-sm" />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {debtsField.fields.map((item: any, i: number) => (
+                      <div key={item.id} className="p-4 rounded-3xl bg-[#faf9f6] dark:bg-[#120d0a] border border-[#dbc2b0]/50 dark:border-[#887364]/40 flex items-center justify-between gap-3 shadow-sm hover:border-[#8C5000]/40 transition-all animate-in fade-in zoom-in-95 duration-300">
+                        <div className="flex items-center gap-3">
+                          <div className="h-12 w-12 rounded-2xl bg-white dark:bg-[#1c140e] flex items-center justify-center text-2xl border border-[#dbc2b0]/40 dark:border-[#887364]/40 shrink-0 shadow-sm">
+                            💳
+                          </div>
+                          <div>
+                            <div className="text-sm font-black text-foreground flex items-center gap-2">
+                              <span className="text-base font-extrabold">{item.type}</span>
+                            </div>
+                            <div className="text-xs font-extrabold text-rose-500 mt-1">
+                              {Number(item.amount).toLocaleString("tr-TR", { minimumFractionDigits: 2 })} {item.currency || selectedCurrency || "TRY"}
+                            </div>
+                            <div className="text-[10px] text-muted-foreground font-semibold mt-1">
+                              Taksit: {item.remainingInstallments || 1} Ay {item.description ? `• ${item.description}` : ""}
+                            </div>
                           </div>
                         </div>
-
-                        <div>
-                          <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] uppercase tracking-wider mb-1.5 block">Kalan Taksit Sayısı</Label>
-                          <Input type="number" {...form.register(`debts.${i}.remainingInstallments`, { valueAsNumber: true })} placeholder="1" className="h-12 rounded-2xl bg-white dark:bg-[#1c140e] border-[#dbc2b0]/50 dark:border-[#887364]/40 font-black text-foreground text-sm" />
-                        </div>
+                        <Button type="button" variant="ghost" size="icon" onClick={() => debtsField.remove(i)} className="text-rose-500 hover:bg-rose-500/10 h-10 w-10 rounded-xl transition-colors shrink-0">
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               </div>
             )}
@@ -1317,6 +1315,358 @@ export function OnboardingForm() {
                     Varlığı Ekle
                   </Button>
                 </div>
+              </motion.div>
+            </div>
+          )}
+
+          {/* Income Modal */}
+          {showIncomeModal && (
+            <div className="absolute inset-0 z-[110] flex items-center justify-center p-4">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setShowIncomeModal(false)}
+                className="absolute inset-0 bg-[#5a3100]/20 dark:bg-black/70 backdrop-blur-md"
+              />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                transition={{ type: "spring", duration: 0.5 }}
+                className="relative w-full max-w-md bg-card border border-[#8C5000]/30 dark:border-[#ffb874]/30 rounded-3xl shadow-2xl p-6 flex flex-col space-y-4 overflow-visible z-10 animate-in zoom-in-95 duration-200"
+              >
+                <div className="flex items-center justify-between border-b border-border/20 pb-4">
+                  <div className="flex items-center gap-3">
+                    <span className="text-3xl">💰</span>
+                    <div>
+                      <h3 className="text-sm font-black text-[#5a3100] dark:text-[#ffb874]">Gelir Ekle</h3>
+                      <p className="text-[10px] text-muted-foreground">Düzenli gelir kaynağı detayları</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowIncomeModal(false)}
+                    className="h-8 w-8 rounded-full bg-muted/30 flex items-center justify-center hover:bg-rose-500 hover:text-white transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <form onSubmit={handleSaveIncomeModal} className="space-y-4 pt-1">
+                  <div>
+                    <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Gelir Türü</Label>
+                    <Select
+                      value={modalIncomeData.type}
+                      onValueChange={(v) => setModalIncomeData(prev => ({ ...prev, type: v as string }))}
+                    >
+                      <SelectTrigger className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-bold text-sm border-[#dbc2b0]/50 dark:border-[#887364]/40">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {INCOME_TYPES.map(t => (
+                          <SelectItem key={t} value={t}>{t}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="col-span-1">
+                      <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Birim</Label>
+                      <Select
+                        value={modalIncomeData.currency}
+                        onValueChange={(v) => setModalIncomeData(prev => ({ ...prev, currency: v as string }))}
+                      >
+                        <SelectTrigger className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-extrabold text-xs border-[#dbc2b0]/50 dark:border-[#887364]/40">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {MAIN_CURRENCIES.map(c => <SelectItem key={c.code} value={c.code}>{c.flag} {c.code}</SelectItem>)}
+                          {OTHER_CURRENCIES.map(c => <SelectItem key={c.code} value={c.code}>{c.flag} {c.code}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="col-span-2">
+                      <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Miktar</Label>
+                      <Input
+                        type="number"
+                        value={modalIncomeData.amount}
+                        onChange={e => setModalIncomeData(prev => ({ ...prev, amount: e.target.value }))}
+                        placeholder="0"
+                        className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-black text-sm border-[#dbc2b0]/50 dark:border-[#887364]/40"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Tarih</Label>
+                    <DatePicker
+                      date={modalIncomeData.date ? parseISO(modalIncomeData.date) : undefined}
+                      setDate={(d) => setModalIncomeData(prev => ({ ...prev, date: d ? d.toISOString().split("T")[0] : "" }))}
+                      placeholder="Tarih seç"
+                      className="h-11 rounded-xl w-full"
+                    />
+                  </div>
+
+                  <div>
+                    <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Açıklama</Label>
+                    <Input
+                      value={modalIncomeData.description}
+                      onChange={e => setModalIncomeData(prev => ({ ...prev, description: e.target.value }))}
+                      placeholder="Örn: Kurum / Şirket"
+                      className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-medium text-sm border-[#dbc2b0]/50 dark:border-[#887364]/40"
+                    />
+                  </div>
+
+                  {modalIncomeError && (
+                    <p className="text-[10px] font-bold text-rose-500/80 mt-1 flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" /> {modalIncomeError}
+                    </p>
+                  )}
+
+                  <div className="pt-2">
+                    <Button type="submit" className="w-full h-11 rounded-xl bg-[#8C5000] dark:bg-[#ffb874] text-white dark:text-[#120d0a] font-black hover:bg-[#8C5000]/90">
+                      Gelir Ekle
+                    </Button>
+                  </div>
+                </form>
+              </motion.div>
+            </div>
+          )}
+
+          {/* Expense Modal */}
+          {showExpenseModal && (
+            <div className="absolute inset-0 z-[110] flex items-center justify-center p-4">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setShowExpenseModal(false)}
+                className="absolute inset-0 bg-[#5a3100]/20 dark:bg-black/70 backdrop-blur-md"
+              />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                transition={{ type: "spring", duration: 0.5 }}
+                className="relative w-full max-w-md bg-card border border-[#8C5000]/30 dark:border-[#ffb874]/30 rounded-3xl shadow-2xl p-6 flex flex-col space-y-4 overflow-visible z-10 animate-in zoom-in-95 duration-200"
+              >
+                <div className="flex items-center justify-between border-b border-border/20 pb-4">
+                  <div className="flex items-center gap-3">
+                    <span className="text-3xl">💸</span>
+                    <div>
+                      <h3 className="text-sm font-black text-[#5a3100] dark:text-[#ffb874]">Gider Ekle</h3>
+                      <p className="text-[10px] text-muted-foreground">Düzenli Gider detayları</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowExpenseModal(false)}
+                    className="h-8 w-8 rounded-full bg-muted/30 flex items-center justify-center hover:bg-rose-500 hover:text-white transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <form onSubmit={handleSaveExpenseModal} className="space-y-4 pt-1">
+                  <div>
+                    <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Gider Türü</Label>
+                    <Select
+                      value={modalExpenseData.type}
+                      onValueChange={(v) => setModalExpenseData(prev => ({ ...prev, type: v as string }))}
+                    >
+                      <SelectTrigger className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-bold text-sm border-[#dbc2b0]/50 dark:border-[#887364]/40">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {EXPENSE_TYPES.map(t => (
+                          <SelectItem key={t} value={t}>{t}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="col-span-1">
+                      <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Birim</Label>
+                      <Select
+                        value={modalExpenseData.currency}
+                        onValueChange={(v) => setModalExpenseData(prev => ({ ...prev, currency: v as string }))}
+                      >
+                        <SelectTrigger className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-extrabold text-xs border-[#dbc2b0]/50 dark:border-[#887364]/40">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {MAIN_CURRENCIES.map(c => <SelectItem key={c.code} value={c.code}>{c.flag} {c.code}</SelectItem>)}
+                          {OTHER_CURRENCIES.map(c => <SelectItem key={c.code} value={c.code}>{c.flag} {c.code}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="col-span-2">
+                      <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Miktar</Label>
+                      <Input
+                        type="number"
+                        value={modalExpenseData.amount}
+                        onChange={e => setModalExpenseData(prev => ({ ...prev, amount: e.target.value }))}
+                        placeholder="0"
+                        className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-black text-sm border-[#dbc2b0]/50 dark:border-[#887364]/40"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Tarih</Label>
+                    <DatePicker
+                      date={modalExpenseData.date ? parseISO(modalExpenseData.date) : undefined}
+                      setDate={(d) => setModalExpenseData(prev => ({ ...prev, date: d ? d.toISOString().split("T")[0] : "" }))}
+                      placeholder="Tarih seç"
+                      className="h-11 rounded-xl w-full"
+                    />
+                  </div>
+
+                  <div>
+                    <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Açıklama</Label>
+                    <Input
+                      value={modalExpenseData.description}
+                      onChange={e => setModalExpenseData(prev => ({ ...prev, description: e.target.value }))}
+                      placeholder="Örn: Kira / Elektrik"
+                      className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-medium text-sm border-[#dbc2b0]/50 dark:border-[#887364]/40"
+                    />
+                  </div>
+
+                  {modalExpenseError && (
+                    <p className="text-[10px] font-bold text-rose-500/80 mt-1 flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" /> {modalExpenseError}
+                    </p>
+                  )}
+
+                  <div className="pt-2">
+                    <Button type="submit" className="w-full h-11 rounded-xl bg-[#8C5000] dark:bg-[#ffb874] text-white dark:text-[#120d0a] font-black hover:bg-[#8C5000]/90">
+                      Gider Ekle
+                    </Button>
+                  </div>
+                </form>
+              </motion.div>
+            </div>
+          )}
+
+          {/* Debt Modal */}
+          {showDebtModal && (
+            <div className="absolute inset-0 z-[110] flex items-center justify-center p-4">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setShowDebtModal(false)}
+                className="absolute inset-0 bg-[#5a3100]/20 dark:bg-black/70 backdrop-blur-md"
+              />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                transition={{ type: "spring", duration: 0.5 }}
+                className="relative w-full max-w-md bg-card border border-[#8C5000]/30 dark:border-[#ffb874]/30 rounded-3xl shadow-2xl p-6 flex flex-col space-y-4 overflow-visible z-10 animate-in zoom-in-95 duration-200"
+              >
+                <div className="flex items-center justify-between border-b border-border/20 pb-4">
+                  <div className="flex items-center gap-3">
+                    <span className="text-3xl">💳</span>
+                    <div>
+                      <h3 className="text-sm font-black text-[#5a3100] dark:text-[#ffb874]">Borç Ekle</h3>
+                      <p className="text-[10px] text-muted-foreground">Mevcut borç/kredi detayları</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowDebtModal(false)}
+                    className="h-8 w-8 rounded-full bg-muted/30 flex items-center justify-center hover:bg-rose-500 hover:text-white transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <form onSubmit={handleSaveDebtModal} className="space-y-4 pt-1">
+                  <div>
+                    <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Borç Türü</Label>
+                    <Select
+                      value={modalDebtData.type}
+                      onValueChange={(v) => setModalDebtData(prev => ({ ...prev, type: v as string }))}
+                    >
+                      <SelectTrigger className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-bold text-sm border-[#dbc2b0]/50 dark:border-[#887364]/40">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {DEBT_TYPES.map(t => (
+                          <SelectItem key={t} value={t}>{t}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="col-span-1">
+                      <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Birim</Label>
+                      <Select
+                        value={modalDebtData.currency}
+                        onValueChange={(v) => setModalDebtData(prev => ({ ...prev, currency: v as string }))}
+                      >
+                        <SelectTrigger className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-extrabold text-xs border-[#dbc2b0]/50 dark:border-[#887364]/40">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {MAIN_CURRENCIES.map(c => <SelectItem key={c.code} value={c.code}>{c.flag} {c.code}</SelectItem>)}
+                          {OTHER_CURRENCIES.map(c => <SelectItem key={c.code} value={c.code}>{c.flag} {c.code}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="col-span-2">
+                      <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Toplam Borç</Label>
+                      <Input
+                        type="number"
+                        value={modalDebtData.amount}
+                        onChange={e => setModalDebtData(prev => ({ ...prev, amount: e.target.value }))}
+                        placeholder="0"
+                        className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-black text-sm border-[#dbc2b0]/50 dark:border-[#887364]/40"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Kalan Taksit Sayısı</Label>
+                    <Input
+                      type="number"
+                      value={modalDebtData.remainingInstallments}
+                      onChange={e => setModalDebtData(prev => ({ ...prev, remainingInstallments: e.target.value }))}
+                      placeholder="1"
+                      className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-black text-sm border-[#dbc2b0]/50 dark:border-[#887364]/40"
+                    />
+                  </div>
+
+                  <div>
+                    <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Açıklama</Label>
+                    <Input
+                      value={modalDebtData.description}
+                      onChange={e => setModalDebtData(prev => ({ ...prev, description: e.target.value }))}
+                      placeholder="Örn: Kredi kartı borcu"
+                      className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-medium text-sm border-[#dbc2b0]/50 dark:border-[#887364]/40"
+                    />
+                  </div>
+
+                  {modalDebtError && (
+                    <p className="text-[10px] font-bold text-rose-500/80 mt-1 flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" /> {modalDebtError}
+                    </p>
+                  )}
+
+                  <div className="pt-2">
+                    <Button type="submit" className="w-full h-11 rounded-xl bg-[#8C5000] dark:bg-[#ffb874] text-white dark:text-[#120d0a] font-black hover:bg-[#8C5000]/90">
+                      Borç Ekle
+                    </Button>
+                  </div>
+                </form>
               </motion.div>
             </div>
           )}
