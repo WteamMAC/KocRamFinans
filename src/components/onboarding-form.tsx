@@ -207,6 +207,8 @@ export function OnboardingForm() {
 
   // Pop-up (Modal) State İçin
   const [activeAssetModal, setActiveAssetModal] = useState<string | null>(null);
+  const [useCurrentPrice, setUseCurrentPrice] = useState(false);
+  const [fetchingLive, setFetchingLive] = useState(false);
   const [modalAssetData, setModalAssetData] = useState({
     symbol: "",
     amount: "",
@@ -308,6 +310,7 @@ export function OnboardingForm() {
     const desc = name || modalAssetData.description;
     setModalAssetData(prev => ({ ...prev, symbol: sym, description: desc }));
     setSearchQuery(sym);
+    if (useCurrentPrice) fetchCurrentPriceForSymbol(sym);
   };
 
   const handleQuantityChange = (val: string) => {
@@ -320,6 +323,30 @@ export function OnboardingForm() {
     const p = parseFloat(val) || 0;
     const q = parseFloat(modalAssetData.quantity) || 0;
     setModalAssetData(prev => ({ ...prev, purchasePrice: val, amount: (q > 0 && p > 0) ? (q * p).toFixed(2) : prev.amount }));
+  };
+
+  const fetchCurrentPriceForSymbol = async (sym: string) => {
+    if (!sym) return;
+    try {
+      setFetchingLive(true);
+      const cleanSym = sym.split(" ")[0].trim();
+      const livePrice = await getSymbolLivePriceAction(cleanSym);
+      if (livePrice && livePrice > 0) {
+        handlePriceChange(livePrice.toString());
+      }
+    } catch (e) {
+      console.error("Live price error:", e);
+    } finally {
+      setFetchingLive(false);
+    }
+  };
+
+  const handleToggleCurrentPrice = () => {
+    const newState = !useCurrentPrice;
+    setUseCurrentPrice(newState);
+    if (newState && modalAssetData.symbol) {
+      fetchCurrentPriceForSymbol(modalAssetData.symbol);
+    }
   };
 
   const handleOpenAssetModal = (type: string) => {
@@ -1167,6 +1194,7 @@ export function OnboardingForm() {
                           onClick={() => {
                             setModalAssetData(prev => ({ ...prev, symbol: item.symbol, description: item.name }));
                             setSearchQuery(item.symbol);
+                            if (useCurrentPrice) fetchCurrentPriceForSymbol(item.symbol);
                           }}
                           className="text-[10px] font-bold px-2.5 py-1.5 rounded-lg bg-[#8C5000]/10 text-[#8C5000] dark:text-[#ffb874] border border-[#8C5000]/20 hover:bg-[#8C5000]/20 transition-all"
                         >
@@ -1215,11 +1243,24 @@ export function OnboardingForm() {
                         <Input
                           type="number"
                           step="0.01"
+                          disabled={useCurrentPrice}
                           value={modalAssetData.purchasePrice}
                           onChange={e => handlePriceChange(e.target.value)}
                           placeholder="0.00"
                           className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-bold border-[#dbc2b0]/50 dark:border-[#887364]/40"
                         />
+                        {activeAssetModal !== "FAIZ" && activeAssetModal !== "BES" && (
+                          <Button
+                            type="button"
+                            variant={useCurrentPrice ? "default" : "outline"}
+                            onClick={handleToggleCurrentPrice}
+                            className={cn("h-11 px-3 rounded-xl font-bold text-[11px] transition-all shrink-0 border-[#dbc2b0]/50 dark:border-[#887364]/40",
+                              useCurrentPrice ? "bg-[#8C5000] dark:bg-[#ffb874] text-white dark:text-[#120d0a] shadow-md" : "bg-[#faf9f6] dark:bg-[#120d0a] text-muted-foreground")}
+                          >
+                            <Clock className="w-3.5 h-3.5 mr-1" />
+                            {fetchingLive ? "..." : "Güncel"}
+                          </Button>
+                        )}
                       </div>
                     </div>
                     <div>
