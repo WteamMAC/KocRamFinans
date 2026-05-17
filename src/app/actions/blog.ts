@@ -458,21 +458,25 @@ export async function getUserProfile(username: string) {
 
   if (!user) return null;
 
-  const clerk = await clerkClient();
-  const clerkUser = await clerk.users.getUser(user.clerkUserId);
+  try {
+    const clerk = await clerkClient();
+    const clerkUser = await clerk.users.getUser(user.clerkUserId);
 
-  return {
-    id: user.id,
-    username: user.username,
-    bio: user.bio,
-    name: `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim() || "Kullanıcı",
-    imageUrl: clerkUser.imageUrl,
-    followerCount: user._count.followers,
-    followingCount: user._count.following,
-    postCount: user._count.blogPosts,
-    isMe: (await auth()).userId === user.clerkUserId,
-    isBanned: user.isBanned,
-  };
+    return {
+      id: user.id,
+      username: user.username,
+      bio: user.bio,
+      name: `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim() || "Kullanıcı",
+      imageUrl: clerkUser.imageUrl,
+      followerCount: user._count.followers,
+      followingCount: user._count.following,
+      postCount: user._count.blogPosts,
+      isMe: (await auth()).userId === user.clerkUserId,
+      isBanned: user.isBanned,
+    };
+  } catch (error) {
+    return null;
+  }
 }
 
 export async function updateBio(bio: string) {
