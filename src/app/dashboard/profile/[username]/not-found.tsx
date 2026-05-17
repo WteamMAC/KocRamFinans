@@ -4,13 +4,13 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
-import { buttonVariants, Button } from "@/components/ui/button";
-import { Home, Sun, Moon } from "lucide-react";
+import { buttonVariants } from "@/components/ui/button";
+import { Home } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "next-themes";
 
 export default function ProfileNotFound() {
-  const { theme, setTheme } = useTheme();
+  const { theme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -22,21 +22,6 @@ export default function ProfileNotFound() {
   return (
     <div className="relative min-h-[calc(100vh-4rem)] md:min-h-screen w-full flex flex-col items-center justify-center overflow-hidden bg-background transition-colors duration-500 text-foreground">
       
-      {/* Top right theme button */}
-      {mounted && (
-        <div className="absolute top-6 right-6 z-50">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            className="w-12 h-12 rounded-full bg-card border border-border/20 shadow-md backdrop-blur-md hover:scale-105 transition-all text-foreground"
-            aria-label="Tema Değiştir"
-          >
-            {isDark ? <Sun className="w-6 h-6" /> : <Moon className="w-6 h-6" />}
-          </Button>
-        </div>
-      )}
-
       {/* Subtle dot pattern */}
       <div className="absolute inset-0 opacity-[0.08] dark:opacity-[0.12] pointer-events-none"
         style={{
