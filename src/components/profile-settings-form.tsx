@@ -156,7 +156,7 @@ export function ProfileSettingsForm({ initialData }: Props) {
 
     const words = text.split(/[\s,]+/);
     const cur = form.getValues("interests") || [];
-    let newTags = [...cur];
+    const newTags = [...cur];
 
     words.forEach(w => {
       const clean = w.replace(/^#+/, "").trim().toLowerCase();
@@ -186,7 +186,7 @@ export function ProfileSettingsForm({ initialData }: Props) {
       setSaved(true);
       form.reset(data);
       setTimeout(() => setSaved(false), 3000);
-    } catch (e) { console.error(e); }
+    } catch (e: any) { console.error(e); }
     finally { setSaving(false); }
   };
 

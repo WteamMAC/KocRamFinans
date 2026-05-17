@@ -316,7 +316,7 @@ export async function POST(req: Request) {
           const MAX_STEPS = 6; // Özerk düşünme sınırı
 
           while (toolCallCount < MAX_STEPS) {
-            let toolCalls: any[] = [];
+            const toolCalls: any[] = [];
 
             for await (const chunk of currentStream.stream) {
               const calls = chunk.functionCalls();
@@ -389,7 +389,7 @@ export async function POST(req: Request) {
                       try {
                         const prices = await getLivePrices([sym]);
                         fxRate = prices.get(sym)?.price || 1;
-                      } catch { fxRate = 1; }
+                      } catch (e: any) { fxRate = 1; }
                     }
                   }
                   const amountInTRY = safeAmount * fxRate;

@@ -91,7 +91,7 @@ async function CategoryContent({ category, user }: { category: string; user: any
           return [k, v.price];
         })
       );
-    } catch (e) {
+    } catch (e: any) {
       console.error("Failed to load live rates for BES/FAIZ page:", e);
     }
 

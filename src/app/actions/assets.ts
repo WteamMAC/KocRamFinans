@@ -87,7 +87,7 @@ export async function addAsset(data: {
       }
     }
 
-    let finalQuantity = quantity;
+    const finalQuantity = quantity;
     let desc = data.description || null;
 
     if (standardizedType === "BES" || standardizedType === "FAIZ") {
@@ -310,7 +310,7 @@ export async function fixCategories() {
           // Güvenlik açısından BIST'te bırakıyoruz, sadece uyarı logluyoruz
           console.warn(`Investment ${inv.id} may be a misclassified BES/FAIZ record.`);
         }
-      } catch {
+      } catch (e: any) {
         // JSON parse hatası - normal BIST kaydı
       }
     }
@@ -352,7 +352,7 @@ export async function fixMisclassifiedBesFaiz() {
           });
           fixedCount++;
         }
-      } catch { /* atla */ }
+      } catch (e: any) { /* atla */ }
     }
 
     // 2. Fiyat/Miktar normalizasyonu (Mevcut BES/FAIZ kayıtları için)
@@ -372,7 +372,7 @@ export async function fixMisclassifiedBesFaiz() {
             meta.rate = rate;
             desc = JSON.stringify(meta);
           }
-        } catch {
+        } catch (e: any) {
           desc = JSON.stringify({ rate, originalDescription: inv.description });
         }
 

@@ -342,7 +342,7 @@ export function OnboardingForm() {
       if (livePrice && livePrice > 0) {
         handlePriceChange(livePrice.toString());
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error("Live price error:", e);
     } finally {
       setFetchingLive(false);
@@ -514,7 +514,7 @@ export function OnboardingForm() {
 
     const words = text.split(/[\s,]+/);
     const cur = form.getValues("interests");
-    let newTags = [...cur];
+    const newTags = [...cur];
 
     words.forEach(w => {
       const clean = w.replace(/^#+/, "").trim().toLowerCase();

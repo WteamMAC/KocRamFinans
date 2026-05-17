@@ -41,7 +41,7 @@ export default async function BlogPage({
         }
       }
     });
-  } catch (e) {
+  } catch (e: any) {
     console.error("Social stats fetch error (Check if DB is pushed):", e);
   }
 

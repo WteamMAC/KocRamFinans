@@ -99,7 +99,7 @@ export async function completeOnboarding(formData: {
         // Silinmiş eski kullanıcının veritabanımızdaki artığını temizle/boşa çıkar
         try {
           await prisma.user.delete({ where: { id: existingUsername.id } });
-        } catch {
+        } catch (e: any) {
           await prisma.user.update({
             where: { id: existingUsername.id },
             data: { username: null }
@@ -178,7 +178,7 @@ export async function completeOnboarding(formData: {
         GBP: livePrices.get("GBPTRY=X")?.price || 45.85,
         XAU: livePrices.get("XAUTRY=X")?.price || 3450,
       };
-    } catch (e) {
+    } catch (e: any) {
       console.error("Live prices fetch error in onboarding:", e);
     }
 

@@ -5,7 +5,7 @@ import YahooFinanceClass from 'yahoo-finance2';
 const yahooFinance = (function () {
   try {
     return new (YahooFinanceClass as any)();
-  } catch (e) {
+  } catch (e: any) {
     return YahooFinanceClass;
   }
 })();
@@ -114,7 +114,7 @@ export async function getLivePrices(symbols: string[]): Promise<Map<string, Pric
   const now = Date.now();
 
   // Ekstra: BES yatırımlarındaki özel fundSymbol'leri veritabanından çekip listeye ekleyelim!
-  let dbFundSymbols: string[] = [];
+  const dbFundSymbols: string[] = [];
   try {
     const besInvs = await prisma.investment.findMany({
       where: { type: "BES", status: "OPEN" },
@@ -127,10 +127,10 @@ export async function getLivePrices(symbols: string[]): Promise<Map<string, Pric
           if (meta.fundSymbol) {
             dbFundSymbols.push(meta.fundSymbol.toUpperCase());
           }
-        } catch(e){}
+        } catch (e: any) {}
       }
     }
-  } catch(e){}
+  } catch (e: any) {}
 
   // Her zaman temel döviz ve emtia paritelerini işleyelim + BES fonları için BIST 100
   const coreBenchmarks = ["USDTRY=X", "EURTRY=X", "GBPTRY=X", "GC=F", "SI=F", "BZ=F", "XU100.IS"];
@@ -221,7 +221,7 @@ export async function getLivePrices(symbols: string[]): Promise<Map<string, Pric
                 update: { price: data.price, changePct: data.changePercent || 0, updatedAt: new Date() },
                 create: { symbol: sym, price: data.price, changePct: data.changePercent || 0 }
               });
-            } catch (e) {}
+            } catch (e: any) {}
           }
         } catch (err) {
           console.error("TEFAS Fetching Error:", err);
@@ -310,7 +310,7 @@ export async function getLivePrices(symbols: string[]): Promise<Map<string, Pric
             update: { price: item.price, changePct: item.changePct, updatedAt: new Date() },
             create: { symbol: item.symbol, price: item.price, changePct: item.changePct }
           });
-        } catch(e){}
+        } catch (e: any) {}
       }
 
       // --- BES SANAL FON GETİRİ HESAPLAMALARI ---
@@ -351,7 +351,7 @@ export async function getLivePrices(symbols: string[]): Promise<Map<string, Pric
             update: { price: item.price, changePct: 0, updatedAt: new Date() },
             create: { symbol: item.symbol, price: item.price, changePct: 0 }
           });
-        } catch(e){}
+        } catch (e: any) {}
       }
 
     } catch (apiErr: any) {
@@ -370,7 +370,7 @@ export async function getLivePrices(symbols: string[]): Promise<Map<string, Pric
         results.set(item.symbol, { symbol: item.symbol, price: item.price, changePercent: item.changePct });
       }
     }
-  } catch(e){}
+  } catch (e: any) {}
 
   // BES sanal fon getiri oranları için mutlak fallback değerleri set edelim (hiçbir şekilde boş kalmasınlar!)
   const defaultVirtuals = {
@@ -487,7 +487,7 @@ export function calculatePortfolioMetrics(investments: any[], livePrices: Map<st
         try {
           const meta = JSON.parse(inv.description || "{}");
           rate = meta.rate || inv.purchasePrice || 0;
-        } catch {
+        } catch (e: any) {
           rate = inv.purchasePrice || 0;
         }
 
@@ -512,7 +512,7 @@ export function calculatePortfolioMetrics(investments: any[], livePrices: Map<st
             const meta = JSON.parse(inv.description || "{}");
             fundType = meta.fundType || "STANDART";
             fundSymbol = meta.fundSymbol;
-          } catch(e){}
+          } catch (e: any) {}
 
           let annualFundGrowth = 0.45;
           if (fundSymbol) {

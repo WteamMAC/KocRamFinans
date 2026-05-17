@@ -39,7 +39,7 @@ export function NotificationBell() {
         setNotifications(data as any);
         setUnreadCount(data.filter((n: any) => !n.isRead).length);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error("Failed to fetch notifications:", e);
     }
   };

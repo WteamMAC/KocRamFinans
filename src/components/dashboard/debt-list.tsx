@@ -201,7 +201,7 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
                     try {
                         const d = new Date(debt.dueDate);
                         return isNaN(d.getTime()) ? "" : d.toISOString().split('T')[0];
-                    } catch {
+                    } catch (e: any) {
                         return "";
                     }
                 })();
@@ -631,7 +631,7 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
                                                             try {
                                                                 const d = new Date(debt.dueDate);
                                                                 return isNaN(d.getTime()) ? "" : d.toISOString().split('T')[0];
-                                                            } catch {
+                                                            } catch (e: any) {
                                                                 return "";
                                                             }
                                                         })();

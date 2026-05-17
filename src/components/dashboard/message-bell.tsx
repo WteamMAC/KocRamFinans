@@ -17,7 +17,7 @@ export function MessageBell({ className }: { className?: string }) {
     try {
       const count = await getUnreadMessageCount();
       setUnreadCount(count);
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
     }
   };

@@ -52,7 +52,7 @@ export function MessageModal({ isOpen, onClose, initialTargetUsername, currentUs
     try {
       const data = await getInboxConversations();
       setInbox(data);
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
     }
     setLoading(false);
@@ -67,7 +67,7 @@ export function MessageModal({ isOpen, onClose, initialTargetUsername, currentUs
       ]);
       setMessages(msgs);
       setBlockStatus(blockData);
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
     }
     setLoading(false);
