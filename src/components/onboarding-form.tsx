@@ -506,25 +506,29 @@ export function OnboardingForm() {
     form.setValue("interests", cur.includes(cleanTag) ? cur.filter(t => t !== cleanTag) : [...cur, cleanTag], { shouldValidate: true });
   };
 
+  const addCustomTag = () => {
+    const text = customTagInput.trim();
+    if (!text) return;
+
+    const words = text.split(/[\s,]+/);
+    const cur = form.getValues("interests");
+    let newTags = [...cur];
+
+    words.forEach(w => {
+      const clean = w.replace(/^#+/, "").trim().toLowerCase();
+      if (clean && !newTags.includes(clean)) {
+        newTags.push(clean);
+      }
+    });
+
+    form.setValue("interests", newTags, { shouldValidate: true });
+    setCustomTagInput("");
+  };
+
   const handleCustomTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === " " || e.key === "Enter" || e.key === ",") {
       e.preventDefault();
-      const text = customTagInput.trim();
-      if (!text) return;
-
-      const words = text.split(/[\s,]+/);
-      const cur = form.getValues("interests");
-      let newTags = [...cur];
-
-      words.forEach(w => {
-        const clean = w.replace(/^#+/, "").trim().toLowerCase();
-        if (clean && !newTags.includes(clean)) {
-          newTags.push(clean);
-        }
-      });
-
-      form.setValue("interests", newTags, { shouldValidate: true });
-      setCustomTagInput("");
+      addCustomTag();
     }
   };
 
@@ -1003,15 +1007,20 @@ export function OnboardingForm() {
                 <p className="text-xs font-bold text-[#887364] dark:text-[#dbc2b0]">Aşağıdaki önerilerden seçebilir veya kendi özel ilgi alanını (Örn: #COIN #BIST) yazıp Boşluk veya Enter tuşuna basabilirsin.</p>
 
                 {/* Custom Hashtag Input */}
-                <div className="relative">
-                  <Input
-                    value={customTagInput}
-                    onChange={e => setCustomTagInput(e.target.value)}
-                    onKeyDown={handleCustomTagKeyDown}
-                    placeholder="Özel ilgi alanı ekle ve Boşluk tuşuna bas (Örn: #Kripto #NFT)..."
-                    className="h-12 rounded-2xl bg-[#faf9f6] dark:bg-[#120d0a] border-[#8C5000]/40 dark:border-[#ffb874]/40 font-bold text-[#191c1d] dark:text-[#fbf9f4] placeholder:text-[#887364]/60 pr-10 focus:border-[#8C5000] dark:focus:border-[#ffb874] shadow-sm"
-                  />
-                  <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-black text-[#8C5000] dark:text-[#ffb874]">#</span>
+                <div className="relative flex items-center gap-2">
+                  <div className="relative flex-1">
+                    <Input
+                      value={customTagInput}
+                      onChange={e => setCustomTagInput(e.target.value)}
+                      onKeyDown={handleCustomTagKeyDown}
+                      placeholder="Özel ilgi alanı ekle ve Boşluk veya Enter tuşuna bas (Örn: #Kripto #NFT)..."
+                      className="h-12 rounded-2xl bg-[#faf9f6] dark:bg-[#120d0a] border-[#8C5000]/40 dark:border-[#ffb874]/40 font-bold text-[#191c1d] dark:text-[#fbf9f4] placeholder:text-[#887364]/60 pr-10 focus:border-[#8C5000] dark:focus:border-[#ffb874] shadow-sm"
+                    />
+                    <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-black text-[#8C5000] dark:text-[#ffb874]">#</span>
+                  </div>
+                  <Button type="button" onClick={addCustomTag} variant="outline" className="h-12 px-5 rounded-2xl border-[#8C5000]/30 dark:border-[#ffb874]/30 text-[#8C5000] dark:text-[#ffb874] hover:bg-[#8C5000]/10 font-black shadow-sm shrink-0">
+                    <Plus className="w-4 h-4 mr-1" /> Ekle
+                  </Button>
                 </div>
 
                 <div className="flex flex-wrap gap-2.5 pt-2">
@@ -1026,6 +1035,17 @@ export function OnboardingForm() {
                       </button>
                     );
                   })}
+
+                  {/* Orijinal listede olmayan kullanıcının kendi özel etiketleri */}
+                  {selectedInterests
+                    .filter(tag => !HASHTAGS.some(h => h.tag === tag))
+                    .map(tag => (
+                      <button key={tag} type="button" onClick={() => toggleTag(tag)}
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-full border text-xs font-black bg-[#8C5000] dark:bg-[#ffb874] text-white dark:text-[#120d0a] border-[#8C5000] dark:border-[#ffb874] shadow-md scale-105 transition-all duration-200">
+                        <span className="text-base">📌</span><span>#{tag.toUpperCase()}</span><Check className="w-3.5 h-3.5" />
+                      </button>
+                    ))
+                  }
                 </div>
 
                 {errors.interests && <p className="text-[10px] font-bold text-rose-500/80 flex items-center gap-1"><AlertCircle className="h-3 w-3" />{errors.interests.message}</p>}
