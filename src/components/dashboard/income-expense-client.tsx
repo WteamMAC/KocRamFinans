@@ -264,15 +264,6 @@ export function IncomeExpenseClient({
         >
           <Button
             variant="outline"
-            onClick={handleExportToExcel}
-            className="rounded-2xl h-12 flex-1 md:flex-none px-6 border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500/10 text-emerald-500 font-black text-xs uppercase tracking-widest transition-all"
-          >
-            <FileSpreadsheet className="mr-2 h-4 w-4" />
-            Excel'e Aktar
-          </Button>
-
-          <Button
-            variant="outline"
             onClick={handleRefresh}
             disabled={isRefreshing}
             className="rounded-2xl h-12 flex-1 md:flex-none px-6 border-border/20 bg-card/50 backdrop-blur-xl hover:bg-muted/50 transition-all font-black text-xs uppercase tracking-widest"
