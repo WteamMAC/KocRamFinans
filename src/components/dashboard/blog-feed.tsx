@@ -1149,8 +1149,42 @@ export function BlogFeed({
     }
   }, [posts]);
 
+  // Çift Yönlü Senkronizasyon: Kullanıcı Gelişmiş Filtreye etiket yazdığı anda barda otomatik aktif et
+  useEffect(() => {
+    if (tagSearch.trim()) {
+      const query = tagSearch.trim().toLowerCase();
+      const formatted = query.startsWith("#") ? query : `#${query}`;
+
+      setAllDiscoveredTags(prev => {
+        if (!prev.some(t => t.toLowerCase() === formatted)) {
+          return [formatted, ...prev];
+        }
+        return prev;
+      });
+
+      setActiveTags(prev => {
+        if (!prev.some(t => t.toLowerCase() === formatted)) {
+          return [...prev, formatted];
+        }
+        return prev;
+      });
+    }
+  }, [tagSearch]);
+
   const handleToggleTag = (tag: string) => {
-    setActiveTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
+    setActiveTags(prev => {
+      const isSelected = prev.includes(tag);
+      if (isSelected) {
+        const normTag = tag.replace("#", "").toLowerCase();
+        if (tagSearch.toLowerCase().replace("#", "") === normTag) {
+          setTagSearch("");
+        }
+        return prev.filter(t => t !== tag);
+      } else {
+        setTagSearch(tag.replace("#", ""));
+        return [...prev, tag];
+      }
+    });
   };
 
   const handleCommentAdded = (postId: string, comment: Comment) => {
@@ -1415,7 +1449,10 @@ export function BlogFeed({
             availableTags={filteredTagsForBar} 
             activeTags={activeTags} 
             onToggleTag={handleToggleTag}
-            onClearTags={() => setActiveTags([])}
+            onClearTags={() => {
+              setActiveTags([]);
+              setTagSearch("");
+            }}
             filterCount={activeFilterCount}
             onToggleFilter={() => setIsFilterPanelOpen(p => !p)}
             sortBy={sortBy}
@@ -1439,7 +1476,7 @@ export function BlogFeed({
                    </span>
                    <div className="flex items-center gap-2">
                      {activeFilterCount > 0 && (
-                       <button onClick={() => { setTimeRange("all"); setFilterByInterests(false); setTagSearch(""); }} className="text-[11px] font-bold text-rose-500 hover:underline">Sıfırla</button>
+                       <button onClick={() => { setTimeRange("all"); setFilterByInterests(false); setTagSearch(""); setActiveTags([]); }} className="text-[11px] font-bold text-rose-500 hover:underline">Sıfırla</button>
                      )}
                      <button onClick={() => setIsFilterPanelOpen(false)} className="text-muted-foreground hover:text-foreground p-1.5 rounded-full"><X className="h-4 w-4" /></button>
                    </div>
