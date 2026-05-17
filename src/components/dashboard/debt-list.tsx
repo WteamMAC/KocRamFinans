@@ -191,6 +191,42 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
         }
     };
 
+    const onConfirmPay = () => {
+        if (!payModal) return;
+        if (payModal.isClose && (payModal as any).isTransfer) {
+            const debt = debts.find(d => d.id === payModal.id);
+            if (debt) {
+                const safeDueDate = (() => {
+                    if (!debt.dueDate) return "";
+                    try {
+                        const d = new Date(debt.dueDate);
+                        return isNaN(d.getTime()) ? "" : d.toISOString().split('T')[0];
+                    } catch {
+                        return "";
+                    }
+                })();
+                const amountVal = String(debt.amount / (debt.fxRate || 1));
+                setRefinanceId(debt.id);
+                setFormData({
+                    type: debt.type,
+                    amount: amountVal,
+                    currency: debt.currency,
+                    remainingInstallments: debt.remainingInstallments ? String(debt.remainingInstallments) : "",
+                    interestRate: debt.interestRate ? String(debt.interestRate) : "",
+                    paymentDay: debt.paymentDay ? String(debt.paymentDay) : "",
+                    dueDate: safeDueDate,
+                    description: debt.description || debt.type,
+                    payAmount: amountVal,
+                    addRemainingAsExpense: false,
+                });
+                setIsAdding(true);
+            }
+            setPayModal(null);
+        } else {
+            handlePay();
+        }
+    };
+
     return (
         <div className="space-y-8 pb-12 max-w-[1440px] mx-auto">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
@@ -806,8 +842,8 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
                             <Button variant="outline" className="rounded-full px-8 border-border/30 text-muted-foreground" onClick={() => setPayModal(null)}>
                                 Vazgeç
                             </Button>
-                            <Button onClick={handlePay} disabled={loading} className="rounded-full bg-primary hover:bg-primary/90 text-primary-foreground px-10 font-bold shadow-lg shadow-primary/20">
-                                {loading ? "İşleniyor..." : "Ödemeyi Onayla"}
+                            <Button onClick={onConfirmPay} disabled={loading} className="rounded-full bg-primary hover:bg-primary/90 text-primary-foreground px-10 font-bold shadow-lg shadow-primary/20">
+                                {loading ? "İşleniyor..." : ((payModal.isClose && (payModal as any).isTransfer) ? "Yapılandırmaya Git" : "Ödemeyi Onayla")}
                             </Button>
                         </div>
                     </div>
