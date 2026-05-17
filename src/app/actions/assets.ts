@@ -19,6 +19,7 @@ export async function addAsset(data: {
   description?: string;
   monthlyContribution?: number;
   fundType?: string;
+  fundSymbol?: string;
   maturityPeriod?: number;
 }) {
   try {
@@ -100,6 +101,7 @@ export async function addAsset(data: {
         rate: rate,
         monthlyContribution: Number(data.monthlyContribution) || 0,
         fundType: data.fundType || "STANDART",
+        fundSymbol: data.fundSymbol || undefined,
         maturityPeriod: data.maturityPeriod || 32,
         originalDescription: desc
       };

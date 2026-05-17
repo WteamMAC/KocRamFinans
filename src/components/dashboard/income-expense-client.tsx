@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -21,14 +22,21 @@ import {
   ShoppingCart,
   Utensils,
   Car,
-  Home
+  Home,
+  FileSpreadsheet,
+  Edit,
+  Trash2,
+  X,
+  Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 
-import { useCurrency, DISPLAY_CURRENCIES_MAP } from "@/context/currency-context";
-import { motion } from "framer-motion";
+import { useCurrency, DISPLAY_CURRENCIES_MAP, DISPLAY_CURRENCIES_LIST } from "@/context/currency-context";
+import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import * as XLSX from "xlsx";
+import { editIncome, deleteIncome, editExpense, deleteExpense } from "@/app/actions/income-expense";
 
 interface Transaction {
   id: string;
@@ -41,6 +49,8 @@ interface Transaction {
   originalAmount?: number;
   fxRate?: number;
   tryAmount?: number;
+  isRecurring?: boolean;
+  dueDate?: number;
 }
 
 interface IncomeExpenseClientProps {
@@ -71,8 +81,25 @@ export function IncomeExpenseClient({
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [filterCategory, setFilterCategory] = useState("Tümü");
+  const [searchTerm, setSearchTerm] = useState("");
 
-  const { formatAmount, displayCurrency } = useCurrency();
+  // Edit / Delete states
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+  const [deletingTransaction, setDeletingTransaction] = useState<Transaction | null>(null);
+  const [editFormData, setEditFormData] = useState({
+    category: "",
+    amount: "",
+    currency: "TRY",
+    description: "",
+    isRecurring: false,
+    dueDate: "",
+    date: "",
+  });
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [deletingProgress, setDeletingProgress] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const { formatAmount, displayCurrency, rates } = useCurrency();
 
   const formatTransactionAmount = (tx: Transaction) => {
     const cur = (tx.currency || "TRY").toUpperCase();
@@ -91,7 +118,126 @@ export function IncomeExpenseClient({
     setTimeout(() => setIsRefreshing(false), 1000);
   };
 
+  // Excel Export Handler
+  const handleExportToExcel = () => {
+    const filtered = recentTransactions.filter(t => {
+      const matchCat = filterCategory === "Tümü" || t.category === filterCategory;
+      const matchSearch = (t.description || t.category).toLowerCase().includes(searchTerm.toLowerCase());
+      return matchCat && matchSearch;
+    });
+
+    const dataToExport = filtered.map((tx) => {
+      const isInc = tx.type === "income";
+      const tryAmount = tx.tryAmount != null ? tx.tryAmount : (tx.amount * (tx.fxRate || 1));
+      return {
+        "ID": tx.id,
+        "İşlem Türü": isInc ? "Gelir" : "Gider",
+        "Kategori": tx.category,
+        "Açıklama": tx.description || "",
+        "Tarih": new Date(tx.createdAt).toLocaleDateString("tr-TR"),
+        "Miktar": tx.amount,
+        "Para Birimi": tx.currency || "TRY",
+        "Döviz Kuru": tx.fxRate || 1,
+        "TRY Karşılığı": tryAmount
+      };
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "İşlemler");
+    XLSX.writeFile(workbook, `gelir_gider_raporu_${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
+
+  // Edit action triggers
+  const handleStartEdit = (tx: Transaction) => {
+    setEditingTransaction(tx);
+    setErrorMsg(null);
+    setEditFormData({
+      category: tx.category,
+      amount: String(tx.originalAmount || tx.amount),
+      currency: tx.currency || "TRY",
+      description: tx.description || "",
+      isRecurring: tx.isRecurring || false,
+      dueDate: tx.dueDate ? String(tx.dueDate) : "",
+      date: new Date(tx.createdAt).toISOString().split('T')[0],
+    });
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingTransaction) return;
+    if (!editFormData.amount || !editFormData.category) {
+      setErrorMsg("Lütfen tüm alanları doldurun.");
+      return;
+    }
+
+    setSavingEdit(true);
+    setErrorMsg(null);
+
+    const selectedRate = rates[editFormData.currency] || 1;
+    const originalAmount = Number(editFormData.amount);
+    const amountInTry = originalAmount * selectedRate;
+
+    try {
+      if (editingTransaction.type === "income") {
+        await editIncome(editingTransaction.id, {
+          type: editFormData.category,
+          amount: amountInTry,
+          isRecurring: editFormData.isRecurring,
+          dueDate: editFormData.dueDate ? Number(editFormData.dueDate) : undefined,
+          date: new Date(editFormData.date),
+          description: editFormData.description,
+          currency: editFormData.currency,
+          originalAmount: originalAmount,
+          fxRate: selectedRate,
+        });
+      } else {
+        await editExpense(editingTransaction.id, {
+          type: editFormData.category,
+          amount: amountInTry,
+          isRecurring: editFormData.isRecurring,
+          dueDate: editFormData.dueDate ? Number(editFormData.dueDate) : undefined,
+          date: new Date(editFormData.date),
+          description: editFormData.description,
+          currency: editFormData.currency,
+          originalAmount: originalAmount,
+          fxRate: selectedRate,
+        });
+      }
+      setEditingTransaction(null);
+      router.refresh();
+    } catch (err: any) {
+      setErrorMsg(err.message || "İşlem güncellenirken hata oluştu.");
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  // Delete Action confirmation
+  const handleDeleteConfirm = async () => {
+    if (!deletingTransaction) return;
+    setDeletingProgress(true);
+    try {
+      if (deletingTransaction.type === "income") {
+        await deleteIncome(deletingTransaction.id);
+      } else {
+        await deleteExpense(deletingTransaction.id);
+      }
+      setDeletingTransaction(null);
+      router.refresh();
+    } catch (err: any) {
+      alert(err.message || "İşlem silinirken hata oluştu.");
+    } finally {
+      setDeletingProgress(false);
+    }
+  };
+
   if (!mounted) return null;
+
+  const filteredTransactions = recentTransactions.filter(t => {
+    const matchCat = filterCategory === "Tümü" || t.category === filterCategory;
+    const matchSearch = (t.description || t.category).toLowerCase().includes(searchTerm.toLowerCase());
+    return matchCat && matchSearch;
+  });
 
   return (
     <div className="space-y-6 md:space-y-10 pb-20 max-w-[1440px] mx-auto p-4 md:py-6">
@@ -114,7 +260,7 @@ export function IncomeExpenseClient({
         <motion.div 
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="flex gap-3 w-full md:w-auto"
+          className="flex flex-wrap gap-3 w-full md:w-auto"
         >
           <Button
             variant="outline"
@@ -313,7 +459,7 @@ export function IncomeExpenseClient({
                   const colors = ["#bdc2b0", "#10b981", "#3b82f6", "#f59e0b", "#f43f5e"];
                   
                   if (entries.length === 0) {
-                    return <circle cx="18" cy="18" r="15.9155" fill="none" stroke="currentColor" strokeWidth="4" className="text-muted/10" strokeDasharray="100, 100" />
+                     return <circle cx="18" cy="18" r="15.9155" fill="none" stroke="currentColor" strokeWidth="4" className="text-muted/10" strokeDasharray="100, 100" />
                   }
 
                   return entries.slice(0, 5).map(([cat, amt], idx) => {
@@ -392,6 +538,8 @@ export function IncomeExpenseClient({
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
               <Input 
                 placeholder="İşlemlerde ara..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
                 className="h-12 pl-11 pr-4 rounded-[18px] bg-card/60 border-border/20 w-full text-xs font-bold"
               />
             </div>
@@ -420,10 +568,11 @@ export function IncomeExpenseClient({
                     <th className="px-10 py-6 text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Kategori</th>
                     <th className="px-10 py-6 text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Zamanlama</th>
                     <th className="px-10 py-6 text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] text-right">Miktar</th>
+                    <th className="px-10 py-6 text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] text-right">Aksiyonlar</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/10">
-                  {recentTransactions.filter(t => filterCategory === "Tümü" || t.category === filterCategory).map((tx, idx) => {
+                  {filteredTransactions.map((tx, idx) => {
                     const isInc = tx.type === 'income';
                     let Icon = isInc ? Wallet : Receipt;
                     const cat = tx.category.toLowerCase();
@@ -476,6 +625,26 @@ export function IncomeExpenseClient({
                             </p>
                           )}
                         </td>
+                        <td className="px-10 py-8 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleStartEdit(tx)}
+                              className="h-9 w-9 rounded-xl text-primary hover:bg-primary/10 transition-all"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => setDeletingTransaction(tx)}
+                              className="h-9 w-9 rounded-xl text-rose-500 hover:bg-rose-500/10 transition-all"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </td>
                       </tr>
                     );
                   })}
@@ -486,7 +655,7 @@ export function IncomeExpenseClient({
 
           {/* Mobile Card View */}
           <div className="md:hidden space-y-4">
-            {recentTransactions.filter(t => filterCategory === "Tümü" || t.category === filterCategory).map((tx, idx) => {
+            {filteredTransactions.map((tx, idx) => {
               const isInc = tx.type === 'income';
               let Icon = isInc ? Wallet : Receipt;
               const cat = tx.category.toLowerCase();
@@ -525,7 +694,7 @@ export function IncomeExpenseClient({
                       </div>
                     </div>
                   </div>
-                  <div className="text-right shrink-0">
+                  <div className="flex flex-col items-end gap-2 shrink-0">
                     <p className={cn("text-base md:text-lg font-black tracking-tight", isInc ? "text-emerald-500" : "text-rose-500")}>
                       {isInc ? '+' : '-'} {formatTransactionAmount(tx)}
                     </p>
@@ -534,13 +703,27 @@ export function IncomeExpenseClient({
                         ≈ {isInc ? '+' : '-'} {formatAmount(tx.tryAmount != null ? tx.tryAmount : (tx.amount * (tx.fxRate || 1)))} ({displayCurrency})
                       </p>
                     )}
+                    <div className="flex items-center gap-2 mt-1">
+                      <button
+                        onClick={() => handleStartEdit(tx)}
+                        className="p-1.5 rounded-lg text-primary hover:bg-primary/10 transition-colors"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => setDeletingTransaction(tx)}
+                        className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-500/10 transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                 </motion.div>
               );
             })}
           </div>
 
-          {recentTransactions.filter(t => filterCategory === "Tümü" || t.category === filterCategory).length === 0 && (
+          {filteredTransactions.length === 0 && (
             <div className="py-12 md:py-24 flex flex-col items-center justify-center text-center opacity-20">
               <Layers className="h-10 w-10 md:h-12 md:w-12 mb-4" />
               <p className="text-[10px] font-black uppercase tracking-[0.3em]">Veri bulunamadı</p>
@@ -548,6 +731,226 @@ export function IncomeExpenseClient({
           )}
         </div>
       </motion.section>
+
+      {/* Edit Dialog Overlay */}
+      <AnimatePresence>
+        {editingTransaction && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-card w-full max-w-lg rounded-[28px] shadow-2xl border border-border/20 overflow-hidden flex flex-col max-h-[90vh]"
+            >
+              {/* Header */}
+              <div className="h-16 border-b border-border/10 flex items-center justify-between px-6 shrink-0 bg-muted/20">
+                <h3 className="font-heading font-black text-base md:text-lg flex items-center gap-2">
+                  <Edit className="h-5 w-5 text-primary animate-pulse" />
+                  İşlemi Düzenle
+                </h3>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setEditingTransaction(null)}
+                  className="h-8 w-8 rounded-full"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+
+              {/* Form Content */}
+              <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                {errorMsg && (
+                  <div className="p-3 bg-rose-500/10 text-rose-500 rounded-xl text-xs font-bold border border-rose-500/20 uppercase tracking-wider">
+                    {errorMsg}
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Category Selection */}
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-1 block">Kategori</label>
+                    <select
+                      value={editFormData.category}
+                      onChange={(e) => setEditFormData(p => ({ ...p, category: e.target.value }))}
+                      className="w-full bg-muted/40 border border-border/20 h-12 rounded-xl text-xs font-bold px-3 text-foreground focus:outline-none focus:border-primary/50 transition-colors"
+                    >
+                      {(editingTransaction.type === "income"
+                        ? ["Maaş", "Kira Geliri", "Yatırım Geliri", "Freelance", "Satış Geliri", "Hediye", "Diğer"]
+                        : ["Market", "Kira", "Fatura", "Ulaşım", "Eğlence", "Sağlık", "Eğitim", "Giyim", "Diğer"]
+                      ).map(cat => (
+                        <option key={cat} value={cat} className="bg-card text-foreground font-semibold">{cat}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Date */}
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-1 block">İşlem Tarihi</label>
+                    <Input
+                      type="date"
+                      value={editFormData.date}
+                      onChange={(e) => setEditFormData(p => ({ ...p, date: e.target.value }))}
+                      className="bg-muted/40 border-border/20 h-12 rounded-xl font-bold text-xs shadow-sm focus:ring-0 focus:border-primary/50"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                  {/* Amount */}
+                  <div className="col-span-2 space-y-2">
+                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-1 block">Tutar</label>
+                    <Input
+                      type="number"
+                      placeholder="0.00"
+                      value={editFormData.amount}
+                      onChange={(e) => setEditFormData(p => ({ ...p, amount: e.target.value }))}
+                      className="bg-muted/40 border-border/20 h-12 rounded-xl text-xs md:text-sm font-black focus:ring-0 focus:border-primary/50"
+                    />
+                  </div>
+
+                  {/* Currency */}
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-1 block">Birim</label>
+                    <select
+                      value={editFormData.currency}
+                      onChange={(e) => setEditFormData(p => ({ ...p, currency: e.target.value }))}
+                      className="w-full bg-muted/40 border border-border/20 h-12 rounded-xl text-xs font-bold px-3 text-foreground focus:outline-none focus:border-primary/50 transition-colors"
+                    >
+                      {DISPLAY_CURRENCIES_LIST.map(c => (
+                        <option key={c.code} value={c.code} className="bg-card text-foreground font-semibold">
+                          {c.flag} {c.code}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Description */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-1 block">Açıklama</label>
+                  <Input
+                    placeholder="Detaylı notlar (opsiyonel)..."
+                    value={editFormData.description}
+                    onChange={(e) => setEditFormData(p => ({ ...p, description: e.target.value }))}
+                    className="bg-muted/40 border-border/20 h-12 rounded-xl text-xs font-bold shadow-sm focus:ring-0 focus:border-primary/50"
+                  />
+                </div>
+
+                {/* Recurring */}
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <div
+                    className="flex-1 flex items-center space-x-3 bg-muted/20 p-4 rounded-xl border border-border/10 hover:bg-muted/30 cursor-pointer transition-colors"
+                    onClick={() => setEditFormData(p => ({ ...p, isRecurring: !p.isRecurring }))}
+                  >
+                    <Checkbox
+                      checked={editFormData.isRecurring}
+                      onCheckedChange={(checked) => setEditFormData(p => ({ ...p, isRecurring: !!checked }))}
+                      className={cn(
+                        "h-5 w-5 border-2 transition-all",
+                        editingTransaction.type === "income" ? "data-[state=checked]:bg-emerald-500 border-emerald-500/30" : "data-[state=checked]:bg-rose-500 border-rose-500/30"
+                      )}
+                    />
+                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest cursor-pointer select-none">
+                      Her Ay Tekrarlansın
+                    </label>
+                  </div>
+
+                  {editFormData.isRecurring && (
+                    <div className="flex-1 space-y-2">
+                      <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-1 block">Ödeme Günü (1-31)</label>
+                      <Input
+                        type="number"
+                        min="1"
+                        max="31"
+                        placeholder="15"
+                        value={editFormData.dueDate}
+                        onChange={(e) => setEditFormData(p => ({ ...p, dueDate: e.target.value }))}
+                        className="bg-muted/40 border-border/20 h-12 rounded-xl text-xs font-black text-center focus:ring-0 focus:border-primary/50"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="p-4 border-t border-border/10 bg-muted/20 flex gap-3 shrink-0">
+                <Button
+                  variant="outline"
+                  onClick={() => setEditingTransaction(null)}
+                  className="flex-1 h-12 rounded-2xl font-bold border-border/20"
+                >
+                  Vazgeç
+                </Button>
+                <Button
+                  onClick={handleSaveEdit}
+                  disabled={savingEdit}
+                  className={cn(
+                    "flex-1 h-12 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg text-white transition-all",
+                    editingTransaction.type === "income"
+                      ? "bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/20"
+                      : "bg-rose-600 hover:bg-rose-700 shadow-rose-600/20"
+                  )}
+                >
+                  {savingEdit ? (
+                    <div className="flex items-center justify-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      KAYDEDİLİYOR
+                    </div>
+                  ) : (
+                    "KAYDET"
+                  )}
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Delete Dialog Overlay */}
+      <AnimatePresence>
+        {deletingTransaction && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-card w-full max-w-sm rounded-[32px] p-6 shadow-2xl border border-border/20 space-y-6"
+            >
+              <div className="flex flex-col items-center text-center space-y-3">
+                <div className="w-16 h-16 bg-rose-500/10 rounded-full flex items-center justify-center">
+                  <Trash2 className="h-8 w-8 text-rose-500 animate-bounce" />
+                </div>
+                <h3 className="text-xl font-black text-foreground">İşlemi İptal Et / Sil</h3>
+                <p className="text-sm text-muted-foreground font-medium px-2">
+                  Bu işlemi silmek istediğinize emin misiniz? Bu işlem veritabanından kalıcı olarak kaldırılacaktır.
+                </p>
+              </div>
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => setDeletingTransaction(null)}
+                  className="flex-1 h-12 rounded-2xl font-bold border-border/20"
+                >
+                  Vazgeç
+                </Button>
+                <Button
+                  variant="destructive"
+                  disabled={deletingProgress}
+                  onClick={handleDeleteConfirm}
+                  className="flex-1 h-12 rounded-[18px] font-black text-[10px] uppercase tracking-widest shadow-lg shadow-rose-500/20"
+                >
+                  {deletingProgress ? (
+                    <Loader2 className="h-4 w-4 animate-spin animate-spin" />
+                  ) : (
+                    "İPTAL ET / SİL"
+                  )}
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

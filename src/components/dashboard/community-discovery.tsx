@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useTransition, useEffect } from "react";
-import { Users, Shield, Globe, Plus, LogOut, MessageSquare, Search, Filter, ChevronRight, Clock } from "lucide-react";
+import { Users, Shield, Globe, Plus, LogOut, MessageSquare, Search, Filter, ChevronRight, Clock, Check, X } from "lucide-react";
 import { getCommunities, joinCommunity, leaveCommunity } from "@/app/actions/communities";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
+import { createPortal } from "react-dom";
 
 const COMMUNITY_TAGS = ["altın", "kripto", "bes", "faiz", "ekonomi", "genel", "borsa", "tasarruf"];
 
@@ -33,11 +34,15 @@ export function CommunityDiscovery({ onSelectCommunity }: { onSelectCommunity?: 
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [communityToLeave, setCommunityToLeave] = useState<{ id: string, name: string } | null>(null);
+  const [communityToJoin, setCommunityToJoin] = useState<{ id: string, name: string, isPrivate: boolean } | null>(null);
+  
+  // Custom Toast/Banner State
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const loadCommunities = async () => {
     setIsLoading(true);
     try {
-      // Eğer showAll false ise limit 2 ve random çek, true ise query/tag'e göre çek
       const data = await getCommunities({
         limit: showAll ? 100 : 2,
         random: !showAll && searchQuery === "" && activeTag === null,
@@ -61,12 +66,18 @@ export function CommunityDiscovery({ onSelectCommunity }: { onSelectCommunity?: 
       try {
         const result = await joinCommunity(id);
         if (result === "PENDING") {
-          alert("Başvurunuz admin onayı için gönderildi.");
+          setSuccessMessage("Başvurunuz admin onayı için başarıyla gönderildi! 🎉");
+        } else {
+          setSuccessMessage("Topluluğa başarıyla katıldınız! 👥");
         }
+        setTimeout(() => setSuccessMessage(null), 4000);
+        setCommunityToJoin(null);
         await loadCommunities();
         router.refresh();
       } catch (error) {
-        alert((error as Error).message);
+        setErrorMessage((error as Error).message);
+        setTimeout(() => setErrorMessage(null), 4000);
+        setCommunityToJoin(null);
       }
     });
   };
@@ -76,16 +87,38 @@ export function CommunityDiscovery({ onSelectCommunity }: { onSelectCommunity?: 
       try {
         await leaveCommunity(id);
         setCommunityToLeave(null);
+        setSuccessMessage("Topluluktan başarıyla ayrıldınız.");
+        setTimeout(() => setSuccessMessage(null), 4000);
         await loadCommunities();
         router.refresh();
       } catch (error) {
-        alert((error as Error).message);
+        setErrorMessage((error as Error).message);
+        setTimeout(() => setErrorMessage(null), 4000);
       }
     });
   };
 
   return (
     <div className="space-y-6">
+      {/* Toast Notification Banners */}
+      {successMessage && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[9999] bg-emerald-500 text-white px-6 py-3 rounded-2xl shadow-xl flex items-center gap-3 animate-in slide-in-from-top-4 duration-500">
+          <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
+            <Check className="h-4 w-4 text-white" />
+          </div>
+          <span className="text-xs font-bold">{successMessage}</span>
+        </div>
+      )}
+
+      {errorMessage && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[9999] bg-rose-500 text-white px-6 py-3 rounded-2xl shadow-xl flex items-center gap-3 animate-in slide-in-from-top-4 duration-500">
+          <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
+            <X className="h-4 w-4 text-white" />
+          </div>
+          <span className="text-xs font-bold">{errorMessage}</span>
+        </div>
+      )}
+
       {/* Search and Filters */}
       <div className="space-y-4">
         <div className="relative">
@@ -136,7 +169,7 @@ export function CommunityDiscovery({ onSelectCommunity }: { onSelectCommunity?: 
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
                     {c.imageUrl ? (
-                      <img src={c.imageUrl} alt={c.name} className="w-full h-full object-cover rounded-2xl" />
+                       <img src={c.imageUrl} alt={c.name} className="w-full h-full object-cover rounded-2xl" />
                     ) : (
                       <Users className="h-6 w-6" />
                     )}
@@ -212,7 +245,7 @@ export function CommunityDiscovery({ onSelectCommunity }: { onSelectCommunity?: 
                 ) : (
                   <Button
                     size="sm"
-                    onClick={() => handleJoin(c.id)}
+                    onClick={() => setCommunityToJoin({ id: c.id, name: c.name, isPrivate: c.isPrivate })}
                     disabled={isPendingAction}
                     className="h-8 rounded-xl text-[10px] font-bold bg-primary text-primary-foreground hover:bg-primary/90"
                   >
@@ -248,8 +281,8 @@ export function CommunityDiscovery({ onSelectCommunity }: { onSelectCommunity?: 
       )}
 
       {/* Leave Confirmation Modal */}
-      {communityToLeave && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+      {communityToLeave && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
           <div className="bg-card border border-border/20 rounded-[32px] w-full max-w-sm shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
             <div className="p-8 text-center space-y-6">
               <div className="w-16 h-16 bg-rose-500/10 rounded-full flex items-center justify-center mx-auto text-rose-500">
@@ -267,7 +300,37 @@ export function CommunityDiscovery({ onSelectCommunity }: { onSelectCommunity?: 
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Join Confirmation Modal */}
+      {communityToJoin && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-card border border-border/20 rounded-[32px] w-full max-w-sm shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+            <div className="p-8 text-center space-y-6">
+              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto text-primary animate-pulse">
+                <Users className="h-8 w-8" />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-lg font-black text-foreground">
+                  {communityToJoin.isPrivate ? "Topluluğa Başvur" : "Topluluğa Katıl"}
+                </h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  <span className="font-bold text-foreground">{communityToJoin.name}</span> topluluğuna {communityToJoin.isPrivate ? "katılmak için başvuru yapmak" : "katılmak"} istediğinize emin misiniz?
+                  {communityToJoin.isPrivate && " Başvurunuz yöneticinin onayına sunulacaktır."}
+                </p>
+              </div>
+              <div className="flex gap-3">
+                <Button variant="ghost" onClick={() => setCommunityToJoin(null)} className="flex-1 h-12 rounded-2xl font-bold hover:bg-muted">Vazgeç</Button>
+                <Button onClick={() => handleJoin(communityToJoin.id)} disabled={isPendingAction} className="flex-1 h-12 rounded-2xl font-bold bg-primary text-primary-foreground hover:bg-primary/95 shadow-lg shadow-primary/20">
+                  {isPendingAction ? "İşleniyor..." : "Evet, Katıl/Başvur"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
     </div>
   );

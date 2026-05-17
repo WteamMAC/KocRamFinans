@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,11 +9,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Trash2, Plus, Shield, Landmark,
-  ChevronDown, RefreshCw, Sparkles
+  ChevronDown, RefreshCw, Sparkles,
+  Search, CheckCircle2, X
 } from "lucide-react";
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from "recharts";
 import { cn } from "@/lib/utils";
 import { deleteAsset, addAsset, fixMisclassifiedBesFaiz, addContributionToAsset } from "@/app/actions/assets";
+import { searchSymbolsAction } from "@/app/actions/market";
 import { useCurrency } from "@/context/currency-context";
 
 interface InvestmentItem {
@@ -29,12 +32,14 @@ interface InvestmentItem {
 interface BesFaizDetailProps {
   type: "BES" | "FAIZ";
   investments: InvestmentItem[];
+  livePrices?: Record<string, number>;
 }
 
 interface ParsedMeta {
   rate: number;
   monthlyContribution: number;
   fundType?: string;
+  fundSymbol?: string;
   originalDescription: string;
   maturityPeriod?: number;
 }
@@ -46,6 +51,7 @@ function parseMeta(inv: InvestmentItem): ParsedMeta {
       rate: meta.rate || inv.purchasePrice || 0,
       monthlyContribution: meta.monthlyContribution || 0,
       fundType: meta.fundType || "STANDART",
+      fundSymbol: meta.fundSymbol || undefined,
       originalDescription: meta.originalDescription || (typeof inv.description === 'string' && !inv.description.startsWith('{') ? inv.description : ""),
       maturityPeriod: meta.maturityPeriod || 32, // Esk kayıtlar için varsayılan 32 gün
     };
@@ -62,7 +68,7 @@ const BES_FUND_TYPES = [
   { id: "CONSERVATIVE", name: "Muhafazakar (Para Piyasası)", icon: "🛡️", ticker: "FIXED_LOW" },
 ];
 
-export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
+export function BesFaizDetail({ type, investments, livePrices }: BesFaizDetailProps) {
   const router = useRouter();
   const { formatAmount } = useCurrency();
   const [isAdding, setIsAdding] = useState(false);
@@ -72,17 +78,57 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [projYears, setProjYears] = useState(10);
   const [projMonthly, setProjMonthly] = useState(0); // only for BES
-  const [projReturn, setProjReturn] = useState(45);  // only for BES
+  const [projReturn, setProjReturn] = useState(() => {
+    const val = livePrices?.BES_STANDART_RETURN ?? 0.45;
+    return Math.round(val > 2 ? val : val * 100); 
+  });  // only for BES
+
+  const [besSearchQuery, setBesSearchQuery] = useState("");
+  const [besSearchResults, setBesSearchResults] = useState<any[]>([]);
+  const [showBesSearch, setShowBesSearch] = useState(false);
+
+  const [deleteModalState, setDeleteModalState] = useState<{ isOpen: boolean; assetId: string | null }>({ isOpen: false, assetId: null });
+  const [contributionModalState, setContributionModalState] = useState<{ isOpen: boolean; assetId: string | null; symbol: string }>({ isOpen: false, assetId: null, symbol: "" });
+  const [contribAmount, setContribAmount] = useState<number | "">("");
+
+  const fundReturns = useMemo(() => {
+    const safeRate = (rate: number | undefined, defaultRate: number) => {
+       const r = rate ?? defaultRate;
+       return r > 2 ? r / 100 : r;
+    };
+    return {
+      "STANDART": safeRate(livePrices?.BES_STANDART_RETURN, 0.45),
+      "GOLD": safeRate(livePrices?.BES_GOLD_RETURN, 0.65),
+      "STOCKS": safeRate(livePrices?.BES_STOCKS_RETURN, 0.80),
+      "USD": safeRate(livePrices?.BES_USD_RETURN, 0.35),
+      "CONSERVATIVE": safeRate(livePrices?.BES_CONSERVATIVE_RETURN, 0.40),
+    };
+  }, [livePrices]);
 
   const [formData, setFormData] = useState({
     symbol: "",
     quantity: 0,
     purchasePrice: type === "BES" ? 30 : 45,
     description: "",
-    monthlyContribution: 0,
+    monthlyContribution: type === "BES" ? 2500 : 0,
     fundType: "STANDART",
+    fundSymbol: "",
     maturityPeriod: 32,
   });
+
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(async () => {
+      if (besSearchQuery.length >= 2 && !besSearchQuery.includes(" - ")) {
+        const results = await searchSymbolsAction(besSearchQuery, "BIST");
+        setBesSearchResults(results);
+        setShowBesSearch(true);
+      } else {
+        setBesSearchResults([]);
+        setShowBesSearch(false);
+      }
+    }, 300);
+    return () => clearTimeout(delayDebounceFn);
+  }, [besSearchQuery]);
 
   // Gerçek zamanlı saniyelik sayaç (Canlı Getiri hissi için)
   const [currentTime, setCurrentTime] = useState(() => Date.now());
@@ -133,26 +179,19 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
       const daysPassed = secondsPassed / (60 * 60 * 24);
 
       if (type === "BES") {
-        // BES: Fon Büyümesi (Seçili fona göre) + Devlet Katkısı (%30 varsayılan)
+        // BES: Sadece Fon Büyümesi canlı değere eklenir. 
+        // Devlet katkısı direkt ana paraya/canlı değere yansıtılmaz (yıllık/ayrı havuzda tutulur).
         let fundType = "STANDART";
         try {
           const meta = parseMeta(g.items[0]);
           fundType = meta.fundType || "STANDART";
         } catch(e){}
 
-        const fundReturns: Record<string, number> = {
-          "STANDART": 0.45,
-          "GOLD": 0.65,
-          "STOCKS": 0.80,
-          "USD": 0.35,
-          "CONSERVATIVE": 0.40,
-        };
-
-        const annualFundGrowth = fundReturns[fundType] || 0.45;
+        const annualFundGrowth = fundReturns[fundType as keyof typeof fundReturns] || 0.45;
         const dailyGrowth = annualFundGrowth / 365;
         const fundMultiplier = Math.pow(1 + dailyGrowth, daysPassed);
-        const stateMultiplier = 1 + (g.rate > 0 && g.rate <= 100 ? g.rate / 100 : 0.30);
-        totalVal += (g.totalQuantity * fundMultiplier) * stateMultiplier;
+        // Devlet katkısı hesaplanıyor ama canlı bakiyeye direkt eklenip "net kazanç" gibi gösterilmiyor
+        totalVal += (g.totalQuantity * fundMultiplier);
       } else {
         const secondlyRate = (g.rate / 100) / (365 * 24 * 3600);
         const multiplier = Math.pow(1 + secondlyRate, secondsPassed);
@@ -202,16 +241,25 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
       const totalMonths = projYears * 12;
       let totalPrin = grouped.reduce((s, g) => s + g.totalQuantity, 0);
       let totalWithReturn = totalPrin;
-      let totalGovtBalance = totalPrin * (govtRate / 100);
+      
+      // Devlet katkısı hesaplaması ("yıllık eklenir", "ana paraya eklenmez")
+      let pendingGovtContributions = totalPrin * (govtRate / 100); // Başlangıçtaki anaparanın devlet katkısı
+      let totalGovtBalance = pendingGovtContributions;
+
       const data = [];
       for (let i = 0; i <= totalMonths; i++) {
         if (i > 0) {
           const monthlyAdd = projMonthly > 0 ? projMonthly : totalMonthlyContribution;
           totalPrin += monthlyAdd;
-          // Apply returns to BOTH balances
-          // Note: In projection we still use projReturn as a benchmark
+          // Fon (Ana Para) aylık büyür
           totalWithReturn = (totalWithReturn + monthlyAdd) * (1 + monthlyRate);
-          totalGovtBalance = (totalGovtBalance + (monthlyAdd * govtRate / 100)) * (1 + monthlyRate);
+          
+          // Yeni eklenen aylık tutarın devlet katkısı ayrı bir havuzda birikir
+          const newGovtContrib = monthlyAdd * (govtRate / 100);
+          pendingGovtContributions += newGovtContrib;
+          
+          // Devlet katkısı da fonlarda değerlendirilir (Kullanıcının tercihine göre ana paraya eklemiyoruz, ayrı hesaplıyoruz)
+          totalGovtBalance = (totalGovtBalance + newGovtContrib) * (1 + monthlyRate);
         }
         if (i % 12 === 0) {
           const yr = Math.floor(i / 12);
@@ -231,12 +279,15 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
   const netGain = finalValue - totalPrincipal;
 
   async function handleDelete(id: string) {
-    if (!confirm("Bu kaydı silmek istediğinizden emin misiniz?")) return;
+    setLoading(true);
     try {
       await deleteAsset(id);
+      setDeleteModalState({ isOpen: false, assetId: null });
       router.refresh();
     } catch (err) {
       console.error(err);
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -249,8 +300,10 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
         description: "",
         monthlyContribution: type === "BES" ? 2500 : 0,
         fundType: "STANDART",
+        fundSymbol: "",
         maturityPeriod: 32,
       });
+      setBesSearchQuery("");
     }
     setIsAdding(!isAdding);
   }
@@ -268,10 +321,12 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
         description: formData.description,
         monthlyContribution: formData.monthlyContribution,
         fundType: formData.fundType,
+        fundSymbol: formData.fundSymbol || undefined,
         maturityPeriod: isBES ? undefined : formData.maturityPeriod,
       });
       setIsAdding(false);
-      setFormData({ symbol: "", quantity: 0, purchasePrice: 0, description: "", monthlyContribution: 0, fundType: "STANDART", maturityPeriod: 32 });
+      setFormData({ symbol: "", quantity: 0, purchasePrice: 0, description: "", monthlyContribution: 0, fundType: "STANDART", fundSymbol: "", maturityPeriod: 32 });
+      setBesSearchQuery("");
       router.refresh();
     } catch (err) {
       console.error(err);
@@ -405,115 +460,194 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
         </Card>
       </div>
 
-      {/* Add Form */}
-      {isAdding && (
-        <Card className="border-border/20 shadow-ambient-medium rounded-2xl p-6 animate-in slide-in-from-top-4 duration-300">
-          <CardHeader className="p-0 mb-6">
-            <CardTitle className="text-lg font-heading">
-              {isBES ? "Yeni BES Hesabı" : "Yeni Vadeli Hesap"}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-0 grid grid-cols-1 md:grid-cols-2 gap-5">
-            <div className="space-y-2">
-              <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                {isBES ? "Şirket / Plan Adı" : "Banka / Hesap Adı"}
-              </Label>
-              <Input
-                placeholder={isBES ? "Örn: Agesa, Anadolu Hayat" : "Örn: Garanti TL Vadeli"}
-                value={formData.symbol}
-                onChange={e => setFormData(p => ({ ...p, symbol: e.target.value }))}
-                className="h-12 rounded-xl bg-muted/50 border-border/30"
-              />
-            </div>
-            {isBES && (
-              <div className="space-y-2">
-                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                  Fon Türü (Piyasa Takibi İçin)
-                </Label>
-                <select
-                  value={formData.fundType}
-                  onChange={e => setFormData(p => ({ ...p, fundType: e.target.value }))}
-                  className="w-full h-12 rounded-xl bg-muted/50 border border-border/30 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+      {/* Add Form Modal */}
+      {isAdding && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 md:p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="relative w-full max-w-2xl max-h-[95vh] overflow-y-auto no-scrollbar">
+            <Card className="border-border/20 shadow-ambient-medium rounded-2xl p-6 animate-in zoom-in-95 duration-300 bg-card">
+              <CardHeader className="p-0 mb-6 flex flex-row items-center justify-between">
+                <CardTitle className="text-lg font-heading text-primary">
+                  {isBES ? "Yeni BES Hesabı" : "Yeni Vadeli Hesap"}
+                </CardTitle>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsAdding(false)}
+                  className="h-8 w-8 rounded-full bg-muted/60 hover:bg-rose-50 hover:text-rose-500 text-muted-foreground transition-all shrink-0"
                 >
-                  {BES_FUND_TYPES.map(ft => (
-                    <option key={ft.id} value={ft.id}>{ft.icon} {ft.name}</option>
-                  ))}
-                </select>
-              </div>
-            )}
-            <div className="space-y-2">
-              <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                {isBES ? "Güncel Birikiminiz (₺)" : "Güncel Birikiminiz (₺)"}
-              </Label>
-              <Input
-                type="number"
-                placeholder="0"
-                value={formData.quantity || ""}
-                onChange={e => setFormData(p => ({ ...p, quantity: Number(e.target.value) }))}
-                className="h-12 rounded-xl bg-muted/50 border-border/30"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                {isBES ? "Devlet Katkı Payı (%)" : "Faiz Oranı (% Yıllık)"}
-              </Label>
-              <Input
-                type="number"
-                step="0.1"
-                placeholder={isBES ? "30" : "45"}
-                value={formData.purchasePrice || ""}
-                onChange={e => setFormData(p => ({ ...p, purchasePrice: Number(e.target.value) }))}
-                className="h-12 rounded-xl bg-muted/50 border-border/30"
-              />
-            </div>
-            {isBES && (
-              <div className="space-y-2">
-                <Label className="text-[10px] font-bold text-primary uppercase tracking-widest">
-                  Aylık Yatırılacak Düzenli Tutar (₺)
-                </Label>
-                <Input
-                  type="number"
-                  required
-                  placeholder="Örn: 2500"
-                  value={formData.monthlyContribution || ""}
-                  onChange={e => setFormData(p => ({ ...p, monthlyContribution: Number(e.target.value) }))}
-                  className="h-12 rounded-xl bg-primary/5 border-primary/20 focus:ring-primary font-bold"
-                />
-              </div>
-            )}
-            {!isBES && (
-              <div className="space-y-2">
-                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                  Vade Süresi (Gün)
-                </Label>
-                <Input
-                  type="number"
-                  placeholder="Örn: 32"
-                  value={formData.maturityPeriod || ""}
-                  onChange={e => setFormData(p => ({ ...p, maturityPeriod: Number(e.target.value) }))}
-                  className="h-12 rounded-xl bg-muted/50 border-border/30"
-                />
-              </div>
-            )}
-            <div className="space-y-2">
-              <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                Açıklama (Opsiyonel)
-              </Label>
-              <Input
-                placeholder={isBES ? "Örn: Aylık katkı payı" : "Örn: 3 aylık vadeli"}
-                value={formData.description}
-                onChange={e => setFormData(p => ({ ...p, description: e.target.value }))}
-                className="h-12 rounded-xl bg-muted/50 border-border/30"
-              />
-            </div>
-            <div className="md:col-span-2 flex gap-3 justify-end pt-2">
-              <Button variant="outline" onClick={() => setIsAdding(false)} className="rounded-xl">İptal</Button>
-              <Button onClick={handleAdd} disabled={loading} className="rounded-xl bg-primary">
-                {loading ? "Kaydediliyor..." : "Kaydet"}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+                  <X className="h-4 w-4" />
+                </Button>
+              </CardHeader>
+              <CardContent className="p-0 grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                    {isBES ? "Şirket / Plan Adı" : "Banka / Hesap Adı"}
+                  </Label>
+                  <Input
+                    placeholder={isBES ? "Örn: Agesa, Anadolu Hayat" : "Örn: Garanti TL Vadeli"}
+                    value={formData.symbol}
+                    onChange={e => setFormData(p => ({ ...p, symbol: e.target.value }))}
+                    className="h-12 rounded-xl bg-muted/50 border-border/30"
+                  />
+                </div>
+                {isBES && (
+                  <>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                        Fon Sınıfı (Varsayılan Getiri Grubu)
+                      </Label>
+                      <select
+                        value={formData.fundType}
+                        onChange={e => setFormData(p => ({ ...p, fundType: e.target.value }))}
+                        className="w-full h-12 rounded-xl bg-muted/50 border border-border/30 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer font-medium"
+                      >
+                        {BES_FUND_TYPES.map(ft => (
+                          <option key={ft.id} value={ft.id}>{ft.icon} {ft.name}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* İnternetten Canlı Özel Fon Arama (TEFAS/BIST) */}
+                    <div className="space-y-2 md:col-span-2 relative">
+                      <div className="flex justify-between items-center px-1">
+                        <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                          İnternetten Canlı Özel Fon Seçimi (TEFAS / BIST)
+                        </Label>
+                        <span className="text-[9px] font-bold text-muted-foreground bg-muted px-2 py-0.5 rounded-md uppercase tracking-wider">Opsiyonel</span>
+                      </div>
+                      
+                      <div className="relative">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-primary opacity-50" />
+                        <Input
+                          placeholder="Örn: AEG, ALR, TCD, MAC, AFT..."
+                          value={besSearchQuery}
+                          onChange={(e) => setBesSearchQuery(e.target.value)}
+                          className="pl-12 bg-muted/50 border-border/30 h-12 rounded-xl focus:ring-primary text-sm font-semibold"
+                        />
+                      </div>
+
+                      {/* Arama Sonuçları */}
+                      {showBesSearch && besSearchResults.length > 0 && (
+                        <div className="absolute z-[999] w-full bg-card/95 backdrop-blur-2xl border border-primary/20 shadow-2xl rounded-2xl overflow-hidden mt-1 max-h-48 overflow-y-auto">
+                          {besSearchResults.map((result, idx) => (
+                            <div
+                              key={idx}
+                              className="p-4 hover:bg-primary/5 cursor-pointer border-b border-border/10 last:border-0 transition-colors flex items-center justify-between group text-sm font-semibold"
+                              onClick={() => {
+                                setFormData(p => ({ ...p, fundSymbol: result.symbol }));
+                                setBesSearchQuery(`${result.symbol} - ${result.shortname || result.symbol}`);
+                                setShowBesSearch(false);
+                              }}
+                            >
+                              <div>
+                                <div className="text-xs font-bold text-primary">{result.symbol}</div>
+                                <div className="text-[10px] text-muted-foreground truncate max-w-[320px]">
+                                  {result.shortname || result.symbol}
+                                </div>
+                              </div>
+                              <span className="text-[9px] text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded-full font-bold">
+                                Canlı Fiyat Bağlantısı
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {formData.fundSymbol && (
+                        <div className="flex items-center gap-2 text-xs font-bold text-emerald-500 bg-emerald-500/10 p-3 rounded-2xl border border-emerald-500/20 mt-2 animate-in fade-in duration-200">
+                          <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
+                          <span>Fon Canlı Bağlandı: {formData.fundSymbol}</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setFormData(p => ({ ...p, fundSymbol: "" }));
+                              setBesSearchQuery("");
+                            }}
+                            className="ml-auto hover:text-rose-500 font-extrabold text-[10px] uppercase tracking-wider bg-muted px-2 py-1 rounded-md transition-colors"
+                          >
+                            Bağlantıyı Kaldır
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                    {isBES ? "Güncel Birikiminiz (₺)" : "Güncel Birikiminiz (₺)"}
+                  </Label>
+                  <Input
+                    type="number"
+                    placeholder="0"
+                    value={formData.quantity || ""}
+                    onChange={e => setFormData(p => ({ ...p, quantity: Number(e.target.value) }))}
+                    className="h-12 rounded-xl bg-muted/50 border-border/30"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                    {isBES ? "Devlet Katkı Payı (%)" : "Faiz Oranı (% Yıllık)"}
+                  </Label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    placeholder={isBES ? "30" : "45"}
+                    value={formData.purchasePrice || ""}
+                    onChange={e => setFormData(p => ({ ...p, purchasePrice: Number(e.target.value) }))}
+                    className="h-12 rounded-xl bg-muted/50 border-border/30"
+                  />
+                </div>
+                {isBES && (
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-bold text-primary uppercase tracking-widest">
+                      Aylık Yatırılacak Düzenli Tutar (₺)
+                    </Label>
+                    <Input
+                      type="number"
+                      required
+                      placeholder="Örn: 2500"
+                      value={formData.monthlyContribution || ""}
+                      onChange={e => setFormData(p => ({ ...p, monthlyContribution: Number(e.target.value) }))}
+                      className="h-12 rounded-xl bg-muted/50 border-primary/20"
+                    />
+                  </div>
+                )}
+                {!isBES && (
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-bold text-primary uppercase tracking-widest">
+                      Vade Süresi (Gün)
+                    </Label>
+                    <Input
+                      type="number"
+                      placeholder="32"
+                      value={formData.maturityPeriod || ""}
+                      onChange={e => setFormData(p => ({ ...p, maturityPeriod: Number(e.target.value) }))}
+                      className="h-12 rounded-xl bg-muted/50 border-primary/20"
+                    />
+                  </div>
+                )}
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                    Açıklama (Opsiyonel)
+                  </Label>
+                  <Input
+                    placeholder={isBES ? "Örn: Aylık katkı payı" : "Örn: 3 aylık vadeli"}
+                    value={formData.description}
+                    onChange={e => setFormData(p => ({ ...p, description: e.target.value }))}
+                    className="h-12 rounded-xl bg-muted/50 border-border/30"
+                  />
+                </div>
+                <div className="md:col-span-2 flex gap-3 justify-end pt-2">
+                  <Button variant="outline" onClick={() => setIsAdding(false)} className="rounded-xl">İptal</Button>
+                  <Button onClick={handleAdd} disabled={loading} className="rounded-xl bg-primary">
+                    {loading ? "Kaydediliyor..." : "Kaydet"}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>,
+        document.body
       )}
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
@@ -546,9 +680,11 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
                         </div>
                         <div>
                           <p className="font-bold text-foreground">{g.symbol}</p>
-                          {isBES && (
+                           {isBES && (
                             <p className="text-[9px] font-bold text-muted-foreground bg-muted px-1.5 py-0.5 rounded inline-block mb-1">
-                              {BES_FUND_TYPES.find(f => f.id === parseMeta(g.items[0]).fundType)?.name || "Karma Fon"}
+                              {parseMeta(g.items[0]).fundSymbol 
+                                ? `✨ Canlı Fon: ${parseMeta(g.items[0]).fundSymbol}`
+                                : `${BES_FUND_TYPES.find(f => f.id === parseMeta(g.items[0]).fundType)?.name || "Karma Fon"}`}
                             </p>
                           )}
                           <p className={cn("text-[11px] font-bold mt-0.5", accentColor)}>
@@ -561,10 +697,22 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
                             </p>
                           ) : (
                             <div className="mt-1 space-y-1">
-                              <p className="text-[10px] font-black text-emerald-500 uppercase tracking-tighter flex items-center gap-1">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                Tahmini Günlük Fon Getirisi: ~{formatAmount((g.totalQuantity * 45) / 365 / 100)}
-                              </p>
+                              {(() => {
+                                const meta = parseMeta(g.items[0]);
+                                let fundAnnualGrowth = fundReturns[meta.fundType as keyof typeof fundReturns] || 0.45;
+                                if (meta.fundSymbol && livePrices) {
+                                  const customLiveChange = livePrices[meta.fundSymbol.toUpperCase()];
+                                  if (customLiveChange != null) {
+                                    fundAnnualGrowth = customLiveChange;
+                                  }
+                                }
+                                return (
+                                  <p className="text-[10px] font-black text-emerald-500 uppercase tracking-tighter flex items-center gap-1">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                    Yıllık Fon Büyümesi: ~%{Math.round(fundAnnualGrowth * 100)}
+                                  </p>
+                                );
+                              })()}
                               {parseMeta(g.items[0]).monthlyContribution > 0 && (
                                 <p className="text-[10px] font-bold text-primary bg-primary/5 px-2 py-0.5 rounded-md inline-block">
                                   Aylık Ödeme: {formatAmount(parseMeta(g.items[0]).monthlyContribution)}
@@ -590,6 +738,7 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
                           const daysPassed = secondsPassed / (60 * 60 * 24);
                           let currentVal = g.totalQuantity;
                           let earned = 0;
+                          let stateContributionAmount = 0;
                           if (isBES) {
                             let fundType = "STANDART";
                             try {
@@ -597,20 +746,14 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
                               fundType = meta.fundType || "STANDART";
                             } catch(e){}
 
-                            const fundReturns: Record<string, number> = {
-                              "STANDART": 0.45,
-                              "GOLD": 0.65,
-                              "STOCKS": 0.80,
-                              "USD": 0.35,
-                              "CONSERVATIVE": 0.40,
-                            };
-
-                            const annualFundGrowth = fundReturns[fundType] || 0.45;
+                            const annualFundGrowth = fundReturns[fundType as keyof typeof fundReturns] || 0.45;
                             const dailyGrowth = annualFundGrowth / 365;
                             const fundMultiplier = Math.pow(1 + dailyGrowth, daysPassed);
-                            const stateMultiplier = 1 + (g.rate > 0 && g.rate <= 100 ? g.rate / 100 : 0.30);
-                            currentVal = (g.totalQuantity * fundMultiplier) * stateMultiplier;
+                            const stateMultiplier = (g.rate > 0 && g.rate <= 100 ? g.rate / 100 : 0.30);
+                            
+                            currentVal = g.totalQuantity * fundMultiplier;
                             earned = currentVal - g.totalQuantity;
+                            stateContributionAmount = g.totalQuantity * stateMultiplier;
                           } else {
                             const secondlyRate = (g.rate / 100) / (365 * 24 * 3600);
                             const multiplier = Math.pow(1 + secondlyRate, secondsPassed);
@@ -620,7 +763,14 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
                           return (
                             <>
                               <p className="font-bold text-lg text-emerald-500">+{formatAmount(earned)}</p>
-                              <p className="text-[9px] text-muted-foreground italic">{Math.round(daysPassed)} gün canlı birikim {isBES ? `(+%${g.rate || 30} Devlet Katkısı)` : ""}</p>
+                              <p className="text-[9px] text-muted-foreground italic">
+                                {Math.round(daysPassed)} gün canlı birikim
+                              </p>
+                              {isBES && (
+                                <p className="text-[9px] text-primary/70 font-bold mt-0.5">
+                                  + {formatAmount(stateContributionAmount)} Devlet Katkısı Bekleyen
+                                </p>
+                              )}
                             </>
                           );
                         })()}
@@ -629,18 +779,15 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
                         <div>
                           <p className="text-[9px] font-bold text-muted-foreground uppercase">1 Yıl Sonraki Tahmin</p>
                           {(() => {
-                            const fundReturns: Record<string, number> = {
-                              "STANDART": 0.45,
-                              "GOLD": 0.65,
-                              "STOCKS": 0.80,
-                              "USD": 0.35,
-                              "CONSERVATIVE": 0.40,
-                            };
-                            const fr = fundReturns[parseMeta(g.items[0]).fundType || "STANDART"] || 0.45;
+                            const fr = fundReturns[parseMeta(g.items[0]).fundType as keyof typeof fundReturns] || 0.45;
+                            const govtRate = (g.rate > 0 && g.rate <= 100 ? g.rate / 100 : 0.30);
+                            // Fon büyümesi ayrı, devlet katkısı ayrı
+                            const fundGrowth = g.totalQuantity * (1 + fr);
+                            const govtContrib = g.totalQuantity * govtRate * (1 + fr); // Devlet katkısı da fonlarda değerlenir
                             return (
                               <p className={cn("font-bold text-xl", accentColor)}>
                                 {formatAmount(isBES
-                                  ? (g.totalQuantity * (1 + fr)) * (1 + (g.rate || 30) / 100)
+                                  ? fundGrowth + govtContrib
                                   : g.totalQuantity * Math.pow(1 + g.rate / 12 / 100, 12))}
                               </p>
                             );
@@ -649,18 +796,14 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
                         <div className="text-right">
                           <p className="text-[9px] font-bold text-emerald-500 uppercase">Yıllık Tahmini Kazanç</p>
                           {(() => {
-                            const fundReturns: Record<string, number> = {
-                              "STANDART": 0.45,
-                              "GOLD": 0.65,
-                              "STOCKS": 0.80,
-                              "USD": 0.35,
-                              "CONSERVATIVE": 0.40,
-                            };
-                            const fr = fundReturns[parseMeta(g.items[0]).fundType || "STANDART"] || 0.45;
+                            const fr = fundReturns[parseMeta(g.items[0]).fundType as keyof typeof fundReturns] || 0.45;
+                            const govtRate = (g.rate > 0 && g.rate <= 100 ? g.rate / 100 : 0.30);
+                            const fundGrowth = g.totalQuantity * (1 + fr);
+                            const govtContrib = g.totalQuantity * govtRate * (1 + fr);
                             return (
                               <p className="font-bold text-emerald-500">
                                 +{formatAmount(isBES
-                                  ? ((g.totalQuantity * (1 + fr) * (1 + (g.rate || 30) / 100)) - g.totalQuantity)
+                                  ? (fundGrowth + govtContrib) - g.totalQuantity
                                   : (g.totalQuantity * (Math.pow(1 + g.rate / 12 / 100, 12) - 1)))}
                               </p>
                             );
@@ -671,39 +814,22 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
                   </div>
                   {isExp && (
                     <div className="border-t border-border/10 bg-muted/30 p-4 space-y-4 animate-in slide-in-from-top-2 duration-300">
-                      {/* Katkı Payı Ekleme Alanı */}
-                      <div className={cn("rounded-2xl p-4 border mb-2", isBES ? "bg-primary/5 border-primary/10" : "bg-yellow-500/5 border-yellow-500/10")}>
-                        <p className={cn("text-[10px] font-bold uppercase tracking-widest mb-3 flex items-center gap-2", isBES ? "text-primary" : "text-yellow-600")}>
-                          <Plus className="h-3 w-3" /> {isBES ? "Aylık Katkı Payı / Ödeme Ekle" : "Vadeye Para Ekle"}
-                        </p>
-                        <div className="flex gap-2">
-                          <div className="relative flex-1">
-                            <span className={cn("absolute left-4 top-1/2 -translate-y-1/2 font-bold", isBES ? "text-primary/40" : "text-yellow-600/40")}>₺</span>
-                            <Input
-                              type="number"
-                              placeholder={isBES ? "Örn: 2500" : "Eklenecek tutar"}
-                              className={cn("h-11 pl-8 rounded-xl bg-card font-bold text-sm", isBES ? "border-primary/20 focus:ring-primary" : "border-yellow-500/20 focus:ring-yellow-500")}
-                              id={`contrib-${g.symbol}`}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") {
-                                  const val = (document.getElementById(`contrib-${g.symbol}`) as HTMLInputElement).value;
-                                  if (val) { handleAddContribution(g.items[0].id, Number(val)); (e.target as HTMLInputElement).value = ""; }
-                                }
-                              }}
-                            />
-                          </div>
-                          <Button
-                            onClick={() => {
-                              const val = (document.getElementById(`contrib-${g.symbol}`) as HTMLInputElement).value;
-                              if (val) { handleAddContribution(g.items[0].id, Number(val)); (document.getElementById(`contrib-${g.symbol}`) as HTMLInputElement).value = ""; }
-                            }}
-                            disabled={loading}
-                            className={cn("h-11 rounded-xl px-6 font-bold shadow-sm transition-all", isBES ? "bg-primary hover:shadow-primary/20" : "bg-yellow-500 text-yellow-950 hover:bg-yellow-600 hover:shadow-yellow-500/20")}
-                          >
-                            {loading ? "..." : "Ekle"}
-                          </Button>
-                        </div>
-                      </div>
+                      {/* Katkı Payı Ekleme Düğmesi */}
+                      <Button
+                        onClick={() => {
+                          setContribAmount("");
+                          setContributionModalState({ isOpen: true, assetId: g.items[0].id, symbol: g.symbol });
+                        }}
+                        className={cn(
+                          "w-full h-12 rounded-xl font-bold transition-all flex items-center justify-center gap-2 mb-2 shadow-sm",
+                          isBES 
+                            ? "bg-primary/10 text-primary border border-primary/20 hover:bg-primary/25" 
+                            : "bg-yellow-500/10 text-yellow-600 border border-yellow-500/20 hover:bg-yellow-500/25"
+                        )}
+                      >
+                        <Plus className="h-4 w-4" />
+                        {isBES ? "Aylık Katkı Payı / Ödeme Ekle" : "Vadeye Para Ekle"}
+                      </Button>
 
                       <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">İşlem Geçmişi / Kayıtlar</p>
                       {g.items.map(item => {
@@ -721,7 +847,7 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
                             <Button
                               size="icon"
                               variant="ghost"
-                              onClick={e => { e.stopPropagation(); handleDelete(item.id); }}
+                              onClick={e => { e.stopPropagation(); setDeleteModalState({ isOpen: true, assetId: item.id }); }}
                               className="h-8 w-8 rounded-full text-rose-500 hover:bg-rose-500/10 hover:text-rose-500 opacity-0 group-hover/item:opacity-100 transition-all"
                             >
                               <Trash2 className="h-4 w-4" />
@@ -779,8 +905,13 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
                     <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest min-h-[32px] flex items-end mb-2">Tahmini Yıllık Getiri (%)</Label>
                     <Input
                       type="number"
+                      min="1"
+                      max="200"
                       value={projReturn}
-                      onChange={e => setProjReturn(Number(e.target.value))}
+                      onChange={e => {
+                        const v = Math.min(200, Math.max(1, Number(e.target.value)));
+                        setProjReturn(v);
+                      }}
                       className="h-11 rounded-xl bg-muted/50 border-border/30 font-bold"
                     />
                   </div>
@@ -910,6 +1041,130 @@ export function BesFaizDetail({ type, investments }: BesFaizDetailProps) {
           )}
         </div>
       </div>
+      
+      {/* Silme Onay Modalı (Custom Popup) */}
+      {deleteModalState.isOpen && deleteModalState.assetId && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-card border border-border/20 shadow-2xl rounded-[32px] w-full max-w-md p-6 animate-in zoom-in-95 duration-300 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-rose-500/10 to-transparent rounded-full pointer-events-none" />
+            
+            <div className="flex flex-col items-center text-center space-y-4">
+              <div className="w-14 h-14 bg-rose-500/10 rounded-full flex items-center justify-center text-rose-500 border border-rose-500/20 shadow-inner">
+                <Trash2 className="h-6 w-6" />
+              </div>
+              
+              <div className="space-y-2">
+                <h3 className="text-lg font-heading font-black text-primary">
+                  Yatırım Kaydını Sil
+                </h3>
+                <p className="text-sm text-muted-foreground font-medium px-2">
+                  Bu yatırım kaydını kalıcı olarak silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-8 justify-end">
+              <Button
+                variant="outline"
+                onClick={() => setDeleteModalState({ isOpen: false, assetId: null })}
+                className="rounded-2xl flex-1 h-[48px] font-semibold border-border/30 hover:bg-muted"
+                disabled={loading}
+              >
+                Vazgeç
+              </Button>
+              <Button
+                onClick={() => {
+                  if (deleteModalState.assetId) {
+                    handleDelete(deleteModalState.assetId);
+                  }
+                }}
+                className="rounded-2xl flex-1 h-[48px] font-semibold bg-rose-500 hover:bg-rose-600 text-white shadow-lg shadow-rose-500/20"
+                disabled={loading}
+              >
+                {loading ? "Siliniyor..." : "Evet, Sil"}
+              </Button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Katkı Payı / Para Ekleme Modalı (Custom Popup) */}
+      {contributionModalState.isOpen && contributionModalState.assetId && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-card border border-border/20 shadow-2xl rounded-[32px] w-full max-w-md p-6 animate-in zoom-in-95 duration-300 relative overflow-hidden">
+            <CardHeader className="p-0 mb-6 flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="text-lg font-heading text-primary">
+                  {isBES ? "Aylık Katkı Payı / Ödeme Ekle" : "Vadeli Hesaba Para Ekle"}
+                </CardTitle>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Hesap: <span className="font-bold text-primary">{contributionModalState.symbol}</span>
+                </p>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setContributionModalState({ isOpen: false, assetId: null, symbol: "" })}
+                className="h-8 w-8 rounded-full bg-muted/60 hover:bg-rose-50 hover:text-rose-500 text-muted-foreground transition-all shrink-0"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </CardHeader>
+            
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">
+                  {isBES ? "Ödeme Tutarı (₺)" : "Eklenecek Tutar (₺)"}
+                </Label>
+                <div className="relative">
+                  <span className={cn("absolute left-4 top-1/2 -translate-y-1/2 font-black text-sm", isBES ? "text-primary/40" : "text-yellow-600/40")}>₺</span>
+                  <Input
+                    type="number"
+                    placeholder={isBES ? "Örn: 2500" : "Eklenecek tutar"}
+                    value={contribAmount}
+                    onChange={e => setContribAmount(e.target.value ? Number(e.target.value) : "")}
+                    className="h-12 pl-8 rounded-xl bg-muted/50 border-border/30 font-bold text-sm"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && contribAmount && contribAmount > 0) {
+                        handleAddContribution(contributionModalState.assetId!, Number(contribAmount));
+                        setContributionModalState({ isOpen: false, assetId: null, symbol: "" });
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-8 justify-end">
+              <Button
+                variant="outline"
+                onClick={() => setContributionModalState({ isOpen: false, assetId: null, symbol: "" })}
+                className="rounded-2xl flex-1 h-[48px] font-semibold border-border/30 hover:bg-muted"
+                disabled={loading}
+              >
+                Vazgeç
+              </Button>
+              <Button
+                onClick={() => {
+                  if (contribAmount && contribAmount > 0) {
+                    handleAddContribution(contributionModalState.assetId!, Number(contribAmount));
+                    setContributionModalState({ isOpen: false, assetId: null, symbol: "" });
+                  }
+                }}
+                className={cn(
+                  "rounded-2xl flex-1 h-[48px] font-semibold text-white shadow-lg",
+                  isBES ? "bg-primary hover:bg-primary/95 shadow-primary/20" : "bg-yellow-500 hover:bg-yellow-600 text-yellow-950 shadow-yellow-500/20"
+                )}
+                disabled={loading || !contribAmount || contribAmount <= 0}
+              >
+                {loading ? "Kaydediliyor..." : "Para Ekle"}
+              </Button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }

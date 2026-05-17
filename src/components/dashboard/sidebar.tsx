@@ -276,7 +276,7 @@ export function Sidebar({ isCollapsed, onToggle, hideToggle, theme, onToggleThem
         isCollapsed ? "flex-col items-center gap-6" : "items-center justify-between px-6 bg-muted/30"
       )}>
         <div className={cn(
-          "flex items-center overflow-hidden",
+          "flex items-center",
           isCollapsed ? "justify-center" : "gap-3"
         )}>
           <UserButton

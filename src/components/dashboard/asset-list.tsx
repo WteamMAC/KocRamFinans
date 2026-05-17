@@ -22,7 +22,10 @@ import {
   RefreshCw,
   LayoutGrid,
   Coins,
-  Globe
+  Globe,
+  FileSpreadsheet,
+  FileText,
+  Code
 } from "lucide-react";
 import { addAsset, deleteAsset, sellAsset, addFixedAsset, deleteFixedAsset } from "@/app/actions/assets";
 import { useRouter } from "next/navigation";
@@ -32,6 +35,7 @@ import { PortfolioChart } from "./portfolio-chart";
 import { CompactCurrencyCalculator } from "./compact-currency-calculator";
 import { AssetForm } from "./asset-form";
 import { useCurrency } from "@/context/currency-context";
+import * as XLSX from "xlsx";
 
 const getUnitLabel = (type: string, symbol: string | null) => {
   const sym = (symbol || "").toUpperCase();
@@ -106,11 +110,14 @@ export function AssetList({
   const [isAdding, setIsAdding] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [deleteAssetId, setDeleteAssetId] = useState<string | null>(null);
+  const [deleteFixedAssetId, setDeleteFixedAssetId] = useState<string | null>(null);
 
   const [expandedSymbol, setExpandedSymbol] = useState<string | null>(null);
   const [filterQuery, setFilterQuery] = useState("");
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
   const [activeTab, setActiveTab] = useState<"financial" | "fixed">(defaultTab);
   const [sellModalState, setSellModalState] = useState<{ assetId: string | null }>({ assetId: null });
 
@@ -175,6 +182,84 @@ export function AssetList({
   const history = [...allInvestments].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
+
+  const exportFinancialToExcel = () => {
+    const dataToExport = Object.values(groupedAssets).map((g: any) => {
+      const totalValue = g.totalQuantity * (g.currentPrice || 0);
+      const profit = totalValue - g.totalCost;
+      const rate = rates[displayCurrency] || 1;
+      return {
+        "Varlık": g.symbol,
+        "Tür": g.type,
+        "Miktar": g.totalQuantity,
+        [`Maliyet (${displayCurrency})`]: Number((g.totalCost / rate).toFixed(2)),
+        [`Anlık Fiyat (${displayCurrency})`]: Number(((g.currentPrice || 0) / rate).toFixed(2)),
+        [`Toplam Değer (${displayCurrency})`]: Number((totalValue / rate).toFixed(2)),
+        [`Kar/Zarar (${displayCurrency})`]: Number((profit / rate).toFixed(2))
+      };
+    });
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Finansal Yatırımlar");
+    XLSX.writeFile(workbook, `portfoy_yatirimlari_${displayCurrency}.xlsx`);
+  };
+
+  const exportFinancialToJSON = () => {
+    const dataToExport = Object.values(groupedAssets).map((g: any) => {
+      const totalValue = g.totalQuantity * (g.currentPrice || 0);
+      const profit = totalValue - g.totalCost;
+      const rate = rates[displayCurrency] || 1;
+      return {
+        symbol: g.symbol,
+        type: g.type,
+        quantity: g.totalQuantity,
+        cost: Number((g.totalCost / rate).toFixed(2)),
+        currentPrice: Number(((g.currentPrice || 0) / rate).toFixed(2)),
+        totalValue: Number((totalValue / rate).toFixed(2)),
+        profit: Number((profit / rate).toFixed(2))
+      };
+    });
+    const jsonContent = "data:text/json;charset=utf-8,\uFEFF" + encodeURIComponent(JSON.stringify(dataToExport, null, 2));
+    const link = document.createElement("a");
+    link.setAttribute("href", jsonContent);
+    link.setAttribute("download", `portfoy_yatirimlari_${displayCurrency}.json`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const exportFixedToExcel = () => {
+    const dataToExport = (fixedAssets || []).map((a) => {
+      const rate = rates[displayCurrency] || 1;
+      return {
+        "Sabit Varlık": a.name,
+        "Kategori/Tür": a.type,
+        [`Değer (${displayCurrency})`]: Number((a.value / rate).toFixed(2))
+      };
+    });
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Sabit Varlıklar");
+    XLSX.writeFile(workbook, `sabit_varliklar_${displayCurrency}.xlsx`);
+  };
+
+  const exportFixedToJSON = () => {
+    const dataToExport = (fixedAssets || []).map((a) => {
+      const rate = rates[displayCurrency] || 1;
+      return {
+        name: a.name,
+        type: a.type,
+        value: Number((a.value / rate).toFixed(2))
+      };
+    });
+    const jsonContent = "data:text/json;charset=utf-8,\uFEFF" + encodeURIComponent(JSON.stringify(dataToExport, null, 2));
+    const link = document.createElement("a");
+    link.setAttribute("href", jsonContent);
+    link.setAttribute("download", `sabit_varliklar_${displayCurrency}.json`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const handleExportCSV = () => {
     const headers = ["Sembol", "Tur", "Miktar", `Maliyet (${displayCurrency})`, `Anlik Fiyat (${displayCurrency})`, `Toplam Deger (${displayCurrency})`, `Kar/Zarar (${displayCurrency})`];
@@ -275,10 +360,15 @@ export function AssetList({
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Bu kaydı tamamen silmek istediğinize emin misiniz?")) return;
+    setDeleteAssetId(id);
+  }
+
+  async function confirmDeleteAsset() {
+    if (!deleteAssetId) return;
+    setDeleteAssetId(null);
     setLoading(true);
     try {
-      await deleteAsset(id);
+      await deleteAsset(deleteAssetId);
       await new Promise(r => setTimeout(r, 500));
       router.refresh();
     } catch (err: any) {
@@ -321,10 +411,15 @@ export function AssetList({
   }
 
   async function handleDeleteFixed(id: string) {
-    if (!confirm("Bu sabit varlığı silmek istediğinize emin misiniz?")) return;
+    setDeleteFixedAssetId(id);
+  }
+
+  async function confirmDeleteFixedAsset() {
+    if (!deleteFixedAssetId) return;
+    setDeleteFixedAssetId(null);
     setLoading(true);
     try {
-      await deleteFixedAsset(id);
+      await deleteFixedAsset(deleteFixedAssetId);
       await new Promise(r => setTimeout(r, 500));
       router.refresh();
     } catch (err: any) {
@@ -384,7 +479,7 @@ export function AssetList({
         <div className="grid grid-cols-2 md:flex md:items-center gap-3 mt-4 md:mt-0 w-full md:w-auto">
           <Button
             variant="outline"
-            onClick={activeTab === "financial" ? handleExportCSV : handleExportFixedCSV}
+            onClick={() => setShowExportModal(true)}
             className="rounded-2xl px-4 md:px-5 h-[48px] md:h-[52px] text-xs md:text-sm font-semibold text-primary border-border/30 hover:bg-primary/5 bg-card shadow-ambient-low transition-all duration-300"
           >
             <Download className="mr-2 h-4 w-4" />
@@ -850,6 +945,134 @@ export function AssetList({
               <Button variant="outline" className="rounded-full" onClick={() => setSellModalState({ assetId: null })}>
                 Vazgeç
               </Button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Export Selection Modal */}
+      {showExportModal && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-card border border-border/20 rounded-[32px] shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-300">
+            <div className="p-6 border-b border-border/20 flex justify-between items-center bg-muted/30">
+              <div>
+                <h3 className="text-xl font-heading font-bold text-primary flex items-center gap-2">
+                  <Download className="h-5 w-5 text-accent animate-pulse" />
+                  Dışa Aktarma Formatı Seçin
+                </h3>
+                <p className="text-xs text-muted-foreground mt-1">Varlıklarınızı hangi formatta indirmek istersiniz?</p>
+              </div>
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full bg-card shadow-sm border border-border/30 hover:bg-rose-500/10 hover:text-rose-500 transition-colors" onClick={() => setShowExportModal(false)}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              {[
+                {
+                  id: "excel",
+                  title: "Excel Belgesi (.xlsx)",
+                  desc: "E-tablo formatında, renkli sütunlar ve otomatik biçimlendirme ile indirir.",
+                  icon: FileSpreadsheet,
+                  color: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20",
+                  action: () => {
+                    if (activeTab === "financial") exportFinancialToExcel();
+                    else exportFixedToExcel();
+                    setShowExportModal(false);
+                  }
+                },
+                {
+                  id: "csv",
+                  title: "CSV Tablosu (.csv)",
+                  desc: "Hafif, virgülle ayrılmış düz metin tablosu olarak indirir.",
+                  icon: FileText,
+                  color: "bg-blue-500/10 text-blue-500 border-blue-500/20 hover:bg-blue-500/20",
+                  action: () => {
+                    if (activeTab === "financial") handleExportCSV();
+                    else handleExportFixedCSV();
+                    setShowExportModal(false);
+                  }
+                },
+                {
+                  id: "json",
+                  title: "JSON Verisi (.json)",
+                  desc: "Yazılımcılar ve entegrasyonlar için yapılandırılmış veri dosyası indirir.",
+                  icon: Code,
+                  color: "bg-amber-500/10 text-amber-500 border-amber-500/20 hover:bg-amber-500/20",
+                  action: () => {
+                    if (activeTab === "financial") exportFinancialToJSON();
+                    else exportFixedToJSON();
+                    setShowExportModal(false);
+                  }
+                }
+              ].map((opt) => (
+                <button
+                  key={opt.id}
+                  onClick={opt.action}
+                  className="w-full text-left flex items-start gap-4 p-4 rounded-2xl border border-border/10 bg-muted/20 hover:bg-muted/40 transition-all duration-300 group shadow-sm active:scale-[0.99]"
+                >
+                  <div className={cn("p-3 rounded-xl transition-all duration-300", opt.color)}>
+                    <opt.icon className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-primary group-hover:text-accent transition-colors">{opt.title}</h4>
+                    <p className="text-[11px] text-muted-foreground leading-relaxed mt-0.5">{opt.desc}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Delete Financial Asset Confirmation Modal */}
+      {deleteAssetId && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-card border border-border/20 rounded-[32px] w-full max-w-sm shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+            <div className="p-8 text-center space-y-6">
+              <div className="w-16 h-16 bg-rose-500/10 rounded-full flex items-center justify-center mx-auto text-rose-500 animate-pulse">
+                <Trash2 className="h-8 w-8" />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-lg font-black text-foreground">Varlığı Sil?</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Bu finansal varlık kaydını tamamen silmek istediğinize emin misiniz? Bu işlem geri alınamaz.
+                </p>
+              </div>
+              <div className="flex gap-3">
+                <Button variant="ghost" onClick={() => setDeleteAssetId(null)} className="flex-1 h-12 rounded-2xl font-bold hover:bg-muted">Vazgeç</Button>
+                <Button onClick={confirmDeleteAsset} disabled={loading} className="flex-1 h-12 rounded-2xl font-bold bg-rose-500 text-white hover:bg-rose-600 shadow-lg shadow-rose-500/20">
+                  {loading ? "Siliniyor..." : "Evet, Sil"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Delete Fixed Asset Confirmation Modal */}
+      {deleteFixedAssetId && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-card border border-border/20 rounded-[32px] w-full max-w-sm shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+            <div className="p-8 text-center space-y-6">
+              <div className="w-16 h-16 bg-rose-500/10 rounded-full flex items-center justify-center mx-auto text-rose-500 animate-pulse">
+                <Trash2 className="h-8 w-8" />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-lg font-black text-foreground">Sabit Varlığı Sil?</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Bu sabit varlık kaydını silmek istediğinize emin misiniz? Bu işlem geri alınamaz.
+                </p>
+              </div>
+              <div className="flex gap-3">
+                <Button variant="ghost" onClick={() => setDeleteFixedAssetId(null)} className="flex-1 h-12 rounded-2xl font-bold hover:bg-muted">Vazgeç</Button>
+                <Button onClick={confirmDeleteFixedAsset} disabled={loading} className="flex-1 h-12 rounded-2xl font-bold bg-rose-500 text-white hover:bg-rose-600 shadow-lg shadow-rose-500/20">
+                  {loading ? "Siliniyor..." : "Evet, Sil"}
+                </Button>
+              </div>
             </div>
           </div>
         </div>,

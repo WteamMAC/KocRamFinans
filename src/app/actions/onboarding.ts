@@ -73,14 +73,40 @@ export async function completeOnboarding(formData: {
       email = `${email.split("@")[0]}_${Math.random().toString(36).substring(2, 8)}@kocramfinans.internal`;
     }
 
-    const existingUsername = await prisma.user.findUnique({ where: { username } });
+    let existingUsername = await prisma.user.findUnique({ where: { username } });
     if (existingUsername && existingUsername.clerkUserId !== userId) {
-      // Eğer kullanıcı adı başkası tarafından alınmışsa ve formdan gelmişse hata ver
-      if (formData.username) {
-        return { success: false, error: "Bu kullanıcı adı zaten alınmış. Lütfen başka bir tane seçin." };
+      // Çakışan kullanıcının Clerk'te gerçekten aktif olup olmadığını kontrol et
+      let oldUserExists = true;
+      try {
+        const clerk = await clerkClient();
+        await clerk.users.getUser(existingUsername.clerkUserId);
+      } catch (e: any) {
+        // Eğer Clerk kullanıcısı bulunamadıysa (404), bu hesap silinmiştir.
+        if (e.status === 404 || e.message?.includes("not found") || e.code === "not_found") {
+          oldUserExists = false;
+        }
       }
-      // Clerk'ten gelen isim çakışıyorsa son çare olarak benzersizleştir
-      username = `${username}_${Math.random().toString(36).substring(2, 8)}`;
+
+      if (!oldUserExists) {
+        // Silinmiş eski kullanıcının veritabanımızdaki artığını temizle/boşa çıkar
+        try {
+          await prisma.user.delete({ where: { id: existingUsername.id } });
+        } catch {
+          await prisma.user.update({
+            where: { id: existingUsername.id },
+            data: { username: null }
+          });
+        }
+        // Artık çakışma kalmadı!
+        existingUsername = null;
+      } else {
+        // Eğer çakışan kullanıcı gerçekten aktifse:
+        if (formData.username) {
+          return { success: false, error: "Bu kullanıcı adı zaten alınmış. Lütfen başka bir tane seçin." };
+        }
+        // Clerk'ten gelen isim çakışıyorsa son çare olarak benzersizleştir
+        username = `${username}_${Math.random().toString(36).substring(2, 8)}`;
+      }
     }
 
     // Mevcut bir kullanıcı var mı kontrol et
