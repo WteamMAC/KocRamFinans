@@ -288,8 +288,6 @@ export function OnboardingForm() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [showSearch, setShowSearch] = useState(false);
-  const [useCurrentPrice, setUseCurrentPrice] = useState(false);
-  const [fetchingLive, setFetchingLive] = useState(false);
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(async () => {
@@ -305,50 +303,11 @@ export function OnboardingForm() {
     return () => clearTimeout(delayDebounceFn);
   }, [searchQuery, activeAssetModal]);
 
-  const fetchCurrentPriceForSymbol = async (sym: string) => {
-    setFetchingLive(true);
-    try {
-      let querySym = sym.split(" ")[0].trim().toUpperCase();
-      if (activeAssetModal === "CRYPTO" && !querySym.includes("-USD") && !querySym.includes("USDT") && !querySym.includes("BTC")) {
-        querySym = `${querySym}-USD`;
-      }
-      if (activeAssetModal === "BIST" && !querySym.includes(".IS")) {
-        querySym = `${querySym}.IS`;
-      }
-      const price = await getSymbolLivePriceAction(querySym);
-      if (price > 0) {
-        const q = parseFloat(modalAssetData.quantity) || 1;
-        setModalAssetData(prev => ({
-          ...prev,
-          purchasePrice: price.toFixed(2),
-          amount: (q * price).toFixed(2)
-        }));
-      } else {
-        alert("Canlı fiyat bulunamadı, lütfen sembolü kontrol ediniz (Örn: THYAO.IS, BTC-USD)");
-      }
-    } catch {
-      alert("Fiyat çekilirken hata oluştu.");
-    } finally {
-      setFetchingLive(false);
-    }
-  };
-
-  const handleToggleCurrentPrice = async () => {
-    const nextState = !useCurrentPrice;
-    setUseCurrentPrice(nextState);
-    if (nextState && modalAssetData.symbol) {
-      await fetchCurrentPriceForSymbol(modalAssetData.symbol);
-    }
-  };
-
   const handleSelectSearchResult = async (sym: string, name?: string) => {
     setShowSearch(false);
     const desc = name || modalAssetData.description;
     setModalAssetData(prev => ({ ...prev, symbol: sym, description: desc }));
     setSearchQuery(sym);
-    if (useCurrentPrice) {
-      await fetchCurrentPriceForSymbol(sym);
-    }
   };
 
   const handleQuantityChange = (val: string) => {
@@ -367,7 +326,6 @@ export function OnboardingForm() {
     setActiveAssetModal(type);
     setSearchQuery("");
     setShowSearch(false);
-    setUseCurrentPrice(false);
     setModalAssetData({
       symbol: "",
       amount: "",
@@ -599,7 +557,7 @@ export function OnboardingForm() {
                   {step > s.id ? <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : s.id}
                 </div>
                 {i < arr.length - 1 && (
-                  <div className={cn("w-6 sm:w-14 h-0.5 mx-1 sm:mx-2 rounded-full transition-all duration-500 shrink-0", 
+                  <div className={cn("w-6 sm:w-14 h-0.5 mx-1 sm:mx-2 rounded-full transition-all duration-500 shrink-0",
                     step > s.id ? "bg-[#b07d4b] dark:bg-[#ffb874]/80" : "bg-[#dbc2b0]/40 dark:bg-[#887364]/30"
                   )} />
                 )}
@@ -1209,7 +1167,6 @@ export function OnboardingForm() {
                           onClick={() => {
                             setModalAssetData(prev => ({ ...prev, symbol: item.symbol, description: item.name }));
                             setSearchQuery(item.symbol);
-                            if (useCurrentPrice) fetchCurrentPriceForSymbol(item.symbol);
                           }}
                           className="text-[10px] font-bold px-2.5 py-1.5 rounded-lg bg-[#8C5000]/10 text-[#8C5000] dark:text-[#ffb874] border border-[#8C5000]/20 hover:bg-[#8C5000]/20 transition-all"
                         >
@@ -1258,24 +1215,11 @@ export function OnboardingForm() {
                         <Input
                           type="number"
                           step="0.01"
-                          disabled={useCurrentPrice}
                           value={modalAssetData.purchasePrice}
                           onChange={e => handlePriceChange(e.target.value)}
                           placeholder="0.00"
                           className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-bold border-[#dbc2b0]/50 dark:border-[#887364]/40"
                         />
-                        {activeAssetModal !== "FAIZ" && activeAssetModal !== "BES" && (
-                          <Button
-                            type="button"
-                            variant={useCurrentPrice ? "default" : "outline"}
-                            onClick={handleToggleCurrentPrice}
-                            className={cn("h-11 px-3 rounded-xl font-bold text-[11px] transition-all shrink-0 border-[#dbc2b0]/50 dark:border-[#887364]/40",
-                              useCurrentPrice ? "bg-[#8C5000] dark:bg-[#ffb874] text-white dark:text-[#120d0a] shadow-md" : "bg-[#faf9f6] dark:bg-[#120d0a] text-muted-foreground")}
-                          >
-                            <Clock className="w-3.5 h-3.5 mr-1" />
-                            {fetchingLive ? "..." : "Güncel"}
-                          </Button>
-                        )}
                       </div>
                     </div>
                     <div>

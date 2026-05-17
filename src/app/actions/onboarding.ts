@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { auth, currentUser, clerkClient } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
+import { getLivePrices } from "@/lib/price-service";
 
 export async function completeOnboarding(formData: {
   username?: string;
@@ -14,6 +15,10 @@ export async function completeOnboarding(formData: {
   country?: string;
   interests?: string[];
   familyCount: number;
+  maritalStatus?: string;
+  marriageDate?: string;
+  hasChildren?: boolean;
+  children?: { birthDate: string }[];
   incomes: { type: string; amount: number; date?: string; description?: string; currency?: string }[];
   expenses: { type: string; amount: number; date?: string; isRecurring: boolean; description?: string; currency?: string }[];
   debts: { type: string; amount: number; remainingInstallments?: number; description?: string; currency?: string }[];
@@ -124,6 +129,8 @@ export async function completeOnboarding(formData: {
           country: formData.country,
           interests: formData.interests ?? user.interests,
           familyCount: formData.familyCount ?? 1,
+          maritalStatus: formData.maritalStatus ?? "Bekar",
+          hasChildren: formData.hasChildren ?? false,
         }
       });
     } else {
@@ -142,6 +149,8 @@ export async function completeOnboarding(formData: {
           country: formData.country,
           interests: formData.interests ?? [],
           familyCount: formData.familyCount ?? 1,
+          maritalStatus: formData.maritalStatus ?? "Bekar",
+          hasChildren: formData.hasChildren ?? false,
         }
       });
     }
@@ -154,17 +163,43 @@ export async function completeOnboarding(formData: {
     await prisma.debt.deleteMany({ where: { userId: user.id } });
     await prisma.investment.deleteMany({ where: { userId: user.id, status: "OPEN" } });
     await prisma.fixedAsset.deleteMany({ where: { userId: user.id } });
+    await prisma.child.deleteMany({ where: { userId: user.id } });
+
+    // Döviz kurlarını getir (Borçlar ve Giderler için çevrim)
+    let rates: Record<string, number> = { TRY: 1 };
+    try {
+      const livePrices = await getLivePrices(["USDTRY=X", "EURTRY=X", "GBPTRY=X", "XAUTRY=X"]);
+      rates = {
+        TRY: 1,
+        USD: livePrices.get("USDTRY=X")?.price || 36.45,
+        EUR: livePrices.get("EURTRY=X")?.price || 38.65,
+        GBP: livePrices.get("GBPTRY=X")?.price || 45.85,
+        XAU: livePrices.get("XAUTRY=X")?.price || 3450,
+      };
+    } catch (e) {
+      console.error("Live prices fetch error in onboarding:", e);
+    }
+
+    const getRate = (currency?: string) => {
+      if (!currency) return 1;
+      return rates[currency.toUpperCase()] || 1;
+    };
 
     // Yeni ilişkili verileri ekle
     if ((formData.incomes ?? []).length > 0) {
       await prisma.income.createMany({
-        data: formData.incomes.map(inc => ({
-          type: inc.type, amount: Number(inc.amount) || 0,
-          date: inc.date ? new Date(inc.date) : new Date(),
-          description: inc.description,
-          currency: inc.currency || formData.currency || "TRY",
-          userId: user!.id,
-        })),
+        data: formData.incomes.map(inc => {
+          const cur = inc.currency || formData.currency || "TRY";
+          const rate = getRate(cur);
+          const amt = Number(inc.amount) || 0;
+          return {
+            type: inc.type, amount: amt * rate,
+            date: inc.date ? new Date(inc.date) : new Date(),
+            description: inc.description,
+            currency: cur,
+            userId: user!.id,
+          };
+        }),
       });
     }
 
@@ -172,11 +207,16 @@ export async function completeOnboarding(formData: {
       await prisma.expense.createMany({
         data: formData.expenses.map(exp => {
           const d = exp.date ? new Date(exp.date) : new Date();
+          const cur = exp.currency || formData.currency || "TRY";
+          const rate = getRate(cur);
+          const amt = Number(exp.amount) || 0;
           return {
-            type: exp.type, amount: Number(exp.amount) || 0,
+            type: exp.type, amount: amt * rate,
+            originalAmount: amt,
+            fxRate: rate,
             date: d, dueDate: d.getDate(), isRecurring: exp.isRecurring ?? true,
             description: exp.description,
-            currency: exp.currency || formData.currency || "TRY",
+            currency: cur,
             userId: user!.id,
           };
         }),
@@ -185,16 +225,31 @@ export async function completeOnboarding(formData: {
 
     if ((formData.debts ?? []).length > 0) {
       await prisma.debt.createMany({
-        data: formData.debts.map(d => ({
-          type: d.type, amount: Number(d.amount) || 0,
-          remainingInstallments: d.remainingInstallments,
-          description: d.description,
-          currency: d.currency || formData.currency || "TRY",
-          userId: user!.id,
-        })),
+        data: formData.debts.map(d => {
+          const cur = d.currency || formData.currency || "TRY";
+          const rate = getRate(cur);
+          const amt = Number(d.amount) || 0;
+          return {
+            type: d.type, amount: amt * rate,
+            principalAmount: amt * rate,
+            remainingInstallments: d.remainingInstallments,
+            description: d.description,
+            currency: cur,
+            originalAmount: amt,
+            fxRate: rate,
+            userId: user!.id,
+          };
+        }),
       });
     }
 
+    if ((formData.children ?? []).length > 0) {
+      await prisma.child.createMany({
+        data: (formData.children ?? []).map(c => ({
+          birthDate: new Date(c.birthDate), userId: user!.id,
+        })),
+      });
+    }
 
     if ((formData.investments ?? []).length > 0) {
       await prisma.investment.createMany({
