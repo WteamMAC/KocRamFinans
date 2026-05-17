@@ -32,10 +32,29 @@ export async function getLivePrices(symbols: string[]): Promise<Map<string, Pric
   const symbolsToFetchFromApi: string[] = [];
   const now = Date.now();
 
+  // Ekstra: BES yatırımlarındaki özel fundSymbol'leri veritabanından çekip listeye ekleyelim!
+  let dbFundSymbols: string[] = [];
+  try {
+    const besInvs = await prisma.investment.findMany({
+      where: { type: "BES", status: "OPEN" },
+      select: { description: true }
+    });
+    for (const inv of besInvs) {
+      if (inv.description) {
+        try {
+          const meta = JSON.parse(inv.description);
+          if (meta.fundSymbol) {
+            dbFundSymbols.push(meta.fundSymbol.toUpperCase());
+          }
+        } catch(e){}
+      }
+    }
+  } catch(e){}
+
   // Her zaman temel döviz ve emtia paritelerini işleyelim + BES fonları için BIST 100
   const coreBenchmarks = ["USDTRY=X", "EURTRY=X", "GBPTRY=X", "GC=F", "SI=F", "BZ=F", "XU100.IS"];
   const virtualSymbols = ["BES_GOLD_RETURN", "BES_STOCKS_RETURN", "BES_USD_RETURN", "BES_STANDART_RETURN", "BES_CONSERVATIVE_RETURN"];
-  const allSymbolsToProcess = Array.from(new Set([...symbols, ...coreBenchmarks, ...virtualSymbols]));
+  const allSymbolsToProcess = Array.from(new Set([...symbols, ...dbFundSymbols, ...coreBenchmarks, ...virtualSymbols]));
 
   // 1. Veritabanından mevcut önbellekleri çekelim (1 saatten yeniyse API'ye gitme!)
   try {
@@ -172,7 +191,11 @@ export async function getLivePrices(symbols: string[]): Promise<Map<string, Pric
           if (quote.currency === "USD" && !quote.symbol.endsWith("=X") && quote.symbol !== "GC=F" && quote.symbol !== "SI=F" && quote.symbol !== "BZ=F") {
             currentPrice = currentPrice * usdToTryRate;
           }
-          newMarketData.push({ symbol: quote.symbol.toUpperCase(), price: currentPrice, changePct: quote.regularMarketChangePercent || 0 });
+          // Özel yatırım fonları için yıllık değişim (fiftyTwoWeekChangePercent) değerini kullanalım
+          const annualChange = quote.fiftyTwoWeekChangePercent != null 
+            ? quote.fiftyTwoWeekChangePercent 
+            : (quote.regularMarketChangePercent || 0);
+          newMarketData.push({ symbol: quote.symbol.toUpperCase(), price: currentPrice, changePct: annualChange });
         }
       });
 
@@ -366,23 +389,42 @@ export function calculatePortfolioMetrics(investments: any[], livePrices: Map<st
           const liveVal = principal * multiplier;
           currentPrice = liveVal / principal; // Birim pay değeri
         } else if (isBes) {
-          // BES: Fon Büyümesi (Seçili fona göre) + Devlet Katkısı (%30 varsayılan)
+          // BES: Fon Büyümesi (Seçili fona göre veya özel fona göre) + Devlet Katkısı (%30 varsayılan)
           let fundType = "STANDART";
+          let fundSymbol: string | undefined = undefined;
           try {
             const meta = JSON.parse(inv.description || "{}");
             fundType = meta.fundType || "STANDART";
+            fundSymbol = meta.fundSymbol;
           } catch(e){}
 
-          // Fon bazlı yıllık getiri tahmini (Piyasa verilerine göre dinamikleşecek)
-          const fundReturns: Record<string, number> = {
-            "STANDART": livePrices.get("BES_STANDART_RETURN")?.price || 0.45,
-            "GOLD": livePrices.get("BES_GOLD_RETURN")?.price || 0.65, 
-            "STOCKS": livePrices.get("BES_STOCKS_RETURN")?.price || 0.80, 
-            "USD": livePrices.get("BES_USD_RETURN")?.price || 0.35, 
-            "CONSERVATIVE": livePrices.get("BES_CONSERVATIVE_RETURN")?.price || 0.40,
-          };
+          let annualFundGrowth = 0.45;
+          if (fundSymbol) {
+            // Eğer özel bir fon (BIST/TEFAS) sembolü seçilmişse, önbellekten yıllık getirisini (changePct) alalım!
+            const customLive = livePrices.get(fundSymbol.toUpperCase());
+            if (customLive && customLive.changePercent != null) {
+              annualFundGrowth = customLive.changePercent;
+            } else {
+              const fundReturns: Record<string, number> = {
+                "STANDART": livePrices.get("BES_STANDART_RETURN")?.price || 0.45,
+                "GOLD": livePrices.get("BES_GOLD_RETURN")?.price || 0.65, 
+                "STOCKS": livePrices.get("BES_STOCKS_RETURN")?.price || 0.80, 
+                "USD": livePrices.get("BES_USD_RETURN")?.price || 0.35, 
+                "CONSERVATIVE": livePrices.get("BES_CONSERVATIVE_RETURN")?.price || 0.40,
+              };
+              annualFundGrowth = fundReturns[fundType] || 0.45;
+            }
+          } else {
+            const fundReturns: Record<string, number> = {
+              "STANDART": livePrices.get("BES_STANDART_RETURN")?.price || 0.45,
+              "GOLD": livePrices.get("BES_GOLD_RETURN")?.price || 0.65, 
+              "STOCKS": livePrices.get("BES_STOCKS_RETURN")?.price || 0.80, 
+              "USD": livePrices.get("BES_USD_RETURN")?.price || 0.35, 
+              "CONSERVATIVE": livePrices.get("BES_CONSERVATIVE_RETURN")?.price || 0.40,
+            };
+            annualFundGrowth = fundReturns[fundType] || 0.45;
+          }
 
-          const annualFundGrowth = fundReturns[fundType] || 0.45;
           const dailyGrowthRate = annualFundGrowth / 365;
           const fundMultiplier = Math.pow(1 + dailyGrowthRate, daysPassed);
           const stateContributionMultiplier = 1 + (rate > 0 && rate <= 100 ? rate / 100 : 0.30);

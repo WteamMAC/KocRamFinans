@@ -8,11 +8,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Trash2, Plus, Shield, Landmark,
-  ChevronDown, RefreshCw, Sparkles
+  ChevronDown, RefreshCw, Sparkles,
+  Search, CheckCircle2
 } from "lucide-react";
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from "recharts";
 import { cn } from "@/lib/utils";
 import { deleteAsset, addAsset, fixMisclassifiedBesFaiz, addContributionToAsset } from "@/app/actions/assets";
+import { searchSymbolsAction } from "@/app/actions/market";
 import { useCurrency } from "@/context/currency-context";
 
 interface InvestmentItem {
@@ -36,6 +38,7 @@ interface ParsedMeta {
   rate: number;
   monthlyContribution: number;
   fundType?: string;
+  fundSymbol?: string;
   originalDescription: string;
   maturityPeriod?: number;
 }
@@ -47,6 +50,7 @@ function parseMeta(inv: InvestmentItem): ParsedMeta {
       rate: meta.rate || inv.purchasePrice || 0,
       monthlyContribution: meta.monthlyContribution || 0,
       fundType: meta.fundType || "STANDART",
+      fundSymbol: meta.fundSymbol || undefined,
       originalDescription: meta.originalDescription || (typeof inv.description === 'string' && !inv.description.startsWith('{') ? inv.description : ""),
       maturityPeriod: meta.maturityPeriod || 32, // Esk kayıtlar için varsayılan 32 gün
     };
@@ -75,6 +79,10 @@ export function BesFaizDetail({ type, investments, livePrices }: BesFaizDetailPr
   const [projMonthly, setProjMonthly] = useState(0); // only for BES
   const [projReturn, setProjReturn] = useState(() => Math.round((livePrices?.BES_STANDART_RETURN ?? 0.45) * 100));  // only for BES
 
+  const [besSearchQuery, setBesSearchQuery] = useState("");
+  const [besSearchResults, setBesSearchResults] = useState<any[]>([]);
+  const [showBesSearch, setShowBesSearch] = useState(false);
+
   const fundReturns = useMemo(() => {
     return {
       "STANDART": livePrices?.BES_STANDART_RETURN ?? 0.45,
@@ -90,10 +98,25 @@ export function BesFaizDetail({ type, investments, livePrices }: BesFaizDetailPr
     quantity: 0,
     purchasePrice: type === "BES" ? 30 : 45,
     description: "",
-    monthlyContribution: 0,
+    monthlyContribution: type === "BES" ? 2500 : 0,
     fundType: "STANDART",
+    fundSymbol: "",
     maturityPeriod: 32,
   });
+
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(async () => {
+      if (besSearchQuery.length >= 2 && !besSearchQuery.includes(" - ")) {
+        const results = await searchSymbolsAction(besSearchQuery, "BIST");
+        setBesSearchResults(results);
+        setShowBesSearch(true);
+      } else {
+        setBesSearchResults([]);
+        setShowBesSearch(false);
+      }
+    }, 300);
+    return () => clearTimeout(delayDebounceFn);
+  }, [besSearchQuery]);
 
   // Gerçek zamanlı saniyelik sayaç (Canlı Getiri hissi için)
   const [currentTime, setCurrentTime] = useState(() => Date.now());
@@ -252,8 +275,10 @@ export function BesFaizDetail({ type, investments, livePrices }: BesFaizDetailPr
         description: "",
         monthlyContribution: type === "BES" ? 2500 : 0,
         fundType: "STANDART",
+        fundSymbol: "",
         maturityPeriod: 32,
       });
+      setBesSearchQuery("");
     }
     setIsAdding(!isAdding);
   }
@@ -271,10 +296,12 @@ export function BesFaizDetail({ type, investments, livePrices }: BesFaizDetailPr
         description: formData.description,
         monthlyContribution: formData.monthlyContribution,
         fundType: formData.fundType,
+        fundSymbol: formData.fundSymbol || undefined,
         maturityPeriod: isBES ? undefined : formData.maturityPeriod,
       });
       setIsAdding(false);
-      setFormData({ symbol: "", quantity: 0, purchasePrice: 0, description: "", monthlyContribution: 0, fundType: "STANDART", maturityPeriod: 32 });
+      setFormData({ symbol: "", quantity: 0, purchasePrice: 0, description: "", monthlyContribution: 0, fundType: "STANDART", fundSymbol: "", maturityPeriod: 32 });
+      setBesSearchQuery("");
       router.refresh();
     } catch (err) {
       console.error(err);
@@ -429,20 +456,86 @@ export function BesFaizDetail({ type, investments, livePrices }: BesFaizDetailPr
               />
             </div>
             {isBES && (
-              <div className="space-y-2">
-                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                  Fon Türü (Piyasa Takibi İçin)
-                </Label>
-                <select
-                  value={formData.fundType}
-                  onChange={e => setFormData(p => ({ ...p, fundType: e.target.value }))}
-                  className="w-full h-12 rounded-xl bg-muted/50 border border-border/30 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-                >
-                  {BES_FUND_TYPES.map(ft => (
-                    <option key={ft.id} value={ft.id}>{ft.icon} {ft.name}</option>
-                  ))}
-                </select>
-              </div>
+              <>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                    Fon Sınıfı (Varsayılan Getiri Grubu)
+                  </Label>
+                  <select
+                    value={formData.fundType}
+                    onChange={e => setFormData(p => ({ ...p, fundType: e.target.value }))}
+                    className="w-full h-12 rounded-xl bg-muted/50 border border-border/30 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer font-medium"
+                  >
+                    {BES_FUND_TYPES.map(ft => (
+                      <option key={ft.id} value={ft.id}>{ft.icon} {ft.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* İnternetten Canlı Özel Fon Arama (TEFAS/BIST) */}
+                <div className="space-y-2 md:col-span-2 relative">
+                  <div className="flex justify-between items-center px-1">
+                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                      İnternetten Canlı Özel Fon Seçimi (TEFAS / BIST)
+                    </Label>
+                    <span className="text-[9px] font-bold text-muted-foreground bg-muted px-2 py-0.5 rounded-md uppercase tracking-wider">Opsiyonel</span>
+                  </div>
+                  
+                  <div className="relative">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-primary opacity-50" />
+                    <Input
+                      placeholder="Örn: AEG, ALR, TCD, MAC, AFT..."
+                      value={besSearchQuery}
+                      onChange={(e) => setBesSearchQuery(e.target.value)}
+                      className="pl-12 bg-muted/50 border-border/30 h-12 rounded-xl focus:ring-primary text-sm font-semibold"
+                    />
+                  </div>
+
+                  {/* Arama Sonuçları */}
+                  {showBesSearch && besSearchResults.length > 0 && (
+                    <div className="absolute z-[999] w-full bg-card/95 backdrop-blur-2xl border border-primary/20 shadow-2xl rounded-2xl overflow-hidden mt-1 max-h-48 overflow-y-auto">
+                      {besSearchResults.map((result, idx) => (
+                        <div
+                          key={idx}
+                          className="p-4 hover:bg-primary/5 cursor-pointer border-b border-border/10 last:border-0 transition-colors flex items-center justify-between group text-sm font-semibold"
+                          onClick={() => {
+                            setFormData(p => ({ ...p, fundSymbol: result.symbol }));
+                            setBesSearchQuery(`${result.symbol} - ${result.shortname || result.symbol}`);
+                            setShowBesSearch(false);
+                          }}
+                        >
+                          <div>
+                            <div className="text-xs font-bold text-primary">{result.symbol}</div>
+                            <div className="text-[10px] text-muted-foreground truncate max-w-[320px]">
+                              {result.shortname || result.symbol}
+                            </div>
+                          </div>
+                          <span className="text-[9px] text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded-full font-bold">
+                            Canlı Fiyat Bağlantısı
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {formData.fundSymbol && (
+                    <div className="flex items-center gap-2 text-xs font-bold text-emerald-500 bg-emerald-500/10 p-3 rounded-2xl border border-emerald-500/20 mt-2 animate-in fade-in duration-200">
+                      <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
+                      <span>Fon Canlı Bağlandı: {formData.fundSymbol}</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFormData(p => ({ ...p, fundSymbol: "" }));
+                          setBesSearchQuery("");
+                        }}
+                        className="ml-auto hover:text-rose-500 font-extrabold text-[10px] uppercase tracking-wider bg-muted px-2 py-1 rounded-md transition-colors"
+                      >
+                        Bağlantıyı Kaldır
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </>
             )}
             <div className="space-y-2">
               <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
@@ -549,9 +642,11 @@ export function BesFaizDetail({ type, investments, livePrices }: BesFaizDetailPr
                         </div>
                         <div>
                           <p className="font-bold text-foreground">{g.symbol}</p>
-                          {isBES && (
+                           {isBES && (
                             <p className="text-[9px] font-bold text-muted-foreground bg-muted px-1.5 py-0.5 rounded inline-block mb-1">
-                              {BES_FUND_TYPES.find(f => f.id === parseMeta(g.items[0]).fundType)?.name || "Karma Fon"}
+                              {parseMeta(g.items[0]).fundSymbol 
+                                ? `✨ Canlı Fon: ${parseMeta(g.items[0]).fundSymbol}`
+                                : `${BES_FUND_TYPES.find(f => f.id === parseMeta(g.items[0]).fundType)?.name || "Karma Fon"}`}
                             </p>
                           )}
                           <p className={cn("text-[11px] font-bold mt-0.5", accentColor)}>
@@ -564,10 +659,22 @@ export function BesFaizDetail({ type, investments, livePrices }: BesFaizDetailPr
                             </p>
                           ) : (
                             <div className="mt-1 space-y-1">
-                              <p className="text-[10px] font-black text-emerald-500 uppercase tracking-tighter flex items-center gap-1">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                Tahmini Günlük Fon Getirisi: ~{formatAmount((g.totalQuantity * (fundReturns[parseMeta(g.items[0]).fundType as keyof typeof fundReturns] || 0.45) * 100) / 365 / 100)}
-                              </p>
+                              {(() => {
+                                const meta = parseMeta(g.items[0]);
+                                let fundAnnualGrowth = fundReturns[meta.fundType as keyof typeof fundReturns] || 0.45;
+                                if (meta.fundSymbol && livePrices) {
+                                  const customLiveChange = livePrices[meta.fundSymbol.toUpperCase()];
+                                  if (customLiveChange != null) {
+                                    fundAnnualGrowth = customLiveChange;
+                                  }
+                                }
+                                return (
+                                  <p className="text-[10px] font-black text-emerald-500 uppercase tracking-tighter flex items-center gap-1">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                    Tahmini Günlük Fon Getirisi: ~{formatAmount((g.totalQuantity * fundAnnualGrowth) / 365)}
+                                  </p>
+                                );
+                              })()}
                               {parseMeta(g.items[0]).monthlyContribution > 0 && (
                                 <p className="text-[10px] font-bold text-primary bg-primary/5 px-2 py-0.5 rounded-md inline-block">
                                   Aylık Ödeme: {formatAmount(parseMeta(g.items[0]).monthlyContribution)}
