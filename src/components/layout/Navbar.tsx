@@ -30,6 +30,7 @@ export default function Navbar() {
           <Link className="text-muted-foreground hover:text-primary transition-colors text-sm font-semibold tracking-tight" href="/#hizmetler">Hizmetler</Link>
           <Link className="text-muted-foreground hover:text-primary transition-colors text-sm font-semibold tracking-tight" href="/hakkimizda">Hakkımızda</Link>
           <Link className="text-muted-foreground hover:text-primary transition-colors text-sm font-semibold tracking-tight" href="/#blog">Blog</Link>
+          <Link className="text-muted-foreground hover:text-primary transition-colors text-sm font-semibold tracking-tight" href="/#sss">SSS</Link>
         </nav>
         
         <div className="flex items-center gap-4">

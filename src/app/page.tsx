@@ -30,6 +30,21 @@ import { redirect } from "next/navigation";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 
+const LinkedinIcon = ({ className }: { className?: string }) => (
+  <svg 
+    className={className} 
+    fill="currentColor" 
+    viewBox="0 0 24 24" 
+    aria-hidden="true"
+  >
+    <path 
+      fillRule="evenodd" 
+      d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.779-1.75-1.75s.784-1.75 1.75-1.75 1.75.779 1.75 1.75-.784 1.75-1.75 1.75zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" 
+      clipRule="evenodd" 
+    />
+  </svg>
+);
+
 export default async function LandingPage() {
   const { userId } = await auth();
 
@@ -325,6 +340,119 @@ export default async function LandingPage() {
                   Birden fazla kredi, kredi kartı veya kişisel borcunuzu tek bir yapılandırma altında birleştirmenize imkan tanır. Kalan borç bakiyesini, ödediğiniz taksitleri ve toplam faiz yükünüzü tek bir ekrandan takip ederek borçlarınızdan çok daha hızlı ve planlı kurtullanızı sağlar.
                 </p>
               </details>
+            </div>
+          </div>
+        </section>
+
+        {/* Team Section */}
+        <section id="ekip" className="py-32 bg-background border-t border-border/10 px-6 md:px-8">
+          <div className="max-w-[1200px] mx-auto">
+            <div className="text-center max-w-2xl mx-auto mb-20">
+              <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full font-bold text-xs uppercase tracking-widest border border-primary/20 mb-4">
+                <Users className="h-4 w-4" />
+                <span>Ekibimiz</span>
+              </div>
+              <h2 className="font-heading text-4xl md:text-5xl text-foreground font-bold tracking-tight mb-6">
+                Projeyi Hazırlayanlar
+              </h2>
+              <p className="text-lg text-muted-foreground font-medium opacity-80">
+                Koç Ram Finans platformunu tasarlayan, geliştiren ve yapay zeka ile güçlendirerek hayata geçiren ekibimiz.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {/* Murat Efe Şahin */}
+              <div className="bg-card border border-border/20 rounded-[32px] p-8 shadow-ambient-low hover:shadow-ambient-medium hover:border-primary/20 transition-all duration-500 flex flex-col items-center text-center group relative overflow-hidden">
+                <div className="absolute inset-x-0 top-0 h-2 bg-gradient-to-r from-primary to-accent"></div>
+                <div className="relative mb-6">
+                  <div className="absolute inset-0 bg-primary/10 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                  <img 
+                    src="https://api.dicebear.com/7.x/avataaars/svg?seed=murat&eyebrows=defaultNatural&mouth=smile&hair=shortHair&top=shortWaved&backgroundColor=10b981&backgroundAlpha=15" 
+                    alt="Murat Efe Şahin" 
+                    className="w-32 h-32 rounded-full border-4 border-card shadow-ambient-medium group-hover:scale-105 transition-transform duration-500 relative z-10 bg-muted"
+                  />
+                </div>
+                <h3 className="text-2xl font-heading font-bold text-foreground mb-2 group-hover:text-primary transition-colors">
+                  Murat Efe Şahin
+                </h3>
+                <p className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-4">
+                  Kurucu & Kıdemli Finansal Yazılım Mühendisi
+                </p>
+                <p className="text-sm text-muted-foreground font-medium mb-8 leading-relaxed max-w-[240px]">
+                  Bütçe analizi, algoritma geliştirme ve sistem mimarisi üzerinde uzmanlaşmış yazılım mühendisi.
+                </p>
+                <a 
+                  href="https://www.linkedin.com/in/muratefesahin/" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="mt-auto inline-flex items-center justify-center gap-2 h-11 px-6 rounded-2xl bg-secondary hover:bg-secondary/90 text-secondary-foreground font-bold text-xs uppercase tracking-widest transition-all duration-300 shadow-md group-hover:scale-[1.02] active:scale-95"
+                >
+                  <LinkedinIcon className="h-4 w-4" />
+                  <span>LinkedIn'de Gör</span>
+                </a>
+              </div>
+
+              {/* Cemal Kılıç */}
+              <div className="bg-card border border-border/20 rounded-[32px] p-8 shadow-ambient-low hover:shadow-ambient-medium hover:border-primary/20 transition-all duration-500 flex flex-col items-center text-center group relative overflow-hidden">
+                <div className="absolute inset-x-0 top-0 h-2 bg-gradient-to-r from-accent to-tertiary"></div>
+                <div className="relative mb-6">
+                  <div className="absolute inset-0 bg-accent/10 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                  <img 
+                    src="https://api.dicebear.com/7.x/avataaars/svg?seed=cemal&eyebrows=flatNatural&mouth=smile&hair=shortHair&top=dreads01&backgroundColor=f59e0b&backgroundAlpha=15" 
+                    alt="Cemal Kılıç" 
+                    className="w-32 h-32 rounded-full border-4 border-card shadow-ambient-medium group-hover:scale-105 transition-transform duration-500 relative z-10 bg-muted"
+                  />
+                </div>
+                <h3 className="text-2xl font-heading font-bold text-foreground mb-2 group-hover:text-primary transition-colors">
+                  Cemal Kılıç
+                </h3>
+                <p className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-4">
+                  Kurucu & Yapay Zeka & Veri Mühendisi
+                </p>
+                <p className="text-sm text-muted-foreground font-medium mb-8 leading-relaxed max-w-[240px]">
+                  Büyük veri analizleri, makine öğrenimi modelleri ve yapay zeka entegrasyonu üzerine odaklanmış veri mühendisi.
+                </p>
+                <a 
+                  href="https://www.linkedin.com/in/cemalklc/" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="mt-auto inline-flex items-center justify-center gap-2 h-11 px-6 rounded-2xl bg-secondary hover:bg-secondary/90 text-secondary-foreground font-bold text-xs uppercase tracking-widest transition-all duration-300 shadow-md group-hover:scale-[1.02] active:scale-95"
+                >
+                  <LinkedinIcon className="h-4 w-4" />
+                  <span>LinkedIn'de Gör</span>
+                </a>
+              </div>
+
+              {/* Atakan Demirezen */}
+              <div className="bg-card border border-border/20 rounded-[32px] p-8 shadow-ambient-low hover:shadow-ambient-medium hover:border-primary/20 transition-all duration-500 flex flex-col items-center text-center group relative overflow-hidden">
+                <div className="absolute inset-x-0 top-0 h-2 bg-gradient-to-r from-tertiary to-primary"></div>
+                <div className="relative mb-6">
+                  <div className="absolute inset-0 bg-tertiary/10 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                  <img 
+                    src="https://api.dicebear.com/7.x/avataaars/svg?seed=atakan&eyebrows=defaultNatural&mouth=smile&hair=shortHair&top=frizzle&backgroundColor=3b82f6&backgroundAlpha=15" 
+                    alt="Atakan Demirezen" 
+                    className="w-32 h-32 rounded-full border-4 border-card shadow-ambient-medium group-hover:scale-105 transition-transform duration-500 relative z-10 bg-muted"
+                  />
+                </div>
+                <h3 className="text-2xl font-heading font-bold text-foreground mb-2 group-hover:text-primary transition-colors">
+                  Atakan Demirezen
+                </h3>
+                <p className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-4">
+                  Kurucu & Kıdemli Arayüz (UI/UX) Geliştirici
+                </p>
+                <p className="text-sm text-muted-foreground font-medium mb-8 leading-relaxed max-w-[240px]">
+                  Kullanıcı deneyimi, etkileşimli arayüz tasarımları ve modern web teknolojileri üzerinde uzmanlaşmış tasarımcı ve geliştirici.
+                </p>
+                <a 
+                  href="https://www.linkedin.com/in/atakan-demirezence/" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="mt-auto inline-flex items-center justify-center gap-2 h-11 px-6 rounded-2xl bg-secondary hover:bg-secondary/90 text-secondary-foreground font-bold text-xs uppercase tracking-widest transition-all duration-300 shadow-md group-hover:scale-[1.02] active:scale-95"
+                >
+                  <LinkedinIcon className="h-4 w-4" />
+                  <span>LinkedIn'de Gör</span>
+                </a>
+              </div>
             </div>
           </div>
         </section>
