@@ -14,6 +14,7 @@ export async function completeOnboarding(formData: {
   currency?: string;
   country?: string;
   interests?: string[];
+  familyCount?: number;
   incomes: { type: string; amount: number; date?: string; description?: string; currency?: string }[];
   expenses: { type: string; amount: number; date?: string; isRecurring: boolean; description?: string; currency?: string }[];
   debts: { type: string; amount: number; remainingInstallments?: number; description?: string; currency?: string }[];

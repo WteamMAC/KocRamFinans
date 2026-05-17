@@ -10,7 +10,6 @@ import {
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
-import { cn } from "@/lib/utils";
 
 export default function SlidingAuth() {
   const pathname = usePathname();
@@ -108,7 +107,7 @@ export default function SlidingAuth() {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: isLargeScreen ? -30 : 0 }}
                   transition={{ duration: 0.4 }}
-                  className="w-full max-w-[400px] flex flex-col items-center mx-auto"
+                  className="w-full max-w-md flex flex-col items-center mx-auto"
                 >
                   {/* Şartlar ve Onay Kutusu Kartı */}
                   <div 
@@ -155,7 +154,7 @@ export default function SlidingAuth() {
                   {/* Kayıt Formu Alanı */}
                   <div className="relative w-full">
                     {!isTermsAccepted && (
-                      <div className="absolute inset-x-0 top-0 bottom-[82px] z-30 backdrop-blur-[8px] bg-card/90 dark:bg-card/95 rounded-t-2xl flex flex-col items-center justify-center p-8 text-center transition-all duration-300">
+                      <div className="absolute inset-0 z-30 backdrop-blur-[8px] bg-background/85 dark:bg-background/85 rounded-2xl flex flex-col items-center justify-center p-8 text-center border border-border shadow-2xl transition-all duration-300">
                         <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center mb-4 shadow-inner">
                           <Lock className="w-8 h-8" />
                         </div>
@@ -173,7 +172,7 @@ export default function SlidingAuth() {
                       </div>
                     )}
                     
-                    <div className="relative z-20 transition-all duration-300 w-full mx-auto">
+                    <div className={!isTermsAccepted ? "opacity-20 pointer-events-none select-none filter blur-[2px] transition-all duration-300" : "relative z-30 transition-all duration-300 w-full mx-auto"}>
                       <SignUp 
                         routing="path"
                         path="/sign-up"
