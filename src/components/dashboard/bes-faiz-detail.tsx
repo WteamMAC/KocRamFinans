@@ -250,34 +250,42 @@ export function BesFaizDetail({ type, investments, livePrices }: BesFaizDetailPr
       const monthlyRate = projReturn / 12 / 100;
       const totalMonths = projYears * 12;
       let totalPrin = grouped.reduce((s, g) => s + g.totalQuantity, 0);
-      let totalWithReturn = totalPrin;
-      
-      // Devlet katkısı hesaplaması ("yıllık eklenir", "ana paraya eklenmez")
-      let pendingGovtContributions = totalPrin * (govtRate / 100); // Başlangıçtaki anaparanın devlet katkısı
-      let totalGovtBalance = pendingGovtContributions;
+      let totalWithReturn = totalPrin; // Kullanıcı katkı parayı + fon getirisi
+
+      // Devlet katkısı gerçek BES mantığı:
+      // - Her ay kullanıcı ödemesinin %30'u "bekleyen devlet katkısı" havuzuna eklenir
+      // - Yıl sonunda bu havuz toplu olarak fona aktarılır ve fon getirisiyle büyümeye başlar
+      // - Ana paraya (kullanıcı fonuna) anında eklenmez!
+      let pendingGovtContrib = 0;  // Yıl içi birikmekte olan devlet katkısı (fonda değil)
+      let totalGovtInFund = 0;     // Fona girmiş ve fon getirisiyle büyüyen devlet katkısı
 
       const data = [];
       for (let i = 0; i <= totalMonths; i++) {
         if (i > 0) {
           const monthlyAdd = projMonthly > 0 ? projMonthly : totalMonthlyContribution;
           totalPrin += monthlyAdd;
-          // Fon (Ana Para) aylık büyür
+          // Kullanıcı katkı payı anında fona girer ve fon getirisiyle büyür
           totalWithReturn = (totalWithReturn + monthlyAdd) * (1 + monthlyRate);
-          
-          // Yeni eklenen aylık tutarın devlet katkısı ayrı bir havuzda birikir
-          const newGovtContrib = monthlyAdd * (govtRate / 100);
-          pendingGovtContributions += newGovtContrib;
-          
-          // Devlet katkısı da fonlarda değerlendirilir (Kullanıcının tercihine göre ana paraya eklemiyoruz, ayrı hesaplıyoruz)
-          totalGovtBalance = (totalGovtBalance + newGovtContrib) * (1 + monthlyRate);
+
+          // Devlet katkısı (%30 varsayılan) birikir — fona girmez, bekler
+          pendingGovtContrib += monthlyAdd * (govtRate / 100);
+
+          // Fonda olan devlet katkısı da fon getirisiyle büyür
+          totalGovtInFund *= (1 + monthlyRate);
+
+          // Yıl sonu: bekleyen devlet katkısı fona aktarılır
+          if (i % 12 === 0) {
+            totalGovtInFund += pendingGovtContrib;
+            pendingGovtContrib = 0;
+          }
         }
         if (i % 12 === 0) {
           const yr = Math.floor(i / 12);
           data.push({
             label: yr === 0 ? "Başlangıç" : `${yr}. Yıl`,
-            toplam: Math.round(totalWithReturn + totalGovtBalance),
+            toplam: Math.round(totalWithReturn + totalGovtInFund),
             anaPara: Math.round(totalPrin),
-            faizKazanci: Math.round(totalWithReturn + totalGovtBalance - totalPrin),
+            faizKazanci: Math.round(totalWithReturn + totalGovtInFund - totalPrin),
           });
         }
       }
@@ -774,19 +782,23 @@ export function BesFaizDetail({ type, investments, livePrices }: BesFaizDetailPr
                           let stateContributionAmount = 0;
                           if (isBES) {
                             let fundType = "STANDART";
-                            try {
-                              const meta = parseMeta(g.items[0]);
-                              fundType = meta.fundType || "STANDART";
-                            } catch(e){}
+                            const meta = parseMeta(g.items[0]);
+                            try { fundType = meta.fundType || "STANDART"; } catch(e){}
 
                             const annualFundGrowth = fundReturns[fundType as keyof typeof fundReturns] || 0.45;
                             const dailyGrowth = annualFundGrowth / 365;
                             const fundMultiplier = Math.pow(1 + dailyGrowth, daysPassed);
                             const stateMultiplier = (g.rate > 0 && g.rate <= 100 ? g.rate / 100 : 0.30);
-                            
+
                             currentVal = g.totalQuantity * fundMultiplier;
                             earned = currentVal - g.totalQuantity;
-                            stateContributionAmount = g.totalQuantity * stateMultiplier;
+
+                            // Devlet katkısı: sadece YIL İÇİ ödenen katkı paylarının %30'u birikir.
+                            // Ana para üzerine anında uygulanmaz.
+                            // İmzalama tarihinden bu yana geçen yıl içindeki aylar:
+                            const monthlyContrib = meta.monthlyContribution || 0;
+                            const monthsInCurrentYear = daysPassed % 365 / 30.44; // yaklaşık ay sayısı
+                            stateContributionAmount = monthlyContrib * Math.min(monthsInCurrentYear, 12) * stateMultiplier;
                           } else {
                             const secondlyRate = (g.rate / 100) / (365 * 24 * 3600);
                             const multiplier = Math.pow(1 + secondlyRate, secondsPassed);
@@ -814,14 +826,27 @@ export function BesFaizDetail({ type, investments, livePrices }: BesFaizDetailPr
                           {(() => {
                             const fr = fundReturns[parseMeta(g.items[0]).fundType as keyof typeof fundReturns] || 0.45;
                             const govtRate = (g.rate > 0 && g.rate <= 100 ? g.rate / 100 : 0.30);
-                            // Fon büyümesi ayrı, devlet katkısı ayrı
-                            const fundGrowth = g.totalQuantity * (1 + fr);
-                            const govtContrib = g.totalQuantity * govtRate * (1 + fr); // Devlet katkısı da fonlarda değerlenir
-                            return (
+                            const meta = parseMeta(g.items[0]);
+                            const monthlyContrib = meta.monthlyContribution || 0;
+
+                            // Kullanıcı katkıları + fon getirisi (12 ay boyunca aylık bileşik)
+                            const monthlyRate = fr / 12;
+                            let fundVal = g.totalQuantity;
+                            let pendingGovt = 0;
+                            for (let m = 1; m <= 12; m++) {
+                              fundVal = (fundVal + monthlyContrib) * (1 + monthlyRate);
+                              pendingGovt += monthlyContrib * govtRate;
+                            }
+                            // Yıl sonunda devlet katkısı tek seferlik fona girer
+                            const totalOneYear = fundVal + pendingGovt;
+
+                            return isBES ? (
                               <p className={cn("font-bold text-xl", accentColor)}>
-                                {formatAmount(isBES
-                                  ? fundGrowth + govtContrib
-                                  : g.totalQuantity * Math.pow(1 + g.rate / 12 / 100, 12))}
+                                {formatAmount(totalOneYear)}
+                              </p>
+                            ) : (
+                              <p className={cn("font-bold text-xl", accentColor)}>
+                                {formatAmount(g.totalQuantity * Math.pow(1 + g.rate / 12 / 100, 12))}
                               </p>
                             );
                           })()}
@@ -831,12 +856,21 @@ export function BesFaizDetail({ type, investments, livePrices }: BesFaizDetailPr
                           {(() => {
                             const fr = fundReturns[parseMeta(g.items[0]).fundType as keyof typeof fundReturns] || 0.45;
                             const govtRate = (g.rate > 0 && g.rate <= 100 ? g.rate / 100 : 0.30);
-                            const fundGrowth = g.totalQuantity * (1 + fr);
-                            const govtContrib = g.totalQuantity * govtRate * (1 + fr);
+                            const meta = parseMeta(g.items[0]);
+                            const monthlyContrib = meta.monthlyContribution || 0;
+
+                            const monthlyRate = fr / 12;
+                            let fundVal = g.totalQuantity;
+                            let pendingGovt = 0;
+                            for (let m = 1; m <= 12; m++) {
+                              fundVal = (fundVal + monthlyContrib) * (1 + monthlyRate);
+                              pendingGovt += monthlyContrib * govtRate;
+                            }
+                            const totalOneYear = fundVal + pendingGovt;
                             return (
                               <p className="font-bold text-emerald-500">
                                 +{formatAmount(isBES
-                                  ? (fundGrowth + govtContrib) - g.totalQuantity
+                                  ? totalOneYear - g.totalQuantity
                                   : (g.totalQuantity * (Math.pow(1 + g.rate / 12 / 100, 12) - 1)))}
                               </p>
                             );
