@@ -1132,6 +1132,23 @@ export function BlogFeed({
   const [filterByInterests, setFilterByInterests] = useState(false);
   const [tagSearch, setTagSearch] = useState("");
 
+  const [allDiscoveredTags, setAllDiscoveredTags] = useState<string[]>([
+    "#kripto", "#borsa", "#altın", "#bist100", "#hisse", "#yatırım", "#ekonomi", "#finans", "#bist"
+  ]);
+
+  useEffect(() => {
+    if (posts.length > 0) {
+      setAllDiscoveredTags(prev => {
+        const currentSet = new Set(prev);
+        posts.forEach(p => (p.tags || []).forEach(t => {
+          const formatted = t.startsWith("#") ? t : `#${t}`;
+          currentSet.add(formatted);
+        }));
+        return Array.from(currentSet);
+      });
+    }
+  }, [posts]);
+
   const handleToggleTag = (tag: string) => {
     setActiveTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
   };
@@ -1270,11 +1287,9 @@ export function BlogFeed({
     });
   };
 
-  const availableTags = [...new Set(posts.flatMap((p) => p.tags))];
-
   const filteredTagsForBar = tagSearch 
-    ? availableTags.filter(t => t.toLowerCase().includes(tagSearch.toLowerCase().replace("#", "")))
-    : availableTags;
+    ? allDiscoveredTags.filter(t => t.toLowerCase().includes(tagSearch.toLowerCase().replace("#", "")))
+    : allDiscoveredTags;
 
   let activeFilterCount = 0;
   if (timeRange !== "all") activeFilterCount++;
@@ -1396,26 +1411,24 @@ export function BlogFeed({
              )}
           </div>
 
-          {filteredTagsForBar.length > 0 && (
-            <UnifiedFilterAndTagBar 
-              availableTags={filteredTagsForBar} 
-              activeTags={activeTags} 
-              onToggleTag={handleToggleTag}
-              onClearTags={() => setActiveTags([])}
-              filterCount={activeFilterCount}
-              onToggleFilter={() => setIsFilterPanelOpen(p => !p)}
-              sortBy={sortBy}
-              onSelectSort={setSortBy}
-              onResetFilters={() => {
-                setSortBy("latest");
-                setTimeRange("all");
-                setFilterByInterests(false);
-                setActiveTags([]);
-                setTagSearch("");
-                setSearchQuery("");
-              }}
-            />
-          )}
+          <UnifiedFilterAndTagBar 
+            availableTags={filteredTagsForBar} 
+            activeTags={activeTags} 
+            onToggleTag={handleToggleTag}
+            onClearTags={() => setActiveTags([])}
+            filterCount={activeFilterCount}
+            onToggleFilter={() => setIsFilterPanelOpen(p => !p)}
+            sortBy={sortBy}
+            onSelectSort={setSortBy}
+            onResetFilters={() => {
+              setSortBy("latest");
+              setTimeRange("all");
+              setFilterByInterests(false);
+              setActiveTags([]);
+              setTagSearch("");
+              setSearchQuery("");
+            }}
+          />
 
           {isFilterPanelOpen && typeof document !== "undefined" && createPortal(
             <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setIsFilterPanelOpen(false)}>
