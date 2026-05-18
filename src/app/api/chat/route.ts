@@ -170,7 +170,8 @@ export async function POST(req: Request) {
               type: SchemaType.OBJECT,
               properties: {
                 debtId: { type: SchemaType.STRING, description: "Ödemesi yapılan borcun/kredinin veritabanındaki ID'si." },
-                amount: { type: SchemaType.NUMBER, description: "Ödenen miktar. Eğer taksit ödeniyorsa ve miktar belirtilmemişse 0 gönder (sistem otomatik taksit tutarını düşer)." }
+                amount: { type: SchemaType.NUMBER, description: "Ödenen miktar. Eğer taksit ödeniyorsa ve miktar belirtilmemişse 0 gönder (sistem otomatik taksit tutarını düşer)." },
+                currency: { type: SchemaType.STRING, description: "Ödeme yapılan para birimi (TRY, USD, EUR, vb.). Belirtilmemişse borcun kendi para birimi kullanılır." }
               },
               required: ["debtId"]
             }
@@ -521,13 +522,42 @@ export async function POST(req: Request) {
 
                   apiResponse = { success: true, message: `Kayıt başarıyla eklendi. (${safeAmount} ${currency}${fxRate !== 1 ? ` ≈ ${amountInTRY.toFixed(2)} TRY` : ""})` };
                 } else if (call.name === "payDebt") {
-                  const { debtId, amount } = args;
-                  const debt = await prisma.debt.findUnique({ where: { id: debtId } });
+                  const { debtId, amount, currency: rawCurrency } = args;
+                  const debt = await prisma.debt.findFirst({ where: { id: debtId, userId: user.id } });
                   if (!debt) {
-                    apiResponse = { error: "Belirtilen borç bulunamadı." };
+                    apiResponse = { error: "Belirtilen borç bulunamadı veya size ait değil." };
                   } else {
-                    const payAmount = (amount && Number(amount) > 0) ? Number(amount) : (debt.installmentAmount || debt.amount);
-                    let newRemaining = debt.amount - payAmount;
+                    const payAmountInput = (amount && Number(amount) > 0) ? Number(amount) : null;
+                    
+                    let payAmountInTRY = 0;
+                    let payCurrency = debt.currency || "TRY";
+                    let payFxRate = debt.fxRate || 1;
+
+                    if (payAmountInput !== null) {
+                      payCurrency = (rawCurrency || debt.currency || "TRY").toUpperCase();
+                      if (payCurrency !== "TRY") {
+                        const symbolMap: Record<string, string> = {
+                          USD: "USDTRY=X", EUR: "EURTRY=X", GBP: "GBPTRY=X",
+                          CHF: "CHFTRY=X", JPY: "JPYTRY=X", AED: "AEDTRY=X",
+                          SAR: "SARTRY=X", CAD: "CADTRY=X", AUD: "AUDTRY=X",
+                        };
+                        const sym = symbolMap[payCurrency];
+                        if (sym) {
+                          try {
+                            const prices = await getLivePrices([sym]);
+                            payFxRate = prices.get(sym)?.price || 1;
+                          } catch (e: any) { payFxRate = 1; }
+                        }
+                      } else {
+                        payFxRate = 1;
+                      }
+                      payAmountInTRY = payAmountInput * payFxRate;
+                    } else {
+                      // Taksit ödeniyor
+                      payAmountInTRY = debt.installmentAmount || debt.amount;
+                    }
+
+                    let newRemaining = debt.amount - payAmountInTRY;
                     if (newRemaining < 0) newRemaining = 0;
 
                     let newInstallments = debt.remainingInstallments;
@@ -549,10 +579,10 @@ export async function POST(req: Request) {
                       data: {
                         userId: user.id,
                         type: "Banka Kredisi", // Borç Ödemesi
-                        amount: payAmount,
-                        originalAmount: payAmount / (debt.fxRate || 1),
-                        currency: debt.currency,
-                        fxRate: debt.fxRate,
+                        amount: payAmountInTRY, // TRY
+                        originalAmount: payAmountInput !== null ? payAmountInput : (payAmountInTRY / (debt.fxRate || 1)),
+                        currency: payCurrency,
+                        fxRate: payFxRate,
                         date: new Date(),
                         isRecurring: false,
                         description: `${debt.description || debt.type} ödemesi / taksidi`
@@ -562,7 +592,7 @@ export async function POST(req: Request) {
                     revalidatePath("/dashboard");
                     revalidatePath("/dashboard/debts");
                     revalidatePath("/dashboard/income-expense");
-                    apiResponse = { success: true, message: `Borç başarıyla ödendi ve gidere işlendi. Ödenen: ${payAmount}, Kalan Borç: ${newRemaining}` };
+                    apiResponse = { success: true, message: `Borç başarıyla ödendi ve gidere işlendi. Ödenen: ${payAmountInput !== null ? payAmountInput : payAmountInTRY} ${payCurrency}, Kalan Borç: ${newRemaining.toFixed(2)} TRY` };
                   }
                 } else if (call.name === "deleteFinancialRecord") {
                   const { type, recordId } = args;
