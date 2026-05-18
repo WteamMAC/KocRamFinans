@@ -40,7 +40,7 @@ export async function POST(req: Request) {
     const allMessages = body.messages || [];
     if (!allMessages.length) return new Response("Geçersiz mesaj formatı.", { status: 400 });
 
-    const messages = allMessages.slice(-6);
+    const messages = allMessages.slice(-12);
     const lastMessageObj = messages[messages.length - 1];
     // Eğer metin yoksa ve sadece resim atıldıysa varsayılan bir talimat veriyoruz
     const lastMessageText = lastMessageObj.content?.trim() || (lastMessageObj.image ? "Bu fişi/faturayı analiz edip doğrudan giderlerime kaydeder misin?" : "Merhaba");
@@ -146,14 +146,15 @@ export async function POST(req: Request) {
               type: SchemaType.OBJECT,
               properties: {
                 type: { type: SchemaType.STRING, description: "income, expense, debt, investment, fixedAsset" },
-                amount: { type: SchemaType.NUMBER, description: "Orijinal tutar (kur dönüşümü yapma, olduğu gibi yaz)" },
+                amount: { type: SchemaType.NUMBER, description: "Orijinal toplam tutar (kur dönüşümü yapma). Eğer yatırım ekliyorsan ve toplam tutarı bilmiyorsan, 0 gönderebilirsin (sistem quantity * purchasePrice üzerinden kendi hesaplar)." },
                 category: { type: SchemaType.STRING, description: "Kategori. Gider için: 'Mutfak & Market', 'Ev Kirası', 'Faturalar', 'Ulaşım', 'Eğitim / Sağlık', 'Diğer'. Gelir için: 'Maaş', 'Kira Geliri', 'Ek İş', 'Temettü', 'Diğer'. Borç için: 'Kredi Kartı', 'Banka Kredisi', 'Şahsi Borç'. Yatırım: 'BIST', 'NASDAQ', 'CRYPTO', 'GOLD', 'BES'. Sabit Varlık (fixedAsset) için: 'RealEstate' (Ev, Arsa), 'Vehicle' (Araba, Motor), 'Electronics' (Telefon, Bilgisayar), 'Other'." },
+                symbol: { type: SchemaType.STRING, description: "Yatırımlar için Yahoo Finance sembolü (Örn: BTC-USD, ETH-USD, THYAO.IS, AAPL, GC=F). Kategori CRYPTO ise sonuna mutlaka '-USD' eklemelisin. BIST ise '.IS' eklemelisin. NASDAQ ise direkt AAPL gibi yazmalısın. KESİNLİKLE 'BTC' gibi ham yazma, 'BTC-USD' yaz." },
                 currency: { type: SchemaType.STRING, description: "Para birimi kodu. Kullanıcı 'dolar' veya '$' derse USD, 'euro' veya '€' derse EUR, 'sterlin' derse GBP, belirtmezse TRY yaz." },
                 date: { type: SchemaType.STRING, description: "İşlem tarihi YYYY-MM-DD formatında. Kullanıcı tarih belirtmezse bugünün tarihini yaz." },
-                description: { type: SchemaType.STRING, description: "Açıklama veya Hisse Kodu" },
+                description: { type: SchemaType.STRING, description: "Açıklama" },
                 isRecurring: { type: SchemaType.BOOLEAN, description: "Giderin her ay tekrarlanıp tekrarlanmayacağı. Market, yakıt, tek seferlik harcamalar için false. Sadece kira gibi sabit aylık ödemeler için true. Varsayılan: false" },
                 quantity: { type: SchemaType.NUMBER, description: "Yatırımlar için miktar/adet" },
-                purchasePrice: { type: SchemaType.NUMBER, description: "Yatırımlar için birim alış fiyatı" },
+                purchasePrice: { type: SchemaType.NUMBER, description: "Yatırımlar için BİRİM alış fiyatı. EĞER fiyatı getMarketPrice aracı ile çektiysen, 'originalPrice' değerini kullan ve currency olarak da 'originalCurrency' değerini gönder. KESİNLİKLE kendi kendine TRY dönüşümü YAPMA. Sistem onu otomatik halleder." },
                 interestRate: { type: SchemaType.NUMBER, description: "Borçlar için aylık faiz oranı (%). Belirtilmezse 0 kabul et." },
                 remainingInstallments: { type: SchemaType.NUMBER, description: "Borçlar için kalan taksit sayısı. Tek seferlik borçlar için boş bırak." },
                 paymentDay: { type: SchemaType.NUMBER, description: "Borçlar için taksit ödeme günü (1-31)." },
@@ -188,7 +189,7 @@ export async function POST(req: Request) {
           },
           {
             name: "getMarketPrice",
-            description: "İnternetten hisse senedi, emtia (altın), döviz veya kripto fiyatlarını canlı olarak arar.",
+            description: "İnternetten hisse senedi, emtia (altın), döviz veya kripto fiyatlarını canlı olarak arar. DİKKAT: DÖNEN TÜM FİYATLAR TÜRK LİRASI (TRY) CİNSİNDENDİR! Eğer kripto veya yabancı hisse sorguluyorsan, sistem onu arka planda otomatik TRY'ye çevirip sana verir. Kayıt eklerken bunu unutma.",
             parameters: {
               type: SchemaType.OBJECT,
               properties: {
@@ -226,10 +227,10 @@ export async function POST(req: Request) {
                 lastName: { type: SchemaType.STRING, description: "Kullanıcının soyadı" },
                 bio: { type: SchemaType.STRING, description: "Kullanıcının biyografisi veya kişisel hedefi" },
                 currency: { type: SchemaType.STRING, description: "Varsayılan para birimi (TRY, USD, EUR vb.)" },
-                interests: { 
-                  type: SchemaType.ARRAY, 
+                interests: {
+                  type: SchemaType.ARRAY,
                   items: { type: SchemaType.STRING },
-                  description: "İlgi alanları listesi (Örn: ['kripto', 'borsa'])" 
+                  description: "İlgi alanları listesi (Örn: ['kripto', 'borsa'])"
                 }
               }
             }
@@ -241,11 +242,12 @@ export async function POST(req: Request) {
               type: SchemaType.OBJECT,
               properties: {
                 content: { type: SchemaType.STRING, description: "Gönderinin içeriği (Kısa, ilgi çekici ve samimi bir metin)" },
-                tags: { 
-                  type: SchemaType.ARRAY, 
+                tags: {
+                  type: SchemaType.ARRAY,
                   items: { type: SchemaType.STRING },
-                  description: "Gönderiyle ilgili etiketler (Örn: ['bitcoin', 'yatırım', 'öneri'])" 
-                }
+                  description: "Gönderiyle ilgili etiketler (Örn: ['bitcoin', 'yatırım', 'öneri'])"
+                },
+                communityId: { type: SchemaType.STRING, description: "İsteğe bağlı: Gönderinin paylaşılacağı topluluğun ID'si. Kullanıcı belirli bir topluluk adı söylerse getFinancialHistory ile topluluk listesine bakabilirsin. Belirtilmezse genel feed'e atılır." }
               },
               required: ["content", "tags"]
             }
@@ -367,12 +369,15 @@ export async function POST(req: Request) {
 
                   apiResponse = (cat === "all" || cat === "hepsi") ? dataMap : { data: dataMap[cat as keyof typeof dataMap] || dataMap };
                 } else if (call.name === "addFinancialRecord") {
-                  const { type, amount, category, description, quantity, purchasePrice, isRecurring,
-                          currency: rawCurrency, date: rawDate,
-                          interestRate, remainingInstallments, paymentDay, dueDate } = args;
+                  const { type, amount, category, symbol, description, quantity, purchasePrice, isRecurring,
+                    currency: rawCurrency, date: rawDate,
+                    interestRate, remainingInstallments, paymentDay, dueDate } = args;
 
-                  const safeAmount = Number(amount) || 0;
-                  if (safeAmount <= 0) throw new Error("Tutar 0'dan büyük olmalıdır.");
+                  const isInv = type === "investment";
+                  const calcAmt = isInv ? (Number(quantity) || 1) * (Number(purchasePrice) || 0) : 0;
+                  const safeAmount = Number(amount) || calcAmt || 0;
+
+                  if (safeAmount <= 0) throw new Error("Tutar veya birim fiyat 0'dan büyük olmalıdır.");
 
                   // --- Para Birimi & Kur Dönüşümü ---
                   const currency = (rawCurrency || "TRY").toUpperCase();
@@ -456,16 +461,38 @@ export async function POST(req: Request) {
                     });
                   } else if (type === "investment") {
                     const q = Number(quantity) > 0 ? Number(quantity) : 1;
-                    const p = Number(purchasePrice) > 0 ? Number(purchasePrice) : (amountInTRY > 0 ? amountInTRY / q : 0);
-                    const finalAmt = amountInTRY > 0 ? amountInTRY : (q * p);
+                    // purchasePrice: AI tarafından orijinal para biriminde (USD, TRY vb.) gönderilir
+                    // amountInTRY: toplam tutar TRY'ye çevrilmiş hali (fxRate ile)
+                    // Birim fiyatı da TRY'ye çevirip saklıyoruz — price-service tutarsız dönüşüm yapmaz
+                    const rawPurchasePrice = Number(purchasePrice);
+                    // Eğer purchasePrice orijinal para birimindeyse TRY'ye çevir; değilse amountInTRY'den türet
+                    let unitPriceInTRY: number;
+                    if (rawPurchasePrice > 0) {
+                      unitPriceInTRY = rawPurchasePrice * fxRate; // USD*fxRate = TRY birim fiyat
+                    } else if (amountInTRY > 0) {
+                      unitPriceInTRY = amountInTRY / q;
+                    } else {
+                      unitPriceInTRY = 0;
+                    }
+                    const finalAmt = amountInTRY > 0 ? amountInTRY : (q * unitPriceInTRY);
+                    const rawSymbol = (symbol || description || category || "").toUpperCase().trim();
+                    const invType = standardizeInvestmentType(category);
+                    let normalizedSymbol = rawSymbol;
+                    if (invType === "CRYPTO" && !normalizedSymbol.includes("-")) {
+                      normalizedSymbol = `${normalizedSymbol}-USD`;
+                    } else if (invType === "BIST" && !normalizedSymbol.includes(".")) {
+                      normalizedSymbol = `${normalizedSymbol}.IS`;
+                    }
+
                     await prisma.investment.create({
                       data: {
                         userId: user.id,
-                        type: standardizeInvestmentType(category),
-                        symbol: description || category,
+                        type: invType,
+                        symbol: normalizedSymbol,
                         quantity: q,
-                        purchasePrice: p,
-                        amount: finalAmt,
+                        purchasePrice: unitPriceInTRY, // TRY cinsinden birim fiyat (tutarlı)
+                        amount: finalAmt,             // TRY cinsinden toplam maliyet
+                        currency,                     // Orijinal para birimi (USD, EUR vs.)
                         description: description || null,
                         status: "OPEN",
                         transactionType: "BUY",
@@ -489,7 +516,7 @@ export async function POST(req: Request) {
                   revalidatePath("/dashboard");
                   revalidatePath("/dashboard/income-expense");
                   revalidatePath("/dashboard/debts");
-                  revalidatePath("/dashboard/investments");
+                  revalidatePath("/dashboard/assets");
                   revalidatePath("/dashboard/fixed-assets");
 
                   apiResponse = { success: true, message: `Kayıt başarıyla eklendi. (${safeAmount} ${currency}${fxRate !== 1 ? ` ≈ ${amountInTRY.toFixed(2)} TRY` : ""})` };
@@ -502,7 +529,7 @@ export async function POST(req: Request) {
                     const payAmount = (amount && Number(amount) > 0) ? Number(amount) : (debt.installmentAmount || debt.amount);
                     let newRemaining = debt.amount - payAmount;
                     if (newRemaining < 0) newRemaining = 0;
-                    
+
                     let newInstallments = debt.remainingInstallments;
                     if (newInstallments && newInstallments > 0) {
                       newInstallments = newInstallments - 1;
@@ -539,22 +566,30 @@ export async function POST(req: Request) {
                   }
                 } else if (call.name === "deleteFinancialRecord") {
                   const { type, recordId } = args;
-                  if (type === "income") await prisma.income.delete({ where: { id: recordId } });
-                  else if (type === "expense") await prisma.expense.delete({ where: { id: recordId } });
-                  else if (type === "debt") await prisma.debt.delete({ where: { id: recordId } });
-                  else if (type === "investment") await prisma.investment.delete({ where: { id: recordId } });
-                  else if (type === "fixedAsset") await prisma.fixedAsset.delete({ where: { id: recordId } });
-                  
+                  // Güvenlik: Kullanıcının kendi kaydını sildiğinden emin ol (userId filtresi zorunlu)
+                  if (type === "income") await prisma.income.delete({ where: { id: recordId, userId: user.id } });
+                  else if (type === "expense") await prisma.expense.delete({ where: { id: recordId, userId: user.id } });
+                  else if (type === "debt") await prisma.debt.delete({ where: { id: recordId, userId: user.id } });
+                  else if (type === "investment") await prisma.investment.delete({ where: { id: recordId, userId: user.id } });
+                  else if (type === "fixedAsset") await prisma.fixedAsset.delete({ where: { id: recordId, userId: user.id } });
+
                   revalidatePath("/dashboard");
                   revalidatePath("/dashboard/income-expense");
                   revalidatePath("/dashboard/debts");
-                  revalidatePath("/dashboard/investments");
+                  revalidatePath("/dashboard/assets");
                   revalidatePath("/dashboard/fixed-assets");
                   apiResponse = { success: true, message: "Kayıt veritabanından kalıcı olarak silindi." };
                 } else if (call.name === "getMarketPrice") {
                   const symbols: string[] = (Array.isArray(args.symbols) ? args.symbols : [args.symbols]) as string[];
                   const resultsMap = await getLivePrices(symbols);
-                  apiResponse = { data: Object.fromEntries(resultsMap) };
+                  const dataWithCurrency = Object.fromEntries(
+                    Array.from(resultsMap.entries()).map(([k, v]) => [k, {
+                      tryPrice: v.price,
+                      originalPrice: v.originalPrice || v.price,
+                      originalCurrency: v.originalCurrency || "TRY"
+                    }])
+                  );
+                  apiResponse = { data: dataWithCurrency, note: "The tryPrice is the value converted to TRY. The originalPrice is the value in its native currency (originalCurrency). When adding a record, you should use the originalPrice and originalCurrency." };
                 } else if (call.name === "manageSpecialEvent") {
                   const { action, title, date, isAnnual, eventId } = args;
                   if (action === "add") {
@@ -587,7 +622,7 @@ export async function POST(req: Request) {
                   if (bio) updateData.bio = bio;
                   if (currency) updateData.currency = currency;
                   if (interests && Array.isArray(interests)) updateData.interests = interests;
-                  
+
                   await prisma.user.update({
                     where: { id: user.id },
                     data: updateData
@@ -595,17 +630,18 @@ export async function POST(req: Request) {
                   revalidatePath("/dashboard/profile");
                   apiResponse = { success: true, message: "Profil bilgileri güncellendi." };
                 } else if (call.name === "createCommunityPost") {
-                  const { content, tags } = args;
+                  const { content, tags, communityId } = args;
                   await prisma.blogPost.create({
                     data: {
                       authorId: user.id,
                       content: content,
                       tags: Array.isArray(tags) ? tags : [],
+                      communityId: communityId || null,
                       isAnnouncement: false
                     }
                   });
                   revalidatePath("/dashboard/blog");
-                  apiResponse = { success: true, message: "Toplulukta başarıyla gönderi paylaşıldı." };
+                  apiResponse = { success: true, message: `Toplulukta başarıyla gönderi paylaşıldı.${communityId ? " (Topluluk ID: " + communityId + ")" : " (Genel feed)"}` };
                 }
               } catch (e: any) {
                 console.error(`[TOOL] ❌ Hata:`, e.message);

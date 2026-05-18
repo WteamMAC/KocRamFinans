@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { generateSmartInsights } from "@/app/actions/insights";
 import { Lightbulb, AlertTriangle, CheckCircle2, Info, Loader2, Sparkles, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -15,6 +15,12 @@ export function SmartInsights({ financialData }: SmartInsightsProps) {
   const [loading, setLoading] = useState(false);
   const [hasLoaded, setHasLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Sayfa açılınca otomatik yüklenir
+  useEffect(() => {
+    fetchInsights();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const fetchInsights = async () => {
     setLoading(true);

@@ -19,55 +19,20 @@ export interface PriceResult {
   symbol: string;
   price: number;
   changePercent?: number;
+  originalPrice?: number;
+  originalCurrency?: string;
   error?: string;
 }
 
 import { prisma } from "@/lib/prisma";
-import { exec, execSync } from "child_process";
-import path from "path";
+import { TEFAS_EMK_CATALOG } from "@/lib/tefas-catalog";
 
 export function isTefasFund(symbol: string): boolean {
   const clean = symbol.toUpperCase().trim();
   return /^[A-Z]{3}$/.test(clean);
 }
 
-const TEFAS_EMK_CATALOG = [
-  { code: "AEG", title: "Agesa Hayat ve Emeklilik Standart EYF", price: 42.15, type: "STANDART" },
-  { code: "ALR", title: "Allianz Hayat ve Emeklilik Standart EYF", price: 38.45, type: "STANDART" },
-  { code: "ATE", title: "Anadolu Hayat Emeklilik Standart EYF", price: 51.20, type: "STANDART" },
-  { code: "GH1", title: "Garanti Emeklilik ve Hayat Standart EYF", price: 48.90, type: "STANDART" },
-  { code: "VE1", title: "Vakıf Emeklilik ve Hayat Standart EYF", price: 35.60, type: "STANDART" },
-  { code: "ZHE", title: "Ziraat Emeklilik ve Hayat Standart EYF", price: 44.80, type: "STANDART" },
-  { code: "HEH", title: "Halk Emeklilik ve Hayat Standart EYF", price: 39.30, type: "STANDART" },
-  { code: "AGB", title: "Agesa Hayat ve Emeklilik Altın EYF", price: 215.40, type: "GOLD" },
-  { code: "AMZ", title: "Allianz Hayat ve Emeklilik Altın Katılım EYF", price: 232.15, type: "GOLD" },
-  { code: "AH5", title: "Anadolu Hayat Emeklilik Altın EYF", price: 208.90, type: "GOLD" },
-  { code: "GH2", title: "Garanti Emeklilik ve Hayat Altın EYF", price: 224.50, type: "GOLD" },
-  { code: "VGA", title: "Vakıf Emeklilik ve Hayat Altın Katılım EYF", price: 198.60, type: "GOLD" },
-  { code: "ZEA", title: "Ziraat Emeklilik ve Hayat Altın Katılım EYF", price: 212.80, type: "GOLD" },
-  { code: "HKA", title: "Halk Emeklilik ve Hayat Altın Katılım EYF", price: 201.30, type: "GOLD" },
-  { code: "FIB", title: "Fiba Emeklilik ve Hayat Altın EYF", price: 187.50, type: "GOLD" },
-  { code: "AEH", title: "Agesa Hayat ve Emeklilik Hisse Senedi EYF", price: 785.40, type: "STOCKS" },
-  { code: "AL3", title: "Allianz Hayat ve Emeklilik Hisse Senedi EYF", price: 812.15, type: "STOCKS" },
-  { code: "AH3", title: "Anadolu Hayat Emeklilik Hisse Senedi EYF", price: 854.90, type: "STOCKS" },
-  { code: "GEH", title: "Garanti Emeklilik ve Hayat Hisse Senedi EYF", price: 792.50, type: "STOCKS" },
-  { code: "VHE", title: "Vakıf Emeklilik ve Hayat Hisse Senedi EYF", price: 735.60, type: "STOCKS" },
-  { code: "ZHE", title: "Ziraat Emeklilik ve Hayat Hisse Senedi EYF", price: 768.80, type: "STOCKS" },
-  { code: "HES", title: "Halk Emeklilik ve Hayat Hisse Senedi EYF", price: 721.30, type: "STOCKS" },
-  { code: "FIE", title: "Fiba Emeklilik ve Hayat Hisse Senedi EYF", price: 687.50, type: "STOCKS" },
-  { code: "AGE", title: "Agesa Hayat ve Emeklilik Kamu Dış Borçlanma (Eurobond) EYF", price: 125.40, type: "USD" },
-  { code: "ALS", title: "Allianz Hayat ve Emeklilik Kamu Dış Borçlanma (Eurobond) EYF", price: 132.15, type: "USD" },
-  { code: "AH4", title: "Anadolu Hayat Emeklilik Kamu Dış Borçlanma (Eurobond) EYF", price: 138.90, type: "USD" },
-  { code: "GGB", title: "Garanti Emeklilik ve Hayat Kamu Dış Borçlanma (Eurobond) EYF", price: 129.50, type: "USD" },
-  { code: "VUB", title: "Vakıf Emeklilik ve Hayat Kamu Dış Borçlanma (Eurobond) EYF", price: 118.60, type: "USD" },
-  { code: "ZEB", title: "Ziraat Emeklilik ve Hayat Kamu Dış Borçlanma (Eurobond) EYF", price: 124.80, type: "USD" },
-  { code: "AEL", title: "Agesa Hayat ve Emeklilik Para Piyasası EYF", price: 12.40, type: "CONSERVATIVE" },
-  { code: "AL1", title: "Allianz Hayat ve Emeklilik Para Piyasası EYF", price: 13.15, type: "CONSERVATIVE" },
-  { code: "AH1", title: "Anadolu Hayat Emeklilik Para Piyasası EYF", price: 13.90, type: "CONSERVATIVE" },
-  { code: "GPP", title: "Garanti Emeklilik ve Hayat Para Piyasası EYF", price: 12.95, type: "CONSERVATIVE" },
-  { code: "VPP", title: "Vakıf Emeklilik ve Hayat Para Piyasası EYF", price: 11.86, type: "CONSERVATIVE" },
-  { code: "ZEP", title: "Ziraat Emeklilik ve Hayat Para Piyasası EYF", price: 12.48, type: "CONSERVATIVE" }
-];
+// TEFAS_EMK_CATALOG artık @/lib/tefas-catalog.ts'den import ediliyor
 
 export async function fetchTefasPrices(symbols: string[]): Promise<Map<string, PriceResult>> {
   const result = new Map<string, PriceResult>();
@@ -127,10 +92,10 @@ export async function getLivePrices(symbols: string[]): Promise<Map<string, Pric
           if (meta.fundSymbol) {
             dbFundSymbols.push(meta.fundSymbol.toUpperCase());
           }
-        } catch (e: any) {}
+        } catch (e: any) { }
       }
     }
-  } catch (e: any) {}
+  } catch (e: any) { }
 
   // Her zaman temel döviz ve emtia paritelerini işleyelim + BES fonları için BIST 100
   const coreBenchmarks = ["USDTRY=X", "EURTRY=X", "GBPTRY=X", "GC=F", "SI=F", "BZ=F", "XU100.IS"];
@@ -221,14 +186,14 @@ export async function getLivePrices(symbols: string[]): Promise<Map<string, Pric
                 update: { price: data.price, changePct: data.changePercent || 0, updatedAt: new Date() },
                 create: { symbol: sym, price: data.price, changePct: data.changePercent || 0 }
               });
-            } catch (e: any) {}
+            } catch (e: any) { }
           }
         } catch (err) {
           console.error("TEFAS Fetching Error:", err);
         }
       }
 
-      const newMarketData: Array<{ symbol: string; price: number; changePct: number }> = [];
+      const newMarketData: Array<{ symbol: string; price: number; changePct: number; originalPrice?: number; originalCurrency?: string }> = [];
 
       const usdTryQuote = quotesArray.find((q: any) => q.symbol === "USDTRY=X" || q.symbol === "TRY=X");
       if (usdTryQuote && usdTryQuote.regularMarketPrice && usdTryQuote.regularMarketPrice > 20) {
@@ -290,27 +255,29 @@ export async function getLivePrices(symbols: string[]): Promise<Map<string, Pric
       quotesArray.forEach((quote: any) => {
         if (quote && quote.symbol && !benchmarkMap[quote.symbol.toUpperCase()]) {
           let currentPrice = quote.regularMarketPrice || quote.postMarketPrice || quote.preMarketPrice || 0;
+          let origPrice = currentPrice;
+          let origCurr = quote.currency || "TRY";
           if (quote.currency === "USD" && !quote.symbol.endsWith("=X") && quote.symbol !== "GC=F" && quote.symbol !== "SI=F" && quote.symbol !== "BZ=F") {
             currentPrice = currentPrice * usdToTryRate;
           }
           // Özel yatırım fonları için yıllık değişim (fiftyTwoWeekChangePercent) değerini kullanalım
-          const annualChange = quote.fiftyTwoWeekChangePercent != null 
-            ? quote.fiftyTwoWeekChangePercent 
+          const annualChange = quote.fiftyTwoWeekChangePercent != null
+            ? quote.fiftyTwoWeekChangePercent
             : (quote.regularMarketChangePercent || 0);
-          newMarketData.push({ symbol: quote.symbol.toUpperCase(), price: currentPrice, changePct: annualChange });
+          newMarketData.push({ symbol: quote.symbol.toUpperCase(), price: currentPrice, changePct: annualChange, originalPrice: origPrice, originalCurrency: origCurr });
         }
       });
 
       // Hem results haritasını güncelleyelim hem de veritabanına kaydedelim
       for (const item of newMarketData) {
-        results.set(item.symbol, { symbol: item.symbol, price: item.price, changePercent: item.changePct });
+        results.set(item.symbol, { symbol: item.symbol, price: item.price, changePercent: item.changePct, originalPrice: item.originalPrice, originalCurrency: item.originalCurrency });
         try {
           await prisma.marketPriceCache.upsert({
             where: { symbol: item.symbol },
             update: { price: item.price, changePct: item.changePct, updatedAt: new Date() },
             create: { symbol: item.symbol, price: item.price, changePct: item.changePct }
           });
-        } catch (e: any) {}
+        } catch (e: any) { }
       }
 
       // --- BES SANAL FON GETİRİ HESAPLAMALARI ---
@@ -322,7 +289,7 @@ export async function getLivePrices(symbols: string[]): Promise<Map<string, Pric
       if (goldQuoteObj && goldQuoteObj.fiftyTwoWeekChangePercent != null) {
         goldAnnualChange = goldQuoteObj.fiftyTwoWeekChangePercent;
       }
-      
+
       const usdQuoteObj = quotesArray.find((q: any) => q.symbol === "USDTRY=X");
       if (usdQuoteObj && usdQuoteObj.fiftyTwoWeekChangePercent != null) {
         usdAnnualChange = usdQuoteObj.fiftyTwoWeekChangePercent;
@@ -351,7 +318,7 @@ export async function getLivePrices(symbols: string[]): Promise<Map<string, Pric
             update: { price: item.price, changePct: 0, updatedAt: new Date() },
             create: { symbol: item.symbol, price: item.price, changePct: 0 }
           });
-        } catch (e: any) {}
+        } catch (e: any) { }
       }
 
     } catch (apiErr: any) {
@@ -370,7 +337,7 @@ export async function getLivePrices(symbols: string[]): Promise<Map<string, Pric
         results.set(item.symbol, { symbol: item.symbol, price: item.price, changePercent: item.changePct });
       }
     }
-  } catch (e: any) {}
+  } catch (e: any) { }
 
   // BES sanal fon getiri oranları için mutlak fallback değerleri set edelim (hiçbir şekilde boş kalmasınlar!)
   const defaultVirtuals = {
@@ -423,7 +390,8 @@ export async function searchSymbols(query: string, category: string) {
       quotesCount: 15
     });
 
-    const quotes = (searchResults && (searchResults as any).quotes) ? (searchResults as any).quotes : [];
+    const rawQuotes = (searchResults && (searchResults as any).quotes) ? (searchResults as any).quotes : [];
+    const quotes = rawQuotes.filter((q: any) => q.isYahooFinance !== false && q.symbol);
 
     const processedQuotes = quotes.map((q: any) => {
       let suggestedCategory = "BIST";
@@ -512,7 +480,7 @@ export function calculatePortfolioMetrics(investments: any[], livePrices: Map<st
             const meta = JSON.parse(inv.description || "{}");
             fundType = meta.fundType || "STANDART";
             fundSymbol = meta.fundSymbol;
-          } catch (e: any) {}
+          } catch (e: any) { }
 
           let annualFundGrowth = 0.45;
           if (fundSymbol) {
@@ -523,9 +491,9 @@ export function calculatePortfolioMetrics(investments: any[], livePrices: Map<st
             } else {
               const fundReturns: Record<string, number> = {
                 "STANDART": livePrices.get("BES_STANDART_RETURN")?.price || 0.45,
-                "GOLD": livePrices.get("BES_GOLD_RETURN")?.price || 0.65, 
-                "STOCKS": livePrices.get("BES_STOCKS_RETURN")?.price || 0.80, 
-                "USD": livePrices.get("BES_USD_RETURN")?.price || 0.35, 
+                "GOLD": livePrices.get("BES_GOLD_RETURN")?.price || 0.65,
+                "STOCKS": livePrices.get("BES_STOCKS_RETURN")?.price || 0.80,
+                "USD": livePrices.get("BES_USD_RETURN")?.price || 0.35,
                 "CONSERVATIVE": livePrices.get("BES_CONSERVATIVE_RETURN")?.price || 0.40,
               };
               annualFundGrowth = fundReturns[fundType] || 0.45;
@@ -533,9 +501,9 @@ export function calculatePortfolioMetrics(investments: any[], livePrices: Map<st
           } else {
             const fundReturns: Record<string, number> = {
               "STANDART": livePrices.get("BES_STANDART_RETURN")?.price || 0.45,
-              "GOLD": livePrices.get("BES_GOLD_RETURN")?.price || 0.65, 
-              "STOCKS": livePrices.get("BES_STOCKS_RETURN")?.price || 0.80, 
-              "USD": livePrices.get("BES_USD_RETURN")?.price || 0.35, 
+              "GOLD": livePrices.get("BES_GOLD_RETURN")?.price || 0.65,
+              "STOCKS": livePrices.get("BES_STOCKS_RETURN")?.price || 0.80,
+              "USD": livePrices.get("BES_USD_RETURN")?.price || 0.35,
               "CONSERVATIVE": livePrices.get("BES_CONSERVATIVE_RETURN")?.price || 0.40,
             };
             annualFundGrowth = fundReturns[fundType] || 0.45;
@@ -557,7 +525,7 @@ export function calculatePortfolioMetrics(investments: any[], livePrices: Map<st
         // --- SELF-HEALING COST SYNCHRONIZER (Akıllı Geçmiş Veri Onarımı) ---
         const usdRate = livePrices.get("USDTRY=X")?.price || livePrices.get("USD")?.price || 36.45;
         const tempCurrentVal = (inv.quantity || 1) * currentPrice;
-        
+
         const isUsdAsset = inv.type === "NASDAQ" || inv.type === "CRYPTO" || (inv.currency === "USD") || (symUpper && (symUpper.includes("ONS") || symUpper.includes("GC=F") || symUpper.includes("SI=F") || symUpper.includes("BZ=F") || symUpper.includes("USD") || symUpper.includes("USDT")));
 
         if (isUsdAsset) {
@@ -614,7 +582,7 @@ export function calculatePortfolioMetrics(investments: any[], livePrices: Map<st
 export function getRateForCurrency(currency: string, livePrices: Map<string, PriceResult>): number {
   const cur = (currency || "TRY").toUpperCase();
   if (cur === "TRY" || cur === "TL") return 1;
-  
+
   if (cur === "USD") return livePrices.get("USDTRY=X")?.price || livePrices.get("USD")?.price || 36.45;
   if (cur === "EUR") return livePrices.get("EURTRY=X")?.price || livePrices.get("EUR")?.price || 38.65;
   if (cur === "GBP") return livePrices.get("GBPTRY=X")?.price || livePrices.get("GBP")?.price || 45.85;
@@ -689,7 +657,7 @@ export function normalizeFinancialItemsToTry(items: any[], livePrices: Map<strin
   return items.map(item => {
     const cur = (item.currency || "TRY").toUpperCase();
     const rate = getRateForCurrency(cur, livePrices);
-    
+
     const dbAmount = Number(item.amount) || 0;
     const origAmt = item.originalAmount != null ? Number(item.originalAmount) : (cur === "TRY" || cur === "TL" ? dbAmount : dbAmount / (item.fxRate || rate || 1));
     const tryAmt = (cur === "TRY" || cur === "TL") ? dbAmount : (origAmt * rate);

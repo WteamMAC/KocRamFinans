@@ -153,13 +153,14 @@ export async function getCommunityDetails(communityId: string) {
   
   const isMember = community.members && community.members.length > 0 && community.members[0].status === "ACCEPTED";
   const isAdmin = (community.members && community.members.length > 0 && community.members[0].role === "ADMIN") || (internalUser?.role === "ADMIN");
+  const isSiteAdmin = internalUser?.role === "ADMIN";
 
   const clerk = await clerkClient();
   const creatorClerk = await clerk.users.getUser(community.creator.clerkUserId);
 
   return {
     ...community,
-    isMember,
+    isMember: isMember || isSiteAdmin,
     isAdmin,
     isPending: community.members && community.members.length > 0 && community.members[0].status === "PENDING",
     memberCount: community._count.members,
@@ -312,7 +313,31 @@ export async function deleteCommunity(communityId: string) {
   
   if (community.creatorId !== me.id && me.role !== "ADMIN") throw new Error("Yetki yok");
 
-  await prisma.community.delete({ where: { id: communityId } });
+  // Tüm silme işlemini tek bir transaction içinde atomik olarak yap
+  await prisma.$transaction(async (tx) => {
+    // 1. Topluluğa ait tüm post id'lerini bul
+    const posts = await tx.blogPost.findMany({
+      where: { communityId },
+      select: { id: true }
+    });
+    const postIds = posts.map(p => p.id);
+
+    if (postIds.length > 0) {
+      // 2. Beğenileri sil (BlogPost'un onDelete:Cascade'i olmayanlar)
+      await tx.blogLike.deleteMany({ where: { postId: { in: postIds } } });
+      // 3. Yorumları sil
+      await tx.blogComment.deleteMany({ where: { postId: { in: postIds } } });
+      // 4. Postları sil
+      await tx.blogPost.deleteMany({ where: { id: { in: postIds } } });
+    }
+
+    // 5. Topluluk üyeleri Cascade ile otomatik silinir, yine de açıkça sil
+    await tx.communityMember.deleteMany({ where: { communityId } });
+
+    // 6. Topluluğu sil
+    await tx.community.delete({ where: { id: communityId } });
+  });
+
   revalidatePath("/dashboard/blog");
 }
 
