@@ -70,16 +70,18 @@ export function CurrencyProvider({ children, initialRates, initialCurrency = "TR
   const [rates, setRates] = useState<Record<string, number>>(() => initialRates ? { ...defaultRates, ...initialRates, TRY: 1 } : defaultRates);
   const [isLoading, setIsLoading] = useState<boolean>(!initialRates);
 
-  // İlk yüklemede localStorage'dan oku veya initialCurrency kullan
+  // İlk yüklemede sunucudan gelen kullanıcı tercihini (initialCurrency) her zaman öncelikli kullan
   useEffect(() => {
     try {
-      const saved = localStorage.getItem("koç_ram_display_currency");
-      if (saved && DISPLAY_CURRENCIES_MAP[saved]) {
-        setDisplayCurrencyState(saved);
-      } else if (initialCurrency && DISPLAY_CURRENCIES_MAP[initialCurrency]) {
+      if (initialCurrency && DISPLAY_CURRENCIES_MAP[initialCurrency]) {
         setDisplayCurrencyState(initialCurrency);
         localStorage.setItem("koç_ram_display_currency", initialCurrency);
         document.cookie = `koç_ram_display_currency=${initialCurrency}; path=/; max-age=31536000; SameSite=Lax`;
+      } else {
+        const saved = localStorage.getItem("koç_ram_display_currency");
+        if (saved && DISPLAY_CURRENCIES_MAP[saved]) {
+          setDisplayCurrencyState(saved);
+        }
       }
     } catch (err) {
       console.error("Error reading currency from localStorage:", err);

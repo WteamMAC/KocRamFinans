@@ -35,17 +35,17 @@ export default async function RootLayout({
   const initialRates = await getExchangeRatesAction();
   let initialCurrency = "TRY";
   try {
-    const cookieStore = await cookies();
-    const cookieVal = cookieStore.get("koç_ram_display_currency")?.value;
-    if (cookieVal) {
-      initialCurrency = cookieVal;
+    const { userId } = await auth();
+    if (userId) {
+      const user = await prisma.user.findUnique({ where: { clerkUserId: userId } });
+      if (user && user.currency) {
+        initialCurrency = user.currency;
+      }
     } else {
-      const { userId } = await auth();
-      if (userId) {
-        const user = await prisma.user.findUnique({ where: { clerkUserId: userId } });
-        if (user && user.currency) {
-          initialCurrency = user.currency;
-        }
+      const cookieStore = await cookies();
+      const cookieVal = cookieStore.get("koç_ram_display_currency")?.value;
+      if (cookieVal) {
+        initialCurrency = cookieVal;
       }
     }
   } catch (e) {}
