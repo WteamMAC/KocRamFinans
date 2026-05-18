@@ -54,15 +54,15 @@ export async function addDebt(data: {
     data: {
       userId: user.id,
       type: data.type,
-      amount: finalTotalAmount,
-      principalAmount: data.amount,
+      amount: finalTotalAmount, // Native currency
+      principalAmount: data.amount, // Native currency
       interestRate: data.interestRate,
-      installmentAmount: monthlyInstallment,
+      installmentAmount: monthlyInstallment, // Native currency
       remainingInstallments: data.remainingInstallments,
       paymentDay: data.paymentDay,
       description: finalDescription,
       currency: data.currency ?? "TRY",
-      originalAmount: data.originalAmount,
+      originalAmount: data.amount, // Set originalAmount equal to the initial principal natively
       fxRate: data.fxRate ?? 1,
     },
   });
@@ -261,13 +261,13 @@ export async function refinanceDebtWithDetails(data: {
   if (!oldDebt) throw new Error("Eski borç bulunamadı.");
 
   // Calculate new debt final total amount and installments
-  let finalNewTotalAmount = data.newDebt.amount * data.newDebt.fxRate;
+  let finalNewTotalAmount = data.newDebt.amount; // Native currency
   let monthlyInstallment = null;
 
   if (data.newDebt.interestRate && data.newDebt.remainingInstallments && data.newDebt.remainingInstallments > 0) {
     const i = data.newDebt.interestRate / 100;
     const n = data.newDebt.remainingInstallments;
-    const p = data.newDebt.amount * data.newDebt.fxRate;
+    const p = data.newDebt.amount; // Native currency
     
     if (i > 0) {
       monthlyInstallment = (p * i * Math.pow(1 + i, n)) / (Math.pow(1 + i, n) - 1);
@@ -289,7 +289,7 @@ export async function refinanceDebtWithDetails(data: {
       userId: user.id,
       type: data.newDebt.type,
       amount: finalNewTotalAmount,
-      principalAmount: data.newDebt.amount * data.newDebt.fxRate,
+      principalAmount: data.newDebt.amount,
       interestRate: data.newDebt.interestRate,
       installmentAmount: monthlyInstallment,
       remainingInstallments: data.newDebt.remainingInstallments,
@@ -302,10 +302,11 @@ export async function refinanceDebtWithDetails(data: {
   });
 
   // Calculate old debt deduction
-  // Old debt is in its own currency, and payAmount is in the new debt's currency.
-  // We convert payAmount to TRY first, then subtract from old debt's amount (which is in TRY).
-  const payAmountInTry = data.payAmount * data.newDebt.fxRate;
-  const newOldAmount = Math.max(0, oldDebt.amount - payAmountInTry);
+  // Old debt and new debt might have different currencies. We must convert payAmount to old debt's currency.
+  // payAmount is in newDebt.currency. To convert to oldDebt.currency:
+  // (payAmount * newDebt.fxRate) / oldDebt.fxRate
+  const payAmountInOldCurrency = (data.payAmount * data.newDebt.fxRate) / (oldDebt.fxRate || 1);
+  const newOldAmount = Math.max(0, oldDebt.amount - payAmountInOldCurrency);
 
   if (newOldAmount <= 0) {
     await prisma.debt.update({
@@ -332,7 +333,7 @@ export async function refinanceDebtWithDetails(data: {
       data: {
         userId: user.id,
         type: "Diğer",
-        amount: remainingOriginalAmount * data.newDebt.fxRate,
+        amount: remainingOriginalAmount, // Native currency
         isRecurring: false,
         description: `Yapılandırılan borçtan kalan harcama (${data.newDebt.description || data.newDebt.type}).`,
         date: new Date(),

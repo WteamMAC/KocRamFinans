@@ -659,7 +659,8 @@ export function normalizeFinancialItemsToTry(items: any[], livePrices: Map<strin
     const rate = getRateForCurrency(cur, livePrices);
 
     const dbAmount = Number(item.amount) || 0;
-    const origAmt = item.originalAmount != null ? Number(item.originalAmount) : (cur === "TRY" || cur === "TL" ? dbAmount : dbAmount / (item.fxRate || rate || 1));
+    // Artık amount veritabanında NATIVE (orijinal) döviz cinsinden tutuluyor!
+    const origAmt = item.originalAmount != null ? Number(item.originalAmount) : dbAmount;
     const tryAmt = (cur === "TRY" || cur === "TL") ? dbAmount : (origAmt * rate);
 
     return {

@@ -441,7 +441,7 @@ export async function addFixedAsset(data: {
         userId: user.id,
         name: data.name,
         type: data.type,
-        value: tryVal,
+        value: orig, // Native currency
         currency: curr,
         originalAmount: orig,
         fxRate: fx,

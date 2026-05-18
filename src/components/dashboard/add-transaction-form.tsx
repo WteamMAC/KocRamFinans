@@ -69,7 +69,7 @@ export function AddTransactionForm({ initialType = "expense" }: AddTransactionFo
       if (type === "income") {
         await addIncome({
           type: formData.category,
-          amount: amountInTry,
+          amount: originalAmount, // Native currency
           isRecurring: formData.isRecurring,
           dueDate: formData.dueDate ? Number(formData.dueDate) : undefined,
           date: new Date(formData.date),
@@ -81,7 +81,7 @@ export function AddTransactionForm({ initialType = "expense" }: AddTransactionFo
       } else {
         await addExpense({
           type: formData.category,
-          amount: amountInTry,
+          amount: originalAmount, // Native currency
           isRecurring: formData.isRecurring,
           dueDate: formData.dueDate ? Number(formData.dueDate) : undefined,
           date: new Date(formData.date),

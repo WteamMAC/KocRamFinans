@@ -390,12 +390,11 @@ export function AssetList({
       const origAmount = Number(data.originalAmount || data.value || 0);
       const curr = data.currency || "TRY";
       const currRate = rates[curr] || 1;
-      const tryValue = curr === "TRY" ? origAmount : origAmount * currRate;
 
       await addFixedAsset({
         name: data.name,
         type: data.type,
-        value: tryValue,
+        value: origAmount, // Native
         currency: curr,
         originalAmount: origAmount,
         fxRate: currRate

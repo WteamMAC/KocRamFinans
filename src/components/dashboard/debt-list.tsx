@@ -83,14 +83,19 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
     });
 
     const activeDebts = debts.filter(d => d.amount > 0);
-    const totalDebt = activeDebts.reduce((sum, d) => sum + d.amount, 0);
+    const totalDebt = activeDebts.reduce((sum, d) => {
+        const rate = rates[d.currency] || 1;
+        return sum + (d.amount * rate);
+    }, 0);
     const maxRemaining = Math.max(...activeDebts.map(d => d.remainingInstallments || 0), 1);
     const displayCount = Math.min(maxRemaining, 60); // En fazla 5 yıllık ödeme projeksiyonu
 
     // Bu ayki ödeme takibi
     const currentMonthExpected = activeDebts.reduce((sum, d) => {
         if (d.remainingInstallments && d.remainingInstallments > 0) {
-            return sum + (d.installmentAmount || (d.amount / d.remainingInstallments));
+            const nativeExpected = d.installmentAmount || (d.amount / d.remainingInstallments);
+            const rate = rates[d.currency] || 1;
+            return sum + (nativeExpected * rate);
         }
         return sum; // Tek seferlik borçlar projeksiyona girer ama taksitli takibine girmez (isteğe bağlı)
     }, 0);
@@ -105,7 +110,6 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
 
         const selectedRate = rates[formData.currency] || 1;
         const originalAmount = Number(formData.amount);
-        const amountInTry = originalAmount * selectedRate;
 
         try {
             if (refinanceId) {
@@ -115,7 +119,7 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
                     payAmount: payAmt,
                     newDebt: {
                         type: formData.type,
-                        amount: originalAmount,
+                        amount: originalAmount, // Native
                         interestRate: formData.interestRate ? Number(formData.interestRate) : undefined,
                         remainingInstallments: formData.remainingInstallments ? Number(formData.remainingInstallments) : undefined,
                         paymentDay: formData.paymentDay ? Number(formData.paymentDay) : undefined,
@@ -130,7 +134,7 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
             } else {
                 await addDebt({
                     type: formData.type,
-                    amount: amountInTry,
+                    amount: originalAmount, // Native
                     interestRate: formData.interestRate ? Number(formData.interestRate) : undefined,
                     remainingInstallments: formData.remainingInstallments ? Number(formData.remainingInstallments) : undefined,
                     paymentDay: formData.paymentDay ? Number(formData.paymentDay) : undefined,
@@ -658,10 +662,10 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                         <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">Kalan Borç</span>
-                                        <p className="text-2xl font-heading font-bold text-primary">{formatAmount(debt.amount)}</p>
+                                        <p className="text-2xl font-heading font-bold text-primary">{formatAmount(debt.amount * (rates[debt.currency] || 1), undefined, { amount: debt.amount, currency: debt.currency })}</p>
                                         {debt.currency && debt.currency !== "TRY" && (
                                             <p className="text-[11px] text-muted-foreground font-semibold">
-                                                (Orijinal: {debt.originalAmount?.toLocaleString()} {debt.currency})
+                                                (Orijinal: {debt.amount?.toLocaleString()} {debt.currency})
                                             </p>
                                         )}
                                     </div>
@@ -684,7 +688,7 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
                                             <TrendingDown className="w-4 h-4 opacity-40" /> Aylık Ödeme (Tahmini)
                                         </div>
                                         <span className="font-bold text-primary">
-                                            {formatAmount(debt.installmentAmount || monthlyTry)}
+                                            {formatAmount((debt.installmentAmount || monthlyTry) * (rates[debt.currency] || 1), undefined, { amount: debt.installmentAmount || monthlyTry, currency: debt.currency })}
                                         </span>
                                     </div>
                                     {debt.paymentDay && (

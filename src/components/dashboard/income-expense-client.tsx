@@ -181,7 +181,7 @@ export function IncomeExpenseClient({
       if (editingTransaction.type === "income") {
         await editIncome(editingTransaction.id, {
           type: editFormData.category,
-          amount: amountInTry,
+          amount: originalAmount, // Native currency
           isRecurring: editFormData.isRecurring,
           dueDate: editFormData.dueDate ? Number(editFormData.dueDate) : undefined,
           date: new Date(editFormData.date),
@@ -193,7 +193,7 @@ export function IncomeExpenseClient({
       } else {
         await editExpense(editingTransaction.id, {
           type: editFormData.category,
-          amount: amountInTry,
+          amount: originalAmount, // Native currency
           isRecurring: editFormData.isRecurring,
           dueDate: editFormData.dueDate ? Number(editFormData.dueDate) : undefined,
           date: new Date(editFormData.date),
