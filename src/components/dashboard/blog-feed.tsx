@@ -20,6 +20,7 @@ import { useUser } from "@clerk/nextjs";
 import Link from "next/link";
 import { CommunityCreateModal } from "./community-create-modal";
 import { CommunityDiscovery } from "./community-discovery";
+import { getPusherClient } from "@/lib/pusher";
 import { 
   Heart, MessageCircle, Trash2, Send, X, ChevronDown, 
   Filter, Image as ImageIcon, Plus, Users, LayoutGrid, ArrowLeft, Settings, Check, UserMinus, ShieldAlert, Ban,
@@ -1132,6 +1133,44 @@ export function BlogFeed({
   const [filterByInterests, setFilterByInterests] = useState(false);
   const [tagSearch, setTagSearch] = useState("");
 
+  // Pusher Realtime Stateleri
+  const [realtimeQueue, setRealtimeQueue] = useState<Post[]>([]);
+
+  useEffect(() => {
+    const pusher = getPusherClient();
+    if (!pusher) return;
+
+    const channel = pusher.subscribe("wteam-blog-channel");
+
+    channel.bind("new-post", (data: { post: Post }) => {
+      if (!data?.post) return;
+      if (data.post.authorId === currentUserId) return;
+
+      setRealtimeQueue(prev => {
+        if (prev.some(p => p.id === data.post.id)) return prev;
+        return [data.post, ...prev];
+      });
+    });
+
+    channel.bind("new-comment", (data: { postId: string; comment: Comment }) => {
+      if (!data?.comment || !data?.postId) return;
+      if (data.comment.authorId === currentUserId) return;
+
+      setPosts(prev => prev.map(p => {
+        if (p.id === data.postId) {
+          if (p.comments.some(c => c.id === data.comment.id)) return p;
+          return { ...p, comments: [...p.comments, data.comment] };
+        }
+        return p;
+      }));
+    });
+
+    return () => {
+      channel.unbind_all();
+      pusher.unsubscribe("wteam-blog-channel");
+    };
+  }, [currentUserId]);
+
   const [allDiscoveredTags, setAllDiscoveredTags] = useState<string[]>([
     "#kripto", "#borsa", "#altın", "#bist100", "#hisse", "#yatırım", "#ekonomi", "#finans", "#bist"
   ]);
@@ -1563,6 +1602,21 @@ export function BlogFeed({
               </div>
             </div>,
             document.body
+          )}
+
+          {realtimeQueue.length > 0 && (
+            <div className="animate-in slide-in-from-top-4 duration-300 my-2">
+              <button
+                onClick={() => {
+                  setPosts(prev => [...realtimeQueue, ...prev]);
+                  setRealtimeQueue([]);
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+                className="w-full bg-gradient-to-r from-primary to-primary/80 text-primary-foreground py-3.5 px-6 rounded-[20px] font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2.5 shadow-lg shadow-primary/25 hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer animate-pulse"
+              >
+                <Sparkles className="h-4 w-4 animate-spin" /> Yukarıda {realtimeQueue.length} Yeni Paylaşım Var! Akışa Eklemek İçin Tıkla ✨
+              </button>
+            </div>
           )}
 
           {isBanned ? (

@@ -5,6 +5,7 @@ import { auth, clerkClient } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 import { generateText } from "ai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import { pusherServer } from "@/lib/pusher";
 
 // Duyuru temizliği için modül düzeyinde hız limiti (1 saat bir kez)
 let lastAnnouncementCleanup = 0;
@@ -69,18 +70,37 @@ Lütfen buna Grok gibi eğlenceli, samimi, esprili ve zekice bir dille (ama doğ
         }
       }
 
-      await prisma.blogComment.create({
+      const newAiComment = await prisma.blogComment.create({
         data: {
           postId: postId,
           authorId: aiUser.id,
           content: generatedText
         }
       });
+
+      try {
+        await pusherServer.trigger("wteam-blog-channel", "new-comment", {
+          postId,
+          comment: {
+            id: newAiComment.id,
+            content: generatedText,
+            createdAt: newAiComment.createdAt,
+            authorId: aiUser.id,
+            authorUsername: "wteam_ai",
+            authorName: "Wteam AI",
+            authorImage: "https://api.dicebear.com/7.x/bottts/svg?seed=wteam&backgroundColor=10b981",
+            isMyComment: false,
+          }
+        });
+      } catch (err) {
+        console.warn("Pusher AI comment trigger hatası:", err);
+      }
     } catch (e: any) {
       console.error("AI mention processing error:", e);
     }
   }
 }
+
 
 async function processMentionsAndNotify(content: string, postId: string, sourceUserId: string) {
   const MENTION_REGEX = /@([a-zA-Z0-9_]+)/g;
@@ -160,6 +180,48 @@ export async function createPost(
     },
   });
 
+  // Pusher Realtime tetikleme
+  try {
+    let authorName = user.username || "Kullanıcı";
+    let authorImage = "";
+    try {
+      const clerk = await clerkClient();
+      const clerkUser = await clerk.users.getUser(userId);
+      authorName = `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim() || authorName;
+      authorImage = clerkUser.imageUrl || "";
+    } catch (e) {}
+
+    let communityName;
+    if (communityId) {
+      const com = await prisma.community.findUnique({ where: { id: communityId } });
+      if (com) communityName = com.name;
+    }
+
+    const optimisticPost = {
+      id: newPost.id,
+      content,
+      tags,
+      imageUrl: imageUrl || null,
+      isAnnouncement: announcementFlag,
+      createdAt: newPost.createdAt,
+      authorId: user.id,
+      authorUsername: user.username,
+      authorName,
+      authorImage,
+      communityId: communityId || undefined,
+      communityName: communityName || undefined,
+      likeCount: 0,
+      isLikedByMe: false,
+      isMyPost: false,
+      isAdmin: user.role === "ADMIN",
+      comments: [],
+    };
+
+    await pusherServer.trigger("wteam-blog-channel", "new-post", { post: optimisticPost });
+  } catch (err) {
+    console.warn("Pusher new-post trigger hatası:", err);
+  }
+
   // AI etiketlemesi kontrolü
   await processAiMentions(content, newPost.id);
   // Normal kullanıcı etiketlemesi ve bildirimler
@@ -226,6 +288,34 @@ export async function addComment(postId: string, content: string) {
     data: { postId, authorId: user.id, content },
   });
 
+  // Pusher Realtime tetikleme
+  try {
+    let authorName = user.username || "Kullanıcı";
+    let authorImage = "";
+    try {
+      const clerk = await clerkClient();
+      const clerkUser = await clerk.users.getUser(userId);
+      authorName = `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim() || authorName;
+      authorImage = clerkUser.imageUrl || "";
+    } catch (e) {}
+
+    await pusherServer.trigger("wteam-blog-channel", "new-comment", {
+      postId,
+      comment: {
+        id: newComment.id,
+        content,
+        createdAt: newComment.createdAt,
+        authorId: user.id,
+        authorUsername: user.username,
+        authorName,
+        authorImage,
+        isMyComment: false,
+      }
+    });
+  } catch (err) {
+    console.warn("Pusher new-comment trigger hatası:", err);
+  }
+
   const post = await prisma.blogPost.findUnique({ where: { id: postId }, select: { authorId: true } });
   if (post && post.authorId !== user.id) {
     await prisma.notification.create({
@@ -247,6 +337,7 @@ export async function addComment(postId: string, content: string) {
   revalidatePath("/dashboard/blog");
   return { id: newComment.id };
 }
+
 
 export async function deleteComment(commentId: string) {
   const { userId } = await auth();
