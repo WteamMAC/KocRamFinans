@@ -535,7 +535,10 @@ export async function POST(req: Request) {
 
                     if (payAmountInput !== null) {
                       payCurrency = (rawCurrency || debt.currency || "TRY").toUpperCase();
-                      if (payCurrency !== "TRY") {
+                      if (payCurrency === debt.currency) {
+                        // Eğer borcun kendi para birimiyle ödüyorsa, kur farkı oluşmaması için borcun orijinal kurunu kullan
+                        payFxRate = debt.fxRate || 1;
+                      } else if (payCurrency !== "TRY") {
                         const symbolMap: Record<string, string> = {
                           USD: "USDTRY=X", EUR: "EURTRY=X", GBP: "GBPTRY=X",
                           CHF: "CHFTRY=X", JPY: "JPYTRY=X", AED: "AEDTRY=X",
