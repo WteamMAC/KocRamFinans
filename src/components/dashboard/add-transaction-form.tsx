@@ -109,20 +109,58 @@ export function AddTransactionForm({ initialType = "expense" }: AddTransactionFo
 
     try {
       const reader = new FileReader();
-      reader.onloadend = async () => {
-        const base64String = (reader.result as string).split(',')[1];
-        const res = await processReceiptWithAI(base64String, file.type);
-        
-        if (res.success && res.data) {
-          setFormData(prev => ({
-            ...prev,
-            amount: res.data.amount.toString(),
-            category: categories.includes(res.data.category) ? res.data.category : "Diğer",
-            description: res.data.description || "Fiş/Fatura Taraması"
-          }));
-        } else {
-          setError(res.error || "Fiş okunamadı.");
-        }
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = async () => {
+          try {
+            const canvas = document.createElement("canvas");
+            const MAX_WIDTH = 800;
+            const MAX_HEIGHT = 800;
+            let width = img.width;
+            let height = img.height;
+
+            if (width > height && width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width;
+              width = MAX_WIDTH;
+            } else if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height;
+              height = MAX_HEIGHT;
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext("2d");
+            ctx?.drawImage(img, 0, 0, width, height);
+
+            const compressedBase64 = canvas.toDataURL("image/jpeg", 0.7);
+            const rawBase64 = compressedBase64.split(',')[1];
+
+            const res = await processReceiptWithAI(rawBase64, "image/jpeg");
+            
+            if (res.success && res.data) {
+              setFormData(prev => ({
+                ...prev,
+                amount: res.data.amount.toString(),
+                category: categories.includes(res.data.category) ? res.data.category : "Diğer",
+                description: res.data.description || "Fiş/Fatura Taraması"
+              }));
+            } else {
+              setError(res.error || "Fiş okunamadı.");
+            }
+          } catch (err: any) {
+            setError("Görsel işlenirken bir hata oluştu: " + (err.message || ""));
+          } finally {
+            setIsScanning(false);
+          }
+        };
+        img.onerror = () => {
+          setError("Görsel yüklenemedi.");
+          setIsScanning(false);
+        };
+        img.src = event.target?.result as string;
+      };
+      reader.onerror = () => {
+        setError("Dosya okunamadı.");
         setIsScanning(false);
       };
       reader.readAsDataURL(file);
