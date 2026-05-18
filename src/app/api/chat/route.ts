@@ -153,7 +153,7 @@ export async function POST(req: Request) {
                 description: { type: SchemaType.STRING, description: "Açıklama veya Hisse Kodu" },
                 isRecurring: { type: SchemaType.BOOLEAN, description: "Giderin her ay tekrarlanıp tekrarlanmayacağı. Market, yakıt, tek seferlik harcamalar için false. Sadece kira gibi sabit aylık ödemeler için true. Varsayılan: false" },
                 quantity: { type: SchemaType.NUMBER, description: "Yatırımlar için miktar/adet" },
-                purchasePrice: { type: SchemaType.NUMBER, description: "Yatırımlar için birim alış fiyatı" },
+                purchasePrice: { type: SchemaType.NUMBER, description: "Yatırımlar için BİRİM alış fiyatı. KESİNLİKLE orijinal para biriminde gönder (USD ise USD, TRY ise TRY). Örneğin BTC için USD birim fiyatı: 87500. amount alanına ise toplam tutarı (quantity * purchasePrice) yaz. TRY'ye dönüştürme YAPMA." },
                 interestRate: { type: SchemaType.NUMBER, description: "Borçlar için aylık faiz oranı (%). Belirtilmezse 0 kabul et." },
                 remainingInstallments: { type: SchemaType.NUMBER, description: "Borçlar için kalan taksit sayısı. Tek seferlik borçlar için boş bırak." },
                 paymentDay: { type: SchemaType.NUMBER, description: "Borçlar için taksit ödeme günü (1-31)." },
@@ -457,16 +457,29 @@ export async function POST(req: Request) {
                     });
                   } else if (type === "investment") {
                     const q = Number(quantity) > 0 ? Number(quantity) : 1;
-                    const p = Number(purchasePrice) > 0 ? Number(purchasePrice) : (amountInTRY > 0 ? amountInTRY / q : 0);
-                    const finalAmt = amountInTRY > 0 ? amountInTRY : (q * p);
+                    // purchasePrice: AI tarafından orijinal para biriminde (USD, TRY vb.) gönderilir
+                    // amountInTRY: toplam tutar TRY'ye çevrilmiş hali (fxRate ile)
+                    // Birim fiyatı da TRY'ye çevirip saklıyoruz — price-service tutarsız dönüşüm yapmaz
+                    const rawPurchasePrice = Number(purchasePrice);
+                    // Eğer purchasePrice orijinal para birimindeyse TRY'ye çevir; değilse amountInTRY'den türet
+                    let unitPriceInTRY: number;
+                    if (rawPurchasePrice > 0) {
+                      unitPriceInTRY = rawPurchasePrice * fxRate; // USD*fxRate = TRY birim fiyat
+                    } else if (amountInTRY > 0) {
+                      unitPriceInTRY = amountInTRY / q;
+                    } else {
+                      unitPriceInTRY = 0;
+                    }
+                    const finalAmt = amountInTRY > 0 ? amountInTRY : (q * unitPriceInTRY);
                     await prisma.investment.create({
                       data: {
                         userId: user.id,
                         type: standardizeInvestmentType(category),
                         symbol: description || category,
                         quantity: q,
-                        purchasePrice: p,
-                        amount: finalAmt,
+                        purchasePrice: unitPriceInTRY, // TRY cinsinden birim fiyat (tutarlı)
+                        amount: finalAmt,             // TRY cinsinden toplam maliyet
+                        currency,                     // Orijinal para birimi (USD, EUR vs.)
                         description: description || null,
                         status: "OPEN",
                         transactionType: "BUY",
