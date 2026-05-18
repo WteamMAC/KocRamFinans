@@ -21,6 +21,7 @@ export async function addAsset(data: {
   fundType?: string;
   fundSymbol?: string;
   maturityPeriod?: number;
+  currency?: string;
 }) {
   try {
     const { userId } = await auth();
