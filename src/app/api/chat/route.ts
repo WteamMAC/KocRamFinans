@@ -148,9 +148,10 @@ export async function POST(req: Request) {
                 type: { type: SchemaType.STRING, description: "income, expense, debt, investment, fixedAsset" },
                 amount: { type: SchemaType.NUMBER, description: "Orijinal toplam tutar (kur dönüşümü yapma). Eğer yatırım ekliyorsan ve toplam tutarı bilmiyorsan, 0 gönderebilirsin (sistem quantity * purchasePrice üzerinden kendi hesaplar)." },
                 category: { type: SchemaType.STRING, description: "Kategori. Gider için: 'Mutfak & Market', 'Ev Kirası', 'Faturalar', 'Ulaşım', 'Eğitim / Sağlık', 'Diğer'. Gelir için: 'Maaş', 'Kira Geliri', 'Ek İş', 'Temettü', 'Diğer'. Borç için: 'Kredi Kartı', 'Banka Kredisi', 'Şahsi Borç'. Yatırım: 'BIST', 'NASDAQ', 'CRYPTO', 'GOLD', 'BES'. Sabit Varlık (fixedAsset) için: 'RealEstate' (Ev, Arsa), 'Vehicle' (Araba, Motor), 'Electronics' (Telefon, Bilgisayar), 'Other'." },
+                symbol: { type: SchemaType.STRING, description: "Yatırımlar için Yahoo Finance sembolü (Örn: BTC-USD, ETH-USD, THYAO.IS, AAPL, GC=F). Kategori CRYPTO ise sonuna mutlaka '-USD' eklemelisin. BIST ise '.IS' eklemelisin. NASDAQ ise direkt AAPL gibi yazmalısın. KESİNLİKLE 'BTC' gibi ham yazma, 'BTC-USD' yaz." },
                 currency: { type: SchemaType.STRING, description: "Para birimi kodu. Kullanıcı 'dolar' veya '$' derse USD, 'euro' veya '€' derse EUR, 'sterlin' derse GBP, belirtmezse TRY yaz." },
                 date: { type: SchemaType.STRING, description: "İşlem tarihi YYYY-MM-DD formatında. Kullanıcı tarih belirtmezse bugünün tarihini yaz." },
-                description: { type: SchemaType.STRING, description: "Açıklama veya Hisse Kodu" },
+                description: { type: SchemaType.STRING, description: "Açıklama" },
                 isRecurring: { type: SchemaType.BOOLEAN, description: "Giderin her ay tekrarlanıp tekrarlanmayacağı. Market, yakıt, tek seferlik harcamalar için false. Sadece kira gibi sabit aylık ödemeler için true. Varsayılan: false" },
                 quantity: { type: SchemaType.NUMBER, description: "Yatırımlar için miktar/adet" },
                 purchasePrice: { type: SchemaType.NUMBER, description: "Yatırımlar için BİRİM alış fiyatı. EĞER fiyatı getMarketPrice aracı ile çektiysen, 'originalPrice' değerini kullan ve currency olarak da 'originalCurrency' değerini gönder. KESİNLİKLE kendi kendine TRY dönüşümü YAPMA. Sistem onu otomatik halleder." },
@@ -368,7 +369,7 @@ export async function POST(req: Request) {
 
                   apiResponse = (cat === "all" || cat === "hepsi") ? dataMap : { data: dataMap[cat as keyof typeof dataMap] || dataMap };
                 } else if (call.name === "addFinancialRecord") {
-                  const { type, amount, category, description, quantity, purchasePrice, isRecurring,
+                  const { type, amount, category, symbol, description, quantity, purchasePrice, isRecurring,
                     currency: rawCurrency, date: rawDate,
                     interestRate, remainingInstallments, paymentDay, dueDate } = args;
 
@@ -474,11 +475,20 @@ export async function POST(req: Request) {
                       unitPriceInTRY = 0;
                     }
                     const finalAmt = amountInTRY > 0 ? amountInTRY : (q * unitPriceInTRY);
+                    const rawSymbol = (symbol || description || category || "").toUpperCase().trim();
+                    const invType = standardizeInvestmentType(category);
+                    let normalizedSymbol = rawSymbol;
+                    if (invType === "CRYPTO" && !normalizedSymbol.includes("-")) {
+                      normalizedSymbol = `${normalizedSymbol}-USD`;
+                    } else if (invType === "BIST" && !normalizedSymbol.includes(".")) {
+                      normalizedSymbol = `${normalizedSymbol}.IS`;
+                    }
+
                     await prisma.investment.create({
                       data: {
                         userId: user.id,
-                        type: standardizeInvestmentType(category),
-                        symbol: description || category,
+                        type: invType,
+                        symbol: normalizedSymbol,
                         quantity: q,
                         purchasePrice: unitPriceInTRY, // TRY cinsinden birim fiyat (tutarlı)
                         amount: finalAmt,             // TRY cinsinden toplam maliyet
@@ -506,7 +516,7 @@ export async function POST(req: Request) {
                   revalidatePath("/dashboard");
                   revalidatePath("/dashboard/income-expense");
                   revalidatePath("/dashboard/debts");
-                  revalidatePath("/dashboard/investments");
+                  revalidatePath("/dashboard/assets");
                   revalidatePath("/dashboard/fixed-assets");
 
                   apiResponse = { success: true, message: `Kayıt başarıyla eklendi. (${safeAmount} ${currency}${fxRate !== 1 ? ` ≈ ${amountInTRY.toFixed(2)} TRY` : ""})` };
@@ -566,17 +576,17 @@ export async function POST(req: Request) {
                   revalidatePath("/dashboard");
                   revalidatePath("/dashboard/income-expense");
                   revalidatePath("/dashboard/debts");
-                  revalidatePath("/dashboard/investments");
+                  revalidatePath("/dashboard/assets");
                   revalidatePath("/dashboard/fixed-assets");
                   apiResponse = { success: true, message: "Kayıt veritabanından kalıcı olarak silindi." };
                 } else if (call.name === "getMarketPrice") {
                   const symbols: string[] = (Array.isArray(args.symbols) ? args.symbols : [args.symbols]) as string[];
                   const resultsMap = await getLivePrices(symbols);
                   const dataWithCurrency = Object.fromEntries(
-                    Array.from(resultsMap.entries()).map(([k, v]) => [k, { 
-                      tryPrice: v.price, 
-                      originalPrice: v.originalPrice || v.price, 
-                      originalCurrency: v.originalCurrency || "TRY" 
+                    Array.from(resultsMap.entries()).map(([k, v]) => [k, {
+                      tryPrice: v.price,
+                      originalPrice: v.originalPrice || v.price,
+                      originalCurrency: v.originalCurrency || "TRY"
                     }])
                   );
                   apiResponse = { data: dataWithCurrency, note: "The tryPrice is the value converted to TRY. The originalPrice is the value in its native currency (originalCurrency). When adding a record, you should use the originalPrice and originalCurrency." };
