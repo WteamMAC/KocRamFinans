@@ -840,14 +840,15 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
                                         value={payModal.payCurrency || "TRY"} 
                                         disabled={payModal.isClose}
                                         onValueChange={(v) => {
-                                            const payRate = rates[v] || 1;
+                                            const currencyCode = v as string;
+                                            const payRate = rates[currencyCode] || 1;
                                             const debtRate = rates[payModal.currency || "TRY"] || 1;
                                             const currentPayAmount = payModal.payAmount || 0;
                                             const debtDeduction = (currentPayAmount * payRate) / debtRate;
 
                                             setPayModal(p => p ? { 
                                                 ...p, 
-                                                payCurrency: v,
+                                                payCurrency: currencyCode,
                                                 amount: Number(debtDeduction.toFixed(4)),
                                                 rawAmount: debtDeduction
                                             } : null);
