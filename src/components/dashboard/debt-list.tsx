@@ -178,7 +178,7 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
                     payModal.rawAmount,
                     false,
                     payModal.currency,
-                    payModal.originalAmount ? payModal.originalAmount / (payModal.fxRate || 1) : undefined,
+                    payModal.originalAmount ? payModal.originalAmount : (payModal.rawAmount / (payModal.fxRate || 1)),
                     payModal.fxRate
                 );
             }
