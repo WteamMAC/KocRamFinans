@@ -477,9 +477,12 @@ export function OnboardingForm() {
 
   const handleSaveAssetModal = (e: React.FormEvent) => {
     e.preventDefault();
-    const amountVal = parseFloat(modalAssetData.amount) || 0;
-    if (amountVal <= 0) {
-      alert("Lütfen 0'dan büyük bir toplam tutar giriniz.");
+    const qVal = parseFloat(modalAssetData.quantity) || 1;
+    const pVal = parseFloat(modalAssetData.purchasePrice) || 0;
+    const calcAmount = activeAssetModal === "FAIZ" ? qVal : (pVal > 0 ? qVal * pVal : qVal);
+
+    if (calcAmount <= 0) {
+      alert("Lütfen geçerli bir fiyat ve miktar giriniz.");
       return;
     }
     const typeObj = ASSET_CATEGORIES.find(c => c.id === activeAssetModal);
@@ -488,9 +491,9 @@ export function OnboardingForm() {
     investmentsField.append({
       type: typeName,
       symbol: modalAssetData.symbol ? modalAssetData.symbol.toUpperCase().trim() : undefined,
-      amount: amountVal,
-      quantity: parseFloat(modalAssetData.quantity) || 1,
-      purchasePrice: parseFloat(modalAssetData.purchasePrice) || amountVal,
+      amount: calcAmount,
+      quantity: qVal,
+      purchasePrice: pVal || calcAmount,
       currency: modalAssetData.currency || selectedCurrency || "TRY",
       description: modalAssetData.description || undefined,
       fundType: modalAssetData.fundType,
@@ -1309,26 +1312,15 @@ export function OnboardingForm() {
                       </div>
                     </div>
                     <div>
-                      <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Birim Miktarı / Adet</Label>
+                      <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">
+                        {activeAssetModal === "FAIZ" ? "Mevduat / Yatırılan Tutar" : "Birim Miktarı / Adet"}
+                      </Label>
                       <Input
                         type="number"
                         value={modalAssetData.quantity}
                         onChange={e => handleQuantityChange(e.target.value)}
                         placeholder="1"
                         className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-bold border-[#dbc2b0]/50 dark:border-[#887364]/40"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Toplam Tutar / Değer</Label>
-                      <Input
-                        type="number"
-                        value={modalAssetData.amount}
-                        onChange={e => setModalAssetData({ ...modalAssetData, amount: e.target.value })}
-                        placeholder="0.00"
-                        className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-black text-primary border-[#dbc2b0]/50 dark:border-[#887364]/40"
                       />
                     </div>
                   </div>
