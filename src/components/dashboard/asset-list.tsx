@@ -56,6 +56,7 @@ interface Asset {
   quantity: number;
   purchasePrice: number | null;
   amount: number;
+  currency?: string;
   currentPrice?: number;
   description?: string | null;
   createdAt: Date | string;
@@ -79,6 +80,7 @@ interface InvestmentLog {
   quantity: number;
   purchasePrice?: number;
   soldPrice?: number;
+  currency?: string;
   transactionType: "BUY" | "SELL";
   createdAt: Date | string;
   description?: string | null;
@@ -712,7 +714,15 @@ export function AssetList({
                                         </>
                                       ) : (
                                         <span className="text-sm font-bold text-foreground">
-                                          {item.quantity.toLocaleString("tr-TR", { maximumFractionDigits: 4 })} {getUnitLabel(group.type, group.symbol)} @ {formatCur(item.purchasePrice && item.purchasePrice > 0 ? item.purchasePrice : (cPrice || group.currentPrice || 0))}
+                                          {item.quantity.toLocaleString("tr-TR", { maximumFractionDigits: 4 })} {getUnitLabel(group.type, group.symbol)} @ {
+                                            (() => {
+                                              const p = item.purchasePrice && item.purchasePrice > 0 ? item.purchasePrice : (cPrice || group.currentPrice || 0);
+                                              const itemCur = (item.currency || "TRY").toUpperCase();
+                                              const rate = rates[itemCur] || 1;
+                                              const pInTry = itemCur === "TRY" ? p : p * rate;
+                                              return formatCur(pInTry, undefined, { amount: p, currency: itemCur });
+                                            })()
+                                          }
                                         </span>
                                       )}
                                       <span className="text-[10px] text-muted-foreground opacity-60 mt-0.5">{new Date(item.createdAt).toLocaleDateString("tr-TR")}</span>
@@ -846,7 +856,15 @@ export function AssetList({
                     <div className="text-right">
                       <div className="font-bold text-primary">{log.quantity.toLocaleString("tr-TR")} Adet</div>
                       <div className="text-xs font-medium text-muted-foreground opacity-60 mt-1">
-                        Fiyat: {formatCur(log.transactionType === "BUY" ? (log.purchasePrice || 0) : (log.soldPrice || 0))}
+                        Fiyat: {
+                          (() => {
+                            const fp = log.transactionType === "BUY" ? (log.purchasePrice || 0) : (log.soldPrice || 0);
+                            const lCur = (log.currency || "TRY").toUpperCase();
+                            const lRate = rates[lCur] || 1;
+                            const fpTry = lCur === "TRY" ? fp : fp * lRate;
+                            return formatCur(fpTry, undefined, { amount: fp, currency: lCur });
+                          })()
+                        }
                       </div>
                     </div>
                   </div>

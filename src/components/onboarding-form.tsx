@@ -1181,191 +1181,206 @@ export function OnboardingForm() {
                   </button>
                 </div>
 
-                {/* Form fields */}
-                <div className="space-y-4 pt-1">
-                  <div className="grid grid-cols-2 gap-3 relative">
-                    <div className="relative">
-                      <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Sembol / Kod</Label>
-                      <div className="relative">
-                        <Input
-                          value={searchQuery || modalAssetData.symbol}
-                          onChange={e => {
-                            setSearchQuery(e.target.value);
-                            setModalAssetData(prev => ({ ...prev, symbol: e.target.value }));
-                          }}
-                          placeholder="Örn: THYAO, BTC"
-                          className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] uppercase font-bold pr-8 border-[#dbc2b0]/50 dark:border-[#887364]/40"
-                        />
-                        <Search className="absolute right-3 top-3.5 h-4 w-4 text-muted-foreground opacity-50" />
+                {(() => {
+                  const hasSymbol = Boolean(modalAssetData.symbol && modalAssetData.symbol.trim() !== "");
+                  return (
+                    <div className="space-y-4 pt-1">
+                      <div className="grid grid-cols-2 gap-3 relative">
+                        <div className="relative">
+                          <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Sembol / Kod</Label>
+                          <div className="relative">
+                            <Input
+                              autoFocus
+                              value={searchQuery || modalAssetData.symbol}
+                              onChange={e => {
+                                setSearchQuery(e.target.value);
+                                setModalAssetData(prev => ({ ...prev, symbol: e.target.value }));
+                              }}
+                              placeholder="Örn: THYAO, BTC"
+                              className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] uppercase font-bold pr-8 border-[#dbc2b0]/50 dark:border-[#887364]/40"
+                            />
+                            <Search className="absolute right-3 top-3.5 h-4 w-4 text-muted-foreground opacity-50" />
+                          </div>
+                          {!hasSymbol && (
+                            <p className="text-[10px] font-bold text-amber-600 dark:text-amber-400 mt-1">
+                              ⚠️ Diğer alanları doldurmak için önce sembol veya kod giriniz.
+                            </p>
+                          )}
+
+                          {/* Arama Sonuçları Dropdown */}
+                          {showSearch && searchResults.length > 0 && (
+                            <div className="absolute top-full left-0 right-0 mt-1.5 bg-card border border-[#8C5000]/20 dark:border-[#ffb874]/20 rounded-2xl shadow-xl overflow-hidden z-[120] max-h-52 overflow-y-auto">
+                              {searchResults.map((res, idx) => (
+                                <div
+                                  key={idx}
+                                  onClick={() => handleSelectSearchResult(res.symbol, res.shortname)}
+                                  className="p-3 hover:bg-[#8C5000]/10 dark:hover:bg-[#ffb874]/10 cursor-pointer border-b border-border/10 last:border-0 flex items-center justify-between text-xs group transition-colors"
+                                >
+                                  <div className="flex flex-col">
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-extrabold text-[#5a3100] dark:text-[#ffb874]">{res.symbol}</span>
+                                      <span className="text-[9px] bg-muted px-1.5 py-0.5 rounded font-bold uppercase">{res.suggestedCategory}</span>
+                                    </div>
+                                    <span className="text-[10px] text-muted-foreground block truncate max-w-[180px]">{res.shortname}</span>
+                                  </div>
+                                  <ArrowUpRight className="h-4 w-4 text-[#8C5000] opacity-0 group-hover:opacity-100 transition-all" />
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        <div>
+                          <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Para Birimi</Label>
+                          <Select
+                            disabled={!hasSymbol || useCurrentPrice}
+                            value={modalAssetData.currency}
+                            onValueChange={(v: any) => setModalAssetData({ ...modalAssetData, currency: String(v) })}
+                          >
+                            <SelectTrigger className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-extrabold text-xs border-[#dbc2b0]/50 dark:border-[#887364]/40">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {MAIN_CURRENCIES.map(c => <SelectItem key={c.code} value={c.code}>{c.flag} {c.code}</SelectItem>)}
+                              {OTHER_CURRENCIES.map(c => <SelectItem key={c.code} value={c.code}>{c.flag} {c.code}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
 
-                      {/* Arama Sonuçları Dropdown */}
-                      {showSearch && searchResults.length > 0 && (
-                        <div className="absolute top-full left-0 right-0 mt-1.5 bg-card border border-[#8C5000]/20 dark:border-[#ffb874]/20 rounded-2xl shadow-xl overflow-hidden z-[120] max-h-52 overflow-y-auto">
-                          {searchResults.map((res, idx) => (
-                            <div
-                              key={idx}
-                              onClick={() => handleSelectSearchResult(res.symbol, res.shortname)}
-                              className="p-3 hover:bg-[#8C5000]/10 dark:hover:bg-[#ffb874]/10 cursor-pointer border-b border-border/10 last:border-0 flex items-center justify-between text-xs group transition-colors"
+                      {activeAssetModal === "GOLD" && (
+                        <div className="flex flex-wrap gap-1.5 pt-0.5 animate-in fade-in duration-300">
+                          {[
+                            { name: "Gram Altın", symbol: "GRAM ALTIN (XAUTRY=X)" },
+                            { name: "Ons Altın ($)", symbol: "ONS ALTIN (GC=F)" },
+                            { name: "Gram Gümüş", symbol: "GRAM GÜMÜŞ (XAGTRY=X)" },
+                            { name: "Ons Gümüş ($)", symbol: "ONS GÜMÜŞ (SI=F)" },
+                          ].map((item) => (
+                            <button
+                              key={item.symbol}
+                              type="button"
+                              onClick={() => {
+                                setModalAssetData(prev => ({ ...prev, symbol: item.symbol, description: item.name }));
+                                setSearchQuery(item.symbol);
+                                if (useCurrentPrice) fetchCurrentPriceForSymbol(item.symbol);
+                              }}
+                              className="text-[10px] font-bold px-2.5 py-1.5 rounded-lg bg-[#8C5000]/10 text-[#8C5000] dark:text-[#ffb874] border border-[#8C5000]/20 hover:bg-[#8C5000]/20 transition-all"
                             >
-                              <div className="flex flex-col">
-                                <div className="flex items-center gap-2">
-                                  <span className="font-extrabold text-[#5a3100] dark:text-[#ffb874]">{res.symbol}</span>
-                                  <span className="text-[9px] bg-muted px-1.5 py-0.5 rounded font-bold uppercase">{res.suggestedCategory}</span>
-                                </div>
-                                <span className="text-[10px] text-muted-foreground block truncate max-w-[180px]">{res.shortname}</span>
-                              </div>
-                              <ArrowUpRight className="h-4 w-4 text-[#8C5000] opacity-0 group-hover:opacity-100 transition-all" />
-                            </div>
+                              {item.name}
+                            </button>
                           ))}
                         </div>
                       )}
-                    </div>
 
-                    <div>
-                      <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Para Birimi</Label>
-                      <Select
-                        disabled={useCurrentPrice}
-                        value={modalAssetData.currency}
-                        onValueChange={(v: any) => setModalAssetData({ ...modalAssetData, currency: String(v) })}
-                      >
-                        <SelectTrigger className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-extrabold text-xs border-[#dbc2b0]/50 dark:border-[#887364]/40">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {MAIN_CURRENCIES.map(c => <SelectItem key={c.code} value={c.code}>{c.flag} {c.code}</SelectItem>)}
-                          {OTHER_CURRENCIES.map(c => <SelectItem key={c.code} value={c.code}>{c.flag} {c.code}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
+                      {activeAssetModal === "BES" && (
+                        <div className="grid grid-cols-2 gap-3 animate-in fade-in duration-300">
+                          <div>
+                            <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Fon Türü (Takip İçin)</Label>
+                            <Select disabled={!hasSymbol} value={modalAssetData.fundType} onValueChange={(v: any) => setModalAssetData({ ...modalAssetData, fundType: String(v) })}>
+                              <SelectTrigger className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-bold text-xs border-[#dbc2b0]/50 dark:border-[#887364]/40">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="STANDART">⚖️ Standart / Karma</SelectItem>
+                                <SelectItem value="GOLD">🟡 Altın Katılım</SelectItem>
+                                <SelectItem value="STOCKS">📈 Hisse Senedi Yoğun</SelectItem>
+                                <SelectItem value="USD">💵 Döviz / Eurobond</SelectItem>
+                                <SelectItem value="CONSERVATIVE">🛡️ Para Piyasası</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Aylık Düzenli Ödeme (₺)</Label>
+                            <Input
+                              type="number"
+                              disabled={!hasSymbol}
+                              value={modalAssetData.monthlyContribution}
+                              onChange={e => setModalAssetData({ ...modalAssetData, monthlyContribution: e.target.value })}
+                              placeholder="Örn: 2500"
+                              className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] border-[#dbc2b0]/50 dark:border-[#887364]/40 font-bold"
+                            />
+                          </div>
+                        </div>
+                      )}
 
-                  {activeAssetModal === "GOLD" && (
-                    <div className="flex flex-wrap gap-1.5 pt-0.5 animate-in fade-in duration-300">
-                      {[
-                        { name: "Gram Altın", symbol: "GRAM ALTIN (XAUTRY=X)" },
-                        { name: "Ons Altın ($)", symbol: "ONS ALTIN (GC=F)" },
-                        { name: "Gram Gümüş", symbol: "GRAM GÜMÜŞ (XAGTRY=X)" },
-                        { name: "Ons Gümüş ($)", symbol: "ONS GÜMÜŞ (SI=F)" },
-                      ].map((item) => (
-                        <button
-                          key={item.symbol}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">
+                            {activeAssetModal === "FAIZ" ? "Faiz / Getiri Oranı %" : "Alış Fiyatı / Oran"}
+                          </Label>
+                          <div className="flex gap-1.5">
+                            <Input
+                              type="number"
+                              step="0.01"
+                              disabled={!hasSymbol || useCurrentPrice}
+                              value={modalAssetData.purchasePrice}
+                              onChange={e => handlePriceChange(e.target.value)}
+                              placeholder="0.00"
+                              className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-bold border-[#dbc2b0]/50 dark:border-[#887364]/40"
+                            />
+                            {activeAssetModal !== "FAIZ" && activeAssetModal !== "BES" && (
+                              <Button
+                                type="button"
+                                disabled={!hasSymbol || fetchingLive}
+                                variant={useCurrentPrice ? "default" : "outline"}
+                                onClick={handleToggleCurrentPrice}
+                                className={cn("h-11 px-3 rounded-xl font-bold text-[11px] transition-all shrink-0 border-[#dbc2b0]/50 dark:border-[#887364]/40",
+                                  useCurrentPrice ? "bg-[#8C5000] dark:bg-[#ffb874] text-white dark:text-[#120d0a] shadow-md" : "bg-[#faf9f6] dark:bg-[#120d0a] text-muted-foreground")}
+                              >
+                                <Clock className="w-3.5 h-3.5 mr-1" />
+                                {fetchingLive ? "..." : "Güncel"}
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                        <div>
+                          <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">
+                            {activeAssetModal === "FAIZ" ? "Mevduat / Yatırılan Tutar" : "Birim Miktarı / Adet"}
+                          </Label>
+                          <Input
+                            type="number"
+                            disabled={!hasSymbol}
+                            value={modalAssetData.quantity}
+                            onChange={e => handleQuantityChange(e.target.value)}
+                            placeholder="1"
+                            className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-bold border-[#dbc2b0]/50 dark:border-[#887364]/40"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Açıklama (Banka/Kurum)</Label>
+                        <Input
+                          disabled={!hasSymbol}
+                          value={modalAssetData.description}
+                          onChange={e => setModalAssetData({ ...modalAssetData, description: e.target.value })}
+                          placeholder="Örn: Akbank, Binance, Ziraat"
+                          className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-medium text-xs border-[#dbc2b0]/50 dark:border-[#887364]/40"
+                        />
+                      </div>
+
+                      {/* Footer Buttons */}
+                      <div className="flex gap-3 pt-2 border-t border-border/10">
+                        <Button
                           type="button"
-                          onClick={() => {
-                            setModalAssetData(prev => ({ ...prev, symbol: item.symbol, description: item.name }));
-                            setSearchQuery(item.symbol);
-                            if (useCurrentPrice) fetchCurrentPriceForSymbol(item.symbol);
-                          }}
-                          className="text-[10px] font-bold px-2.5 py-1.5 rounded-lg bg-[#8C5000]/10 text-[#8C5000] dark:text-[#ffb874] border border-[#8C5000]/20 hover:bg-[#8C5000]/20 transition-all"
+                          variant="ghost"
+                          onClick={() => setActiveAssetModal(null)}
+                          className="flex-1 h-11 rounded-xl font-bold"
                         >
-                          {item.name}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-
-                  {activeAssetModal === "BES" && (
-                    <div className="grid grid-cols-2 gap-3 animate-in fade-in duration-300">
-                      <div>
-                        <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Fon Türü (Takip İçin)</Label>
-                        <Select value={modalAssetData.fundType} onValueChange={(v: any) => setModalAssetData({ ...modalAssetData, fundType: String(v) })}>
-                          <SelectTrigger className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-bold text-xs border-[#dbc2b0]/50 dark:border-[#887364]/40">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="STANDART">⚖️ Standart / Karma</SelectItem>
-                            <SelectItem value="GOLD">🟡 Altın Katılım</SelectItem>
-                            <SelectItem value="STOCKS">📈 Hisse Senedi Yoğun</SelectItem>
-                            <SelectItem value="USD">💵 Döviz / Eurobond</SelectItem>
-                            <SelectItem value="CONSERVATIVE">🛡️ Para Piyasası</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Aylık Düzenli Ödeme (₺)</Label>
-                        <Input
-                          type="number"
-                          value={modalAssetData.monthlyContribution}
-                          onChange={e => setModalAssetData({ ...modalAssetData, monthlyContribution: e.target.value })}
-                          placeholder="Örn: 2500"
-                          className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] border-[#dbc2b0]/50 dark:border-[#887364]/40 font-bold"
-                        />
+                          İptal
+                        </Button>
+                        <Button
+                          type="button"
+                          disabled={!hasSymbol || fetchingLive}
+                          onClick={handleSaveAssetModal}
+                          className="flex-1 h-11 rounded-xl bg-[#8C5000] dark:bg-[#ffb874] text-white dark:text-[#120d0a] font-black shadow-lg shadow-[#8C5000]/25 hover:scale-[1.02] transition-all disabled:opacity-50 disabled:pointer-events-none"
+                        >
+                          {fetchingLive ? "Fiyat Çekiliyor..." : "Varlığı Ekle"}
+                        </Button>
                       </div>
                     </div>
-                  )}
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">
-                        {activeAssetModal === "FAIZ" ? "Faiz / Getiri Oranı %" : "Alış Fiyatı / Oran"}
-                      </Label>
-                      <div className="flex gap-1.5">
-                        <Input
-                          type="number"
-                          step="0.01"
-                          disabled={useCurrentPrice}
-                          value={modalAssetData.purchasePrice}
-                          onChange={e => handlePriceChange(e.target.value)}
-                          placeholder="0.00"
-                          className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-bold border-[#dbc2b0]/50 dark:border-[#887364]/40"
-                        />
-                        {activeAssetModal !== "FAIZ" && activeAssetModal !== "BES" && (
-                          <Button
-                            type="button"
-                            variant={useCurrentPrice ? "default" : "outline"}
-                            onClick={handleToggleCurrentPrice}
-                            className={cn("h-11 px-3 rounded-xl font-bold text-[11px] transition-all shrink-0 border-[#dbc2b0]/50 dark:border-[#887364]/40",
-                              useCurrentPrice ? "bg-[#8C5000] dark:bg-[#ffb874] text-white dark:text-[#120d0a] shadow-md" : "bg-[#faf9f6] dark:bg-[#120d0a] text-muted-foreground")}
-                          >
-                            <Clock className="w-3.5 h-3.5 mr-1" />
-                            {fetchingLive ? "..." : "Güncel"}
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                    <div>
-                      <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">
-                        {activeAssetModal === "FAIZ" ? "Mevduat / Yatırılan Tutar" : "Birim Miktarı / Adet"}
-                      </Label>
-                      <Input
-                        type="number"
-                        value={modalAssetData.quantity}
-                        onChange={e => handleQuantityChange(e.target.value)}
-                        placeholder="1"
-                        className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-bold border-[#dbc2b0]/50 dark:border-[#887364]/40"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Açıklama (Banka/Kurum)</Label>
-                    <Input
-                      value={modalAssetData.description}
-                      onChange={e => setModalAssetData({ ...modalAssetData, description: e.target.value })}
-                      placeholder="Örn: Akbank, Binance, Ziraat"
-                      className="h-11 rounded-xl bg-[#faf9f6] dark:bg-[#120d0a] font-medium text-xs border-[#dbc2b0]/50 dark:border-[#887364]/40"
-                    />
-                  </div>
-                </div>
-
-                {/* Footer Buttons */}
-                <div className="flex gap-3 pt-2 border-t border-border/10">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    onClick={() => setActiveAssetModal(null)}
-                    className="flex-1 h-11 rounded-xl font-bold"
-                  >
-                    İptal
-                  </Button>
-                  <Button
-                    type="button"
-                    onClick={handleSaveAssetModal}
-                    className="flex-1 h-11 rounded-xl bg-[#8C5000] dark:bg-[#ffb874] text-white dark:text-[#120d0a] font-black shadow-lg shadow-[#8C5000]/25 hover:scale-[1.02] transition-all"
-                  >
-                    Varlığı Ekle
-                  </Button>
-                </div>
+                  );
+                })()}
               </motion.div>
             </div>
           )}
