@@ -2,6 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { getLivePrices, calculatePortfolioMetrics, calculateFixedAssetsMetrics } from "@/lib/price-service";
+import { fixMultiCurrencyRecords } from "@/app/actions/assets";
 import { AssetList } from "@/components/dashboard/asset-list";
 
 export default async function AssetsPage() {
@@ -10,6 +11,9 @@ export default async function AssetsPage() {
   if (!userId) {
     redirect("/");
   }
+
+  // Sayfa açıldığında bozuk (kurla çarpılmış) USD kayıtlarını otomatik onar:
+  await fixMultiCurrencyRecords();
 
   const user = await prisma.user.findUnique({
     where: { clerkUserId: userId as string },

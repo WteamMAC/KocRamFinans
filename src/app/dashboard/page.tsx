@@ -19,6 +19,7 @@ import { getLivePrices, calculatePortfolioMetrics, calculateFixedAssetsMetrics, 
 import { DashboardCards } from "@/components/dashboard/dashboard-cards";
 import { RateSynchronizer } from "@/components/rate-synchronizer";
 import { getExchangeRatesAction } from "@/app/actions/market";
+import { fixMultiCurrencyRecords } from "@/app/actions/assets";
 
 import { Suspense } from "react";
 import { DashboardSkeleton } from "@/components/dashboard/dashboard-skeleton";
@@ -30,6 +31,9 @@ export default async function DashboardPage() {
   if (!userId) {
     redirect("/");
   }
+
+  // Geçmişte hatalı kurla çarpılmış USD varlık kayıtlarını otomatik onar:
+  await fixMultiCurrencyRecords();
 
   const user = await prisma.user.findUnique({
     where: { clerkUserId: userId as string },

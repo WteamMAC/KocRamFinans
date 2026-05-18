@@ -44,7 +44,7 @@ export async function addAsset(data: {
     const trimmedSymbol = data.symbol?.trim().toUpperCase() || null;
     const standardizedType = standardizeInvestmentType(data.type);
 
-    let finalCurrency = "TRY";
+    let finalCurrency = data.currency?.trim().toUpperCase() || "TRY";
     if (standardizedType === "NASDAQ" || standardizedType === "CRYPTO") {
       finalCurrency = "USD";
     } else if (standardizedType === "GOLD" && trimmedSymbol && (trimmedSymbol.includes("ONS") || trimmedSymbol.includes("GC=F") || trimmedSymbol.includes("SI=F") || trimmedSymbol.includes("BZ=F"))) {
@@ -57,35 +57,39 @@ export async function addAsset(data: {
         const prices = await getLivePrices([trimmedSymbol]);
         const livePrice = prices.get(trimmedSymbol);
         if (livePrice && livePrice.price > 0) {
-          finalPrice = livePrice.price;
+          finalPrice = (livePrice.originalPrice && livePrice.originalPrice > 0) ? livePrice.originalPrice : livePrice.price;
+          if (livePrice.originalCurrency) {
+            finalCurrency = livePrice.originalCurrency.toUpperCase();
+          }
         }
       } catch (err) {
         console.error("Live price fetch error:", err);
       }
     } else if (!data.useCurrentPrice && finalPrice > 0 && trimmedSymbol) {
-      // Kullanıcı manuel fiyat girdiğinde USD mi yoksa TRY mi girdiğini tespit etme (Akıllı Kur Çevirimi)
+      // Kullanıcı manuel fiyat girdiğinde kur hatası (USD yerine TRY yazılması) kontrolü
       try {
-        const prices = await getLivePrices([trimmedSymbol, "TRY=X"]);
+        const prices = await getLivePrices([trimmedSymbol, "TRY=X", "USDTRY=X"]);
         const livePrice = prices.get(trimmedSymbol);
-        const usdTry = prices.get("TRY=X")?.price || 36.45;
+        const usdTry = prices.get("TRY=X")?.price || prices.get("USDTRY=X")?.price || 36.45;
 
         if (livePrice && livePrice.price > 0) {
-          const priceAsTry = finalPrice;
-          const priceAsUsdConvertedToTry = finalPrice * usdTry;
+          const origLivePrice = (livePrice.originalPrice && livePrice.originalPrice > 0) ? livePrice.originalPrice : livePrice.price;
+          const livePriceInTry = livePrice.price;
 
-          const diffIfTry = Math.abs(priceAsTry - livePrice.price);
-          const diffIfUsd = Math.abs(priceAsUsdConvertedToTry - livePrice.price);
+          const diffOrig = Math.abs(finalPrice - origLivePrice);
+          const diffIfUserWroteTry = Math.abs(finalPrice - livePriceInTry);
 
-          // Eğer kullanıcının girdiği fiyat USD olarak varsayılıp TRY'ye çevrildiğinde
-          // güncel piyasa fiyatına daha yakın oluyorsa, kullanıcı kesinlikle USD girmiştir.
-          if (diffIfUsd < diffIfTry && (diffIfUsd / livePrice.price < 0.5)) {
-            finalPrice = priceAsUsdConvertedToTry;
+          // Eğer kullanıcının girdiği tutar canlı TRY fiyatına (milyonlar vs) çok yakınsa ve varlık USD ise,
+          // kullanıcı kutuya USD tutarı yerine yanlışlıkla TRY tutarı yazmıştır. USD'ye bölüyoruz:
+          if (diffIfUserWroteTry < diffOrig && (diffIfUserWroteTry / livePriceInTry < 0.2) && usdTry > 0) {
+            finalPrice = finalPrice / usdTry;
           }
         }
       } catch (err) {
         console.error("Currency check error:", err);
       }
     }
+
 
     const finalQuantity = quantity;
     let desc = data.description || null;
@@ -154,7 +158,9 @@ export async function sellAsset(id: string, postSellAction?: "KEEP_TL" | "KEEP_U
         const prices = await getLivePrices([investment.symbol]);
         const livePrice = prices.get(investment.symbol.toUpperCase());
         if (livePrice && livePrice.price > 0) {
-          sellPrice = livePrice.price;
+          sellPrice = (investment.currency === "USD" && livePrice.originalPrice && livePrice.originalPrice > 0)
+            ? livePrice.originalPrice
+            : livePrice.price;
         }
       } catch (err) {
         console.error("Live price fetch error for sell:", err);
@@ -498,5 +504,89 @@ export async function addContributionToAsset(id: string, amount: number) {
   } catch (error: any) {
     console.error("addContributionToAsset error:", error);
     throw new Error(error.message || "Katkı payı eklenirken bir hata oluştu.");
+  }
+}
+
+/**
+ * Hatalı kurla çarpılıp milyonlarca dolar olarak kaydedilmiş USD varlıklarını otomatik onarır.
+ */
+export async function fixMultiCurrencyRecords() {
+  try {
+    const { userId } = await auth();
+    if (!userId) return { success: false };
+
+    const user = await prisma.user.findUnique({
+      where: { clerkUserId: userId },
+    });
+    if (!user) return { success: false };
+
+    const investments = await prisma.investment.findMany({
+      where: {
+        userId: user.id,
+        status: "OPEN",
+        currency: "USD",
+      },
+    });
+
+    if (investments.length === 0) return { success: true, fixedCount: 0 };
+
+    const prices = await getLivePrices(["USDTRY=X", "TRY=X"]);
+    const usdRate = prices.get("USDTRY=X")?.price || prices.get("TRY=X")?.price || 36.45;
+
+    let fixedCount = 0;
+
+    for (const inv of investments) {
+      if (inv.purchasePrice && inv.purchasePrice > 10000 && inv.symbol) {
+        try {
+          const symPrices = await getLivePrices([inv.symbol]);
+          const live = symPrices.get(inv.symbol.toUpperCase());
+          if (live && live.originalPrice && live.originalPrice > 0) {
+            const origUsd = live.originalPrice;
+            const currentDbPrice = inv.purchasePrice;
+
+            // Eğer veritabanındaki birim fiyat, gerçek USD birim fiyatının 10 katından fazlaysa,
+            // kurla çarpılıp (milyon vs) yazılmıştır. Doğru fiyata (orijinal USD veya kura bölünmüş) onar:
+            if (currentDbPrice > origUsd * 10) {
+              const correctedUnitUsd = currentDbPrice / usdRate;
+              const newAmount = (inv.quantity || 1) * correctedUnitUsd;
+
+              await prisma.investment.update({
+                where: { id: inv.id },
+                data: {
+                  purchasePrice: correctedUnitUsd,
+                  amount: newAmount,
+                },
+              });
+              fixedCount++;
+            }
+          } else if (inv.purchasePrice > 100000) {
+            // Canlı fiyat çekilemezse ama birim fiyat 100.000'den büyükse yine kurla çarpılmıştır:
+            const correctedUnitUsd = inv.purchasePrice / usdRate;
+            const newAmount = (inv.quantity || 1) * correctedUnitUsd;
+
+            await prisma.investment.update({
+              where: { id: inv.id },
+              data: {
+                purchasePrice: correctedUnitUsd,
+                amount: newAmount,
+              },
+            });
+            fixedCount++;
+          }
+        } catch (e) {
+          console.error("Error fixing investment", inv.id, e);
+        }
+      }
+    }
+
+    if (fixedCount > 0) {
+      revalidatePath("/dashboard", "layout");
+      revalidatePath("/dashboard/assets");
+    }
+
+    return { success: true, fixedCount };
+  } catch (error) {
+    console.error("fixMultiCurrencyRecords error:", error);
+    return { success: false, error: String(error) };
   }
 }
