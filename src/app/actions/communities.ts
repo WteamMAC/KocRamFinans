@@ -312,6 +312,30 @@ export async function deleteCommunity(communityId: string) {
   
   if (community.creatorId !== me.id && me.role !== "ADMIN") throw new Error("Yetki yok");
 
+  // Topluluğa ait tüm postları ve bunlara bağlı beğeni/yorumları manuel olarak temizle
+  const posts = await prisma.blogPost.findMany({
+    where: { communityId },
+    select: { id: true }
+  });
+  const postIds = posts.map(p => p.id);
+
+  if (postIds.length > 0) {
+    // Beğenileri sil
+    await prisma.blogLike.deleteMany({
+      where: { postId: { in: postIds } }
+    });
+
+    // Yorumları sil
+    await prisma.blogComment.deleteMany({
+      where: { postId: { in: postIds } }
+    });
+
+    // Postları sil
+    await prisma.blogPost.deleteMany({
+      where: { id: { in: postIds } }
+    });
+  }
+
   await prisma.community.delete({ where: { id: communityId } });
   revalidatePath("/dashboard/blog");
 }
