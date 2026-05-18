@@ -40,7 +40,7 @@ export async function POST(req: Request) {
     const allMessages = body.messages || [];
     if (!allMessages.length) return new Response("Geçersiz mesaj formatı.", { status: 400 });
 
-    const messages = allMessages.slice(-6);
+    const messages = allMessages.slice(-12);
     const lastMessageObj = messages[messages.length - 1];
     // Eğer metin yoksa ve sadece resim atıldıysa varsayılan bir talimat veriyoruz
     const lastMessageText = lastMessageObj.content?.trim() || (lastMessageObj.image ? "Bu fişi/faturayı analiz edip doğrudan giderlerime kaydeder misin?" : "Merhaba");
@@ -245,7 +245,8 @@ export async function POST(req: Request) {
                   type: SchemaType.ARRAY, 
                   items: { type: SchemaType.STRING },
                   description: "Gönderiyle ilgili etiketler (Örn: ['bitcoin', 'yatırım', 'öneri'])" 
-                }
+                },
+                communityId: { type: SchemaType.STRING, description: "İsteğe bağlı: Gönderinin paylaşılacağı topluluğun ID'si. Kullanıcı belirli bir topluluk adı söylerse getFinancialHistory ile topluluk listesine bakabilirsin. Belirtilmezse genel feed'e atılır." }
               },
               required: ["content", "tags"]
             }
@@ -539,11 +540,12 @@ export async function POST(req: Request) {
                   }
                 } else if (call.name === "deleteFinancialRecord") {
                   const { type, recordId } = args;
-                  if (type === "income") await prisma.income.delete({ where: { id: recordId } });
-                  else if (type === "expense") await prisma.expense.delete({ where: { id: recordId } });
-                  else if (type === "debt") await prisma.debt.delete({ where: { id: recordId } });
-                  else if (type === "investment") await prisma.investment.delete({ where: { id: recordId } });
-                  else if (type === "fixedAsset") await prisma.fixedAsset.delete({ where: { id: recordId } });
+                  // Güvenlik: Kullanıcının kendi kaydını sildiğinden emin ol (userId filtresi zorunlu)
+                  if (type === "income") await prisma.income.delete({ where: { id: recordId, userId: user.id } });
+                  else if (type === "expense") await prisma.expense.delete({ where: { id: recordId, userId: user.id } });
+                  else if (type === "debt") await prisma.debt.delete({ where: { id: recordId, userId: user.id } });
+                  else if (type === "investment") await prisma.investment.delete({ where: { id: recordId, userId: user.id } });
+                  else if (type === "fixedAsset") await prisma.fixedAsset.delete({ where: { id: recordId, userId: user.id } });
                   
                   revalidatePath("/dashboard");
                   revalidatePath("/dashboard/income-expense");
@@ -595,17 +597,18 @@ export async function POST(req: Request) {
                   revalidatePath("/dashboard/profile");
                   apiResponse = { success: true, message: "Profil bilgileri güncellendi." };
                 } else if (call.name === "createCommunityPost") {
-                  const { content, tags } = args;
+                  const { content, tags, communityId } = args;
                   await prisma.blogPost.create({
                     data: {
                       authorId: user.id,
                       content: content,
                       tags: Array.isArray(tags) ? tags : [],
+                      communityId: communityId || null,
                       isAnnouncement: false
                     }
                   });
                   revalidatePath("/dashboard/blog");
-                  apiResponse = { success: true, message: "Toplulukta başarıyla gönderi paylaşıldı." };
+                  apiResponse = { success: true, message: `Toplulukta başarıyla gönderi paylaşıldı.${communityId ? " (Topluluk ID: " + communityId + ")" : " (Genel feed)"}` };
                 }
               } catch (e: any) {
                 console.error(`[TOOL] ❌ Hata:`, e.message);

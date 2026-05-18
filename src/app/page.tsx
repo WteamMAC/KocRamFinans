@@ -76,6 +76,19 @@ export default async function LandingPage() {
                 Koç Ram Finans ile karmaşık finansal kararları basitleştiriyoruz. Dostane, şeffaf ve tamamen size özel koçluk yaklaşımımızla paranızı yönetmeyi öğrenin ve büyütün.
               </p>
 
+              <div className="flex flex-col sm:flex-row items-start gap-4">
+                <SignUpButton mode="modal">
+                  <button className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-8 py-4 rounded-2xl font-black text-sm uppercase tracking-widest shadow-lg shadow-primary/30 hover:bg-primary/90 active:scale-95 transition-all">
+                    Ücretsiz Başla
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
+                </SignUpButton>
+                <SignInButton mode="modal">
+                  <button className="inline-flex items-center gap-2 bg-card border border-border/30 text-foreground px-8 py-4 rounded-2xl font-black text-sm uppercase tracking-widest hover:border-primary/40 hover:bg-muted transition-all">
+                    Giriş Yap
+                  </button>
+                </SignInButton>
+              </div>
             </div>
             
             <div className="md:col-span-5 relative mt-12 md:mt-0 flex justify-center animate-in fade-in zoom-in-95 duration-1000">
@@ -92,8 +105,8 @@ export default async function LandingPage() {
                     <CheckCircle2 className="h-7 w-7" />
                   </div>
                   <div>
-                    <p className="font-bold text-sm text-foreground">500+ Mutlu Müşteri</p>
-                    <p className="text-xs font-bold text-muted-foreground opacity-60">Güvenilir Rehberlik</p>
+                    <p className="font-bold text-sm text-foreground">Yapay Zeka Destekli</p>
+                    <p className="text-xs font-bold text-muted-foreground opacity-60">Gemini API ile Güçlü</p>
                   </div>
                 </div>
               </div>
@@ -242,13 +255,13 @@ export default async function LandingPage() {
                 {/* Stats floating card */}
                 <div className="absolute -bottom-6 md:-bottom-10 -left-4 md:-left-10 bg-card p-6 md:p-8 rounded-2xl md:rounded-3xl shadow-ambient-high border border-border/20 flex gap-8 md:gap-12 animate-in slide-in-from-bottom-8 duration-700">
                   <div className="text-center">
-                    <p className="text-4xl font-heading font-bold text-primary mb-1">10+</p>
-                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest opacity-60">Yıllık Tecrübe</p>
+                    <p className="text-4xl font-heading font-bold text-primary mb-1">8+</p>
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest opacity-60">AI Tool</p>
                   </div>
                   <div className="w-px bg-border/30"></div>
                   <div className="text-center">
-                    <p className="text-4xl font-heading font-bold text-primary mb-1">%98</p>
-                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest opacity-60">Memnuniyet</p>
+                    <p className="text-4xl font-heading font-bold text-primary mb-1">Canlı</p>
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest opacity-60">Piyasa Verisi</p>
                   </div>
                 </div>
               </div>
@@ -347,6 +360,13 @@ export default async function LandingPage() {
         </section>
 
       </main>
+
+      {/* YTD - Yasal Uyarı Şeridi */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-sm border-t border-border/20 px-4 py-2">
+        <p className="text-center text-[10px] text-muted-foreground font-medium">
+          ⚠️ <strong>Yatırım Tavsiyesi Değildir (YTD)</strong> — Bu platform yalnızca kişisel finans takibi ve bilgilendirme amaçlıdır. Yatırım kararlarınızı bir finansal danışmana danışarak alın.
+        </p>
+      </div>
 
       <Footer />
     </div>

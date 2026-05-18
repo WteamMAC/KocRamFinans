@@ -6,6 +6,10 @@ import { revalidatePath } from "next/cache";
 import { generateText } from "ai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 
+// Duyuru temizliği için modül düzeyinde hız limiti (1 saat bir kez)
+let lastAnnouncementCleanup = 0;
+const ANNOUNCEMENT_CLEANUP_INTERVAL = 60 * 60 * 1000;
+
 const google = createGoogleGenerativeAI({
   apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY || "",
 });
@@ -396,15 +400,16 @@ export async function getPosts(
   const me = currentInternalUserId ? await prisma.user.findUnique({ where: { id: currentInternalUserId }, select: { role: true } }) : null;
 
   try {
-    // 1 saatten eski duyuruların sabitliğini kaldır (isAnnouncement = false yap)
-    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-    await prisma.blogPost.updateMany({
-      where: {
-        isAnnouncement: true,
-        createdAt: { lt: oneHourAgo }
-      },
-      data: { isAnnouncement: false }
-    });
+    // 1 saatten eski duyuruların sabitliğini kaldır — yüksek trafikte gereksiz write yüklenmesini önlemek için throttle
+    const now = Date.now();
+    if (now - lastAnnouncementCleanup > ANNOUNCEMENT_CLEANUP_INTERVAL) {
+      lastAnnouncementCleanup = now;
+      const oneHourAgo = new Date(now - 60 * 60 * 1000);
+      await prisma.blogPost.updateMany({
+        where: { isAnnouncement: true, createdAt: { lt: oneHourAgo } },
+        data: { isAnnouncement: false }
+      });
+    }
 
     const posts = await prisma.blogPost.findMany({
       where: whereClause,

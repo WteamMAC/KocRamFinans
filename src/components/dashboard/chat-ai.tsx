@@ -32,6 +32,7 @@ export function ChatAI() {
   const [messages, setMessages] = useState<{ id: string; role: "user" | "assistant"; content: string; image?: string }[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [speechUnsupported, setSpeechUnsupported] = useState(false);
   const recognitionRef = useRef<any>(null);
 
   useEffect(() => {
@@ -112,7 +113,8 @@ export function ChatAI() {
 
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      alert("Tarayıcınız bu cihazda sesli komut desteklemiyor.");
+      setSpeechUnsupported(true);
+      console.warn("Bu tarayıcı sesli komutu desteklemiyor.");
       return;
     }
 
@@ -382,8 +384,12 @@ export function ChatAI() {
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className={cn("h-10 w-10 shrink-0 rounded-xl transition-colors", isListening ? "text-red-500 bg-red-500/10 animate-pulse shadow-sm" : "text-primary hover:bg-primary/10")}
+                        className={cn("h-10 w-10 shrink-0 rounded-xl transition-colors", 
+                         speechUnsupported ? "text-muted-foreground/30 cursor-not-allowed" :
+                         isListening ? "text-red-500 bg-red-500/10 animate-pulse shadow-sm" : "text-primary hover:bg-primary/10")}
                         onClick={toggleListening}
+                        disabled={speechUnsupported}
+                        title={speechUnsupported ? "Tarayıcınız sesli komutu desteklemiyor" : "Sesli komut"}
                       >
                         <Mic className="h-5 w-5" />
                       </Button>

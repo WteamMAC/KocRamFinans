@@ -67,6 +67,25 @@ export function InvestmentProjection({ currentValue, investments = [], fixedAsse
     setLoading(true);
     setApiError(false);
     try {
+      const CACHE_KEY = "ai_projection_cache";
+      const CACHE_TTL = 5 * 60 * 1000; // 5 dakika
+
+      // sessionStorage cache kontrolü
+      try {
+        const cached = sessionStorage.getItem(CACHE_KEY);
+        if (cached) {
+          const { data, timestamp } = JSON.parse(cached);
+          if (Date.now() - timestamp < CACHE_TTL) {
+            setMonthlyGrowthRate(1 + data.monthlyRate);
+            setRationale(data.rationale);
+            if (data.assetProjections) setAssetProjections(data.assetProjections);
+            setHasLoaded(true);
+            setLoading(false);
+            return;
+          }
+        }
+      } catch (e) { /* sessionStorage erişilemiyor, devam et */ }
+
       const result = await predictGrowthRate({ investments, fixedAssets, monthlySavings, baseCurrency: "TRY" });
       if (result.success && result.monthlyRate) {
         setMonthlyGrowthRate(1 + result.monthlyRate);
@@ -75,9 +94,16 @@ export function InvestmentProjection({ currentValue, investments = [], fixedAsse
           setAssetProjections(result.assetProjections);
         }
         setHasLoaded(true);
+        // Sonuçu cache'e kaydet
+        try {
+          sessionStorage.setItem(CACHE_KEY, JSON.stringify({
+            data: { monthlyRate: result.monthlyRate, rationale: result.rationale, assetProjections: result.assetProjections },
+            timestamp: Date.now()
+          }));
+        } catch (e) { /* sessionStorage dolu olabilir, önemli değil */ }
       } else {
         setApiError(true);
-        setRationale("Yapay zeka analiz servisine bağlanılamadı. Lütfen API anahtarınızı kontrol edin. Şimdilik varsayılan büyüme hızı gösteriliyor.");
+        setRationale("Yapay zeka analiz servisine bağlanılamadı. Şimdilik varsayılan büyüme hızı gösteriliyor.");
         setHasLoaded(true);
       }
     } catch (error) {
