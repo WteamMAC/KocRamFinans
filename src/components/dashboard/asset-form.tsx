@@ -13,9 +13,29 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Search, Clock, ArrowUpRight, X, Wallet, Coins, LayoutGrid, Info, CheckCircle2 } from "lucide-react";
-import { searchSymbolsAction } from "@/app/actions/market";
-import { searchTefasFundsAction } from "@/app/actions/market";
+import { searchSymbolsAction, searchTefasFundsAction, getSymbolLivePriceAction } from "@/app/actions/market";
 import { cn } from "@/lib/utils";
+
+const MAIN_CURRENCIES = [
+  { code: "USD", label: "Amerikan Doları", symbol: "$", flag: "🇺🇸" },
+  { code: "EUR", label: "Euro", symbol: "€", flag: "🇪🇺" },
+  { code: "TRY", label: "Türk Lirası", symbol: "₺", flag: "🇹🇷" },
+];
+const OTHER_CURRENCIES = [
+  { code: "GBP", label: "İngiliz Sterlini", symbol: "£", flag: "🇬🇧" },
+  { code: "CHF", label: "İsviçre Frangı", symbol: "₣", flag: "🇨🇭" },
+  { code: "JPY", label: "Japon Yeni", symbol: "¥", flag: "🇯🇵" },
+  { code: "AED", label: "BAE Dirhemi", symbol: "د.إ", flag: "🇦🇪" },
+  { code: "SAR", label: "Suudi Riyali", symbol: "﷼", flag: "🇸🇦" },
+  { code: "RUB", label: "Rus Rublesi", symbol: "₽", flag: "🇷🇺" },
+  { code: "CAD", label: "Kanada Doları", symbol: "CA$", flag: "🇨🇦" },
+  { code: "AUD", label: "Avustralya Doları", symbol: "A$", flag: "🇦🇺" },
+  { code: "CNY", label: "Çin Yuanı", symbol: "¥", flag: "🇨🇳" },
+  { code: "SGD", label: "Singapur Doları", symbol: "S$", flag: "🇸🇬" },
+  { code: "NOK", label: "Norveç Kronu", symbol: "kr", flag: "🇳🇴" },
+  { code: "SEK", label: "İsveç Kronu", symbol: "kr", flag: "🇸🇪" },
+  { code: "XAU", label: "Altın (Gram)", symbol: "ALT", flag: "🪙" },
+];
 
 interface AssetFormProps {
   activeTab: "financial" | "fixed";
@@ -35,12 +55,14 @@ export function AssetForm({ activeTab, onAdd, onCancel, loading, error, defaultA
   const [besSearchResults, setBesSearchResults] = useState<{ code: string; title: string; price: number; dailyReturn: number }[]>([]);
   const [showBesSearch, setShowBesSearch] = useState(false);
   const [tefasSearchLoading, setTefasSearchLoading] = useState(false);
+  const [fetchingLive, setFetchingLive] = useState(false);
 
   const [formData, setFormData] = useState({
     type: defaultAssetType || "BIST",
     symbol: "",
     quantity: 0,
     purchasePrice: 0,
+    currency: "TRY",
     useCurrentPrice: false,
     description: "",
     monthlyContribution: 0,
@@ -117,8 +139,42 @@ export function AssetForm({ activeTab, onAdd, onCancel, loading, error, defaultA
     setFormData((prev) => ({ ...prev, [field]: value === "" ? 0 : parseFloat(value) }));
   };
 
+  const hasSymbol = Boolean(formData.symbol && formData.symbol.trim() !== "");
+
+  const handleToggleCurrentPrice = async () => {
+    const sym = formData.symbol;
+    if (!sym || sym.trim() === "") return;
+
+    if (formData.useCurrentPrice) {
+      setFormData(prev => ({ ...prev, useCurrentPrice: false }));
+      return;
+    }
+
+    setFetchingLive(true);
+    try {
+      let cleanSym = sym;
+      if (cleanSym.includes("(")) {
+        cleanSym = cleanSym.split(" ")[0];
+      }
+      const data = await getSymbolLivePriceAction(cleanSym);
+      if (data && data.price > 0) {
+        setFormData(prev => ({
+          ...prev,
+          useCurrentPrice: true,
+          purchasePrice: data.originalPrice || data.price,
+          currency: data.originalCurrency || prev.currency
+        }));
+      }
+    } catch (err) {
+      console.error("Live price error:", err);
+    } finally {
+      setFetchingLive(false);
+    }
+  };
+
   const handleSubmit = () => {
     if (activeTab === "financial") {
+      if (!hasSymbol || fetchingLive) return;
       onAdd(formData);
     } else {
       onAdd(fixedAssetFormData);
@@ -191,11 +247,17 @@ export function AssetForm({ activeTab, onAdd, onCancel, loading, error, defaultA
                       {formData.type === "BES" ? "Firma / Plan Adı" : "Banka / Hesap Adı"}
                     </Label>
                     <Input
+                      autoFocus
                       placeholder={formData.type === "BES" ? "Örn: Agesa Bireysel Emeklilik..." : "Örn: Garanti Vadeli Hesap..."}
                       value={formData.symbol}
                       onChange={(e) => setFormData(p => ({ ...p, symbol: e.target.value }))}
                       className="bg-muted/50 border-primary/10 h-12 rounded-2xl focus:ring-primary text-sm font-semibold px-4"
                     />
+                    {!hasSymbol && (
+                      <p className="text-[10px] font-bold text-amber-600 dark:text-amber-400 mt-1">
+                        ⚠️ Diğer alanları doldurmak için önce firma veya banka adı giriniz.
+                      </p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label className="text-[11px] font-bold text-primary/80 uppercase tracking-wider px-1">
@@ -203,6 +265,7 @@ export function AssetForm({ activeTab, onAdd, onCancel, loading, error, defaultA
                     </Label>
                     <Input
                       type="number"
+                      disabled={!hasSymbol}
                       value={formData.quantity === 0 ? "" : formData.quantity}
                       onChange={(e) => handleNumberChange("quantity", e.target.value)}
                       className="bg-muted/50 border-primary/10 h-12 rounded-2xl focus:ring-primary text-sm font-semibold px-4"
@@ -215,6 +278,7 @@ export function AssetForm({ activeTab, onAdd, onCancel, loading, error, defaultA
                     </Label>
                     <Input
                       type="number"
+                      disabled={!hasSymbol}
                       value={formData.purchasePrice === 0 ? "" : formData.purchasePrice}
                       onChange={(e) => handleNumberChange("purchasePrice", e.target.value)}
                       className="bg-muted/50 border-primary/10 h-12 rounded-2xl focus:ring-primary text-sm font-semibold px-4"
@@ -230,6 +294,7 @@ export function AssetForm({ activeTab, onAdd, onCancel, loading, error, defaultA
                         </Label>
                         <Input
                           type="number"
+                          disabled={!hasSymbol}
                           value={formData.monthlyContribution === 0 ? "" : formData.monthlyContribution}
                           onChange={(e) => handleNumberChange("monthlyContribution", e.target.value)}
                           className="bg-muted/50 border-primary/10 h-12 rounded-2xl focus:ring-primary text-sm font-semibold px-4"
@@ -241,6 +306,7 @@ export function AssetForm({ activeTab, onAdd, onCancel, loading, error, defaultA
                           Fon Sınıfı (Varsayılan Getiri Grubu)
                         </Label>
                         <Select
+                          disabled={!hasSymbol}
                           value={formData.fundType}
                           onValueChange={(v) => setFormData((p) => ({ ...p, fundType: String(v) }))}
                         >
@@ -269,6 +335,7 @@ export function AssetForm({ activeTab, onAdd, onCancel, loading, error, defaultA
                         <div className="relative">
                           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-primary opacity-50" />
                           <Input
+                            disabled={!hasSymbol}
                             placeholder="Fon kodu veya adı yazın: AEG, ALR, MAC, Katılım..."
                             value={besSearchQuery}
                             onChange={(e) => setBesSearchQuery(e.target.value)}
@@ -353,12 +420,18 @@ export function AssetForm({ activeTab, onAdd, onCancel, loading, error, defaultA
                     <div className="relative">
                       <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-primary opacity-50" />
                       <Input
+                        autoFocus
                         placeholder="Örn: THYAO, BTC, AAPL..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-12 bg-muted/50 border-primary/10 h-12 rounded-2xl focus:ring-primary text-sm font-semibold"
+                        className="pl-12 bg-muted/50 border-primary/10 h-12 rounded-2xl focus:ring-primary text-sm font-semibold uppercase font-bold"
                       />
                     </div>
+                    {!hasSymbol && (
+                      <p className="text-[10px] font-bold text-amber-600 dark:text-amber-400 mt-1">
+                        ⚠️ Diğer alanları doldurmak için önce sembol veya kod giriniz.
+                      </p>
+                    )}
 
                     {showSearch && searchResults.length > 0 && rect && createPortal(
                       <div
@@ -372,10 +445,16 @@ export function AssetForm({ activeTab, onAdd, onCancel, loading, error, defaultA
                             onMouseDown={(e) => {
                               e.preventDefault();
                               const sym = `${result.symbol} (${result.shortname || result.symbol})`;
+                              const cat = result.suggestedCategory || formData.type;
+                              let cur = "TRY";
+                              if (cat === "NASDAQ" || cat === "CRYPTO" || (cat === "GOLD" && (result.symbol.includes("ONS") || result.symbol.includes("GC=F") || result.symbol.includes("SI=F") || result.symbol.includes("BZ=F")))) {
+                                cur = "USD";
+                              }
                               setFormData((prev) => ({
                                 ...prev,
                                 symbol: sym,
-                                type: result.suggestedCategory || prev.type
+                                type: cat,
+                                currency: cur
                               }));
                               setSearchQuery(sym);
                               setShowSearch(false);
@@ -410,7 +489,8 @@ export function AssetForm({ activeTab, onAdd, onCancel, loading, error, defaultA
                             key={item.symbol}
                             type="button"
                             onClick={() => {
-                              setFormData(p => ({ ...p, symbol: item.symbol }));
+                              const isUsd = item.symbol.includes("ONS") || item.symbol.includes("GC=F") || item.symbol.includes("SI=F") || item.symbol.includes("BZ=F");
+                              setFormData(p => ({ ...p, symbol: item.symbol, currency: isUsd ? "USD" : "TRY" }));
                               setSearchQuery(item.symbol);
                             }}
                             className="text-xs font-bold px-3 py-2 rounded-xl bg-amber-500/10 text-amber-600 border border-amber-500/20 hover:bg-amber-500/20 transition-all"
@@ -423,38 +503,58 @@ export function AssetForm({ activeTab, onAdd, onCancel, loading, error, defaultA
                   </div>
 
                   <div className="space-y-2">
+                    <Label className="text-[11px] font-bold text-primary/80 uppercase tracking-wider px-1">Para Birimi</Label>
+                    <Select
+                      disabled={!hasSymbol || formData.useCurrentPrice}
+                      value={formData.currency}
+                      onValueChange={(v) => setFormData(p => ({ ...p, currency: String(v) }))}
+                    >
+                      <SelectTrigger className="bg-muted/50 border-primary/10 h-12 rounded-2xl focus:ring-primary text-sm font-semibold px-4 font-extrabold">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-2xl border-primary/10 font-medium max-h-56">
+                        {MAIN_CURRENCIES.map(c => <SelectItem key={c.code} value={c.code}>{c.flag} {c.code}</SelectItem>)}
+                        {OTHER_CURRENCIES.map(c => <SelectItem key={c.code} value={c.code}>{c.flag} {c.code}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
                     <Label className="text-[11px] font-bold text-primary/80 uppercase tracking-wider px-1">Miktar</Label>
                     <Input
                       type="number"
+                      disabled={!hasSymbol}
                       value={formData.quantity === 0 ? "" : formData.quantity}
                       onChange={(e) => handleNumberChange("quantity", e.target.value)}
-                      className="bg-muted/50 border-primary/10 h-12 rounded-2xl focus:ring-primary text-sm font-semibold px-4"
+                      className="bg-muted/50 border-primary/10 h-12 rounded-2xl focus:ring-primary text-sm font-semibold px-4 font-bold"
                       placeholder="0"
                     />
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-2 sm:col-span-2">
                     <Label className="text-[11px] font-bold text-primary/80 uppercase tracking-wider px-1">Alış Fiyatı</Label>
                     <div className="flex gap-2">
                       <Input
                         type="number"
-                        disabled={formData.useCurrentPrice}
+                        step="0.01"
+                        disabled={!hasSymbol || formData.useCurrentPrice}
                         value={formData.purchasePrice === 0 ? "" : formData.purchasePrice}
                         onChange={(e) => handleNumberChange("purchasePrice", e.target.value)}
-                        className="bg-muted/50 border-primary/10 h-12 rounded-2xl focus:ring-primary text-sm font-semibold px-4"
+                        className="bg-muted/50 border-primary/10 h-12 rounded-2xl focus:ring-primary text-sm font-semibold px-4 font-bold"
                         placeholder="0.00"
                       />
                       <Button
                         type="button"
+                        disabled={!hasSymbol || fetchingLive}
                         variant={formData.useCurrentPrice ? "default" : "outline"}
-                        onClick={() => setFormData(p => ({ ...p, useCurrentPrice: !p.useCurrentPrice }))}
+                        onClick={handleToggleCurrentPrice}
                         className={cn(
-                          "h-12 rounded-2xl border-primary/10 font-bold transition-all px-4",
+                          "h-12 rounded-2xl border-primary/10 font-bold transition-all px-4 shrink-0",
                           formData.useCurrentPrice ? "bg-primary text-primary-foreground shadow-md" : "bg-card text-muted-foreground"
                         )}
                       >
                         <Clock className="mr-1.5 h-4 w-4" />
-                        Güncel
+                        {fetchingLive ? "..." : "Güncel"}
                       </Button>
                     </div>
                   </div>
@@ -464,6 +564,7 @@ export function AssetForm({ activeTab, onAdd, onCancel, loading, error, defaultA
               <div className="space-y-2 sm:col-span-2">
                 <Label className="text-[11px] font-bold text-primary/80 uppercase tracking-wider px-1">Açıklama / Notlar (Opsiyonel)</Label>
                 <Input
+                  disabled={activeTab === "financial" && !hasSymbol}
                   placeholder="Varlıkla ilgili hatırlatıcı notlar..."
                   value={formData.description}
                   onChange={(e) => setFormData(p => ({ ...p, description: e.target.value }))}
@@ -535,10 +636,10 @@ export function AssetForm({ activeTab, onAdd, onCancel, loading, error, defaultA
           <div className="pt-8 mt-8 border-t border-border/5 flex justify-end pb-2">
             <Button
               onClick={handleSubmit}
-              disabled={loading}
-              className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-2xl px-10 py-6 h-auto text-base font-black shadow-xl hover:shadow-primary/20 transition-all w-full sm:w-auto"
+              disabled={loading || (activeTab === "financial" && (!hasSymbol || fetchingLive))}
+              className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-2xl px-10 py-6 h-auto text-base font-black shadow-xl hover:shadow-primary/20 transition-all w-full sm:w-auto disabled:opacity-50 disabled:pointer-events-none"
             >
-              {loading ? "Kaydediliyor..." : (activeTab === "financial" ? "Yatırımı Kaydet" : "Varlığı Kaydet")}
+              {loading ? "Kaydediliyor..." : (fetchingLive ? "Fiyat Çekiliyor..." : (activeTab === "financial" ? "Yatırımı Kaydet" : "Varlığı Kaydet"))}
             </Button>
           </div>
         </div>
