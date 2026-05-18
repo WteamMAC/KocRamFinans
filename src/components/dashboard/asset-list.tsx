@@ -68,7 +68,6 @@ interface FixedAsset {
   value: number;
   currency?: string;
   originalAmount?: number;
-  fxRate?: number;
   liveProfit?: number;
   liveProfitPercent?: number;
 }
@@ -389,15 +388,12 @@ export function AssetList({
     try {
       const origAmount = Number(data.originalAmount || data.value || 0);
       const curr = data.currency || "TRY";
-      const currRate = rates[curr] || 1;
 
       await addFixedAsset({
         name: data.name,
         type: data.type,
         value: origAmount, // Native
         currency: curr,
-        originalAmount: origAmount,
-        fxRate: currRate
       });
       setIsAdding(false);
       await new Promise(r => setTimeout(r, 500));
@@ -533,7 +529,7 @@ export function AssetList({
             <div className="text-4xl font-heading font-bold text-primary mb-4 relative z-10">
               {(() => {
                 const isAllFixedSameCur = (fixedAssets || []).length > 0 && (fixedAssets || []).every(a => (a.currency || "TRY").toUpperCase() === (displayCurrency || "TRY").toUpperCase());
-                const exactTotalFixedOrig = isAllFixedSameCur ? (fixedAssets || []).reduce((sum: number, a) => sum + (a.originalAmount || (a.fxRate ? a.value / a.fxRate : a.value)), 0) : undefined;
+                const exactTotalFixedOrig = isAllFixedSameCur ? (fixedAssets || []).reduce((sum: number, a) => sum + (a.originalAmount ?? a.value), 0) : undefined;
                 return activeTab === "financial"
                   ? formatCur(Object.values(groupedAssets).reduce((sum: number, g) => sum + g.totalValue, 0))
                   : formatCur((fixedAssets || []).reduce((sum: number, a) => sum + a.value, 0), undefined, exactTotalFixedOrig ? { amount: exactTotalFixedOrig, currency: displayCurrency } : undefined);
@@ -751,12 +747,12 @@ export function AssetList({
                 ) : (
                   filteredFixed.map((asset) => {
                     const isTry = !asset.currency || asset.currency === "TRY";
-                    const origAmount = asset.originalAmount || (asset.fxRate ? asset.value / asset.fxRate : asset.value);
+                    const origAmount = asset.originalAmount ?? asset.value;
                     const fxSymbol = asset.currency || "TRY";
                     const currKey = fxSymbol.toUpperCase();
                     const targetCurrKey = (displayCurrency || "TRY").toUpperCase();
                     
-                    const assetRateInTry = rates[currKey] || asset.fxRate || 1;
+                    const assetRateInTry = rates[currKey] || 1;
                     const targetRateInTry = rates[targetCurrKey] || 1;
                     const crossParity = assetRateInTry / targetRateInTry;
                     

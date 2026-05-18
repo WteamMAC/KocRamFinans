@@ -47,7 +47,6 @@ interface Transaction {
   createdAt: string;
   currency?: string;
   originalAmount?: number;
-  fxRate?: number;
   tryAmount?: number;
   isRecurring?: boolean;
   dueDate?: number;
@@ -105,7 +104,8 @@ export function IncomeExpenseClient({
     const cur = (tx.currency || "TRY").toUpperCase();
     const curInfo = DISPLAY_CURRENCIES_MAP[cur];
     const sym = curInfo ? (cur === displayCurrency ? curInfo.symbol : `${curInfo.symbol} ${cur}`) : cur;
-    return `${(tx.amount || 0).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: tx.amount < 1 ? 4 : 2 })} ${sym}`;
+    const amt = tx.originalAmount != null ? tx.originalAmount : (tx.amount || 0);
+    return `${amt.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: amt < 1 ? 4 : 2 })} ${sym}`;
   };
 
   useEffect(() => {
@@ -128,16 +128,16 @@ export function IncomeExpenseClient({
 
     const dataToExport = filtered.map((tx) => {
       const isInc = tx.type === "income";
-      const tryAmount = tx.tryAmount != null ? tx.tryAmount : (tx.amount * (tx.fxRate || 1));
+      const tryAmount = tx.tryAmount != null ? tx.tryAmount : tx.amount;
+      const nativeAmt = tx.originalAmount != null ? tx.originalAmount : tx.amount;
       return {
         "ID": tx.id,
         "İşlem Türü": isInc ? "Gelir" : "Gider",
         "Kategori": tx.category,
         "Açıklama": tx.description || "",
         "Tarih": new Date(tx.createdAt).toLocaleDateString("tr-TR"),
-        "Miktar": tx.amount,
+        "Miktar": nativeAmt,
         "Para Birimi": tx.currency || "TRY",
-        "Döviz Kuru": tx.fxRate || 1,
         "TRY Karşılığı": tryAmount
       };
     });
@@ -187,8 +187,6 @@ export function IncomeExpenseClient({
           date: new Date(editFormData.date),
           description: editFormData.description,
           currency: editFormData.currency,
-          originalAmount: originalAmount,
-          fxRate: selectedRate,
         });
       } else {
         await editExpense(editingTransaction.id, {
@@ -199,8 +197,6 @@ export function IncomeExpenseClient({
           date: new Date(editFormData.date),
           description: editFormData.description,
           currency: editFormData.currency,
-          originalAmount: originalAmount,
-          fxRate: selectedRate,
         });
       }
       setEditingTransaction(null);
@@ -621,7 +617,7 @@ export function IncomeExpenseClient({
                           </p>
                           {(!tx.currency || tx.currency.toUpperCase() !== displayCurrency.toUpperCase()) && (
                             <p className="text-[11px] font-bold text-muted-foreground opacity-70 mt-1">
-                              ≈ {isInc ? '+' : '-'} {formatAmount(tx.tryAmount != null ? tx.tryAmount : (tx.amount * (tx.fxRate || 1)))} ({displayCurrency})
+                              ≈ {isInc ? '+' : '-'} {formatAmount(tx.tryAmount != null ? tx.tryAmount : tx.amount)} ({displayCurrency})
                             </p>
                           )}
                         </td>
@@ -700,7 +696,7 @@ export function IncomeExpenseClient({
                     </p>
                     {(!tx.currency || tx.currency.toUpperCase() !== displayCurrency.toUpperCase()) && (
                       <p className="text-[10px] font-bold text-muted-foreground opacity-70 mt-0.5">
-                        ≈ {isInc ? '+' : '-'} {formatAmount(tx.tryAmount != null ? tx.tryAmount : (tx.amount * (tx.fxRate || 1)))} ({displayCurrency})
+                        ≈ {isInc ? '+' : '-'} {formatAmount(tx.tryAmount != null ? tx.tryAmount : tx.amount)} ({displayCurrency})
                       </p>
                     )}
                     <div className="flex items-center gap-2 mt-1">

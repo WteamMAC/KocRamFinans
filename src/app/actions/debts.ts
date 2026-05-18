@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
+import { getLivePrices, getRateForCurrency } from "@/lib/price-service";
 
 export async function addDebt(data: { 
   type: string; 
@@ -13,8 +14,6 @@ export async function addDebt(data: {
   dueDate?: string; // Yeni: Son ödeme tarihi
   description?: string;
   currency?: string;
-  originalAmount?: number;
-  fxRate?: number;
 }) {
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthorized");
@@ -62,8 +61,6 @@ export async function addDebt(data: {
       paymentDay: data.paymentDay,
       description: finalDescription,
       currency: data.currency ?? "TRY",
-      originalAmount: data.amount, // Set originalAmount equal to the initial principal natively
-      fxRate: data.fxRate ?? 1,
     },
   });
 
@@ -72,7 +69,7 @@ export async function addDebt(data: {
   revalidatePath("/dashboard");
 }
 
-export async function payDebtInstallment(debtId: string, amount: number, isAuto: boolean = false, currency?: string, originalAmount?: number, fxRate?: number) {
+export async function payDebtInstallment(debtId: string, amount: number, isAuto: boolean = false, currency?: string, paymentAmount?: number) {
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthorized");
 
@@ -101,13 +98,11 @@ export async function payDebtInstallment(debtId: string, amount: number, isAuto:
     data: {
       userId: debt.userId,
       type: "Borç Taksit Ödemesi",
-      amount: originalAmount ?? amount,
+      amount: paymentAmount ?? amount,
       isRecurring: false,
       description: `${debt.description || debt.type} için ${isAuto ? "otomatik " : ""}ödeme yapıldı.`,
       date: new Date(),
       currency: currency ?? "TRY",
-      originalAmount: originalAmount ?? amount,
-      fxRate: fxRate ?? 1,
     },
   });
 
@@ -133,8 +128,6 @@ export async function postponeDebtInstallment(debtId: string) {
       description: `${debt.description || debt.type} için otomatik ödeme bu ay için ertelendi / atlandı.`,
       date: new Date(),
       currency: debt.currency ?? "TRY",
-      originalAmount: 0,
-      fxRate: debt.fxRate ?? 1,
     },
   });
 
@@ -185,9 +178,7 @@ export async function processAutoPayments(userId: string) {
         debt.id, 
         debt.installmentAmount, 
         true, 
-        debt.currency ?? undefined, 
-        debt.installmentAmount, 
-        debt.fxRate ?? undefined
+        debt.currency ?? undefined
       );
     }
   }
@@ -224,8 +215,6 @@ export async function closeDebt(debtId: string, isTransfer: boolean = false) {
         isRecurring: false,
         description: `${debt.description || debt.type} borcu tamamen kapatıldı.`,
         currency: debt.currency,
-        originalAmount: closingAmount,
-        fxRate: debt.fxRate,
       },
     });
   }
@@ -247,7 +236,6 @@ export async function refinanceDebtWithDetails(data: {
     dueDate?: string;
     description?: string;
     currency: string;
-    fxRate: number;
   };
   addRemainingAsExpense: boolean;
 }) {
@@ -296,16 +284,13 @@ export async function refinanceDebtWithDetails(data: {
       paymentDay: data.newDebt.paymentDay,
       description: finalDescription,
       currency: data.newDebt.currency,
-      originalAmount: data.newDebt.amount,
-      fxRate: data.newDebt.fxRate,
     },
   });
 
-  // Calculate old debt deduction
-  // Old debt and new debt might have different currencies. We must convert payAmount to old debt's currency.
-  // payAmount is in newDebt.currency. To convert to oldDebt.currency:
-  // (payAmount * newDebt.fxRate) / oldDebt.fxRate
-  const payAmountInOldCurrency = (data.payAmount * data.newDebt.fxRate) / (oldDebt.fxRate || 1);
+  const livePrices = await getLivePrices(["USDTRY=X", "EURTRY=X", "GBPTRY=X", "XAUTRY=X"]);
+  const newRate = getRateForCurrency(data.newDebt.currency, livePrices);
+  const oldRate = getRateForCurrency(oldDebt.currency, livePrices);
+  const payAmountInOldCurrency = (data.payAmount * newRate) / oldRate;
   const newOldAmount = Math.max(0, oldDebt.amount - payAmountInOldCurrency);
 
   if (newOldAmount <= 0) {
@@ -338,8 +323,6 @@ export async function refinanceDebtWithDetails(data: {
         description: `Yapılandırılan borçtan kalan harcama (${data.newDebt.description || data.newDebt.type}).`,
         date: new Date(),
         currency: data.newDebt.currency,
-        originalAmount: remainingOriginalAmount,
-        fxRate: data.newDebt.fxRate,
       },
     });
   }

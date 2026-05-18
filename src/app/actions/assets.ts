@@ -402,8 +402,6 @@ export async function addFixedAsset(data: {
   type: string;
   value: number;
   currency?: string;
-  originalAmount?: number;
-  fxRate?: number;
 }) {
   try {
     const { userId } = await auth();
@@ -415,26 +413,8 @@ export async function addFixedAsset(data: {
 
     if (!user) throw new Error("Kullanıcı kaydı bulunamadı.");
 
-    let fx = data.fxRate ?? 1.0;
     const curr = (data.currency || "TRY").toUpperCase();
-    const orig = data.originalAmount ?? Number(data.value);
-    let tryVal = Number(data.value);
-
-    if (curr !== "TRY") {
-      try {
-        const live = await getLivePrices(["USDTRY=X", "EURTRY=X", "GBPTRY=X", "XAUTRY=X"]);
-        if (curr === "USD" && live.get("USDTRY=X")) fx = live.get("USDTRY=X")!.price;
-        else if (curr === "EUR" && live.get("EURTRY=X")) fx = live.get("EURTRY=X")!.price;
-        else if (curr === "GBP" && live.get("GBPTRY=X")) fx = live.get("GBPTRY=X")!.price;
-        else if ((curr === "XAU" || curr === "GOLD") && live.get("XAUTRY=X")) fx = live.get("XAUTRY=X")!.price;
-        
-        tryVal = orig * fx;
-      } catch (err) {
-        console.error("Fixed asset FX fetch error:", err);
-      }
-    } else {
-      tryVal = orig;
-    }
+    const orig = Number(data.value);
 
     await prisma.fixedAsset.create({
       data: {
@@ -443,8 +423,6 @@ export async function addFixedAsset(data: {
         type: data.type,
         value: orig, // Native currency
         currency: curr,
-        originalAmount: orig,
-        fxRate: fx,
       }
     });
 

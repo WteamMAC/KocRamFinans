@@ -192,12 +192,9 @@ export async function completeOnboarding(formData: {
       await prisma.income.createMany({
         data: formData.incomes.map(inc => {
           const cur = inc.currency || formData.currency || "TRY";
-          const rate = getRate(cur);
           const amt = Number(inc.amount) || 0;
           return {
-            type: inc.type, amount: amt * rate,
-            originalAmount: amt,
-            fxRate: rate,
+            type: inc.type, amount: amt,
             date: inc.date ? new Date(inc.date) : new Date(),
             description: inc.description,
             currency: cur,
@@ -212,12 +209,9 @@ export async function completeOnboarding(formData: {
         data: formData.expenses.map(exp => {
           const d = exp.date ? new Date(exp.date) : new Date();
           const cur = exp.currency || formData.currency || "TRY";
-          const rate = getRate(cur);
           const amt = Number(exp.amount) || 0;
           return {
-            type: exp.type, amount: amt * rate,
-            originalAmount: amt,
-            fxRate: rate,
+            type: exp.type, amount: amt,
             date: d, dueDate: d.getDate(), isRecurring: exp.isRecurring ?? true,
             description: exp.description,
             currency: cur,
@@ -231,13 +225,9 @@ export async function completeOnboarding(formData: {
       await prisma.debt.createMany({
         data: formData.debts.map(d => {
           const cur = d.currency || formData.currency || "TRY";
-          const rate = getRate(cur);
-          
-          // Orijinal girilen tutar (Ana Para olarak kabul edilir, dashboard'daki data.amount gibi)
           const baseAmt = Number(d.amount) || 0;
-          const principalInTry = baseAmt * rate;
           
-          let finalTotalAmount = principalInTry;
+          let finalTotalAmount = baseAmt;
           let monthlyInstallment = null;
           
           const interest = d.interestRate ? Number(d.interestRate) : undefined;
@@ -246,7 +236,7 @@ export async function completeOnboarding(formData: {
           if (interest && installments && installments > 0) {
             const i = interest / 100;
             const n = installments;
-            const p = principalInTry;
+            const p = baseAmt;
             
             if (i > 0) {
               monthlyInstallment = (p * i * Math.pow(1 + i, n)) / (Math.pow(1 + i, n) - 1);
@@ -255,8 +245,7 @@ export async function completeOnboarding(formData: {
               monthlyInstallment = p / n;
             }
           } else if (installments && installments > 0) {
-            // Faiz yoksa düz böl
-            monthlyInstallment = principalInTry / installments;
+            monthlyInstallment = baseAmt / installments;
           }
           
           let finalDescription = d.description || d.type;
@@ -266,8 +255,8 @@ export async function completeOnboarding(formData: {
           
           return {
             type: d.type,
-            amount: finalTotalAmount, // Faizli toplam borç tutarı
-            principalAmount: principalInTry, // Ana para
+            amount: finalTotalAmount,
+            principalAmount: baseAmt,
             interestRate: interest || null,
             installmentAmount: monthlyInstallment,
             remainingInstallments: installments || null,
@@ -275,8 +264,6 @@ export async function completeOnboarding(formData: {
             dueDate: d.dueDate ? new Date(d.dueDate) : null,
             description: finalDescription,
             currency: cur,
-            originalAmount: baseAmt,
-            fxRate: rate,
             userId: user!.id,
           };
         }),

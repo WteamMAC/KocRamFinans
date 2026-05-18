@@ -24,10 +24,10 @@ interface DebtListProps {
 
 export function DebtList({ debts, monthlyPayments }: DebtListProps) {
     const router = useRouter();
-    const { formatAmount, rates } = useCurrency();
+    const { formatAmount, rates, displayCurrency } = useCurrency();
     const [isAdding, setIsAdding] = useState(false);
     const [loading, setLoading] = useState(false);
-    const [payModal, setPayModal] = useState<{ id: string, amount: number, isClose: boolean, description: string, rawAmount: number, currency?: string, originalAmount?: number, fxRate?: number, payCurrency?: string, payAmount?: number } | null>(null);
+    const [payModal, setPayModal] = useState<{ id: string, amount: number, isClose: boolean, description: string, rawAmount: number, currency?: string, payCurrency?: string, payAmount?: number } | null>(null);
     const [refinanceId, setRefinanceId] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [postponeDebtId, setPostponeDebtId] = useState<string | null>(null);
@@ -126,7 +126,6 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
                         dueDate: formData.dueDate || undefined,
                         description: formData.description,
                         currency: formData.currency,
-                        fxRate: selectedRate,
                     },
                     addRemainingAsExpense: formData.addRemainingAsExpense,
                 });
@@ -141,8 +140,6 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
                     dueDate: formData.dueDate || undefined,
                     description: formData.description,
                     currency: formData.currency,
-                    originalAmount: originalAmount,
-                    fxRate: selectedRate,
                 });
             }
 
@@ -182,8 +179,7 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
                     payModal.rawAmount,
                     false,
                     payModal.isClose ? payModal.currency : payModal.payCurrency,
-                    payModal.isClose ? (payModal.originalAmount ? payModal.originalAmount : payModal.rawAmount) : payModal.payAmount,
-                    payModal.isClose ? payModal.fxRate : (rates[payModal.payCurrency || "TRY"] || 1)
+                    payModal.payAmount ?? payModal.rawAmount
                 );
             }
             setPayModal(null);
@@ -209,7 +205,7 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
                         return "";
                     }
                 })();
-                const amountVal = String(debt.amount / (debt.fxRate || 1));
+                const amountVal = String(debt.originalAmount ?? debt.amount);
                 setRefinanceId(debt.id);
                 setFormData({
                     type: debt.type,
@@ -576,6 +572,7 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {activeDebts.map((debt) => {
                     const monthlyTry = debt.remainingInstallments ? debt.amount / debt.remainingInstallments : debt.amount;
+                    const monthlyNative = debt.remainingInstallments ? (debt.originalAmount ?? debt.amount) / debt.remainingInstallments : (debt.originalAmount ?? debt.amount);
                     return (
                         <Card key={debt.id} className="bg-card border-border/30 shadow-ambient-low hover:shadow-ambient-medium transition-all rounded-[32px] overflow-hidden group">
                             <div className="p-8">
@@ -639,7 +636,7 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
                                                                 return "";
                                                             }
                                                         })();
-                                                        const amountVal = String(debt.amount / (debt.fxRate || 1));
+                                                        const amountVal = String(debt.originalAmount ?? debt.amount);
                                                         setRefinanceId(debt.id);
                                                         setFormData({
                                                             type: debt.type,
@@ -662,10 +659,10 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                         <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">Kalan Borç</span>
-                                        <p className="text-2xl font-heading font-bold text-primary">{formatAmount(debt.amount * (rates[debt.currency] || 1), undefined, { amount: debt.amount, currency: debt.currency })}</p>
-                                        {debt.currency && debt.currency !== "TRY" && (
+                                        <p className="text-2xl font-heading font-bold text-primary">{formatAmount(debt.amount, undefined, { amount: debt.originalAmount ?? debt.amount, currency: debt.currency })}</p>
+                                        {debt.currency && debt.currency.toUpperCase() !== displayCurrency.toUpperCase() && (
                                             <p className="text-[11px] text-muted-foreground font-semibold">
-                                                (Orijinal: {debt.amount?.toLocaleString()} {debt.currency})
+                                                (Orijinal: {(debt.originalAmount ?? debt.amount)?.toLocaleString()} {debt.currency})
                                             </p>
                                         )}
                                     </div>
@@ -688,7 +685,7 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
                                             <TrendingDown className="w-4 h-4 opacity-40" /> Aylık Ödeme (Tahmini)
                                         </div>
                                         <span className="font-bold text-primary">
-                                            {formatAmount((debt.installmentAmount || monthlyTry) * (rates[debt.currency] || 1), undefined, { amount: debt.installmentAmount || monthlyTry, currency: debt.currency })}
+                                            {formatAmount((debt.installmentAmount || monthlyNative) * (rates[debt.currency] || 1), undefined, { amount: debt.installmentAmount || monthlyNative, currency: debt.currency })}
                                         </span>
                                     </div>
                                     {debt.paymentDay && (
@@ -729,15 +726,13 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
                                         className="rounded-xl border-primary/20 text-primary hover:bg-primary/5 font-bold h-11"
                                         onClick={() => setPayModal({
                                             id: debt.id,
-                                            amount: monthlyTry,
-                                            rawAmount: monthlyTry,
+                                            amount: monthlyNative,
+                                            rawAmount: monthlyNative,
                                             isClose: false,
                                             description: debt.description || debt.type,
                                             currency: debt.currency,
-                                            originalAmount: debt.remainingInstallments ? debt.originalAmount / debt.remainingInstallments : debt.originalAmount,
-                                            fxRate: debt.fxRate,
                                             payCurrency: debt.currency || "TRY",
-                                            payAmount: monthlyTry
+                                            payAmount: monthlyNative
                                         })}
                                     >
                                         Taksit Öde
@@ -746,13 +741,13 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
                                         className="rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold h-11 shadow-md shadow-primary/10"
                                         onClick={() => setPayModal({
                                             id: debt.id,
-                                            amount: debt.amount,
-                                            rawAmount: debt.amount,
+                                            amount: debt.originalAmount ?? debt.amount,
+                                            rawAmount: debt.originalAmount ?? debt.amount,
                                             isClose: true,
                                             description: debt.description || debt.type,
                                             currency: debt.currency,
-                                            originalAmount: debt.originalAmount,
-                                            fxRate: debt.fxRate
+                                            payCurrency: debt.currency || "TRY",
+                                            payAmount: debt.originalAmount ?? debt.amount
                                         })}
                                     >
                                         Borcu Kapat

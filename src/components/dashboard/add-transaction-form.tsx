@@ -75,8 +75,6 @@ export function AddTransactionForm({ initialType = "expense" }: AddTransactionFo
           date: new Date(formData.date),
           description: formData.description,
           currency: formData.currency,
-          originalAmount: originalAmount,
-          fxRate: selectedRate,
         });
       } else {
         await addExpense({
@@ -87,8 +85,6 @@ export function AddTransactionForm({ initialType = "expense" }: AddTransactionFo
           date: new Date(formData.date),
           description: formData.description,
           currency: formData.currency,
-          originalAmount: originalAmount,
-          fxRate: selectedRate,
         });
       }
       router.push("/dashboard/income-expense/history");

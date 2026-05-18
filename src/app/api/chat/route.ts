@@ -406,9 +406,7 @@ export async function POST(req: Request) {
                         userId: user.id,
                         type: category,
                         amount: safeAmount,
-                        originalAmount: safeAmount,
                         currency,
-                        fxRate,
                         date: txDate,
                         description: description || "",
                       }
@@ -419,9 +417,7 @@ export async function POST(req: Request) {
                         userId: user.id,
                         type: category,
                         amount: safeAmount,
-                        originalAmount: safeAmount,
                         currency,
-                        fxRate,
                         date: txDate,
                         isRecurring: isRecurring === undefined ? false : Boolean(isRecurring),
                         description: description || "",
@@ -455,8 +451,6 @@ export async function POST(req: Request) {
                         paymentDay: paymentDay ? Number(paymentDay) : null,
                         dueDate: dueDate ? new Date(dueDate) : null,
                         currency,
-                        originalAmount: safeAmount,
-                        fxRate,
                         description: debtDesc,
                       }
                     });
@@ -504,11 +498,9 @@ export async function POST(req: Request) {
                       data: {
                         userId: user.id,
                         name: description || "Sabit Varlık",
-                        type: category, // "RealEstate", "Vehicle", vs.
-                        value: amountInTRY,
+                        type: category,
+                        value: safeAmount,
                         currency,
-                        originalAmount: safeAmount,
-                        fxRate
                       }
                     });
                   }
@@ -532,15 +524,23 @@ export async function POST(req: Request) {
                     let payAmountInDebtCurrency = 0;
                     let expenseAmountInNative = 0;
                     let payCurrency = debt.currency || "TRY";
-                    let payFxRate = debt.fxRate || 1;
+                    
+                    let debtFxRate = 1;
+                    if (debt.currency && debt.currency !== "TRY") {
+                      const symMap: Record<string, string> = { USD: "USDTRY=X", EUR: "EURTRY=X", GBP: "GBPTRY=X", XAU: "XAUTRY=X" };
+                      const s = symMap[debt.currency];
+                      if (s) {
+                        try { const p = await getLivePrices([s]); debtFxRate = p.get(s)?.price || 1; } catch(e){}
+                      }
+                    }
 
                     if (payAmountInput !== null) {
                       payCurrency = (rawCurrency || debt.currency || "TRY").toUpperCase();
                       if (payCurrency === debt.currency) {
-                        payFxRate = debt.fxRate || 1;
                         payAmountInDebtCurrency = payAmountInput;
                         expenseAmountInNative = payAmountInput;
                       } else {
+                        let payFxRate = 1;
                         const symbolMap: Record<string, string> = {
                           USD: "USDTRY=X", EUR: "EURTRY=X", GBP: "GBPTRY=X",
                           CHF: "CHFTRY=X", JPY: "JPYTRY=X", AED: "AEDTRY=X",
@@ -554,7 +554,7 @@ export async function POST(req: Request) {
                           } catch (e: any) { payFxRate = 1; }
                         }
                         const paymentInTry = payAmountInput * payFxRate;
-                        payAmountInDebtCurrency = paymentInTry / (debt.fxRate || 1);
+                        payAmountInDebtCurrency = paymentInTry / debtFxRate;
                         expenseAmountInNative = payAmountInput;
                       }
                     } else {
@@ -584,11 +584,9 @@ export async function POST(req: Request) {
                     await prisma.expense.create({
                       data: {
                         userId: user.id,
-                        type: "Banka Kredisi", // Borç Ödemesi
-                        amount: expenseAmountInNative, // Native currency
-                        originalAmount: expenseAmountInNative,
+                        type: "Banka Kredisi",
+                        amount: expenseAmountInNative,
                         currency: payCurrency,
-                        fxRate: payFxRate,
                         date: new Date(),
                         isRecurring: false,
                         description: `${debt.description || debt.type} ödemesi / taksidi`

@@ -69,9 +69,7 @@ model FixedAsset {
   name        String   // e.g., "Araba", "Ev", "Telefon"
   type        String   // Category: "Vehicle", "RealEstate", "Electronics", "Other"
   value       Float    // Estimated value
-  currency        String   @default("TRY")
-  originalAmount  Float?
-  fxRate          Float?   @default(1)
+  currency    String   @default("TRY")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
@@ -100,8 +98,6 @@ model Income {
   isRecurring     Boolean  @default(true)
   description     String?
   currency        String   @default("TRY")
-  originalAmount  Float?
-  fxRate          Float?   @default(1)
   
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -118,8 +114,6 @@ model Expense {
   isRecurring     Boolean  @default(true)
   description     String?
   currency        String   @default("TRY")
-  originalAmount  Float?
-  fxRate          Float?   @default(1)
   
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -139,8 +133,6 @@ model Debt {
   dueDate               DateTime? // Taksitli değilse son ödeme tarihi
   description           String?
   currency              String   @default("TRY")
-  originalAmount        Float?
-  fxRate                Float?   @default(1)
   
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt

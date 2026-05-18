@@ -606,7 +606,7 @@ export function calculateFixedAssetsMetrics(fixedAssets: any[], livePrices: Map<
   let totalCurrentValue = 0;
 
   const detailedFixedAssets = (fixedAssets || []).map(fa => {
-    const originalAmount = fa.originalAmount != null ? Number(fa.originalAmount) : Number(fa.value || 0);
+    const originalAmount = Number(fa.value || 0);
     const curr = (fa.currency || "TRY").toUpperCase();
     const rate = getRateForCurrency(curr, livePrices);
     let currentVal = Number(fa.value || 0);
@@ -629,6 +629,7 @@ export function calculateFixedAssetsMetrics(fixedAssets: any[], livePrices: Map<
 
     return {
       ...fa,
+      originalAmount,
       originalValuation: cost,
       currentValuation: currentVal,
       liveProfit: profit,
@@ -658,10 +659,8 @@ export function normalizeFinancialItemsToTry(items: any[], livePrices: Map<strin
     const cur = (item.currency || "TRY").toUpperCase();
     const rate = getRateForCurrency(cur, livePrices);
 
-    const dbAmount = Number(item.amount) || 0;
-    // Artık amount veritabanında NATIVE (orijinal) döviz cinsinden tutuluyor!
-    const origAmt = item.originalAmount != null ? Number(item.originalAmount) : dbAmount;
-    const tryAmt = (cur === "TRY" || cur === "TL") ? dbAmount : (origAmt * rate);
+    const origAmt = Number(item.amount) || 0;
+    const tryAmt = (cur === "TRY" || cur === "TL") ? origAmt : (origAmt * rate);
 
     return {
       ...item,

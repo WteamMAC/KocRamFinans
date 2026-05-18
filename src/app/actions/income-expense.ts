@@ -12,8 +12,6 @@ export async function addIncome(data: {
   date?: Date; 
   description?: string;
   currency?: string;
-  originalAmount?: number;
-  fxRate?: number;
 }) {
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthorized");
@@ -35,8 +33,6 @@ export async function addIncome(data: {
       dueDate: data.dueDate,
       description: data.description,
       currency: data.currency ?? "TRY",
-      originalAmount: data.originalAmount,
-      fxRate: data.fxRate ?? 1,
     },
   });
 
@@ -52,8 +48,6 @@ export async function addExpense(data: {
   date?: Date; 
   description?: string;
   currency?: string;
-  originalAmount?: number;
-  fxRate?: number;
 }) {
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthorized");
@@ -75,8 +69,6 @@ export async function addExpense(data: {
       dueDate: data.dueDate,
       description: data.description,
       currency: data.currency ?? "TRY",
-      originalAmount: data.originalAmount,
-      fxRate: data.fxRate ?? 1,
     },
   });
 
@@ -94,8 +86,6 @@ export async function editIncome(
     date?: Date;
     description?: string;
     currency?: string;
-    originalAmount?: number;
-    fxRate?: number;
   }
 ) {
   const { userId } = await auth();
@@ -126,8 +116,6 @@ export async function editIncome(
       dueDate: data.dueDate,
       description: data.description,
       currency: data.currency ?? "TRY",
-      originalAmount: data.originalAmount,
-      fxRate: data.fxRate ?? 1,
     },
   });
 
@@ -171,8 +159,6 @@ export async function editExpense(
     date?: Date;
     description?: string;
     currency?: string;
-    originalAmount?: number;
-    fxRate?: number;
   }
 ) {
   const { userId } = await auth();
@@ -203,8 +189,6 @@ export async function editExpense(
       dueDate: data.dueDate,
       description: data.description,
       currency: data.currency ?? "TRY",
-      originalAmount: data.originalAmount,
-      fxRate: data.fxRate ?? 1,
     },
   });
 

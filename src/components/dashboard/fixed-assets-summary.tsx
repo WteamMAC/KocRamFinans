@@ -13,7 +13,6 @@ interface FixedAsset {
   value: number;
   currency?: string;
   originalAmount?: number;
-  fxRate?: number;
   originalValuation?: number;
   currentValuation?: number;
   liveProfit?: number;
@@ -82,7 +81,7 @@ export function FixedAssetsSummary({ fixedAssets }: FixedAssetsSummaryProps) {
   const totalProfitPercent = totalOriginalCost > 0 ? (totalProfit / totalOriginalCost) * 100 : 0;
 
   const isAllSameCur = fixedAssets.length > 0 && fixedAssets.every(a => (a.currency || "TRY").toUpperCase() === (displayCurrency || "TRY").toUpperCase());
-  const exactTotalFixedOrig = isAllSameCur ? fixedAssets.reduce((acc, a) => acc + (a.originalAmount || (a.fxRate ? a.value / a.fxRate : a.value)), 0) : undefined;
+  const exactTotalFixedOrig = isAllSameCur ? fixedAssets.reduce((acc, a) => acc + (a.originalAmount ?? a.value), 0) : undefined;
 
   if (!isMounted) {
     return <div className="h-[300px] w-full bg-muted animate-pulse rounded-3xl" />;

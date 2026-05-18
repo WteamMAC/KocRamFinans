@@ -68,7 +68,7 @@ export function InvestmentSummary({ investments, fixedAssets }: InvestmentSummar
   const exactTotalInvOrig = isAllInvSameCur ? investments.reduce((acc, i) => acc + (i.amount || i.currentValue || 0), 0) : undefined;
 
   const isAllFixedSameCur = (fixedAssets || []).length > 0 && (fixedAssets || []).every(a => (a.currency || "TRY").toUpperCase() === (displayCurrency || "TRY").toUpperCase());
-  const exactTotalFixedOrig = isAllFixedSameCur ? (fixedAssets || []).reduce((acc, a) => acc + (a.originalAmount || (a.fxRate ? a.value / a.fxRate : a.value)), 0) : undefined;
+  const exactTotalFixedOrig = isAllFixedSameCur ? (fixedAssets || []).reduce((acc, a) => acc + (a.originalAmount ?? a.value), 0) : undefined;
 
   if (!isMounted) {
     return <div className="h-[350px] w-full bg-muted animate-pulse rounded-[24px]" />;
