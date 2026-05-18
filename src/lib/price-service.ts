@@ -19,6 +19,8 @@ export interface PriceResult {
   symbol: string;
   price: number;
   changePercent?: number;
+  originalPrice?: number;
+  originalCurrency?: string;
   error?: string;
 }
 
@@ -191,7 +193,7 @@ export async function getLivePrices(symbols: string[]): Promise<Map<string, Pric
         }
       }
 
-      const newMarketData: Array<{ symbol: string; price: number; changePct: number }> = [];
+      const newMarketData: Array<{ symbol: string; price: number; changePct: number; originalPrice?: number; originalCurrency?: string }> = [];
 
       const usdTryQuote = quotesArray.find((q: any) => q.symbol === "USDTRY=X" || q.symbol === "TRY=X");
       if (usdTryQuote && usdTryQuote.regularMarketPrice && usdTryQuote.regularMarketPrice > 20) {
@@ -253,6 +255,8 @@ export async function getLivePrices(symbols: string[]): Promise<Map<string, Pric
       quotesArray.forEach((quote: any) => {
         if (quote && quote.symbol && !benchmarkMap[quote.symbol.toUpperCase()]) {
           let currentPrice = quote.regularMarketPrice || quote.postMarketPrice || quote.preMarketPrice || 0;
+          let origPrice = currentPrice;
+          let origCurr = quote.currency || "TRY";
           if (quote.currency === "USD" && !quote.symbol.endsWith("=X") && quote.symbol !== "GC=F" && quote.symbol !== "SI=F" && quote.symbol !== "BZ=F") {
             currentPrice = currentPrice * usdToTryRate;
           }
@@ -260,13 +264,13 @@ export async function getLivePrices(symbols: string[]): Promise<Map<string, Pric
           const annualChange = quote.fiftyTwoWeekChangePercent != null 
             ? quote.fiftyTwoWeekChangePercent 
             : (quote.regularMarketChangePercent || 0);
-          newMarketData.push({ symbol: quote.symbol.toUpperCase(), price: currentPrice, changePct: annualChange });
+          newMarketData.push({ symbol: quote.symbol.toUpperCase(), price: currentPrice, changePct: annualChange, originalPrice: origPrice, originalCurrency: origCurr });
         }
       });
 
       // Hem results haritasını güncelleyelim hem de veritabanına kaydedelim
       for (const item of newMarketData) {
-        results.set(item.symbol, { symbol: item.symbol, price: item.price, changePercent: item.changePct });
+        results.set(item.symbol, { symbol: item.symbol, price: item.price, changePercent: item.changePct, originalPrice: item.originalPrice, originalCurrency: item.originalCurrency });
         try {
           await prisma.marketPriceCache.upsert({
             where: { symbol: item.symbol },

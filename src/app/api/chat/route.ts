@@ -153,7 +153,7 @@ export async function POST(req: Request) {
                 description: { type: SchemaType.STRING, description: "Açıklama veya Hisse Kodu" },
                 isRecurring: { type: SchemaType.BOOLEAN, description: "Giderin her ay tekrarlanıp tekrarlanmayacağı. Market, yakıt, tek seferlik harcamalar için false. Sadece kira gibi sabit aylık ödemeler için true. Varsayılan: false" },
                 quantity: { type: SchemaType.NUMBER, description: "Yatırımlar için miktar/adet" },
-                purchasePrice: { type: SchemaType.NUMBER, description: "Yatırımlar için BİRİM alış fiyatı. KESİNLİKLE orijinal para biriminde gönder (USD ise USD, TRY ise TRY). Örneğin BTC için USD birim fiyatı: 87500. amount alanına ise toplam tutarı (quantity * purchasePrice) yaz. TRY'ye dönüştürme YAPMA." },
+                purchasePrice: { type: SchemaType.NUMBER, description: "Yatırımlar için BİRİM alış fiyatı. EĞER fiyatı getMarketPrice aracı ile çektiysen, 'originalPrice' değerini kullan ve currency olarak da 'originalCurrency' değerini gönder. KESİNLİKLE kendi kendine TRY dönüşümü YAPMA. Sistem onu otomatik halleder." },
                 interestRate: { type: SchemaType.NUMBER, description: "Borçlar için aylık faiz oranı (%). Belirtilmezse 0 kabul et." },
                 remainingInstallments: { type: SchemaType.NUMBER, description: "Borçlar için kalan taksit sayısı. Tek seferlik borçlar için boş bırak." },
                 paymentDay: { type: SchemaType.NUMBER, description: "Borçlar için taksit ödeme günü (1-31)." },
@@ -188,7 +188,7 @@ export async function POST(req: Request) {
           },
           {
             name: "getMarketPrice",
-            description: "İnternetten hisse senedi, emtia (altın), döviz veya kripto fiyatlarını canlı olarak arar.",
+            description: "İnternetten hisse senedi, emtia (altın), döviz veya kripto fiyatlarını canlı olarak arar. DİKKAT: DÖNEN TÜM FİYATLAR TÜRK LİRASI (TRY) CİNSİNDENDİR! Eğer kripto veya yabancı hisse sorguluyorsan, sistem onu arka planda otomatik TRY'ye çevirip sana verir. Kayıt eklerken bunu unutma.",
             parameters: {
               type: SchemaType.OBJECT,
               properties: {
@@ -226,10 +226,10 @@ export async function POST(req: Request) {
                 lastName: { type: SchemaType.STRING, description: "Kullanıcının soyadı" },
                 bio: { type: SchemaType.STRING, description: "Kullanıcının biyografisi veya kişisel hedefi" },
                 currency: { type: SchemaType.STRING, description: "Varsayılan para birimi (TRY, USD, EUR vb.)" },
-                interests: { 
-                  type: SchemaType.ARRAY, 
+                interests: {
+                  type: SchemaType.ARRAY,
                   items: { type: SchemaType.STRING },
-                  description: "İlgi alanları listesi (Örn: ['kripto', 'borsa'])" 
+                  description: "İlgi alanları listesi (Örn: ['kripto', 'borsa'])"
                 }
               }
             }
@@ -241,10 +241,10 @@ export async function POST(req: Request) {
               type: SchemaType.OBJECT,
               properties: {
                 content: { type: SchemaType.STRING, description: "Gönderinin içeriği (Kısa, ilgi çekici ve samimi bir metin)" },
-                tags: { 
-                  type: SchemaType.ARRAY, 
+                tags: {
+                  type: SchemaType.ARRAY,
                   items: { type: SchemaType.STRING },
-                  description: "Gönderiyle ilgili etiketler (Örn: ['bitcoin', 'yatırım', 'öneri'])" 
+                  description: "Gönderiyle ilgili etiketler (Örn: ['bitcoin', 'yatırım', 'öneri'])"
                 },
                 communityId: { type: SchemaType.STRING, description: "İsteğe bağlı: Gönderinin paylaşılacağı topluluğun ID'si. Kullanıcı belirli bir topluluk adı söylerse getFinancialHistory ile topluluk listesine bakabilirsin. Belirtilmezse genel feed'e atılır." }
               },
@@ -369,8 +369,8 @@ export async function POST(req: Request) {
                   apiResponse = (cat === "all" || cat === "hepsi") ? dataMap : { data: dataMap[cat as keyof typeof dataMap] || dataMap };
                 } else if (call.name === "addFinancialRecord") {
                   const { type, amount, category, description, quantity, purchasePrice, isRecurring,
-                          currency: rawCurrency, date: rawDate,
-                          interestRate, remainingInstallments, paymentDay, dueDate } = args;
+                    currency: rawCurrency, date: rawDate,
+                    interestRate, remainingInstallments, paymentDay, dueDate } = args;
 
                   const safeAmount = Number(amount) || 0;
                   if (safeAmount <= 0) throw new Error("Tutar 0'dan büyük olmalıdır.");
@@ -516,7 +516,7 @@ export async function POST(req: Request) {
                     const payAmount = (amount && Number(amount) > 0) ? Number(amount) : (debt.installmentAmount || debt.amount);
                     let newRemaining = debt.amount - payAmount;
                     if (newRemaining < 0) newRemaining = 0;
-                    
+
                     let newInstallments = debt.remainingInstallments;
                     if (newInstallments && newInstallments > 0) {
                       newInstallments = newInstallments - 1;
@@ -559,7 +559,7 @@ export async function POST(req: Request) {
                   else if (type === "debt") await prisma.debt.delete({ where: { id: recordId, userId: user.id } });
                   else if (type === "investment") await prisma.investment.delete({ where: { id: recordId, userId: user.id } });
                   else if (type === "fixedAsset") await prisma.fixedAsset.delete({ where: { id: recordId, userId: user.id } });
-                  
+
                   revalidatePath("/dashboard");
                   revalidatePath("/dashboard/income-expense");
                   revalidatePath("/dashboard/debts");
@@ -569,7 +569,14 @@ export async function POST(req: Request) {
                 } else if (call.name === "getMarketPrice") {
                   const symbols: string[] = (Array.isArray(args.symbols) ? args.symbols : [args.symbols]) as string[];
                   const resultsMap = await getLivePrices(symbols);
-                  apiResponse = { data: Object.fromEntries(resultsMap) };
+                  const dataWithCurrency = Object.fromEntries(
+                    Array.from(resultsMap.entries()).map(([k, v]) => [k, { 
+                      tryPrice: v.price, 
+                      originalPrice: v.originalPrice || v.price, 
+                      originalCurrency: v.originalCurrency || "TRY" 
+                    }])
+                  );
+                  apiResponse = { data: dataWithCurrency, note: "The tryPrice is the value converted to TRY. The originalPrice is the value in its native currency (originalCurrency). When adding a record, you should use the originalPrice and originalCurrency." };
                 } else if (call.name === "manageSpecialEvent") {
                   const { action, title, date, isAnnual, eventId } = args;
                   if (action === "add") {
@@ -602,7 +609,7 @@ export async function POST(req: Request) {
                   if (bio) updateData.bio = bio;
                   if (currency) updateData.currency = currency;
                   if (interests && Array.isArray(interests)) updateData.interests = interests;
-                  
+
                   await prisma.user.update({
                     where: { id: user.id },
                     data: updateData
