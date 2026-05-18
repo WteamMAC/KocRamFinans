@@ -361,12 +361,7 @@ export default async function LandingPage() {
 
       </main>
 
-      {/* YTD - Yasal Uyarı Şeridi */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-sm border-t border-border/20 px-4 py-2">
-        <p className="text-center text-[10px] text-muted-foreground font-medium">
-          ⚠️ <strong>Yatırım Tavsiyesi Değildir (YTD)</strong> — Bu platform yalnızca kişisel finans takibi ve bilgilendirme amaçlıdır. Yatırım kararlarınızı bir finansal danışmana danışarak alın.
-        </p>
-      </div>
+
 
       <Footer />
     </div>
