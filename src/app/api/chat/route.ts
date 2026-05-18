@@ -550,7 +550,7 @@ export async function POST(req: Request) {
                         userId: user.id,
                         type: "Banka Kredisi", // Borç Ödemesi
                         amount: payAmount,
-                        originalAmount: payAmount,
+                        originalAmount: payAmount / (debt.fxRate || 1),
                         currency: debt.currency,
                         fxRate: debt.fxRate,
                         date: new Date(),
