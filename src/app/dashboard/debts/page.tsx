@@ -6,6 +6,8 @@ import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { DebtList } from "@/components/dashboard/debt-list";
 import { getUserCurrencyConfig } from "@/lib/currency-formatter";
+import { getExchangeRatesAction } from "@/app/actions/market";
+import { RateSynchronizer } from "@/components/rate-synchronizer";
 
 export default async function DebtsPage() {
   await cookies();
@@ -36,9 +38,11 @@ export default async function DebtsPage() {
   }
 
   const currencyConfig = await getUserCurrencyConfig(user.currency);
+  const pageRates = await getExchangeRatesAction();
 
   return (
     <div className="flex-1 space-y-10 p-8 pt-10 bg-background min-h-screen">
+      <RateSynchronizer rates={pageRates} />
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <h2 className="text-4xl font-heading font-bold text-primary tracking-tight">

@@ -7,6 +7,8 @@ import { redirect } from "next/navigation";
 import { IncomeExpenseClient } from "@/components/dashboard/income-expense-client";
 import { getUserCurrencyConfig } from "@/lib/currency-formatter";
 import { getLivePrices, normalizeFinancialItemsToTry } from "@/lib/price-service";
+import { getExchangeRatesAction } from "@/app/actions/market";
+import { RateSynchronizer } from "@/components/rate-synchronizer";
 
 export default async function IncomeExpenseHistoryPage() {
   await cookies();
@@ -133,9 +135,12 @@ export default async function IncomeExpenseHistoryPage() {
   const maxMonthly = Math.max(...monthlyData.map((d) => Math.max(d.income, d.expense)), 1);
 
   const currencyConfig = await getUserCurrencyConfig(user.currency);
+  const pageRates = await getExchangeRatesAction();
 
   return (
-    <IncomeExpenseClient
+    <>
+      <RateSynchronizer rates={pageRates} />
+      <IncomeExpenseClient
       totalIncome={totalIncome}
       totalExpense={totalExpense}
       netBalance={netBalance}
@@ -150,5 +155,6 @@ export default async function IncomeExpenseHistoryPage() {
       }))}
       debts={user.debts}
     />
+    </>
   );
 }

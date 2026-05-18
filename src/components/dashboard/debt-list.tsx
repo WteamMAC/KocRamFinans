@@ -27,7 +27,7 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
     const { formatAmount, rates } = useCurrency();
     const [isAdding, setIsAdding] = useState(false);
     const [loading, setLoading] = useState(false);
-    const [payModal, setPayModal] = useState<{ id: string, amount: number, isClose: boolean, description: string, rawAmount: number, currency?: string, originalAmount?: number, fxRate?: number } | null>(null);
+    const [payModal, setPayModal] = useState<{ id: string, amount: number, isClose: boolean, description: string, rawAmount: number, currency?: string, originalAmount?: number, fxRate?: number, payCurrency?: string, payAmount?: number } | null>(null);
     const [refinanceId, setRefinanceId] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [postponeDebtId, setPostponeDebtId] = useState<string | null>(null);
@@ -181,9 +181,9 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
                     payModal.id,
                     payModal.rawAmount,
                     false,
-                    payModal.currency,
-                    payModal.originalAmount ? payModal.originalAmount : (payModal.rawAmount / (payModal.fxRate || 1)),
-                    payModal.fxRate
+                    payModal.isClose ? payModal.currency : payModal.payCurrency,
+                    payModal.isClose ? (payModal.originalAmount ? payModal.originalAmount : payModal.rawAmount) : payModal.payAmount,
+                    payModal.isClose ? payModal.fxRate : (rates[payModal.payCurrency || "TRY"] || 1)
                 );
             }
             setPayModal(null);
@@ -735,7 +735,9 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
                                             description: debt.description || debt.type,
                                             currency: debt.currency,
                                             originalAmount: debt.remainingInstallments ? debt.originalAmount / debt.remainingInstallments : debt.originalAmount,
-                                            fxRate: debt.fxRate
+                                            fxRate: debt.fxRate,
+                                            payCurrency: debt.currency || "TRY",
+                                            payAmount: monthlyTry
                                         })}
                                     >
                                         Taksit Öde
@@ -813,13 +815,61 @@ export function DebtList({ debts, monthlyPayments }: DebtListProps) {
 
                             <div className="space-y-3">
                                 <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1 mb-1.5 block">Ödenecek Tutar</Label>
-                                <Input
-                                    type="number"
-                                    value={payModal.amount}
-                                    disabled={payModal.isClose}
-                                    onChange={(e) => setPayModal({ ...payModal, amount: Number(e.target.value), rawAmount: Number(e.target.value) })}
-                                    className="bg-muted border-border/30 h-12 rounded-xl focus:ring-primary text-lg font-bold"
-                                />
+                                <div className="flex gap-2">
+                                    <Input
+                                        type="number"
+                                        value={payModal.isClose ? payModal.amount : (payModal.payAmount !== undefined ? payModal.payAmount : "")}
+                                        disabled={payModal.isClose}
+                                        onChange={(e) => {
+                                            if (payModal.isClose) return;
+                                            const newPayAmount = Number(e.target.value);
+                                            const payRate = rates[payModal.payCurrency || "TRY"] || 1;
+                                            const debtRate = rates[payModal.currency || "TRY"] || 1;
+                                            const debtDeduction = (newPayAmount * payRate) / debtRate;
+
+                                            setPayModal({ 
+                                                ...payModal, 
+                                                payAmount: newPayAmount,
+                                                amount: Number(debtDeduction.toFixed(4)),
+                                                rawAmount: debtDeduction
+                                            });
+                                        }}
+                                        className="bg-muted border-border/30 h-12 rounded-xl focus:ring-primary text-lg font-bold flex-1"
+                                    />
+                                    <Select 
+                                        value={payModal.payCurrency || "TRY"} 
+                                        disabled={payModal.isClose}
+                                        onValueChange={(v) => {
+                                            const payRate = rates[v] || 1;
+                                            const debtRate = rates[payModal.currency || "TRY"] || 1;
+                                            const currentPayAmount = payModal.payAmount || 0;
+                                            const debtDeduction = (currentPayAmount * payRate) / debtRate;
+
+                                            setPayModal(p => p ? { 
+                                                ...p, 
+                                                payCurrency: v,
+                                                amount: Number(debtDeduction.toFixed(4)),
+                                                rawAmount: debtDeduction
+                                            } : null);
+                                        }}
+                                    >
+                                        <SelectTrigger className="bg-muted border-border/30 h-12 rounded-xl w-[110px] font-bold text-sm">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent className="rounded-xl bg-card font-bold">
+                                            {DISPLAY_CURRENCIES_LIST.map(c => (
+                                                <SelectItem key={c.code} value={c.code}>
+                                                    {c.flag} {c.code}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                {!payModal.isClose && payModal.payCurrency !== payModal.currency && (
+                                    <p className="text-[11px] font-bold text-emerald-500 mt-2 px-1">
+                                        Borçtan Düşülecek Tutar: {payModal.amount?.toLocaleString("tr-TR", {maximumFractionDigits: 2})} {payModal.currency}
+                                    </p>
+                                )}
                                 <p className="text-[10px] text-muted-foreground/80 italic mt-1">
                                     * Bu ödeme, gider listenize otomatik olarak eklenecektir.
                                 </p>

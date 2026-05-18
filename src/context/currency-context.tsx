@@ -41,6 +41,7 @@ interface CurrencyContextType {
   rates: Record<string, number>;
   formatAmount: (valInTry: number | null | undefined, customCurrency?: string, exactOriginal?: { amount: number; currency: string }) => string;
   isLoading: boolean;
+  setRates: React.Dispatch<React.SetStateAction<Record<string, number>>>;
 }
 
 const defaultRates: Record<string, number> = {
@@ -98,8 +99,6 @@ export function CurrencyProvider({ children, initialRates }: { children: React.R
     if (!initialRates) {
       fetchRates();
     }
-    const interval = setInterval(fetchRates, 60000 * 5); // 5 dakikada bir güncelle
-    return () => clearInterval(interval);
   }, [initialRates]);
 
   const setDisplayCurrency = (currency: string) => {
@@ -140,7 +139,7 @@ export function CurrencyProvider({ children, initialRates }: { children: React.R
   };
 
   return (
-    <CurrencyContext.Provider value={{ displayCurrency, setDisplayCurrency, rates, formatAmount, isLoading }}>
+    <CurrencyContext.Provider value={{ displayCurrency, setDisplayCurrency, rates, formatAmount, isLoading, setRates }}>
       {children}
     </CurrencyContext.Provider>
   );

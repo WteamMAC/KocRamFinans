@@ -101,7 +101,7 @@ export async function payDebtInstallment(debtId: string, amount: number, isAuto:
     data: {
       userId: debt.userId,
       type: "Borç Taksit Ödemesi",
-      amount: amount,
+      amount: originalAmount ?? amount,
       isRecurring: false,
       description: `${debt.description || debt.type} için ${isAuto ? "otomatik " : ""}ödeme yapıldı.`,
       date: new Date(),
@@ -186,7 +186,7 @@ export async function processAutoPayments(userId: string) {
         debt.installmentAmount, 
         true, 
         debt.currency ?? undefined, 
-        debt.installmentAmount / (debt.fxRate || 1), 
+        debt.installmentAmount, 
         debt.fxRate ?? undefined
       );
     }
@@ -224,7 +224,7 @@ export async function closeDebt(debtId: string, isTransfer: boolean = false) {
         isRecurring: false,
         description: `${debt.description || debt.type} borcu tamamen kapatıldı.`,
         currency: debt.currency,
-        originalAmount: closingAmount / (debt.fxRate || 1),
+        originalAmount: closingAmount,
         fxRate: debt.fxRate,
       },
     });

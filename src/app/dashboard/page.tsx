@@ -17,6 +17,8 @@ import { InvestmentProjection } from "@/components/dashboard/investment-projecti
 import { cn } from "@/lib/utils";
 import { getLivePrices, calculatePortfolioMetrics, calculateFixedAssetsMetrics, normalizeFinancialItemsToTry, getRateForCurrency } from "@/lib/price-service";
 import { DashboardCards } from "@/components/dashboard/dashboard-cards";
+import { RateSynchronizer } from "@/components/rate-synchronizer";
+import { getExchangeRatesAction } from "@/app/actions/market";
 
 import { Suspense } from "react";
 import { DashboardSkeleton } from "@/components/dashboard/dashboard-skeleton";
@@ -128,6 +130,8 @@ async function DashboardMetrics({ user }: { user: any }) {
   const userCur = (user?.currency || "TRY").toUpperCase();
   const userRate = getRateForCurrency(userCur, livePrices) || 1;
 
+  const pageRates = await getExchangeRatesAction();
+
   const financialDataForAI = {
     totalIncome: Number((totalIncome / userRate).toFixed(2)),
     totalExpense: Number((totalExpense / userRate).toFixed(2)),
@@ -142,6 +146,7 @@ async function DashboardMetrics({ user }: { user: any }) {
 
   return (
     <div className="space-y-6 md:space-y-10 animate-in fade-in duration-700">
+      <RateSynchronizer rates={pageRates} />
       {/* Smart Insights */}
       <SmartInsights financialData={financialDataForAI} />
 
