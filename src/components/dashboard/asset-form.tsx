@@ -159,7 +159,12 @@ export function AssetForm({ activeTab, onAdd, onCancel, loading, error, defaultA
                 <Label className="text-[11px] font-bold text-primary/80 uppercase tracking-wider px-1">Varlık Türü</Label>
                 <Select
                   value={formData.type}
-                  onValueChange={(v) => setFormData((p) => ({ ...p, type: String(v), symbol: "" }))}
+                  onValueChange={(v) => {
+                    const newType = String(v);
+                    setFormData((p) => ({ ...p, type: newType, symbol: "", fundSymbol: "" }));
+                    setSearchQuery("");
+                    setBesSearchQuery("");
+                  }}
                   disabled={!!defaultAssetType}
                 >
                   <SelectTrigger className={cn(
