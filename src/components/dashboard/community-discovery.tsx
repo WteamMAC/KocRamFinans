@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useTransition, useEffect } from "react";
-import { Users, Shield, Globe, Plus, LogOut, MessageSquare, Search, Filter, ChevronRight, Clock, Check, X } from "lucide-react";
-import { getCommunities, joinCommunity, leaveCommunity } from "@/app/actions/communities";
+import { Users, Shield, Globe, Plus, LogOut, MessageSquare, Search, Filter, ChevronRight, Clock, Check, X, Trash2 } from "lucide-react";
+import { getCommunities, joinCommunity, leaveCommunity, deleteCommunity } from "@/app/actions/communities";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
@@ -21,6 +21,7 @@ type Community = {
   postCount: number;
   isMember: boolean;
   isPending: boolean;
+  isAdmin: boolean;
 };
 
 export function CommunityDiscovery({ onSelectCommunity }: { onSelectCommunity?: (id: string, name: string) => void }) {
@@ -35,6 +36,7 @@ export function CommunityDiscovery({ onSelectCommunity }: { onSelectCommunity?: 
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [communityToLeave, setCommunityToLeave] = useState<{ id: string, name: string } | null>(null);
   const [communityToJoin, setCommunityToJoin] = useState<{ id: string, name: string, isPrivate: boolean } | null>(null);
+  const [communityToDelete, setCommunityToDelete] = useState<{ id: string, name: string } | null>(null);
   
   // Custom Toast/Banner State
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -94,6 +96,23 @@ export function CommunityDiscovery({ onSelectCommunity }: { onSelectCommunity?: 
       } catch (error) {
         setErrorMessage((error as Error).message);
         setTimeout(() => setErrorMessage(null), 4000);
+      }
+    });
+  };
+
+  const handleDelete = (id: string) => {
+    startTransition(async () => {
+      try {
+        await deleteCommunity(id);
+        setCommunityToDelete(null);
+        setSuccessMessage("Topluluk başarıyla silindi. 🗑️");
+        setTimeout(() => setSuccessMessage(null), 4000);
+        await loadCommunities();
+        router.refresh();
+      } catch (error) {
+        setErrorMessage((error as Error).message);
+        setTimeout(() => setErrorMessage(null), 4000);
+        setCommunityToDelete(null);
       }
     });
   };
@@ -212,8 +231,20 @@ export function CommunityDiscovery({ onSelectCommunity }: { onSelectCommunity?: 
                 </div>
               </div>
 
-              <div className="flex gap-2">
-                {c.isMember ? (
+              <div className="flex gap-2 items-center">
+                {c.isAdmin && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setCommunityToDelete({ id: c.id, name: c.name })}
+                    disabled={isPendingAction}
+                    className="h-8 w-8 p-0 rounded-xl text-rose-400 hover:text-rose-600 hover:bg-rose-500/10 mr-1"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                )}
+
+                {(c.isMember || c.isAdmin) ? (
                    <div className="flex gap-2">
                      <Button
                        variant="ghost"
@@ -223,15 +254,17 @@ export function CommunityDiscovery({ onSelectCommunity }: { onSelectCommunity?: 
                      >
                        Görüntüle
                      </Button>
-                     <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setCommunityToLeave({ id: c.id, name: c.name })}
-                        disabled={isPendingAction}
-                        className="h-8 w-8 p-0 rounded-xl text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10"
-                      >
-                        <LogOut className="h-3.5 w-3.5" />
-                      </Button>
+                     {c.isMember && (
+                       <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setCommunityToLeave({ id: c.id, name: c.name })}
+                          disabled={isPendingAction}
+                          className="h-8 w-8 p-0 rounded-xl text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10"
+                        >
+                          <LogOut className="h-3.5 w-3.5" />
+                        </Button>
+                     )}
                    </div>
                 ) : c.isPending ? (
                    <Button
@@ -326,6 +359,30 @@ export function CommunityDiscovery({ onSelectCommunity }: { onSelectCommunity?: 
                 <Button onClick={() => handleJoin(communityToJoin.id)} disabled={isPendingAction} className="flex-1 h-12 rounded-2xl font-bold bg-primary text-primary-foreground hover:bg-primary/95 shadow-lg shadow-primary/20">
                   {isPendingAction ? "İşleniyor..." : "Evet, Katıl/Başvur"}
                 </Button>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {communityToDelete && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-card border border-border/20 rounded-[32px] w-full max-w-sm shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+            <div className="p-8 text-center space-y-6">
+              <div className="w-16 h-16 bg-rose-500/10 rounded-full flex items-center justify-center mx-auto text-rose-500">
+                <Trash2 className="h-8 w-8" />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-lg font-black text-foreground">Topluluğu Sil?</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  <span className="font-bold text-foreground">{communityToDelete.name}</span> topluluğunu tamamen silmek istediğinize emin misiniz? Bu işlem geri alınamaz ve tüm içerikler silinecektir.
+                </p>
+              </div>
+              <div className="flex gap-3">
+                <Button variant="ghost" onClick={() => setCommunityToDelete(null)} className="flex-1 h-12 rounded-2xl font-bold hover:bg-muted">Vazgeç</Button>
+                <Button onClick={() => handleDelete(communityToDelete.id)} disabled={isPendingAction} className="flex-1 h-12 rounded-2xl font-bold bg-rose-500 text-white hover:bg-rose-600 shadow-lg shadow-rose-500/20">{isPendingAction ? "Siliniyor..." : "Evet, Sil"}</Button>
               </div>
             </div>
           </div>
