@@ -46,8 +46,8 @@ export default async function BlogPage({
   }
 
   return (
-    <div className="flex-1 p-6 pt-10 bg-background min-h-screen">
-      <div className="max-w-2xl mx-auto space-y-6">
+    <div className="flex-1 p-6 md:p-12 pt-8 md:pt-14 bg-background min-h-screen relative overflow-x-hidden">
+      <div className="max-w-7xl mx-auto space-y-10 relative">
         <div className="flex items-end justify-between">
           <div>
             <h1 className="text-3xl font-heading font-bold text-primary">Topluluk</h1>
