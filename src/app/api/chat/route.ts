@@ -146,7 +146,7 @@ export async function POST(req: Request) {
               type: SchemaType.OBJECT,
               properties: {
                 type: { type: SchemaType.STRING, description: "income, expense, debt, investment, fixedAsset" },
-                amount: { type: SchemaType.NUMBER, description: "Orijinal tutar (kur dönüşümü yapma, olduğu gibi yaz)" },
+                amount: { type: SchemaType.NUMBER, description: "Orijinal toplam tutar (kur dönüşümü yapma). Eğer yatırım ekliyorsan ve toplam tutarı bilmiyorsan, 0 gönderebilirsin (sistem quantity * purchasePrice üzerinden kendi hesaplar)." },
                 category: { type: SchemaType.STRING, description: "Kategori. Gider için: 'Mutfak & Market', 'Ev Kirası', 'Faturalar', 'Ulaşım', 'Eğitim / Sağlık', 'Diğer'. Gelir için: 'Maaş', 'Kira Geliri', 'Ek İş', 'Temettü', 'Diğer'. Borç için: 'Kredi Kartı', 'Banka Kredisi', 'Şahsi Borç'. Yatırım: 'BIST', 'NASDAQ', 'CRYPTO', 'GOLD', 'BES'. Sabit Varlık (fixedAsset) için: 'RealEstate' (Ev, Arsa), 'Vehicle' (Araba, Motor), 'Electronics' (Telefon, Bilgisayar), 'Other'." },
                 currency: { type: SchemaType.STRING, description: "Para birimi kodu. Kullanıcı 'dolar' veya '$' derse USD, 'euro' veya '€' derse EUR, 'sterlin' derse GBP, belirtmezse TRY yaz." },
                 date: { type: SchemaType.STRING, description: "İşlem tarihi YYYY-MM-DD formatında. Kullanıcı tarih belirtmezse bugünün tarihini yaz." },
@@ -372,8 +372,11 @@ export async function POST(req: Request) {
                     currency: rawCurrency, date: rawDate,
                     interestRate, remainingInstallments, paymentDay, dueDate } = args;
 
-                  const safeAmount = Number(amount) || 0;
-                  if (safeAmount <= 0) throw new Error("Tutar 0'dan büyük olmalıdır.");
+                  const isInv = type === "investment";
+                  const calcAmt = isInv ? (Number(quantity) || 1) * (Number(purchasePrice) || 0) : 0;
+                  const safeAmount = Number(amount) || calcAmt || 0;
+
+                  if (safeAmount <= 0) throw new Error("Tutar veya birim fiyat 0'dan büyük olmalıdır.");
 
                   // --- Para Birimi & Kur Dönüşümü ---
                   const currency = (rawCurrency || "TRY").toUpperCase();
