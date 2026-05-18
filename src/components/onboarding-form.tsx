@@ -338,9 +338,15 @@ export function OnboardingForm() {
     try {
       setFetchingLive(true);
       const cleanSym = sym.split(" ")[0].trim();
-      const livePrice = await getSymbolLivePriceAction(cleanSym);
-      if (livePrice && livePrice > 0) {
-        handlePriceChange(livePrice.toString());
+      const liveData = await getSymbolLivePriceAction(cleanSym);
+      if (liveData && liveData.originalPrice > 0) {
+        const p = liveData.originalPrice;
+        const newCur = liveData.originalCurrency === "TRY" ? (selectedCurrency || "TRY") : liveData.originalCurrency;
+        setModalAssetData(prev => ({
+          ...prev,
+          currency: newCur,
+          purchasePrice: p.toString()
+        }));
       }
     } catch (e: any) {
       console.error("Live price error:", e);
@@ -361,6 +367,7 @@ export function OnboardingForm() {
     setActiveAssetModal(type);
     setSearchQuery("");
     setShowSearch(false);
+    setUseCurrentPrice(false);
     setModalAssetData({
       symbol: "",
       amount: "",
@@ -477,6 +484,10 @@ export function OnboardingForm() {
 
   const handleSaveAssetModal = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!modalAssetData.symbol || modalAssetData.symbol.trim() === "") {
+      alert("Lütfen bir sembol veya kod giriniz / seçiniz.");
+      return;
+    }
     const qVal = parseFloat(modalAssetData.quantity) || 1;
     const pVal = parseFloat(modalAssetData.purchasePrice) || 0;
     const calcAmount = activeAssetModal === "FAIZ" ? qVal : (pVal > 0 ? qVal * pVal : qVal);
@@ -1214,6 +1225,7 @@ export function OnboardingForm() {
                     <div>
                       <Label className="text-[10px] font-extrabold text-[#887364] dark:text-[#dbc2b0] mb-1.5 block">Para Birimi</Label>
                       <Select
+                        disabled={useCurrentPrice}
                         value={modalAssetData.currency}
                         onValueChange={(v: any) => setModalAssetData({ ...modalAssetData, currency: String(v) })}
                       >

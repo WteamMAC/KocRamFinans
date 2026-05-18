@@ -25,12 +25,24 @@ export async function searchSymbolsAction(query: string, category: string) {
 
 export async function getSymbolLivePriceAction(symbol: string) {
   try {
-    const liveMap = await getLivePrices([symbol]);
+    const liveMap = await getLivePrices([symbol, "USDTRY=X"]);
     const res = liveMap.get(symbol.toUpperCase());
-    return res?.price || 0;
+    if (!res) return null;
+
+    const usdRate = liveMap.get("USDTRY=X")?.price || 36.45;
+    const isUsdSymbol = symbol.toUpperCase().includes("USD") || (!symbol.toUpperCase().endsWith(".IS") && !symbol.toUpperCase().endsWith("=X") && symbol !== "GC=F" && symbol !== "SI=F" && symbol !== "BZ=F" && !symbol.includes("TRY"));
+
+    const origCurr = res.originalCurrency || (isUsdSymbol ? "USD" : "TRY");
+    const origPrice = res.originalPrice || (origCurr === "USD" && res.price > usdRate * 0.5 ? Number((res.price / usdRate).toFixed(2)) : res.price);
+
+    return {
+      price: res.price,
+      originalPrice: origPrice,
+      originalCurrency: origCurr
+    };
   } catch (error) {
     console.error("Live Price Action Error:", error);
-    return 0;
+    return null;
   }
 }
 
