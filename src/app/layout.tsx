@@ -23,6 +23,9 @@ export const metadata: Metadata = {
 import { ThemeProvider } from "@/components/theme-provider";
 import { CurrencyProvider } from "@/context/currency-context";
 import { getExchangeRatesAction } from "@/app/actions/market";
+import { auth } from "@clerk/nextjs/server";
+import { cookies } from "next/headers";
+import { prisma } from "@/lib/prisma";
 
 export default async function RootLayout({
   children,
@@ -30,6 +33,22 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const initialRates = await getExchangeRatesAction();
+  let initialCurrency = "TRY";
+  try {
+    const cookieStore = await cookies();
+    const cookieVal = cookieStore.get("koç_ram_display_currency")?.value;
+    if (cookieVal) {
+      initialCurrency = cookieVal;
+    } else {
+      const { userId } = await auth();
+      if (userId) {
+        const user = await prisma.user.findUnique({ where: { clerkUserId: userId } });
+        if (user && user.currency) {
+          initialCurrency = user.currency;
+        }
+      }
+    }
+  } catch (e) {}
 
   return (
     <ClerkProvider 
@@ -74,7 +93,7 @@ export default async function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
-            <CurrencyProvider initialRates={initialRates || undefined}>
+            <CurrencyProvider initialRates={initialRates || undefined} initialCurrency={initialCurrency}>
               {children}
             </CurrencyProvider>
           </ThemeProvider>

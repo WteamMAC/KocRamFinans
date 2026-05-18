@@ -65,22 +65,26 @@ const defaultRates: Record<string, number> = {
 
 const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined);
 
-export function CurrencyProvider({ children, initialRates }: { children: React.ReactNode; initialRates?: Record<string, number> }) {
-  const [displayCurrency, setDisplayCurrencyState] = useState<string>("TRY");
+export function CurrencyProvider({ children, initialRates, initialCurrency = "TRY" }: { children: React.ReactNode; initialRates?: Record<string, number>; initialCurrency?: string }) {
+  const [displayCurrency, setDisplayCurrencyState] = useState<string>(initialCurrency);
   const [rates, setRates] = useState<Record<string, number>>(() => initialRates ? { ...defaultRates, ...initialRates, TRY: 1 } : defaultRates);
   const [isLoading, setIsLoading] = useState<boolean>(!initialRates);
 
-  // İlk yüklemede localStorage'dan oku
+  // İlk yüklemede localStorage'dan oku veya initialCurrency kullan
   useEffect(() => {
     try {
       const saved = localStorage.getItem("koç_ram_display_currency");
       if (saved && DISPLAY_CURRENCIES_MAP[saved]) {
         setDisplayCurrencyState(saved);
+      } else if (initialCurrency && DISPLAY_CURRENCIES_MAP[initialCurrency]) {
+        setDisplayCurrencyState(initialCurrency);
+        localStorage.setItem("koç_ram_display_currency", initialCurrency);
+        document.cookie = `koç_ram_display_currency=${initialCurrency}; path=/; max-age=31536000; SameSite=Lax`;
       }
     } catch (err) {
       console.error("Error reading currency from localStorage:", err);
     }
-  }, []);
+  }, [initialCurrency]);
 
   // Döviz kurlarını API'den çek
   useEffect(() => {
