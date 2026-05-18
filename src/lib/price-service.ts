@@ -390,7 +390,8 @@ export async function searchSymbols(query: string, category: string) {
       quotesCount: 15
     });
 
-    const quotes = (searchResults && (searchResults as any).quotes) ? (searchResults as any).quotes : [];
+    const rawQuotes = (searchResults && (searchResults as any).quotes) ? (searchResults as any).quotes : [];
+    const quotes = rawQuotes.filter((q: any) => q.isYahooFinance !== false && q.symbol);
 
     const processedQuotes = quotes.map((q: any) => {
       let suggestedCategory = "BIST";
