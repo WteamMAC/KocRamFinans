@@ -123,8 +123,7 @@ export async function addAsset(data: {
       }
     });
 
-    revalidatePath("/dashboard");
-    revalidatePath("/dashboard/assets");
+    revalidatePath("/dashboard", "layout");
     return { success: true };
   } catch (error: any) {
     console.error("addAsset server error:", error);
@@ -228,8 +227,7 @@ export async function sellAsset(id: string, postSellAction?: "KEEP_TL" | "KEEP_U
       });
     }
 
-    revalidatePath("/dashboard");
-    revalidatePath("/dashboard/assets");
+    revalidatePath("/dashboard", "layout");
     return { success: true };
   } catch (error: any) {
     console.error("sellAsset server error:", error);
@@ -258,8 +256,7 @@ export async function deleteAsset(id: string) {
       where: { id },
     });
 
-    revalidatePath("/dashboard");
-    revalidatePath("/dashboard/assets");
+    revalidatePath("/dashboard", "layout");
     return { success: true };
   } catch (error: any) {
     console.error("deleteAsset server error:", error);
@@ -451,8 +448,7 @@ export async function addFixedAsset(data: {
       }
     });
 
-    revalidatePath("/dashboard");
-    revalidatePath("/dashboard/assets");
+    revalidatePath("/dashboard", "layout");
     return { success: true };
   } catch (error: any) {
     throw new Error(error.message || "Sabit varlık eklenirken bir hata oluştu.");
@@ -480,8 +476,7 @@ export async function deleteFixedAsset(id: string) {
       where: { id },
     });
 
-    revalidatePath("/dashboard");
-    revalidatePath("/dashboard/assets");
+    revalidatePath("/dashboard", "layout");
     return { success: true };
   } catch (error: any) {
     throw new Error(error.message || "Silme işlemi başarısız oldu.");
@@ -520,8 +515,7 @@ export async function addContributionToAsset(id: string, amount: number) {
       },
     });
 
-    revalidatePath("/dashboard");
-    revalidatePath("/dashboard/assets");
+    revalidatePath("/dashboard", "layout");
     return { success: true };
   } catch (error: any) {
     console.error("addContributionToAsset error:", error);

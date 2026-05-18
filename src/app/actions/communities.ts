@@ -128,7 +128,7 @@ export async function getCommunities(params?: {
 
   return communities.map(c => ({
     ...c,
-    isMember: c.members && c.members.length > 0 && c.members[0].status === "ACCEPTED",
+    isMember: (c.members && c.members.length > 0 && c.members[0].status === "ACCEPTED") || (internalUser?.role === "ADMIN"),
     isPending: c.members && c.members.length > 0 && c.members[0].status === "PENDING",
     isAdmin: (c.members && c.members.length > 0 && c.members[0].role === "ADMIN") || (internalUser?.role === "ADMIN"),
     memberCount: c._count.members,
@@ -151,7 +151,7 @@ export async function getCommunityDetails(communityId: string) {
 
   if (!community) return null;
   
-  const isMember = community.members && community.members.length > 0 && community.members[0].status === "ACCEPTED";
+  const isMember = (community.members && community.members.length > 0 && community.members[0].status === "ACCEPTED") || (internalUser?.role === "ADMIN");
   const isAdmin = (community.members && community.members.length > 0 && community.members[0].role === "ADMIN") || (internalUser?.role === "ADMIN");
 
   const clerk = await clerkClient();
