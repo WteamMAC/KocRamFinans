@@ -22,21 +22,61 @@ Koç Ram Finans; kişisel bütçe yönetimi, yatırım takibi, borç yapılandı
 
 ---
 
-## 🏗️ Mimari
+## 🏗️ Repo Haritası (Repository Map)
 
-```
-Next.js 16 (App Router)
-├── src/app/api/chat/route.ts     ← Gemini Function Calling ana motoru
-├── src/lib/gemini.ts              ← Master Prompt & finansal bağlam
-├── src/lib/price-service.ts       ← Yahoo Finance + DB cache katmanı
-├── src/lib/tefas-catalog.ts       ← TEFAS EMK fon kataloğu (merkezi kaynak)
-├── src/app/actions/               ← Server Actions (13 modül)
-└── src/components/dashboard/      ← 31 React bileşeni
+Projemiz Next.js 16 (App Router) mimarisiyle modern, ölçeklenebilir ve temiz bir yapıya sahiptir. Aşağıda uygulamanın temel dosya ve klasör dizilimi bulunmaktadır:
+
+```text
+BtkAkademiDeneme/
+├── prisma/                        ← Veritabanı şeması ve migration'lar (PostgreSQL)
+├── public/                        ← Statik dosyalar (resimler, ikonlar vb.)
+├── src/
+│   ├── app/                       ← Next.js 16 App Router ana sayfaları
+│   │   ├── (auth)/                ← Kimlik doğrulama (Clerk) sayfaları ve akışları
+│   │   ├── actions/               ← Server Actions (13 adet arka plan DB işlemi modülü)
+│   │   ├── api/
+│   │   │   └── chat/route.ts      ← 🧠 AI Agent Chatbot & Function Calling Core Endpoint
+│   │   ├── dashboard/             ← Kullanıcı yönetim, finans ve raporlama paneli
+│   │   ├── hakkimizda/            ← Kurumsal ve bilgilendirme statik sayfaları
+│   │   └── onboarding/            ← Yeni kullanıcı giriş yapılandırma süreçleri
+│   ├── components/                ← Yeniden kullanılabilir React/UI bileşenleri
+│   │   └── dashboard/             ← Finansal grafik (Recharts) ve form bileşenleri (31 adet)
+│   ├── context/                   ← React Context API ile global state yönetimleri
+│   ├── lib/                       ← Yardımcı fonksiyonlar, servisler ve entegrasyonlar
+│   │   ├── gemini.ts              ← Master Prompt, ajan kurgusu ve finansal bağlam ayarları
+│   │   ├── price-service.ts       ← Canlı döviz, borsa ve emtia fiyatlandırma (Yahoo/ExchangeRate)
+│   │   ├── tefas-catalog.ts       ← TEFAS (Türkiye Elektronik Fon Alım Satım) fon verileri
+│   │   ├── utils.ts               ← Formatter, hesaplayıcı gibi genel yardımcı fonksiyonlar
+│   │   └── prisma.ts              ← Prisma ORM bağlantı tanımlamaları
+│   └── middleware.ts              ← Auth koruması ve rota yönlendirme middleware'i
+├── components.json                ← shadcn/ui bileşen kütüphanesi konfigürasyonu
+├── package.json                   ← Proje bağımlılıkları ve node scriptleri
+├── tailwind.config.ts             ← Tailwind CSS tasarım ve renk tokenleri
+└── tsconfig.json                  ← TypeScript derleyici ayarları
 ```
 
-**Gemini Kullanımı:**
-- `@google/generative-ai` → AI Chat (Function Calling + Streaming)
-- `@ai-sdk/google` → Smart Insights & AI Projeksiyon
+---
+
+## 🤖 Ajan Rolleri ve Görevleri (AI Agent Functions)
+
+Platform, kullanıcı ile doğal dilde etkileşime giren **Gemini 2.5** destekli bir asistan tarafından yönetilmektedir. Asistan, `Function Calling` yeteneği sayesinde aşağıda belirtilen spesifik ajan (tool) görevlerini otonom olarak çalıştırır:
+
+1. 📥 **Veri Okuyucu Ajan (`getFinancialHistory`)**
+   - **Görevi:** Kullanıcının geçmiş ve mevcut gelir, gider, borç ve yatırım kayıtlarını veritabanından çekerek finansal tabloyu analiz etmek için bağlam sağlar.
+2. ✍️ **Kayıt Asistanı ve Görsel İşleyici (`addFinancialRecord`)**
+   - **Görevi:** Doğal dille ifade edilen veya fotoğrafı yüklenen fiş/fatura gibi belgelerdeki verileri işleyip (Multimodal Vision) doğrudan veritabanına finansal kayıt olarak ekler.
+3. 💳 **Borç Yönetim Ajanı (`payDebt`)**
+   - **Görevi:** Kullanıcının kredilerini veya borç taksitlerini takip eder. Ödeme yapıldığında ilgili borcu bakiyeden düşer ve işlemi aynı zamanda bir gider olarak işler.
+4. 🗑️ **Temizlik Ajanı (`deleteFinancialRecord`)**
+   - **Görevi:** Hatalı girilmiş veya silinmesi talep edilen geçmiş finansal kayıtların benzersiz ID'sini tespit ederek sistemden güvenle kaldırır.
+5. 💹 **Piyasa Analisti (`getMarketPrice`)**
+   - **Görevi:** Kullanıcı canlı kripto, borsa (BIST, NASDAQ), altın veya döviz kuru sorduğunda internete çıkıp güncel verileri (TRY dönüşümlü) sağlar.
+6. 📅 **Etkinlik Koordinatörü (`manageSpecialEvent`)**
+   - **Görevi:** Doğum günleri, evlilik yıldönümleri veya belirli periyodik fatura ödeme günleri gibi kişisel ajanda verilerini kaydeder ve listeler.
+7. ⚙️ **Profil Yöneticisi (`updateUserProfile`)**
+   - **Görevi:** Kullanıcının tercih ettiği para birimi, isim bilgileri, finansal biyografisi ve ilgi alanlarını, sohbet akışından algılayarak sistem ayarlarında günceller.
+8. 🌐 **Sosyal Topluluk Elçisi (`createCommunityPost`)**
+   - **Görevi:** Kullanıcı sosyal bir etkileşimde bulunmak veya tecrübesini paylaşmak istediğinde onun adına Wteam forumlarında post paylaşır ve ilgili etiketleri atar.
 
 ---
 
