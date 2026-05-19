@@ -22,6 +22,36 @@ Koç Ram Finans; kişisel bütçe yönetimi, yatırım takibi, borç yapılandı
 
 ---
 
+## 🏛️ Mimari Tek Bakışta
+
+```text
+┌─────────────────────────────────────────────────────────────┐
+│ FRONTEND (Next.js 16 - React 19)                            │
+│ Dashboard ──► Metin / Ses / Fiş Görseli ──► AI Chat Paneli  │
+└───────────────────────┬─────────────────────────────────────┘
+                        │ API İsteği (Streaming)
+                        ▼
+┌─────────────────────────────────────────────────────────────┐
+│ BACKEND (Next.js App Router)                                │
+│                                                             │
+│  User Request ──► Rate Limiter ──► Context Builder          │
+│                                         │                   │
+│                                         ▼                   │
+│                 ┌──► Tool Router ◄── Gemini Function Calling│
+│                 │                                           │
+│                 ▼                                           │
+│          8 Otonom Ajan ──► Price Service (Cache)            │
+└─────────────────────────────────────────────────────────────┘
+         │               │                │
+         ▼               ▼                ▼
+   ┌───────────┐   ┌───────────┐    ┌──────────────┐
+   │ Gemini    │   │ Piyasa    │    │ PostgreSQL   │
+   │ 2.5 Flash │   │ API'leri  │    │ (Prisma ORM) │
+   └───────────┘   └───────────┘    └──────────────┘
+```
+
+---
+
 ## 🏗️ Repo Haritası (Repository Map)
 
 Projemiz Next.js 16 (App Router) mimarisiyle modern, ölçeklenebilir ve temiz bir yapıya sahiptir. Aşağıda uygulamanın temel dosya ve klasör dizilimi bulunmaktadır:
