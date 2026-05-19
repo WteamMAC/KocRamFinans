@@ -1,166 +1,279 @@
 # 🏦 Koç Ram Finans — AI-Powered Personal Finance Platform
 
 > **BTK Akademi Hackathon 2026** | Gemini API Zorunlu Kullanım Kategorisi
-
-Koç Ram Finans; kişisel bütçe yönetimi, yatırım takibi, borç yapılandırma ve sosyal finans topluluğunu tek çatı altında toplayan, **Gemini API** ile güçlendirilmiş modern bir finans asisistanı platformudur.
-
----
-
-## 🚀 Özellikler
-
-| Modül | Açıklama |
-|---|---|
-| 📊 **Dashboard** | Net varlık, gelir/gider, borç, yatırım özeti — canlı piyasa fiyatlarıyla |
-| 🤖 **AI Asistan** | 8 adet Function Calling Tool — kayıt ekle, sil, borç öde, piyasa sorgula |
-| 📸 **Fiş Okuma** | Fatura/fiş fotoğrafı → AI otomatik gidere kaydeder (Multimodal) |
-| 📈 **AI Projeksiyon** | Portföy için Gemini destekli 6 aylık büyüme tahmini |
-| 💹 **Canlı Piyasa** | Yahoo Finance + ExchangeRate API + 5 dk DB önbellekleme |
-| 🏛️ **BES Modülü** | Türkiye'ye özgü %30 devlet katkısı hesaplı emeklilik projeksiyonu |
-| 🌍 **Çok Para Birimi** | TRY, USD, EUR, GBP, CHF, AED ve 10+ döviz desteği |
-| 👥 **Topluluk** | Blog, yorum, beğeni, takip, DM, bildirim, topluluk oluşturma |
-| 🎙️ **Sesli Komut** | Web Speech API ile Türkçe sesli kayıt girişi |
+> 
+> Koç Ram Finans; kişisel bütçe yönetimi, yatırım takibi, borç yapılandırma, otonom yapay zeka asistanlığı ve sosyal finans topluluğunu tek çatı altında birleştiren, **Gemini API** ile güçlendirilmiş son teknoloji ve premium bir kişisel finans asistanı platformudur.
 
 ---
 
-## 🏛️ Mimari Tek Bakışta
+## 🌟 Öne Çıkan Modüller ve Özellikler
+
+| Modül | Detaylı Açıklama | Teknolojik Altyapı |
+| :--- | :--- | :--- |
+| 📊 **Akıllı Dashboard** | Canlı piyasa fiyatlarıyla değerlenen net varlık, gelir/gider akışı, borç durumları ve yatırım portföyünün anlık grafiksel özeti. | React 19 + Recharts + Tailwind CSS v4 |
+| 🤖 **Ajanlık Yapay Zeka (AI Agent)** | Metin, ses veya görsel tabanlı girdileri işleyebilen, 8 farklı araca (Tool) sahip otonom finansal danışman. | Gemini Pro/Flash (Function Calling) |
+| 📸 **Multimodal OCR (Fiş/Fatura)** | Fiş veya fatura fotoğraflarını tarayarak toplam tutarı, KDV'yi, kategoriyi ve tarihi otomatik algılar, doğrudan gidere işler. | Gemini Vision + Base64 Stream |
+| 📈 **AI Projeksiyon & Öngörü** | Mevcut portföy varlıklarının küresel enflasyon ve piyasa beklentilerine göre 6 aylık büyümesini otonom olarak simüle eder. | Gemini Analiz Ajanı + DB Insights |
+| 💹 **Canlı Piyasa & Caching** | Hisse senetleri (BIST, NASDAQ), kripto paralar, döviz kurları ve emtiaların (Altın, Gümüş, Brent) canlı takibi. | Yahoo Finance 2 + ExchangeRate API (5 Dk DB Caching) |
+| 🏛️ **Gelişmiş BES Modülü** | Türkiye'ye özgü %30 devlet katkısı hesaplamalı, seçilen fon türüne (Altın, Hisse, Muhafazakar vb.) göre birikim projeksiyonu. | Bireysel Emeklilik Matematiksel Modeli |
+| 📅 **Finansal Takvim & Özel Günler** | Periyodik faturalar, kredi taksitleri ve doğum günleri gibi finansal ya da kişisel özel günlerin ajanda entegrasyonu. | Prisma SpecialEvents Engine |
+| 👥 **Sosyal Finans Topluluğu** | Kullanıcıların blog gönderileri paylaşabildiği, yorum yapıp beğendiği, birbirini takip ettiği ve canlı mesajlaştığı sosyal platform. | Pusher Realtime + Communities API |
+| 🎙️ **Sesli Komut Entegrasyonu** | Mikrofon simgesine basıp konuşarak ("Dün 500 TL market harcaması yaptım") sesli finansal kayıt girişi yapma. | Web Speech API |
+| 📥 **Excel Veri Raporlama** | Tüm finansal geçmişi ve varlık listelerini saniyeler içinde Excel formatında dışa aktarma (export). | SheetJS (`xlsx`) |
+
+---
+
+## 🧠 AI Ajan Mimarisi (Agentic System Architecture)
+
+Koç Ram Finans, klasik sohbet botlarının aksine **otonom karar alma yeteneğine sahip bir Multi-Agent (Çoklu Ajan) sistemi** üzerine kurulmuştur. 
 
 ```text
-┌─────────────────────────────────────────────────────────────┐
-│ FRONTEND (Next.js 16 - React 19)                            │
-│ Dashboard ──► Metin / Ses / Fiş Görseli ──► AI Chat Paneli  │
-└───────────────────────┬─────────────────────────────────────┘
-                        │ API İsteği (Streaming)
-                        ▼
-┌─────────────────────────────────────────────────────────────┐
-│ BACKEND (Next.js App Router)                                │
-│                                                             │
-│  User Request ──► Rate Limiter ──► Context Builder          │
-│                                         │                   │
-│                                         ▼                   │
-│                 ┌──► Tool Router ◄── Gemini Function Calling│
-│                 │                                           │
-│                 ▼                                           │
-│          8 Otonom Ajan ──► Price Service (Cache)            │
-└─────────────────────────────────────────────────────────────┘
-         │               │                │
-         ▼               ▼                ▼
-   ┌───────────┐   ┌───────────┐    ┌──────────────┐
-   │ Gemini    │   │ Piyasa    │    │ PostgreSQL   │
-   │ 2.5 Flash │   │ API'leri  │    │ (Prisma ORM) │
-   └───────────┘   └───────────┘    └──────────────┘
+                              ┌─────────────────────────────┐
+                              │    Müşteri Doğal Dil/Ses    │
+                              └──────────────┬──────────────┘
+                                             │ (Metin, Ses veya Fiş Görseli)
+                                             ▼
+                              ┌─────────────────────────────┐
+                              │  🧠 Gemini Master Agent     │
+                              │  (Sistem Promptu & Bağlam)  │
+                              └──────────────┬──────────────┘
+                                             │
+                       ┌─────────────────────┴──────────────────────┐
+                       ▼ (Niyet Analizi & Ajan Tetikleme)           ▼
+            [ Otonom Görev Yönlendirici ]                   [ Yanıt Üretici ]
+                       │                                            │
+  ┌────────────────────┼────────────────────┐                       │ (Doğrudan
+  ▼                    ▼                    ▼                       │  Zarif Yanıt)
+📥 Veri Okuyucu      ✍️ Kayıt Asistanı     💳 Borç Yöneticisi      │
+(`getFinancialHistory`) (`addFinancialRecord`)  (`payDebt`)         │
+  │                    │                    │                       │
+  ▼                    ▼                    ▼                       │
+💹 Piyasa Analisti   🗑️ Temizlik Ajanı     📅 Koordinatör          │
+(`getMarketPrice`)   (`deleteFinancialRecord`) (`manageSpecialEvent`)│
+  │                    │                    │                        │
+  ▼                    ▼                    ▼                        │
+⚙️ Profil Ajanı      🌐 Topluluk Elçisi   📸 OCR Görsel Ajanı       │
+(`updateUserProfile`)  (`createCommunityPost`)  (Multimodal Vision)  │
+  └────────────────────┬────────────────────┘                        │
+                       │ (API / DB İşlemi ve Veri Güncelleme)      │
+                       ▼                                           ▼
+            ┌────────────────────────────────────────────────────────┐
+            │       Sunucu Geri Dönüşü (Realtime Page Revalidate)    │
+            └────────────────────────────────────────────────────────┘
+```
+
+### 1. Master Prompt ve Karar Ağacı (`src/lib/gemini.ts`)
+Model, kullanıcının niyetini analiz ederek 8 farklı fonksiyondan birini veya birkaçını sırayla (Chain-of-Thought) otonom olarak çalıştırır. Yapay zeka asistanı, kullanıcının bütçe durumunu (`getFinancialContext`) anlık olarak veritabanından okuyup bağlam (context) olarak hafızasına alır.
+
+### 2. Canlı API Araçları (Function Calling Tools)
+*   **`getFinancialHistory`**: Kullanıcının geçmiş ve mevcut gelir, gider, borç ve yatırım kayıtlarını okur.
+*   **`addFinancialRecord`**: Doğal dille ifade edilen veya resmi yüklenen fişlerdeki verileri algılayıp doğrudan veritabanına ekler (TRY, USD, EUR vb. 10+ döviz desteğiyle).
+*   **`payDebt`**: Taksitli veya tek seferlik borç ödemelerini otonom gerçekleştirir, bakiyeyi düşer ve aynı zamanda gider tablosuna kaydeder.
+*   **`deleteFinancialRecord`**: Hatalı girilmiş kayıtları benzersiz ID'si üzerinden güvenli bir şekilde siler.
+*   **`getMarketPrice`**: Canlı borsa (BIST, NASDAQ), kripto, altın ve döviz fiyatlarını Yahoo Finance üzerinden çekip TRY karşılıklarıyla analiz eder.
+*   **`manageSpecialEvent`**: Hatırlatıcıları ve periyodik fatura tarihlerini finansal ajandaya kaydeder.
+*   **`updateUserProfile`**: Kullanıcının varsayılan para birimini, ilgi alanlarını ve biyografisini sohbet üzerinden günceller.
+*   **`createCommunityPost`**: Kullanıcı adına Wteam sosyal forumlarında anında paylaşım yapar.
+
+### 3. Akıllı Hata Toleransı & Fallback Stratejisi
+Herhangi bir Gemini modelinde ağ hatası veya kota aşımı (Rate Limit - 429) olması durumunda, sistem kesintiyi önlemek amacıyla aşağıdaki modern modeller arasında **otomatik olarak fallback (yedek modele geçiş) yapar**:
+```typescript
+const FALLBACK_MODELS = [
+  "gemini-3.1-flash-preview",
+  "gemini-2.5-flash",
+  "gemini-2.5-pro",
+  "gemini-2.0-flash"
+];
 ```
 
 ---
 
-## 🏗️ Repo Haritası (Repository Map)
+## 📊 Veritabanı Mimarisi (Entity-Relationship Modeli)
 
-Projemiz Next.js 16 (App Router) mimarisiyle modern, ölçeklenebilir ve temiz bir yapıya sahiptir. Aşağıda uygulamanın temel dosya ve klasör dizilimi bulunmaktadır:
+Veritabanımız, PostgreSQL üzerinde **Prisma ORM** kullanılarak yapılandırılmıştır. Tüm modeller birebir ilişkisel ve kaskad (cascade) silme özelliklerine sahiptir.
+
+```mermaid
+erDiagram
+    User ||--o{ Income : "sahiptir"
+    User ||--o{ Expense : "yapar"
+    User ||--o{ Debt : "borclanir"
+    User ||--o{ Investment : "yatirim_yapar"
+    User ||--o{ FixedAsset : "mülk_edinir"
+    User ||--o{ SpecialEvent : "planlar"
+    User ||--o{ BlogPost : "yazar"
+    User ||--o{ BlogLike : "begenir"
+    User ||--o{ BlogComment : "yorumlar"
+    User ||--o{ Follow : "takip_eder"
+    User ||--o{ Community : "yönetir"
+    User ||--o{ CommunityMember : "üyesidir"
+    User ||--o{ Notification : "alir"
+    User ||--o{ Message : "gönderir/alır"
+
+    User {
+        String id PK
+        String clerkUserId UK
+        String username
+        String email
+        String currency
+        String country
+        String[] interests
+        Boolean hasCompletedTour
+    }
+    Income {
+        String id PK
+        Float amount
+        String type
+        String currency
+        DateTime date
+        Boolean isRecurring
+    }
+    Expense {
+        String id PK
+        Float amount
+        String type
+        String currency
+        DateTime date
+        Boolean isRecurring
+    }
+    Debt {
+        String id PK
+        Float amount
+        Float principalAmount
+        Float interestRate
+        Float installmentAmount
+        Int remainingInstallments
+        Int paymentDay
+        String currency
+    }
+    Investment {
+        String id PK
+        String type "GOLD|CRYPTO|BIST|NASDAQ|BES|FAIZ"
+        String symbol
+        Float quantity
+        Float purchasePrice
+        Float amount
+        String currency
+        String status "OPEN|CLOSED"
+    }
+    BlogPost {
+        String id PK
+        String content
+        String[] tags
+        String communityId FK
+    }
+```
+
+### Öne Çıkan Prisma Modelleri:
+*   **`User`**: Kullanıcının profil bilgileri, varsayılan para birimi (TRY, USD vb.), ilgi alanları (hastag'ler) ve onboarding tur tamamlama durumu.
+*   **`Investment`**: Alım satım işlemlerinin takibi (`transactionType: BUY/SELL`), durum (`OPEN/CLOSED`), miktar ve birim maliyet kayıtları.
+*   **`MarketPriceCache`**: Canlı fiyatların Yahoo API'sini yormaması ve 5 dakikalık periyotlarla önbellekte tutulması için kullanılan yüksek hızlı ara katman.
+
+---
+
+## 🛠️ Gelişmiş Teknoloji Yığını (Tech Stack)
+
+| Katman | Kullanılan Teknoloji | Sürüm | Açıklama |
+| :--- | :--- | :--- | :--- |
+| **Framework** | **Next.js 16 (App Router)** | `16.2.6` | Modern SSR, Streaming & Server Actions mimarisi |
+| **Core** | **React 19** | `19.2.3` | En son React özellikleri ve performans geliştirmeleri |
+| **Veritabanı** | **PostgreSQL + Prisma** | `7.8.0` | Güvenli veri modeli, ilişkisel veritabanı ve migrasyonlar |
+| **Kimlik Doğrulama** | **Clerk Next.js** | `7.3.3` | Çoklu oturum açma, oturum yönetimi ve kullanıcı entegrasyonu |
+| **Tasarım / UI** | **Tailwind CSS v4** | `^4.0.0` | Modern, hızlı ve değişken CSS yardımcı kütüphanesi |
+| **Animasyonlar** | **Framer Motion** | `12.38.0` | Yumuşak sayfa geçişleri ve akıcı arayüz efektleri |
+| **Grafikler** | **Recharts** | `3.8.1` | Kişiselleştirilmiş ve responsive finansal grafikler |
+| **Realtime DM & Bildirim** | **Pusher & Pusher-js** | `5.3.3` | Anlık mesajlaşma, canlı beğeni/yorum ve bildirimler |
+| **Piyasa Verileri** | **Yahoo Finance 2** | `3.14.0` | Küresel piyasalar, hisseler ve emtia fiyat entegrasyonu |
+| **Excel Desteği** | **SheetJS (`xlsx`)** | `0.18.5` | Finansal tabloların tek tıkla Excel'e aktarılması |
+
+---
+
+## 🚀 Kurulum ve Çalıştırma
+
+### 🛠️ Ön Gereksinimler
+Sisteminizin bilgisayarınızda **Node.js (v18+)** ve aktif bir **PostgreSQL** veritabanı bağlantısı olması gerekmektedir.
+
+### 1. Depoyu Klonlayın ve Klasöre Geçin
+```bash
+git clone https://github.com/WteamMAC/KocRamFinans.git
+cd KocRamFinans/BtkAkademiDeneme
+```
+
+### 2. Bağımlılıkları Yükleyin
+```bash
+npm install
+```
+
+### 3. Ortam Değişkenlerini Tanımlayın (`.env` veya `.env.local` oluşturun)
+Proje kök dizininde bir `.env` dosyası oluşturup aşağıdaki anahtarları girin:
+```env
+# Google Gemini API Anahtarı (Zorunlu)
+GEMINI_API_KEY=your_gemini_api_key_here
+GOOGLE_GENERATIVE_AI_API_KEY=your_gemini_api_key_here
+
+# PostgreSQL Veritabanı Bağlantısı (Zorunlu)
+DATABASE_URL="postgresql://kullanici:sifre@localhost:5432/veritabani_adi?schema=public"
+
+# Clerk Kimlik Doğrulama (Zorunlu)
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
+CLERK_SECRET_KEY=sk_test_...
+CLERK_WEBHOOK_SECRET=whsec_...
+
+# Pusher Realtime Chat (İsteğe Bağlı - Mesajlaşma İçin)
+PUSHER_APP_ID=your_pusher_app_id
+NEXT_PUBLIC_PUSHER_KEY=your_pusher_key
+PUSHER_SECRET=your_pusher_secret
+NEXT_PUBLIC_PUSHER_CLUSTER=eu
+```
+
+### 4. Veritabanı Şemasını PostgreSQL'e Aktarın ve Client Üretin
+```bash
+npm run db:push
+```
+
+### 5. Geliştirme Sunucusunu Başlatın
+```bash
+npm run dev
+```
+Uygulama varsayılan olarak [http://localhost:3000](http://localhost:3000) adresinde çalışmaya başlayacaktır.
+
+---
+
+## 📈 Proje Dosya Yapısı (Repository Map)
 
 ```text
 BtkAkademiDeneme/
-├── prisma/                        ← Veritabanı şeması ve migration'lar (PostgreSQL)
-├── public/                        ← Statik dosyalar (resimler, ikonlar vb.)
+├── prisma/                        ← Veritabanı PostgreSQL şeması ve migration yapılandırmaları
+├── public/                        ← Statik görsel materyaller, logolar ve ikonlar
 ├── src/
-│   ├── app/                       ← Next.js 16 App Router ana sayfaları
-│   │   ├── (auth)/                ← Kimlik doğrulama (Clerk) sayfaları ve akışları
-│   │   ├── actions/               ← Server Actions (13 adet arka plan DB işlemi modülü)
+│   ├── app/                       ← Next.js 16 App Router Dosya Yapısı
+│   │   ├── (auth)/                ← Kimlik doğrulama sayfaları (Clerk)
+│   │   ├── actions/               ← 13 adet Server Actions modülü (DB & API sunucu işlemleri)
+│   │   │   ├── assets.ts          ← Yatırım alım-satım ve portföy hesaplama işlemleri
+│   │   │   ├── blog.ts            ← Sosyal blog gönderi, beğeni ve yorum aksiyonları
+│   │   │   ├── debts.ts           ← Borç ekleme ve kredi taksiti ödeme modülü
+│   │   │   ├── ocr.ts             ← Gemini Vision ile fatura tarama / OCR asistanı
+│   │   │   ├── insights.ts        ← Gemini destekli 6 aylık portföy büyüme tahminleri
+│   │   │   └── ...
 │   │   ├── api/
-│   │   │   └── chat/route.ts      ← 🧠 AI Agent Chatbot & Function Calling Core Endpoint
-│   │   ├── dashboard/             ← Kullanıcı yönetim, finans ve raporlama paneli
-│   │   ├── hakkimizda/            ← Kurumsal ve bilgilendirme statik sayfaları
-│   │   └── onboarding/            ← Yeni kullanıcı giriş yapılandırma süreçleri
-│   ├── components/                ← Yeniden kullanılabilir React/UI bileşenleri
-│   │   └── dashboard/             ← Finansal grafik (Recharts) ve form bileşenleri (31 adet)
+│   │   │   └── chat/route.ts      ← 🧠 Master AI Agent & Function Calling Core API Endpoint
+│   │   ├── dashboard/             ← Bütçe, varlık, borç, yatırım ve topluluk arayüz sayfaları
+│   │   └── onboarding/            ← İlk giriş kullanıcı yapılandırma turları
+│   ├── components/                ← Yeniden kullanılabilir React Component'leri
+│   │   └── dashboard/             ← Grafik ve finans modüllerine ait 31+ arayüz bileşeni
 │   ├── context/                   ← React Context API ile global state yönetimleri
-│   ├── lib/                       ← Yardımcı fonksiyonlar, servisler ve entegrasyonlar
-│   │   ├── gemini.ts              ← Master Prompt, ajan kurgusu ve finansal bağlam ayarları
-│   │   ├── price-service.ts       ← Canlı döviz, borsa ve emtia fiyatlandırma (Yahoo/ExchangeRate)
-│   │   ├── tefas-catalog.ts       ← TEFAS (Türkiye Elektronik Fon Alım Satım) fon verileri
-│   │   ├── utils.ts               ← Formatter, hesaplayıcı gibi genel yardımcı fonksiyonlar
-│   │   └── prisma.ts              ← Prisma ORM bağlantı tanımlamaları
-│   └── middleware.ts              ← Auth koruması ve rota yönlendirme middleware'i
-├── components.json                ← shadcn/ui bileşen kütüphanesi konfigürasyonu
-├── package.json                   ← Proje bağımlılıkları ve node scriptleri
-├── tailwind.config.ts             ← Tailwind CSS tasarım ve renk tokenleri
-└── tsconfig.json                  ← TypeScript derleyici ayarları
+│   └── lib/                       ← Çekirdek kütüphaneler ve yardımcı servisler
+│       ├── gemini.ts              ← AI Ajan Prompt kurguları ve finansal özet oluşturucular
+│       ├── price-service.ts       ← Yahoo Finance API entegrasyonu ve 5 dk DB Caching katmanı
+│       └── tefas-catalog.ts       ← TEFAS Türkiye Emeklilik Fonları veritabanı kataloğu
+├── package.json                   ← Proje kütüphaneleri, bağımlılıkları ve script'leri
+├── tailwind.config.ts             ← Tailwind v4 tasarım tokenleri ve renk şemaları
+└── tsconfig.json                  ← TypeScript yapılandırması
 ```
-
----
-
-## 🤖 Ajan Rolleri ve Görevleri (AI Agent Functions)
-
-Platform, kullanıcı ile doğal dilde etkileşime giren **Gemini 2.5** destekli bir asistan tarafından yönetilmektedir. Asistan, `Function Calling` yeteneği sayesinde aşağıda belirtilen spesifik ajan (tool) görevlerini otonom olarak çalıştırır:
-
-1. 📥 **Veri Okuyucu Ajan (`getFinancialHistory`)**
-   - **Görevi:** Kullanıcının geçmiş ve mevcut gelir, gider, borç ve yatırım kayıtlarını veritabanından çekerek finansal tabloyu analiz etmek için bağlam sağlar.
-2. ✍️ **Kayıt Asistanı ve Görsel İşleyici (`addFinancialRecord`)**
-   - **Görevi:** Doğal dille ifade edilen veya fotoğrafı yüklenen fiş/fatura gibi belgelerdeki verileri işleyip (Multimodal Vision) doğrudan veritabanına finansal kayıt olarak ekler.
-3. 💳 **Borç Yönetim Ajanı (`payDebt`)**
-   - **Görevi:** Kullanıcının kredilerini veya borç taksitlerini takip eder. Ödeme yapıldığında ilgili borcu bakiyeden düşer ve işlemi aynı zamanda bir gider olarak işler.
-4. 🗑️ **Temizlik Ajanı (`deleteFinancialRecord`)**
-   - **Görevi:** Hatalı girilmiş veya silinmesi talep edilen geçmiş finansal kayıtların benzersiz ID'sini tespit ederek sistemden güvenle kaldırır.
-5. 💹 **Piyasa Analisti (`getMarketPrice`)**
-   - **Görevi:** Kullanıcı canlı kripto, borsa (BIST, NASDAQ), altın veya döviz kuru sorduğunda internete çıkıp güncel verileri (TRY dönüşümlü) sağlar.
-6. 📅 **Etkinlik Koordinatörü (`manageSpecialEvent`)**
-   - **Görevi:** Doğum günleri, evlilik yıldönümleri veya belirli periyodik fatura ödeme günleri gibi kişisel ajanda verilerini kaydeder ve listeler.
-7. ⚙️ **Profil Yöneticisi (`updateUserProfile`)**
-   - **Görevi:** Kullanıcının tercih ettiği para birimi, isim bilgileri, finansal biyografisi ve ilgi alanlarını, sohbet akışından algılayarak sistem ayarlarında günceller.
-8. 🌐 **Sosyal Topluluk Elçisi (`createCommunityPost`)**
-   - **Görevi:** Kullanıcı sosyal bir etkileşimde bulunmak veya tecrübesini paylaşmak istediğinde onun adına Wteam forumlarında post paylaşır ve ilgili etiketleri atar.
-
----
-
-## ⚙️ Kurulum
-
-```bash
-# 1. Bağımlılıkları yükle
-npm install
-
-# 2. Ortam değişkenlerini ayarla
-cp .env.development.local.example .env.local
-
-# 3. Veritabanını oluştur
-npm run db:push
-
-# 4. Geliştirme sunucusunu başlat
-npm run dev
-```
-
----
-
-## 🔑 Gerekli Ortam Değişkenleri
-
-```env
-# Gemini AI (ZORUNLU)
-GEMINI_API_KEY=your_gemini_api_key
-
-# Veritabanı (ZORUNLU)
-DATABASE_URL=postgresql://...
-
-# Kimlik Doğrulama - Clerk (ZORUNLU)
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_...
-CLERK_SECRET_KEY=sk_...
-CLERK_WEBHOOK_SECRET=whsec_...
-```
-
----
-
-## 🛠️ Tech Stack
-
-| Katman | Teknoloji |
-|---|---|
-| Framework | Next.js 16 + React 19 |
-| AI | Google Gemini API (`gemini-2.5-flash`) |
-| Veritabanı | PostgreSQL + Prisma 7 |
-| Auth | Clerk |
-| UI | Tailwind CSS v4 + shadcn/ui + Framer Motion |
-| Grafikler | Recharts |
-| Piyasa | Yahoo Finance 2 + ExchangeRate API |
-| Deploy | Vercel |
 
 ---
 
 ## ⚠️ Yasal Uyarı
 
-Bu platform yalnızca kişisel finans takibi ve bilgilendirme amaçlıdır.  
-**Yatırım Tavsiyesi Değildir (YTD).** Yatırım kararlarınızı bir finansal danışmana danışarak alın.
+Bu platform, yalnızca kişisel finans takibinizi yapabilmeniz, bütçenizi kontrol altına alabilmeniz ve finansal durumunuzu analiz edebilmeniz için tasarlanmış bir araçtır. 
+
+**Platformda yer alan yapay zeka tavsiyeleri, piyasa analizleri ve büyüme tahminleri KESİNLİKLE Yatırım Tavsiyesi Değildir (YTD).** Tüm yatırım kararlarınızı yasal finansal danışmanlarınıza danışarak vermeniz önemle tavsiye edilir.
